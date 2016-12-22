@@ -5,20 +5,18 @@ import Tkinter as Tk
 import math
 
 G = [\
-	[1,1,1,0,0,0,0],\
-	[1,1,0,1,0,0,0],\
-	[1,0,1,0,1,0,0],\
-	[0,1,0,1,0,0,0],\
-	[0,0,1,0,1,0,0],\
-	[0,0,0,0,0,1,1],\
-	[0,0,0,0,0,1,1]\
+	[1,1,0,1,0],\
+	[0,1,1,0,0],\
+	[0,0,1,0,0],\
+	[0,0,0,1,0],\
+	[1,0,0,0,1]\
 ]
 
 node_coords = []
 root = Tk.Tk()
 
-intersize = 512
-dia=4
+intersize = 800
+dia=10
 
 w = Tk.Canvas(root, width=intersize+2*dia, height=intersize+2*dia)
 w.pack()
@@ -42,7 +40,17 @@ for v,v_adj in enumerate(G):
 		if v!=n and is_neighbor==1:
 			x1,y1 = node_coords[v]
 			x2,y2 = node_coords[n]
-			w.create_line(x1,y1,x2,y2)
+			if v<n:
+				x1 -= dia>>1
+				x2 -= dia>>1
+				y1 -= dia>>1
+				y2 -= dia>>1
+			else:
+				x1 += dia>>1
+				x2 += dia>>1
+				y1 += dia>>1
+				y2 += dia>>1
+			w.create_line(x1,y1,x2,y2,arrow="last")
 
 #for i,v in enumerate(L):
 #	print (i+1)*linepart
