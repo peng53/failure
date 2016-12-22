@@ -3,33 +3,35 @@
 
 import Tkinter as Tk
 import math
-
+import random
 G = [\
-	[1,1,0,1,0],\
+	[1,1,1,1,0],\
 	[0,1,1,0,0],\
 	[0,0,1,0,0],\
-	[0,0,0,1,0],\
-	[1,0,0,0,1]\
+	[0,0,1,1,0],\
+	[0,0,0,0,1]\
 ]
 
 node_coords = []
 root = Tk.Tk()
 
 intersize = 800
-dia=10
+dia=2
 
-w = Tk.Canvas(root, width=intersize+2*dia, height=intersize+2*dia)
+w = Tk.Canvas(root, width=intersize+50, height=intersize+50)
 w.pack()
 
 perline = math.ceil(math.sqrt(len(G)))
 linepart = intersize // (perline)
+varry = 50
 
 x = linepart
 y = linepart
 for i,v in enumerate(G):
-	w.create_oval(x,y,x+dia,y+dia)
-	w.create_text(x,y-dia,text=str(i))
-	node_coords.append((x+dia//2,y+dia//2))
+	vpush = random.randint(10,varry)
+	w.create_oval(x+vpush,y+vpush,x+dia+vpush,y+dia+vpush)
+	w.create_text(x+vpush,y+vpush-dia,text=str(i))
+	node_coords.append((x+dia//2+vpush,y+dia//2+vpush))
 	x+=linepart
 	if x>intersize:
 		x=linepart
