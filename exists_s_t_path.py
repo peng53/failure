@@ -37,10 +37,9 @@ def exists_s_t_path_depth(G,s,t):
 	return False
 
 def random_graph(vertices_count):
-	G = []
+	G = [[0]*vertices_count for _ in xrange(vertices_count)]
 	nodes = range(vertices_count)
 	for v in xrange(vertices_count):
-		G.append([0]*vertices_count)
 		random.shuffle(nodes)
 		G[v][v] = 1
 		for neighbor in nodes[:random.randint(0,vertices_count)]:
