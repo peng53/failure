@@ -4,27 +4,66 @@
 import Tkinter as Tk
 import math
 import random
-G = [\
-	[1,1,1,1,0],\
-	[0,1,1,0,0],\
-	[0,0,1,0,0],\
-	[0,0,1,1,0],\
-	[0,0,0,0,1]\
-]
+import itertools
 
+G = [\
+	[1,1,1,0,0],\
+	[0,1,1,0,0],\
+	[1,0,1,0,0],\
+	[0,0,0,1,1],\
+	[0,0,1,1,1]\
+]
 node_coords = []
 root = Tk.Tk()
 
 intersize = 800
-dia=2
+dia=10
+hk = intersize//2
+print "hk",hk
+r = intersize//2
+angle_int = 360//len(G)
+print "angle_int",angle_int
 
 w = Tk.Canvas(root, width=intersize+50, height=intersize+50)
 w.pack()
 
+for i,v in enumerate(G):
+	x = r * math.cos(i*angle_int)+hk
+	y = r * math.sin(i*angle_int)+hk
+	node_coords.append((x,y))
+	w.create_oval(x-dia,y-dia,x+dia,y+dia)
+	w.create_text(x+2*dia,y+2*dia,text=str(i))
+
+for v,u in itertools.combinations(xrange(len(G)),2):
+	vu = G[v][u] == 1
+	uv = G[u][v] == 1
+	x1,y1 = node_coords[v]
+	x2,y2 = node_coords[u]
+	if vu:
+		if uv:
+			w.create_line(x1,y1,x2,y2,arrow="both")
+		else:
+			w.create_line(x1,y1,x2,y2,arrow="last")
+	elif not vu and uv:
+		w.create_line(x1,y1,x2,y2,arrow="first")
+
+"""
+
+for v,v_adj in enumerate(G):
+	for n,is_neighbor in enumerate(v_adj):
+		if v!=n and is_neighbor==1 and not visited[n]:
+			x1,y1 = node_coords[v]
+			x2,y2 = node_coords[n]
+			if G[n][v]==1:
+				w.create_line(x1,y1,x2,y2,arrow="both")
+			else:
+				w.create_line(x1,y1,x2,y2,arrow="last")
+		visited[v]=True
+"""
+"""
 perline = math.ceil(math.sqrt(len(G)))
 linepart = intersize // (perline)
 varry = 50
-
 x = linepart
 y = linepart
 for i,v in enumerate(G):
@@ -36,34 +75,27 @@ for i,v in enumerate(G):
 	if x>intersize:
 		x=linepart
 		y+=linepart
-
+"""
+"""
 for v,v_adj in enumerate(G):
 	for n,is_neighbor in enumerate(v_adj):
 		if v!=n and is_neighbor==1:
 			x1,y1 = node_coords[v]
 			x2,y2 = node_coords[n]
+			""
 			if v<n:
-				x1 -= dia>>1
-				x2 -= dia>>1
-				y1 -= dia>>1
-				y2 -= dia>>1
+				x1 -= dia
+				x2 -= dia
+				y1 -= dia
+				y2 -= dia
 			else:
-				x1 += dia>>1
-				x2 += dia>>1
-				y1 += dia>>1
-				y2 += dia>>1
+				x1 += dia
+				x2 += dia
+				y1 += dia
+				y2 += dia
+			""
 			w.create_line(x1,y1,x2,y2,arrow="last")
-
-#for i,v in enumerate(L):
-#	print (i+1)*linepart
-#	w.create_oval((i+1)*linepart,10,(i+2)*linepart,20)
-
-
-
-#w.create_line(0, 0, 200, 100)
-#w.create_line(0, 100, 200, 0, fill="red", dash=(4, 4))
-
-#w.create_rectangle(50, 25, 150, 75, fill="blue")
+"""
 
 
 root.mainloop()
