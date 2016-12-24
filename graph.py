@@ -63,3 +63,6 @@ def biclique(m,n):
 	adjm = [[0]*m+[1]*n for _ in xrange(m)]+[[1]*m+[0]*n for _ in xrange(n)]
 	return SimpleGraph(adjm)
 
+def kgraph(n):
+	adjm = [[True]*n for _ in xrange(n)]
+	return SimpleGraph(adjm)
