@@ -52,6 +52,13 @@ class SimpleGraph:
 		#return d if self.adjm[v][v] else d-1
 		return sum(1 for u in self.adjm if u[v])
 
+	def remove_edge(self,u,v,both=False):
+		if u==v or not self.adjm[u][v]:
+			raise ValueError
+		self.adjm[u][v]=False
+		if both:
+			self.remove_edge(v,u)
+
 def biclique(m,n):
 	adjm = [[0]*m+[1]*n for _ in xrange(m)]+[[1]*m+[0]*n for _ in xrange(n)]
 	return SimpleGraph(adjm)

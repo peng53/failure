@@ -6,8 +6,8 @@ import graph
 import itertools
 
 root = Tk.Tk()
-W=800
-H=800
+W=200
+H=200
 w = Tk.Canvas(root, width=W, height=H)
 w.pack()
 dia=5
@@ -15,7 +15,7 @@ dia=5
 w.create_line(1,1,1,H)
 w.create_line(W-1,1,W-1,H)
 
-m = 10
+m = 3
 n = 2
 G = graph.biclique(m,n).adjm
 node_coords = []
