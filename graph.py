@@ -52,3 +52,7 @@ class SimpleGraph:
 		#return d if self.adjm[v][v] else d-1
 		return sum(1 for u in self.adjm if u[v])
 
+def biclique(m,n):
+	adjm = [[0]*m+[1]*n for _ in xrange(m)]+[[1]*m+[0]*n for _ in xrange(n)]
+	return SimpleGraph(adjm)
+

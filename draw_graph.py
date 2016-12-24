@@ -5,7 +5,8 @@ import Tkinter as Tk
 import math
 import random
 import itertools
-
+import graph
+"""
 G = [\
 	[1,1,1,0,0],\
 	[0,1,1,0,0],\
@@ -13,6 +14,9 @@ G = [\
 	[0,0,0,1,1],\
 	[0,0,1,1,1]\
 ]
+"""
+G = graph.biclique(5,3).adjm
+
 node_coords = []
 root = Tk.Tk()
 
