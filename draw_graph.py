@@ -46,8 +46,11 @@ class SimpleDraw:
 		s = self.tE.get()
 		try:
 			v,u = map(int,s.split(','))
+			if u<v: v,u = u,v
 			if (v,u) in self.E:
 				self.w.delete(self.E[(v,u)])
+				self.E.pop((v,u),None)
+				self.G.remove_edge(v,u,True)
 		except:
 			return
 
