@@ -66,3 +66,8 @@ def biclique(m,n):
 def kgraph(n):
 	adjm = [[True]*n for _ in xrange(n)]
 	return SimpleGraph(adjm)
+
+def random_bipartite(m,n):
+	adjm = [[0]*m+[random.randint(0,1) for _ in xrange(n)] for _ in xrange(m)]\
+		+[[random.randint(0,1) for _ in xrange(m)]+[0]*n for _ in xrange(n)]
+	return SimpleGraph(adjm)
