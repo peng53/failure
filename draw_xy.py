@@ -21,21 +21,31 @@ class XYPlane:
 		print self.min_x,self.max_x
 		print self.min_y,self.max_y
 		Tk.Button(master, text="Close", command=quit).pack()
-		self.w = Tk.Canvas(master, width=(abs(self.min_x)+self.max_x)+1, height=(abs(self.min_y)+self.max_y)+1, background="white")
+		self.scale = 500
+		self.w = Tk.Canvas(master, width=self.scale*(abs(self.min_x)+self.max_x)+1, height=self.scale*(abs(self.min_y)+self.max_y)+1, background="white")
 		self.w.pack()
-		self.w.create_line(0,self.max_y,abs(self.min_x)+self.max_x,self.max_y,fill="grey")
-		self.w.create_line(abs(self.min_x),0,abs(self.min_x),abs(self.min_y)+self.max_y,fill="grey")
+		self.w.create_line(0,self.scale*self.max_y,self.scale*(abs(self.min_x)+self.max_x),self.scale*self.max_y,fill="grey")
+		self.w.create_line(self.scale*abs(self.min_x),0,self.scale*abs(self.min_x),self.scale*(abs(self.min_y)+self.max_y),fill="grey")
 		for (x,y) in pts:
-			cy = -y+self.max_y
-			cx = x+abs(self.min_x)
+			cy = self.scale*(-y+self.max_y)
+			cx = self.scale*(x+abs(self.min_x))
 			self.w.create_oval(cx,cy,cx+1,cy+1,width=0.5)
+
+def frange(a,b,d):
+	x = a
+	while x<b:
+		yield x
+		x += d
 
 def draw_graph(pts):
 	root = Tk.Tk()
 	app = XYPlane(root,pts)
 	root.mainloop()
 
+
+
 if __name__=="__main__":
-	pts = [(x,x**2) for x in xrange(-20,20,1)]+[(-2,-4),(10,-20)]+[(x,x) for x in xrange(-100,100,2)]
+	pts = [(x,x*x) for x in frange(-1.0,1.0,0.1)]+[(x,x) for x in frange(-1.0,1.0,0.1)]
+	print pts
 	draw_graph(pts)
 
