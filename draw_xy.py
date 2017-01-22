@@ -9,6 +9,10 @@ Phase 5: linear regression
 .
 """
 import Tkinter as Tk
+from collections import namedtuple
+
+Pt = namedtuple('pt','x y')
+Rn = namedtuple('range','m M')
 
 class XYpts:
 	def __init__(self,XY,color,name=None):
@@ -23,11 +27,16 @@ class XYspread:
 		if x_range is None:
 			self.min_x = self.max_x = self.min_y = self.max_y = 0
 			for pts in XYs:
-				for (x,y) in pts.XY:
-					if x<self.min_x: self.min_x = x
-					elif x>self.max_x: self.max_x = x
-					if y<self.min_y: self.min_y = y
-					elif y>self.max_y: self.max_y = y
+				#for (x,y) in pts.XY:
+				for pt in pts.XY:
+					#if x<self.min_x: self.min_x = x
+					if pt.x<self.min_x: self.min_x = pt.x
+					elif pt.x>self.max_x: self.max_x = pt.x
+					#elif x>self.max_x: self.max_x = x
+					#if y<self.min_y: self.min_y = y
+					if pt.y<self.min_y: self.min_y = pt.y
+					elif pt.y>self.max_y: self.max_y = pt.y
+					#elif y>self.max_y: self.max_y = y
 		else:
 			self.min_x, self.max_x = x_range
 			self.min_y, self.max_y = y_range
@@ -37,41 +46,32 @@ class XYPlane:
 		self.osd = None
 		self.G = G
 		scale = G.scale
-		xM,yM = (G.min_x,G.max_x),(G.min_y,G.max_y)
+		xr,yr = Rn(G.min_x,G.max_x),Rn(G.min_y,G.max_y)
 		Tk.Button(master, text="Close", command=quit).pack()
-		self.w = Tk.Canvas(master, width=1+scale*(abs(xM[0])+abs(xM[1])), height=1+scale*(abs(yM[0])+abs(yM[1])), background="white")
+		H = 1+scale*(abs(yr.m)+abs(yr.M))
+		W = 1+scale*(abs(xr.m)+abs(xr.M))
+		self.w = Tk.Canvas(master, width=W, height=H, background="white")
 		self.w.bind("<Button-1>", self.drawosd)
 		self.w.pack()
-
-		if yM[0]<=0 and yM[1]>=0: self.w.create_line(0,scale*abs(yM[1]),scale*(abs(xM[0])+abs(xM[1])),scale*abs(yM[1]),fill="grey")
-		if xM[0]<=0 and xM[1]>=0: self.w.create_line(scale*abs(xM[0]),0,scale*abs(xM[0]),scale*(abs(yM[0])+abs(yM[1])),fill="grey")
-		#for e in G.XYs:
-			#for (x,y) in e.XY:
-				#cy = scale*(-y+yM[1])
-				#cx = scale*(x+abs(xM[0]))
-				#self.w.create_oval(cx,cy,cx+1,cy+1,outline=e.color)
-		#for e in G.XYs:
-			#x0 = scale*(e.XY[0][0]+abs(xM[0]))
-			#y0 = scale*(-e.XY[0][0]+yM[1])
-			#for (x,y) in e.XY:
-				#y1 = scale*(-y+yM[1])
-				#x1 = scale*(x+abs(xM[0]))
-				#self.w.create_line(x0,y0,x1,y1,fill=e.color)
-				#x0,y0=x1,y1
+		scalex = lambda x: scale*(x+abs(xr.m))
+		scaley = lambda y: scale*(-y+abs(yr.M))
+		if yr.m<=0 and yr.M>=0: self.w.create_line(0,scaley(0),W,scaley(0),fill="grey")
+		if xr.m<=0 and xr.M>=0: self.w.create_line(scalex(0),0,scalex(0),H,fill="grey")
 
 		for psets in G.XYs:
 			x0 = y0 = None
 			lpad = rpad = 3
 			for (x,y) in psets.XY:
 				b_draw = False
-				x1,y1 = scale*(x+abs(xM[0])),scale*(-y+abs(yM[1]))
-				if x>=xM[0] and x<=xM[1] and y>=yM[0] and y<=yM[1]: b_draw = True
+				if x>=xr.m and x<=xr.M and y>=yr.m and y<=yr.M: b_draw = True
 				elif x<0 and lpad>0:
 					b_draw = True
 					lpad -=1
 				elif x>0 and rpad>0:
 					b_draw = True
 					rpad -=1
+				#x1,y1 = scale*(x+abs(xr.m)),scale*(-y+abs(yr.M))
+				x1,y1 = scalex(x),scaley(y)
 				if b_draw is True:
 					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
 					if x0 is not None: self.w.create_line(x0,y0,x1,y1,fill=psets.color)
@@ -104,12 +104,12 @@ def draw_graph(pts):
 
 if __name__=="__main__":
 	a,b,dx = -1.0, 1.0, 0.1
-	x1 = XYpts([(x,x) for x in frange(a,b,dx)],"black","y=x")
-	x2 = XYpts([(x,x**2) for x in frange(a,b,dx)],"red","y=x^2")
-	x3 = XYpts([(x,x**3) for x in frange(a,b,dx)],"blue","y=x^3")
-	x4 = XYpts([(x,x**4) for x in frange(a,b,dx)],"green","y=x^4")
-	x5 = XYpts([(x,x**5) for x in frange(a,b,dx)],"orange","y=x^5")
-	x6 = XYpts([(x,x**6) for x in frange(a,b,dx)],"pink","y=x^6")
+	x1 = XYpts([Pt(x,x) for x in frange(a,b,dx)],"black","y=x")
+	x2 = XYpts([Pt(x,x**2) for x in frange(a,b,dx)],"red","y=x^2")
+	x3 = XYpts([Pt(x,x**3) for x in frange(a,b,dx)],"blue","y=x^3")
+	x4 = XYpts([Pt(x,x**4) for x in frange(a,b,dx)],"green","y=x^4")
+	x5 = XYpts([Pt(x,x**5) for x in frange(a,b,dx)],"orange","y=x^5")
+	x6 = XYpts([Pt(x,x**6) for x in frange(a,b,dx)],"pink","y=x^6")
 	G = XYspread(\
 		[\
 		#x1,\
@@ -118,6 +118,6 @@ if __name__=="__main__":
 		x4,\
 		x5,\
 		x6\
-		],75,(-2.0,2.0),(-2.0,2.0))
+		],100)#,(-2.0,2.0),(-2.0,2.0))
 	draw_graph(G)
 
