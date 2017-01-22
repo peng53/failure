@@ -31,38 +31,58 @@ class XYspread:
 		else:
 			self.min_x, self.max_x = x_range
 			self.min_y, self.max_y = y_range
-		print self.min_x, self.max_x
-		print self.min_y, self.max_y
 
 class XYPlane:
 	def __init__(self,master,G):
 		self.G = G
-		self.min_x, self.max_x = G.min_x, G.max_x
-		self.min_y, self.max_y = G.min_y, G.max_y
-
-
+		scale = G.scale
+		xM = (G.min_x,G.max_x)
+		yM = (G.min_y,G.max_y)
 		Tk.Button(master, text="Close", command=quit).pack()
-		self.scale = G.scale
-		self.w = Tk.Canvas(master, width=self.scale*(abs(self.min_x)+self.max_x)+1, height=self.scale*(abs(self.min_y)+self.max_y)+1, background="white")
+
+		self.w = Tk.Canvas(master, width=1+scale*(abs(xM[0])+abs(xM[1])), height=1+scale*(abs(yM[0])+abs(yM[1])), background="white")
 		self.w.bind("<Button-1>", self.drawosd)
 		self.osd = None
 		self.w.pack()
-		self.w.create_line(0,self.scale*self.max_y,self.scale*(abs(self.min_x)+self.max_x),self.scale*self.max_y,fill="grey")
-		self.w.create_line(self.scale*abs(self.min_x),0,self.scale*abs(self.min_x),self.scale*(abs(self.min_y)+self.max_y),fill="grey")
-		for e in G.XYs:
-			for (x,y) in e.XY:
-				cy = self.scale*(-y+self.max_y)
-				cx = self.scale*(x+abs(self.min_x))
-				self.w.create_oval(cx,cy,cx+1,cy+1,outline=e.color)
 
-		for e in G.XYs:
-			#ATM assumes sorted by increasing x
-			x0 = self.scale*(e.XY[0][0]+abs(self.min_x))
-			y0 = self.scale*(-e.XY[0][0]+self.max_y)
-			for (x,y) in e.XY:
-				y1 = self.scale*(-y+self.max_y)
-				x1 = self.scale*(x+abs(self.min_x))
-				self.w.create_line(x0,y0,x1,y1,fill=e.color)
+		if yM[0]<=0 and yM[1]>=0: self.w.create_line(0,scale*abs(yM[1]),scale*(abs(xM[0])+abs(xM[1])),scale*abs(yM[1]),fill="grey")
+		if xM[0]<=0 and xM[1]>=0: self.w.create_line(scale*abs(xM[0]),0,scale*abs(xM[0]),scale*(abs(yM[0])+abs(yM[1])),fill="grey")
+		#for e in G.XYs:
+			#for (x,y) in e.XY:
+				#cy = scale*(-y+yM[1])
+				#cx = scale*(x+abs(xM[0]))
+				#self.w.create_oval(cx,cy,cx+1,cy+1,outline=e.color)
+
+		#for e in G.XYs:
+			#x0 = scale*(e.XY[0][0]+abs(xM[0]))
+			#y0 = scale*(-e.XY[0][0]+yM[1])
+			#for (x,y) in e.XY:
+				#y1 = scale*(-y+yM[1])
+				#x1 = scale*(x+abs(xM[0]))
+				#self.w.create_line(x0,y0,x1,y1,fill=e.color)
+				#x0,y0=x1,y1
+
+		for psets in G.XYs:
+			x0 = scale*(psets.XY[0][0]+abs(xM[0]))
+			y0 = scale*(-psets.XY[0][0]+abs(yM[1]))
+			lpad = rpad = 3
+			for (x,y) in psets.XY:
+				y1 = scale*(-y+abs(yM[1]))
+				x1 = scale*(x+abs(xM[0]))
+				if x>=xM[0] and x<=xM[1] and y>=yM[0] and y<=yM[1]:
+					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
+					self.w.create_line(x0,y0,x1,y1,fill=psets.color)
+					print 'n',x0,y0,x1,y1
+				elif x<0 and lpad>0:
+					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
+					self.w.create_line(x0,y0,x1,y1,fill=psets.color)
+					print 'l',x0,y0,x1,y1
+					lpad -=1
+				elif x>0 and rpad>0:
+					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
+					self.w.create_line(x0,y0,x1,y1,fill=psets.color)
+					print 'r',x0,y0,x1,y1
+					rpad -=1
 				x0,y0=x1,y1
 
 	def drawosd(self,event):
@@ -98,6 +118,14 @@ if __name__=="__main__":
 	x4 = XYpts([(x,x**4) for x in frange(a,b,dx)],"green","y=x^4")
 	x5 = XYpts([(x,x**5) for x in frange(a,b,dx)],"orange","y=x^5")
 	x6 = XYpts([(x,x**6) for x in frange(a,b,dx)],"pink","y=x^6")
-	G = XYspread([x1,x2,x3,x4,x5,x6],400,(-0.5,1.0),(-0.5,1.0))
+	G = XYspread(\
+		[\
+		#x1,\
+		#x2,\
+		#x3,\
+		#x4,\
+		#x5,\
+		x6\
+		],75,(-2.0,2.0),(-2.0,2.0))
 	draw_graph(G)
 
