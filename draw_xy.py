@@ -34,15 +34,13 @@ class XYspread:
 
 class XYPlane:
 	def __init__(self,master,G):
+		self.osd = None
 		self.G = G
 		scale = G.scale
-		xM = (G.min_x,G.max_x)
-		yM = (G.min_y,G.max_y)
+		xM,yM = (G.min_x,G.max_x),(G.min_y,G.max_y)
 		Tk.Button(master, text="Close", command=quit).pack()
-
 		self.w = Tk.Canvas(master, width=1+scale*(abs(xM[0])+abs(xM[1])), height=1+scale*(abs(yM[0])+abs(yM[1])), background="white")
 		self.w.bind("<Button-1>", self.drawosd)
-		self.osd = None
 		self.w.pack()
 
 		if yM[0]<=0 and yM[1]>=0: self.w.create_line(0,scale*abs(yM[1]),scale*(abs(xM[0])+abs(xM[1])),scale*abs(yM[1]),fill="grey")
@@ -52,7 +50,6 @@ class XYPlane:
 				#cy = scale*(-y+yM[1])
 				#cx = scale*(x+abs(xM[0]))
 				#self.w.create_oval(cx,cy,cx+1,cy+1,outline=e.color)
-
 		#for e in G.XYs:
 			#x0 = scale*(e.XY[0][0]+abs(xM[0]))
 			#y0 = scale*(-e.XY[0][0]+yM[1])
@@ -63,26 +60,21 @@ class XYPlane:
 				#x0,y0=x1,y1
 
 		for psets in G.XYs:
-			x0 = scale*(psets.XY[0][0]+abs(xM[0]))
-			y0 = scale*(-psets.XY[0][0]+abs(yM[1]))
+			x0 = y0 = None
 			lpad = rpad = 3
 			for (x,y) in psets.XY:
-				y1 = scale*(-y+abs(yM[1]))
-				x1 = scale*(x+abs(xM[0]))
-				if x>=xM[0] and x<=xM[1] and y>=yM[0] and y<=yM[1]:
-					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
-					self.w.create_line(x0,y0,x1,y1,fill=psets.color)
-					print 'n',x0,y0,x1,y1
+				b_draw = False
+				x1,y1 = scale*(x+abs(xM[0])),scale*(-y+abs(yM[1]))
+				if x>=xM[0] and x<=xM[1] and y>=yM[0] and y<=yM[1]: b_draw = True
 				elif x<0 and lpad>0:
-					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
-					self.w.create_line(x0,y0,x1,y1,fill=psets.color)
-					print 'l',x0,y0,x1,y1
+					b_draw = True
 					lpad -=1
 				elif x>0 and rpad>0:
-					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
-					self.w.create_line(x0,y0,x1,y1,fill=psets.color)
-					print 'r',x0,y0,x1,y1
+					b_draw = True
 					rpad -=1
+				if b_draw is True:
+					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
+					if x0 is not None: self.w.create_line(x0,y0,x1,y1,fill=psets.color)
 				x0,y0=x1,y1
 
 	def drawosd(self,event):
@@ -121,10 +113,10 @@ if __name__=="__main__":
 	G = XYspread(\
 		[\
 		#x1,\
-		#x2,\
-		#x3,\
-		#x4,\
-		#x5,\
+		x2,\
+		x3,\
+		x4,\
+		x5,\
 		x6\
 		],75,(-2.0,2.0),(-2.0,2.0))
 	draw_graph(G)
