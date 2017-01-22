@@ -9,9 +9,8 @@ import graph
 class SimpleDraw:
 	def __init__(self,master,):
 		self.D = 800
-		self.pointSize = 10
 		self.R = self.D//2
-		self.w = Tk.Canvas(master, width=self.D+20, height=self.D+20,bg = "white")
+		self.w = Tk.Canvas(master, width=self.D+10, height=self.D+5,bg = "white")
 		self.w.grid(row=0,columnspan=6)
 		self.tE = Tk.Entry(master)
 		self.tE.grid(row=1,column=0)
@@ -24,22 +23,25 @@ class SimpleDraw:
 
 	def draw(self,sG):
 		self.w.delete(Tk.ALL)
-		self.w.create_line(1,0,1,self.D+20)
-		self.w.create_line(self.D+20,0,self.D+20,self.D+20)
+		self.w.create_line(1,0,1,self.D)
+		self.w.create_line(self.D+10,0,self.D+10,self.D+10)
 		self.G = sG
 		self.A = 0
 		self.dA = 180
 		self.i = 1
 		self.XY = []
 		for v in xrange(len(self.G.adjm)):
-			x = self.R * math.cos(self.A)+self.R+5
+			x = self.R * math.cos(self.A)+self.R
 			y = self.R * math.sin(self.A)+self.R+5
-			print x,y
+			print self.A
 			self.XY.append((x,y))
 			self.A += self.dA
-			if self.i==360//180:
-				self.dA = self.dA//2
-				self.A = self.dA//2
+			#if self.i==360//180:
+			#if (self.i)*self.dA==360:
+			#
+			#if self.i==2:
+			#	self.dA = self.dA//2
+			#	self.A = self.dA//2
 			self.i += 1
 
 		self.E = {}
