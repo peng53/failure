@@ -22,21 +22,17 @@ class XYpts:
 
 class XYspread:
 	def __init__(self,XYs,scale=1,x_range=None,y_range=None):
+		if scale<0: raise ValueError
 		self.XYs = XYs
 		self.scale= scale
 		if x_range is None:
 			self.min_x = self.max_x = self.min_y = self.max_y = 0
 			for pts in XYs:
-				#for (x,y) in pts.XY:
-				for pt in pts.XY:
-					#if x<self.min_x: self.min_x = x
-					if pt.x<self.min_x: self.min_x = pt.x
-					elif pt.x>self.max_x: self.max_x = pt.x
-					#elif x>self.max_x: self.max_x = x
-					#if y<self.min_y: self.min_y = y
-					if pt.y<self.min_y: self.min_y = pt.y
-					elif pt.y>self.max_y: self.max_y = pt.y
-					#elif y>self.max_y: self.max_y = y
+				for (x,y) in pts.XY:
+					if x<self.min_x: self.min_x = x
+					elif x>self.max_x: self.max_x = x
+					if y<self.min_y: self.min_y = y
+					elif y>self.max_y: self.max_y = y
 		else:
 			self.min_x, self.max_x = x_range
 			self.min_y, self.max_y = y_range
@@ -81,8 +77,7 @@ class XYPlane:
 		if self.osd is not None:
 			for e in self.osd:
 				self.w.delete(e)
-		else:
-			self.osd = []
+		else: self.osd = []
 		cx,cy = event.x,event.y
 		for e in self.G.XYs:
 			self.osd.append(self.w.create_rectangle(cx,cy,cx+16,cy+16,fill=e.color,width=0))
