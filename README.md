@@ -5,6 +5,7 @@ until actually coding it. Those 'small' details end up becoming the
 straw that breaks the coder's back.
 
 So far the following details caught me off guard:
+
 	scaling a graph! per pixel mapping is great for large graphs,
 		but the beautiful x^2 and x^3 curves MUST be seen on [-1,1].
 
