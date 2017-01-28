@@ -3,6 +3,8 @@ Phase 1: draw points where x&y>=0
 Phase 2: allow negative x&y
 Phase 3: connect points like a line graph
 Phase 4: allow parameters/options other than default
+Phase 4.5: linear regression with numpy
+	http://glowingpython.blogspot.com/2012/03/linear-regression-with-numpy.html
 Phase 5: linear regression
 .
 .
@@ -10,6 +12,7 @@ Phase 5: linear regression
 """
 import Tkinter as Tk
 from collections import namedtuple
+import numpy as np
 
 Pt = namedtuple('pt','x y')
 Rn = namedtuple('range','m M')
@@ -51,10 +54,17 @@ class XYPlane:
 		self.w.pack()
 		scalex = lambda x: scale*(x+abs(xr.m))
 		scaley = lambda y: scale*(-y+abs(yr.M))
-		if yr.m<=0 and yr.M>=0: self.w.create_line(0,scaley(0),W,scaley(0),fill="grey")
-		if xr.m<=0 and xr.M>=0: self.w.create_line(scalex(0),0,scalex(0),H,fill="grey")
+		if yr.m<=0 and yr.M>=0: self.w.create_line(0,scaley(0),W,scaley(0),fill="grey",dash=[2,1])
+		if xr.m<=0 and xr.M>=0: self.w.create_line(scalex(0),0,scalex(0),H,fill="grey",dash=[2,1])
 
 		for psets in G.XYs:
+			A = np.array([[p.x for p in psets.XY],np.ones(len(psets.XY))])
+			Y = np.array([p.y for p in psets.XY])
+			W = np.linalg.lstsq(A.T,Y)[0]
+			l0 = W[0]*xr.m + W[1]
+			l1 = W[0]*xr.M + W[1]
+			self.w.create_line(scalex(xr.m),scaley(l0),scalex(xr.M),scaley(l1),dash=[2,6,2],fill=psets.color)
+			print W
 			x0 = y0 = None
 			lpad = rpad = 3
 			for (x,y) in psets.XY:
@@ -107,12 +117,12 @@ if __name__=="__main__":
 	x6 = XYpts([Pt(x,x**6) for x in frange(a,b,dx)],"pink","y=x^6")
 	G = XYspread(\
 		[\
-		#x1,\
+		x1,\
 		x2,\
 		x3,\
 		x4,\
 		x5,\
 		x6\
-		],100)#,(-2.0,2.0),(-2.0,2.0))
+		],300)#,(-2.0,2.0),(-2.0,2.0))
 	draw_graph(G)
 

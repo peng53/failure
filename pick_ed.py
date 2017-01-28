@@ -7,11 +7,14 @@ class PickEd:
 		self.fr1 = Tk.Frame()
 		SB = Tk.Scrollbar(master,command=self.yview, orient='vertical')
 		self.lb1 = Tk.Listbox(self.fr1,height=25,width=40 if self.KV else 80, yscrollcommand=SB.set)
+		self.lb1_entries = []
 		for item in self.v:
-			self.lb1.insert('end', item)
+			self.lb1_entries.append(self.lb1.insert('end', item))
 
 		self.EN1 = Tk.Entry()
 		self.fr1.grid(column=0,row=0,columnspan=3 if self.KV else 6)
+		print self.lb1_entries
+
 
 		if self.KV:
 			self.fr2 = Tk.Frame()
