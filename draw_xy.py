@@ -17,6 +17,7 @@ import random
 
 Pt = namedtuple('pt','x y')
 Rn = namedtuple('range','m M')
+R = namedtuple('domain codomain','dm dM cm cM')
 
 class XYpts:
 	def __init__(self,XY,color,name=None):
@@ -113,13 +114,29 @@ def eval_xs(slope,yint,fromx,tox,changex,noise):
 	ys = (xs*slope) + yint + (np.random.ranf(len(xs)) if noise else np.zeros(len(xs)))
 	return np.array([xs,ys])
 
+x_range = namedtuple('x_range','x0 x1 dx')
+# x_range should have x0<x1 & 0<dx ATM
+
+
 class XYpts:
 	def __init__(self):
 		pass
+class XYpt_linear(XYpts):
+	def __init__(self,xs,m,b,color,name):
+		self.color = color
+		self.name = name
+		if isinstance(xs,x_range):
+			self.x = np.arange(*xs)
+		else:
+			self.x = np.array(xs)
+			self.x.sort()
 
-class Xypt_linear(Xypts):
-	def __init__(self,xs):
-		pass
+		self.y = self.x*m+b
+		self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1])
+
+	def xy_pts(self):
+		for i,x in enumerate(self.x):
+			yield x,self.y[i]
 
 def draw_graph(pts):
 	root = Tk.Tk()
