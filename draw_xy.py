@@ -15,86 +15,6 @@ import Tkinter as Tk
 from collections import namedtuple
 from numpy import array, arange, ones, linalg
 """
-Pt = namedtuple('pt','x y')
-Rn = namedtuple('range','m M')
-
-class XYpts:
-	def __init__(self,XY,color,name=None):
-		self.XY = sorted(XY)
-		self.color = color
-		self.name = name
-
-class XYspread:
-	def __init__(self,XYs,scale=1,x_range=None,y_range=None):
-		if scale<0: raise ValueError
-		self.XYs = XYs
-		self.scale= scale
-		if x_range is None:
-			self.min_x = self.max_x = self.min_y = self.max_y = 0
-			for pts in XYs:
-				for (x,y) in pts.XY:
-					if x<self.min_x: self.min_x = x
-					elif x>self.max_x: self.max_x = x
-					if y<self.min_y: self.min_y = y
-					elif y>self.max_y: self.max_y = y
-		else:
-			self.min_x, self.max_x = x_range
-			self.min_y, self.max_y = y_range
-
-class XYPlane:
-	def __init__(self,master,G):
-		self.osd = None
-		self.G = G
-		scale = G.scale
-		xr,yr = Rn(G.min_x,G.max_x),Rn(G.min_y,G.max_y)
-		Tk.Button(master, text="Close", command=quit).pack()
-		H = 1+scale*(abs(yr.m)+abs(yr.M))
-		W = 1+scale*(abs(xr.m)+abs(xr.M))
-		self.w = Tk.Canvas(master, width=W, height=H, background="white")
-		self.w.bind("<Button-1>", self.drawosd)
-		self.w.pack()
-		scalex = lambda x: scale*(x+abs(xr.m))
-		scaley = lambda y: scale*(-y+abs(yr.M))
-		if yr.m<=0 and yr.M>=0: self.w.create_line(0,scaley(0),W,scaley(0),fill="grey",dash=[2,1])
-		if xr.m<=0 and xr.M>=0: self.w.create_line(scalex(0),0,scalex(0),H,fill="grey",dash=[2,1])
-
-		for psets in G.XYs:
-			A = np.array([[p.x for p in psets.XY],np.ones(len(psets.XY))])
-			Y = np.array([p.y for p in psets.XY])
-			W = np.linalg.lstsq(A.T,Y)[0]
-			l0 = W[0]*xr.m + W[1]
-			l1 = W[0]*xr.M + W[1]
-			self.w.create_line(scalex(xr.m),scaley(l0),scalex(xr.M),scaley(l1),dash=[2,6,2],fill=psets.color)
-			print W
-			x0 = y0 = None
-			lpad = rpad = 3
-			for (x,y) in psets.XY:
-				b_draw = False
-				if x>=xr.m and x<=xr.M and y>=yr.m and y<=yr.M: b_draw = True
-				elif x<0 and lpad>0:
-					b_draw = True
-					lpad -=1
-				elif x>0 and rpad>0:
-					b_draw = True
-					rpad -=1
-				#x1,y1 = scale*(x+abs(xr.m)),scale*(-y+abs(yr.M))
-				x1,y1 = scalex(x),scaley(y)
-				if b_draw is True:
-					self.w.create_oval(x1,y1,x1+1,y1+1,outline=psets.color)
-					if x0 is not None: self.w.create_line(x0,y0,x1,y1,fill=psets.color)
-				x0,y0=x1,y1
-
-	def drawosd(self,event):
-		if self.osd is not None:
-			for e in self.osd:
-				self.w.delete(e)
-		else: self.osd = []
-		cx,cy = event.x,event.y
-		for e in self.G.XYs:
-			self.osd.append(self.w.create_rectangle(cx,cy,cx+16,cy+16,fill=e.color,width=0))
-			self.osd.append(self.w.create_text(cx+48,cy+8,text=e.name))
-			cy += 16
-
 def m_p_b(x,m,b):
 	return x*m+b
 
@@ -110,6 +30,14 @@ def eval_xs(slope,yint,fromx,tox,changex,noise):
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
 
+def fox(x0,x1,dx,F):
+	x = x0
+	while x<x1:
+		yield x,F(x)
+		x += dx
+lfox = lambda x0,x1,dx,F: [(x,y) for (x,y) in fox(x0,x1,dx,F)]
+
+
 class XYpts:
 	def __init__(self,pts,color=None,name=None): #[(x,y)] form
 		self.color,self.name = color,name
@@ -118,6 +46,21 @@ class XYpts:
 	def xy_pts(self):
 		for i,x in enumerate(self.x):
 			yield x,self.y[i]
+	def lsq(self):
+		A = array([self.x,ones(self.x.size)])
+		W = linalg.lstsq(A.T,self.y)[0]
+		return (W[0],W[1])
+	def nslq(self,parts):
+		"naive segmented least squares"
+		W = []
+		cut = self.x.size//parts
+		for i in xrange(0,self.x.size,cut):
+			x = self.x[i:]
+			y = self.y[i:]
+			A = array([x,ones(x.size)])
+			w = linalg.lstsq(A.T,y)[0]
+			W.append((w[0],w[1]))
+		return W
 
 class XYpts_linear(XYpts):
 	def __init__(self,xs,m,b,color=None,name=None):
@@ -135,7 +78,7 @@ class XYpts_linear(XYpts):
 			#elif y>My: My = y
 		# no need for search as linear functions can only increase or decrease for increasing x
 
-class XYspread2:
+class XYspread:
 	def __init__(self,XYs,scale=1,viewr=None):
 		if scale<0: raise ValueError
 		self.XYs = XYs
@@ -150,36 +93,26 @@ class XYspread2:
 			self.R = R(mx,Mx,my,My)
 		else: self.R = viewr
 
-class XYPlane2:
+class XYPlane:
 	def __init__(self,master,G):
-		self.G = G
-		self.osd = None
-		R,scale = G.R,G.scale #xr,yr = Rn(G.min_x,G.max_x),Rn(G.min_y,G.max_y)
-		H = 1+scale*(abs(R.cm)+abs(R.cM))
+		self.G,self.osd,R,scale = G,None,G.R,G.scale
 		W = 1+scale*(abs(R.dm)+abs(R.dM))
-		Tk.Button(master, text="Close", command=quit).pack()
-		self.w = Tk.Canvas(master, width=W, height=H, background="white")
-		self.w.bind("<Button-1>", self.drawosd)
-		self.w.pack()
-
+		H = 1+scale*(abs(R.cm)+abs(R.cM))
 		scalex = lambda x: scale*(x+abs(R.dm))
 		scaley = lambda y: scale*(-y+abs(R.cM))
-
+		self.w = Tk.Canvas(master, width=W, height=H, background="white")
+		self.w.bind("<Button-1>", self.drawosd)
 		# draw origin lines if (0,0) is visible
-		if R.cm<=0 or R.cM>=0: self.w.create_line(0,scaley(0),W,scaley(0),fill="grey",dash=[2,1])
-		if R.dm<=0 or R.dM>=0: self.w.create_line(scalex(0),0,scalex(0),H,fill="grey",dash=[2,1])
-
+		if R.cm<=0 or R.cM>=0: self.w.create_line(0,scaley(0),W,scaley(0),fill="grey",dash=[4,4])
+		if R.dm<=0 or R.dM>=0: self.w.create_line(scalex(0),0,scalex(0),H,fill="grey",dash=[4,4])
 		for g in G.XYs:
-			A = array([g.x,ones(g.x.size)])
-			W = linalg.lstsq(A.T,g.y)[0]
-			p0,p1 = W[0]*R.dm+ W[1], W[0]*R.dM+ W[1]
+			m,b = g.lsq()
+			p0,p1 = m*R.dm+b,m*R.dM+b
 			self.w.create_line(scalex(R.dm),scaley(p0),scalex(R.dM),scaley(p1),dash=[2,6,2],fill=g.color)
-			print W
-			#A = np.array([[p.x for p in psets.XY],np.ones(len(psets.XY))])
-			#Y = np.array([p.y for p in psets.XY])
-			#W = np.linalg.lstsq(A.T,Y)[0]
-			#l0 = W[0]*xr.m + W[1]
-			#l1 = W[0]*xr.M + W[1]
+			W = g.nslq(2)
+			for (m,b) in W:
+				p0,p1 = m*R.dm+b,m*R.dM+b
+				self.w.create_line(scalex(R.dm),scaley(p0),scalex(R.dM),scaley(p1),dash=[4,3,4],fill=g.color)
 			x0 = y0 = None
 			lpad = rpad = 3
 			for (x,y) in g.xy_pts():
@@ -197,7 +130,8 @@ class XYPlane2:
 					self.w.create_oval(x1,y1,x1+1,y1+1,outline=g.color)
 					if x0 is not None: self.w.create_line(x0,y0,x1,y1,fill=g.color)
 				x0,y0=x1,y1
-
+		Tk.Button(master, text="Close", command=quit).pack()
+		self.w.pack()
 	def drawosd(self,event):
 		if self.osd is not None:
 			for e in self.osd:
@@ -205,60 +139,26 @@ class XYPlane2:
 		else: self.osd = []
 		cx,cy = event.x,event.y
 		for g in self.G.XYs:
-			self.osd.append(self.w.create_rectangle(cx,cy,cx+16,cy+16,fill=g.color,width=0))
-			self.osd.append(self.w.create_text(cx+48,cy+8,text=g.name))
+			self.osd.append(self.w.create_rectangle(cx-16,cy+5,cx+16,cy+7,fill=g.color,width=0))
+			#self.osd.append(self.w.create_rectangle(cx,cy,cx+16,cy+16,fill=g.color,width=0))
+			self.osd.append(self.w.create_text(cx,cy,text=g.name,fill="black"))
+			#self.osd.append(self.w.create_text(cx+48,cy+8,text=g.name,fill=g.color))
 			cy += 16
 
-def frange(a,b,d):
-	x = a
-	while x<b:
-		yield x
-		x += d
-
-def fox(x0,x1,dx,F):
-	x = x0
-	while x<x1:
-		yield x,F(x)
-		x += dx
-
-def draw_graph(pts):
+def draw_graph(G):
 	root = Tk.Tk()
-	app = XYPlane(root,pts)
+	app = XYPlane(root,G)
 	root.mainloop()
-
-def draw_graph2(G):
-	root = Tk.Tk()
-	app = XYPlane2(root,G)
-	root.mainloop()
-
 
 if __name__=="__main__":
-	g = XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,color="red",name="y=x")
-	g2 = XYpts_linear(xs=x_range(-10,-5,1),m=-2,b=0,color="blue",name="y=-2x")
-	g3 = XYpts(pts=[(x,y) for x,y in fox(-2.0,2.0,0.2,lambda x: x*x-2)],color="green",name="y=x^2-2")
-	G = XYspread2([g,g2,g3],scale=25)
-	draw_graph2(G)
-	"""
-	a,b,dx = -1.0, 1.0, 0.1
-	x1 = XYpts([Pt(x,x) for x in frange(a,b,dx)],"black","y=x")
-	x2 = XYpts([Pt(x,m_p_b_n(x,2,-2,0.05)) for x in frange(a,b,dx)], "red", "y=2x-2")
-	x3 = XYpts([Pt(x,m_p_b_n(x,-0.5,0,0.01)) for x in frange(a,b,dx)], "blue", "y=-0.5x")
-	x4 = XYpts([Pt(x,m_p_b_n(x,0.33,1,0.01)) for x in frange(a,b,dx)], "green", "y=0.33x-1")
-	x5 = XYpts([Pt(x,m_p_b_n(x,0.0255,0.5,0.05)) for x in frange(a,b,dx)], "orange", "y=0.0255x-0.5")
-
-	#x2 = XYpts([Pt(x,x**2) for x in frange(a,b,dx)],"red","y=x^2")
-	#x3 = XYpts([Pt(x,x**3) for x in frange(a,b,dx)],"blue","y=x^3")
-	#x4 = XYpts([Pt(x,x**4) for x in frange(a,b,dx)],"green","y=x^4")
-	#x5 = XYpts([Pt(x,x**5) for x in frange(a,b,dx)],"orange","y=x^5")
-	#x6 = XYpts([Pt(x,x**6) for x in frange(a,b,dx)],"pink","y=x^6")
-	G = XYspread(\
-		[\
-		x1,\
-		x2,\
-		x3,\
-		x4,\
-		x5,\
-		#x6\
-		],200,(-2.0,2.0),(-2.0,2.0))
+	gs = []
+	gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,color="red",name="x"))
+	#gs.append(XYpts_linear(xs=x_range(-10,-5,1),m=-2,b=0,color="blue",name="-2x"))
+	gs.append(XYpts(pts=lfox(-2.0,2.0,0.2,lambda x:x*x-2),color="green",name="x^2-2"))
+	#gs.append(XYpts_linear(xs=x_range(-1.0,1.0,0.1),m=2,b=-2,color="pink",name="2x-2"))
+	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+1)**3-3),color="orange",name="(x+1)^3-3"))
+	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),color="cyan",name="(x+0.3)^4"))
+	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:x**5+0.1),color="grey",name="x^5+0.1"))
+	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:x**6-1),color="brown",name="x^6-1"))
+	G = XYspread(gs,scale=60,viewr=R(-7.5,7.5,-7.5,7.5))
 	draw_graph(G)
-	"""
