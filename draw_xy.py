@@ -13,7 +13,7 @@ Phase 6: rebuild(?!?) to use numpy arrays over lists
 """
 import Tkinter as Tk
 from collections import namedtuple
-from numpy import array, arange
+from numpy import array, arange, ones, linalg
 """
 Pt = namedtuple('pt','x y')
 Rn = namedtuple('range','m M')
@@ -95,12 +95,6 @@ class XYPlane:
 			self.osd.append(self.w.create_text(cx+48,cy+8,text=e.name))
 			cy += 16
 
-def frange(a,b,d):
-	x = a
-	while x<b:
-		yield x
-		x += d
-
 def m_p_b(x,m,b):
 	return x*m+b
 
@@ -125,11 +119,12 @@ class XYpts:
 		for i,x in enumerate(self.x):
 			yield x,self.y[i]
 
-class XYpt_linear(XYpts):
+class XYpts_linear(XYpts):
 	def __init__(self,xs,m,b,color=None,name=None):
 		self.color,self.name = color,name
 		self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
 		self.y = self.x*m+b
+		self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
 		#mx = Mx = self.x[0]
 		#for x in self.x[1:]:
 			#if x<mx: mx = x
@@ -138,8 +133,7 @@ class XYpt_linear(XYpts):
 		#for y in self.y[1:]:
 			#if y<my: my = y
 			#elif y>My: My = y
-		# no need for above search as linear functions can only increase or decrease for increasing x
-		self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
+		# no need for search as linear functions can only increase or decrease for increasing x
 
 class XYspread2:
 	def __init__(self,XYs,scale=1,viewr=None):
@@ -171,19 +165,21 @@ class XYPlane2:
 		scalex = lambda x: scale*(x+abs(R.dm))
 		scaley = lambda y: scale*(-y+abs(R.cM))
 
-		# draw origin lines if (0,0) is visable
+		# draw origin lines if (0,0) is visible
 		if R.cm<=0 or R.cM>=0: self.w.create_line(0,scaley(0),W,scaley(0),fill="grey",dash=[2,1])
 		if R.dm<=0 or R.dM>=0: self.w.create_line(scalex(0),0,scalex(0),H,fill="grey",dash=[2,1])
 
 		for g in G.XYs:
-			# lets focus on drawing first
+			A = array([g.x,ones(g.x.size)])
+			W = linalg.lstsq(A.T,g.y)[0]
+			p0,p1 = W[0]*R.dm+ W[1], W[0]*R.dM+ W[1]
+			self.w.create_line(scalex(R.dm),scaley(p0),scalex(R.dM),scaley(p1),dash=[2,6,2],fill=g.color)
+			print W
 			#A = np.array([[p.x for p in psets.XY],np.ones(len(psets.XY))])
 			#Y = np.array([p.y for p in psets.XY])
 			#W = np.linalg.lstsq(A.T,Y)[0]
 			#l0 = W[0]*xr.m + W[1]
 			#l1 = W[0]*xr.M + W[1]
-			#self.w.create_line(scalex(xr.m),scaley(l0),scalex(xr.M),scaley(l1),dash=[2,6,2],fill=psets.color)
-			#print W
 			x0 = y0 = None
 			lpad = rpad = 3
 			for (x,y) in g.xy_pts():
@@ -213,7 +209,17 @@ class XYPlane2:
 			self.osd.append(self.w.create_text(cx+48,cy+8,text=g.name))
 			cy += 16
 
+def frange(a,b,d):
+	x = a
+	while x<b:
+		yield x
+		x += d
 
+def fox(x0,x1,dx,F):
+	x = x0
+	while x<x1:
+		yield x,F(x)
+		x += dx
 
 def draw_graph(pts):
 	root = Tk.Tk()
@@ -227,9 +233,10 @@ def draw_graph2(G):
 
 
 if __name__=="__main__":
-	g = XYpt_linear(xs=x_range(-5,5,1),m=1,b=0,color="red",name="y=x")
-	g2 = XYpt_linear(xs=x_range(-10,-5,1),m=-2,b=0,color="blue",name="y=-2x")
-	G = XYspread2([g,g2],scale=25)
+	g = XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,color="red",name="y=x")
+	g2 = XYpts_linear(xs=x_range(-10,-5,1),m=-2,b=0,color="blue",name="y=-2x")
+	g3 = XYpts(pts=[(x,y) for x,y in fox(-2.0,2.0,0.2,lambda x: x*x-2)],color="green",name="y=x^2-2")
+	G = XYspread2([g,g2,g3],scale=25)
 	draw_graph2(G)
 	"""
 	a,b,dx = -1.0, 1.0, 0.1
