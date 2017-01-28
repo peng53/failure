@@ -13,6 +13,7 @@ Phase 5: linear regression
 import Tkinter as Tk
 from collections import namedtuple
 import numpy as np
+import random
 
 Pt = namedtuple('pt','x y')
 Rn = namedtuple('range','m M')
@@ -101,6 +102,25 @@ def frange(a,b,d):
 		yield x
 		x += d
 
+def m_p_b(x,m,b):
+	return x*m+b
+
+def m_p_b_n(x,m,b,N):
+	return x*m+b+random.uniform(-N,N)
+
+def eval_xs(slope,yint,fromx,tox,changex,noise):
+	xs = np.arange(fromx,tox,changex)
+	ys = (xs*slope) + yint + (np.random.ranf(len(xs)) if noise else np.zeros(len(xs)))
+	return np.array([xs,ys])
+
+class XYpts:
+	def __init__(self):
+		pass
+
+class Xypt_linear(Xypts):
+	def __init__(self,xs):
+		pass
+
 def draw_graph(pts):
 	root = Tk.Tk()
 	app = XYPlane(root,pts)
@@ -110,11 +130,16 @@ def draw_graph(pts):
 if __name__=="__main__":
 	a,b,dx = -1.0, 1.0, 0.1
 	x1 = XYpts([Pt(x,x) for x in frange(a,b,dx)],"black","y=x")
-	x2 = XYpts([Pt(x,x**2) for x in frange(a,b,dx)],"red","y=x^2")
-	x3 = XYpts([Pt(x,x**3) for x in frange(a,b,dx)],"blue","y=x^3")
-	x4 = XYpts([Pt(x,x**4) for x in frange(a,b,dx)],"green","y=x^4")
-	x5 = XYpts([Pt(x,x**5) for x in frange(a,b,dx)],"orange","y=x^5")
-	x6 = XYpts([Pt(x,x**6) for x in frange(a,b,dx)],"pink","y=x^6")
+	x2 = XYpts([Pt(x,m_p_b_n(x,2,-2,0.05)) for x in frange(a,b,dx)], "red", "y=2x-2")
+	x3 = XYpts([Pt(x,m_p_b_n(x,-0.5,0,0.01)) for x in frange(a,b,dx)], "blue", "y=-0.5x")
+	x4 = XYpts([Pt(x,m_p_b_n(x,0.33,1,0.01)) for x in frange(a,b,dx)], "green", "y=0.33x-1")
+	x5 = XYpts([Pt(x,m_p_b_n(x,0.0255,0.5,0.05)) for x in frange(a,b,dx)], "orange", "y=0.0255x-0.5")
+
+	#x2 = XYpts([Pt(x,x**2) for x in frange(a,b,dx)],"red","y=x^2")
+	#x3 = XYpts([Pt(x,x**3) for x in frange(a,b,dx)],"blue","y=x^3")
+	#x4 = XYpts([Pt(x,x**4) for x in frange(a,b,dx)],"green","y=x^4")
+	#x5 = XYpts([Pt(x,x**5) for x in frange(a,b,dx)],"orange","y=x^5")
+	#x6 = XYpts([Pt(x,x**6) for x in frange(a,b,dx)],"pink","y=x^6")
 	G = XYspread(\
 		[\
 		x1,\
@@ -122,7 +147,7 @@ if __name__=="__main__":
 		x3,\
 		x4,\
 		x5,\
-		x6\
-		],300)#,(-2.0,2.0),(-2.0,2.0))
+		#x6\
+		],200,(-2.0,2.0),(-2.0,2.0))
 	draw_graph(G)
 
