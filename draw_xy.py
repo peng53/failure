@@ -42,7 +42,12 @@ class XYpts:
 	def __init__(self,pts,color=None,name=None): #[(x,y)] form
 		self.color,self.name = color,name
 		self.x, self.y = array(sorted(pts)).T
-		self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1])
+		my = My = self.y[0]
+		for y in self.y[1:]:
+			if y<my: my = y
+			elif y>My: My = y
+		self.R = R(self.x[0],self.x[-1],my,My)
+
 	def xy_pts(self):
 		for i,x in enumerate(self.x):
 			yield x,self.y[i]
@@ -55,11 +60,11 @@ class XYpts:
 		W = []
 		cut = self.x.size//parts
 		for i in xrange(0,self.x.size,cut):
-			x = self.x[i:]
-			y = self.y[i:]
+			x = self.x[i:i+cut]
+			y = self.y[i:i+cut]
 			A = array([x,ones(x.size)])
 			w = linalg.lstsq(A.T,y)[0]
-			W.append((w[0],w[1]))
+			W.append((x[0],x[-1],w[0],w[1]))
 		return W
 
 class XYpts_linear(XYpts):
@@ -79,7 +84,7 @@ class XYpts_linear(XYpts):
 		# no need for search as linear functions can only increase or decrease for increasing x
 
 class XYspread:
-	def __init__(self,XYs,scale=1,viewr=None):
+	def __init__(self,XYs,scale=1,viewr=None,padx=0,pady=0):
 		if scale<0: raise ValueError
 		self.XYs = XYs
 		self.scale = scale
@@ -90,7 +95,7 @@ class XYspread:
 				if t.R.dM > Mx: Mx = t.R.dM
 				if t.R.cm < my: my = t.R.cm
 				if t.R.cM > My: My = t.R.cM
-			self.R = R(mx,Mx,my,My)
+			self.R = R(mx-padx,Mx+padx,my-pady,My+pady)
 		else: self.R = viewr
 
 class XYPlane:
@@ -109,10 +114,10 @@ class XYPlane:
 			m,b = g.lsq()
 			p0,p1 = m*R.dm+b,m*R.dM+b
 			self.w.create_line(scalex(R.dm),scaley(p0),scalex(R.dM),scaley(p1),dash=[2,6,2],fill=g.color)
-			W = g.nslq(2)
-			for (m,b) in W:
-				p0,p1 = m*R.dm+b,m*R.dM+b
-				self.w.create_line(scalex(R.dm),scaley(p0),scalex(R.dM),scaley(p1),dash=[4,3,4],fill=g.color)
+			W = g.nslq(4)
+			for (t1,t2,m,b) in W:
+				p0,p1 = m*t1+b,m*t2+b
+				self.w.create_line(scalex(t1),scaley(p0),scalex(t2),scaley(p1),dash=[4,3,4],fill="purple")
 			x0 = y0 = None
 			lpad = rpad = 3
 			for (x,y) in g.xy_pts():
@@ -121,7 +126,7 @@ class XYPlane:
 				elif x<0 and lpad>0: # outside but make an exception
 					b_draw = True
 					lpad -=1
-				elif x>0 and rpad>0 or lpad>0: # outside but make an exception on the right
+				elif x>0 and (rpad>0 or lpad>0): # outside but make an exception on the right
 					b_draw = True
 					rpad -=1
 					lpad -=1 # if left-exceptions were not used, use them now
@@ -152,7 +157,7 @@ def draw_graph(G):
 
 if __name__=="__main__":
 	gs = []
-	gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,color="red",name="x"))
+	#gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,color="red",name="x"))
 	#gs.append(XYpts_linear(xs=x_range(-10,-5,1),m=-2,b=0,color="blue",name="-2x"))
 	gs.append(XYpts(pts=lfox(-2.0,2.0,0.2,lambda x:x*x-2),color="green",name="x^2-2"))
 	#gs.append(XYpts_linear(xs=x_range(-1.0,1.0,0.1),m=2,b=-2,color="pink",name="2x-2"))
@@ -160,5 +165,9 @@ if __name__=="__main__":
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),color="cyan",name="(x+0.3)^4"))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:x**5+0.1),color="grey",name="x^5+0.1"))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:x**6-1),color="brown",name="x^6-1"))
-	G = XYspread(gs,scale=60,viewr=R(-7.5,7.5,-7.5,7.5))
+	viewr=None
+	padx=1
+	pady=1
+	#viewr=R(-7.5,7.5,-7.5,7.5)
+	G = XYspread(gs,scale=60,viewr=viewr,padx=padx,pady=pady)
 	draw_graph(G)
