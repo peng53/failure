@@ -15,21 +15,10 @@ import Tkinter as Tk
 from collections import namedtuple
 from numpy import array, arange, ones, linalg, zeros
 from random import normalvariate
-"""
-def m_p_b(x,m,b):
-	return x*m+b
-
-def m_p_b_n(x,m,b,N):
-	return x*m+b+random.uniform(-N,N)
-
-def eval_xs(slope,yint,fromx,tox,changex,noise):
-	xs = np.arange(fromx,tox,changex)
-	ys = (xs*slope) + yint + (np.random.ranf(len(xs)) if noise else np.zeros(len(xs)))
-	return np.array([xs,ys])
-"""
 
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
+polyTerm = namedtuple("term","xx c")
 
 def fox(x0,x1,dx,F):
 	x = x0
@@ -44,11 +33,6 @@ class XYpts:
 		for o in opts: self.d[o] = opts[o]
 		self.x, self.y = array(sorted(pts)).T
 		self.genR()
-		#my = My = self.y[0]
-		#for y in self.y[1:]:
-			#if y<my: my = y
-			#elif y>My: My = y
-		#self.R = R(self.x[0],self.x[-1],my,My)
 	def xy_pts(self):
 		for i,x in enumerate(self.x): yield x,self.y[i]
 	def lsq(self):
@@ -73,6 +57,10 @@ class XYpts:
 			if y < my: my = y
 			elif y > My: My = y
 		self.R = R(self.x[0],self.x[-1],my,My)
+	def pixel_pts(self,scale,minx,maxy):
+		SX = scale*(self.x-minx)
+		SY = scale*(maxy-self.y)
+		for i,x in enumerate(SX): yield x,SY[i]
 
 class XYpts_linear(XYpts):
 	def __init__(self,xs,m,b,opts={}):
@@ -81,8 +69,6 @@ class XYpts_linear(XYpts):
 		self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
 		self.y = self.x*m+b
 		self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
-
-polyTerm = namedtuple("term","xx c")
 
 def op_poly(P):
 	S = sorted(polyTerm(power,coef) for power,coef in P)
@@ -109,17 +95,8 @@ def x_poly(P):
 			yield coef
 			for d3 in xrange(deg-1,d2,-1): yield 0
 			deg, coef = d2, c2
-		#elif d2+1 == deg:
-			#yield coef
-			#deg, coef = d2, c2
-		#else:
-			#yield coef
-			#for d3 in xrange(deg-1,d2,-1): yield 0
-			#deg, coef = d2, c2
 	yield coef
 	for d3 in xrange(deg-1,-1,-1): yield 0
-	#if deg > 0:
-		#for d3 in xrange(deg-1,-1,-1): yield 0
 
 class XYpts_poly(XYpts):
 	def __init__(self,xs,p,opts={}):
@@ -127,18 +104,8 @@ class XYpts_poly(XYpts):
 		for o in opts: self.d[o] = opts[o]
 		self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
 		self.y = zeros(len(self.x))
-		for c in x_poly(p):
-			self.y = self.y * self.x + c
+		for c in x_poly(p): self.y = self.y * self.x + c
 		self.genR()
-		#print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-		#print self.x
-		#print "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
-		#print self.y
-		#my = My = self.y[0]
-		#for y in self.y[1:]:
-			#if y < my: my = y
-			#elif y > My: My = y
-		#self.R = R(self.x[0],self.x[-1],my,My)
 
 def frange(x0,x1,dx):
 	x = x0
@@ -152,7 +119,6 @@ def frange(x0,x1,dx):
 			x+=dx
 
 class XYspread:
-	#def __init__(self,XYs,scale=1,viewr=None,padx=0,pady=0):
 	def __init__(self,XYs,opts={}):
 		self.d = {"%":1, "view": None, "padx": 0, "pady": 0}
 		for o in opts: self.d[o] = opts[o]
@@ -176,44 +142,27 @@ class XYPlane:
 
 	def make_canvas(self):
 		self.osd,R,scale = None, self.G.R, self.G.d['%']
-		W = 1 + scale * abs(R.dM - R.dm)
-		H = 1 + scale * abs(R.cM - R.cm)
+		W, H = 1 + scale * abs(R.dM - R.dm), 1 + scale * abs(R.cM - R.cm)
 		self.w = Tk.Canvas(self.master, width=W, height=H, background="white")
 		self.w.pack()
 		self.w.bind("<Button-1>", self.drawosd)
 
-		'''
-		#if R.cm<=0 and R.dm<=0: self.w.create_text(-scale*R.dm,scale*R.cM,text='0,0')
-		#if R.cm<=0 and R.dm<=0: self.w.create_text(scale*abs(R.dm),scale*abs(R.cm),text='0,0')
-		#if R.dm<=0: self.w.create_line(-scale*R.dm,0,-scale*R.dm,H) #y-axis only occurs when R.dm is nonpositive
-		#if R.cm<=0<=R.cM: self.w.create_line(0,scale*abs(R.cm),W,scale*abs(R.cm)) #x-axis
-		#if R.dm<=0<=R.dM: self.w.create_line(scale*abs(R.dm),0,scale*abs(R.dm),H) #y-axis
-		#if R.cm<=0: self.w.create_line(0,scale*R.cM,W,scale*R.cM) #x-axis only occurs when
-		'''
 		scx = lambda x: scale*(x-R.dm)
 		scy = lambda y: scale*(R.cM-y)
-		scp = lambda x,y: (scale*(x-R.dm), scale*(R.cM-y))
 		if R.cm<=0 and R.dm<=0: self.w.create_text(*scp(0,0),text='0,0')
 		if R.cm<=0: self.w.create_line(0,scy(0),W,scy(0),fill="#333",dash=[1,2])
 		if R.dm<=0: self.w.create_line(scx(0),0,scx(0),H,fill="#333",dash=[1,2]) #y-axis only occurs when R.dm is nonpositive
 		if 'grid' in self.G.d:
-			for x in frange(self.G.d['grid'][0],R.dM,self.G.d['grid'][0]):
-				self.w.create_line(scx(x),0,scx(x),H,fill="#ccc",dash=[4,4])
-			for x in frange(-self.G.d['grid'][0],R.dm,-self.G.d['grid'][0]):
-				self.w.create_line(scx(x),0,scx(x),H,fill="#ccc",dash=[4,4])
-			for y in frange(self.G.d['grid'][1],R.cM,self.G.d['grid'][1]):
-				self.w.create_line(0,scy(y),W,scy(y),fill="#ccc",dash=[4,4])
-			for y in frange(-self.G.d['grid'][1],R.cm,-self.G.d['grid'][1]):
-				self.w.create_line(0,scy(y),W,scy(y),fill="#ccc",dash=[4,4])
+			for x in frange(self.G.d['grid'][0],R.dM,self.G.d['grid'][0]):self.w.create_line(scx(x),0,scx(x),H,fill="#ccc",dash=[4,4])
+			for x in frange(-self.G.d['grid'][0],R.dm,-self.G.d['grid'][0]): self.w.create_line(scx(x),0,scx(x),H,fill="#ccc",dash=[4,4])
+			for y in frange(self.G.d['grid'][1],R.cM,self.G.d['grid'][1]): self.w.create_line(0,scy(y),W,scy(y),fill="#ccc",dash=[4,4])
+			for y in frange(-self.G.d['grid'][1],R.cm,-self.G.d['grid'][1]): self.w.create_line(0,scy(y),W,scy(y),fill="#ccc",dash=[4,4])
 		if 'tick' in self.G.d:
-			for x in frange(self.G.d['tick'][0],R.dM,self.G.d['tick'][0]):
-				self.w.create_text(scx(x),scy(0),text=str(x))
-			for x in frange(-self.G.d['tick'][0],R.dm,-self.G.d['tick'][0]):
-				self.w.create_text(scx(x),scy(0),text=str(x))
-			for y in frange(self.G.d['tick'][1],R.cM,self.G.d['tick'][1]):
-				self.w.create_text(scx(0),scy(y),text=str(y))
-			for y in frange(-self.G.d['tick'][1],R.cm,-self.G.d['tick'][1]):
-				self.w.create_text(scx(0),scy(y),text=str(y))
+			for x in frange(self.G.d['tick'][0],R.dM,self.G.d['tick'][0]): self.w.create_text(scx(x),scy(0),text=str(x))
+			for x in frange(-self.G.d['tick'][0],R.dm,-self.G.d['tick'][0]): self.w.create_text(scx(x),scy(0),text=str(x))
+			for y in frange(self.G.d['tick'][1],R.cM,self.G.d['tick'][1]): self.w.create_text(scx(0),scy(y),text=str(y))
+			for y in frange(-self.G.d['tick'][1],R.cm,-self.G.d['tick'][1]): self.w.create_text(scx(0),scy(y),text=str(y))
+		scp = lambda x,y: (scale*(x-R.dm), scale*(R.cM-y))
 		for g in self.G.XYs:
 			if 'ls' in g.d:
 				# Least squares
@@ -226,23 +175,23 @@ class XYPlane:
 					x1, y1 = scp(x,y)
 					if x0 is not None: self.w.create_line(x0,y0,x1,y1,dash=[4,3,4],fill="purple")
 					x0, y0 = x1, y1
+
 			x0 = y0 = None
 			lpad = rpad = 3
-			for x,y in g.xy_pts(): #sx = scale * (x-R.dm) #sy = scale * (R.cM-y)
+			for x,y in g.pixel_pts(scale,R.dm,R.cM):
 				b_draw = False
-				if R.dm<=x<=R.dM and R.cm<=y<=R.cM: b_draw = True
-				elif x<0 and lpad>0: # outside but make an exception
+				if 0<=x<=W and 0<=y<=H: b_draw = True
+				elif x<W>>1 and lpad>0: # outside but make an exception
 					b_draw = True
 					lpad -=1
-				elif x>0 and (rpad>0 or lpad>0): # outside but make an exception on the right
+				elif x>W>>1 and (rpad>0 or lpad>0): # outside but make an exception on the right
 					b_draw = True
 					rpad -=1
 					lpad -=1 # if left-exceptions were not used, use them now
-				x1,y1 = scp(x,y)
 				if b_draw is True:
-					self.w.create_oval(x1,y1,x1+1,y1+1,outline=g.d['color'])
-					if x0 is not None and 'lines' in g.d: self.w.create_line(x0,y0,x1,y1,fill=g.d['color'])
-				x0,y0=x1,y1
+					self.w.create_oval(x,y,x+1,y+1,outline=g.d['color'])
+					if x0 is not None and 'lines' in g.d: self.w.create_line(x0,y0,x,y,fill=g.d['color'])
+				x0,y0=x,y
 	def drawosd(self,event):
 		if self.osd is not None:
 			for e in self.osd:
