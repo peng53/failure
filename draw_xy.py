@@ -146,23 +146,26 @@ class XYPlane:
 		self.w = Tk.Canvas(self.master, width=W, height=H, background="white")
 		self.w.pack()
 		self.w.bind("<Button-1>", self.drawosd)
-
 		scx = lambda x: scale*(x-R.dm)
 		scy = lambda y: scale*(R.cM-y)
-		if R.cm<=0 and R.dm<=0: self.w.create_text(*scp(0,0),text='0,0')
-		if R.cm<=0: self.w.create_line(0,scy(0),W,scy(0),fill="#333",dash=[1,2])
-		if R.dm<=0: self.w.create_line(scx(0),0,scx(0),H,fill="#333",dash=[1,2]) #y-axis only occurs when R.dm is nonpositive
-		if 'grid' in self.G.d:
-			for x in frange(self.G.d['grid'][0],R.dM,self.G.d['grid'][0]):self.w.create_line(scx(x),0,scx(x),H,fill="#ccc",dash=[4,4])
-			for x in frange(-self.G.d['grid'][0],R.dm,-self.G.d['grid'][0]): self.w.create_line(scx(x),0,scx(x),H,fill="#ccc",dash=[4,4])
-			for y in frange(self.G.d['grid'][1],R.cM,self.G.d['grid'][1]): self.w.create_line(0,scy(y),W,scy(y),fill="#ccc",dash=[4,4])
-			for y in frange(-self.G.d['grid'][1],R.cm,-self.G.d['grid'][1]): self.w.create_line(0,scy(y),W,scy(y),fill="#ccc",dash=[4,4])
-		if 'tick' in self.G.d:
-			for x in frange(self.G.d['tick'][0],R.dM,self.G.d['tick'][0]): self.w.create_text(scx(x),scy(0),text=str(x))
-			for x in frange(-self.G.d['tick'][0],R.dm,-self.G.d['tick'][0]): self.w.create_text(scx(x),scy(0),text=str(x))
-			for y in frange(self.G.d['tick'][1],R.cM,self.G.d['tick'][1]): self.w.create_text(scx(0),scy(y),text=str(y))
-			for y in frange(-self.G.d['tick'][1],R.cm,-self.G.d['tick'][1]): self.w.create_text(scx(0),scy(y),text=str(y))
 		scp = lambda x,y: (scale*(x-R.dm), scale*(R.cM-y))
+		OX,OY = scp(0,0)
+		if R.cm<=0 and R.dm<=0: self.w.create_text(OX,OY,text='0,0')
+		if R.cm<=0: self.w.create_line(0,OY,W,OY,fill="#333",dash=[1,2])
+		if R.dm<=0: self.w.create_line(OX,0,OX,H,fill="#333",dash=[1,2]) #y-axis only occurs when R.dm is nonpositive
+		if 'grid' in self.G.d:
+			tx,ty = self.G.d['grid']
+			for x in arange(scx(tx),W,scale*tx): self.w.create_line(x,0,x,H,fill="#ccc",dash=[4,4])
+			for x in arange(scx(-tx),0,-scale*tx): self.w.create_line(x,0,x,H,fill="#ccc",dash=[4,4])
+			for y in arange(scy(ty),H,scale*ty): self.w.create_line(0,y,W,y,fill="#ccc",dash=[4,4])
+			for y in arange(scy(-ty),0,-scale*ty): self.w.create_line(0,y,W,y,fill="#ccc",dash=[4,4])
+		if 'tick' in self.G.d:
+			tx,ty = self.G.d['tick']
+			for x in frange(tx,R.dM,tx): self.w.create_text(scx(x),OY,text=str(x))
+			for x in frange(-tx,R.dm,-tx): self.w.create_text(scx(x),OY,text=str(x))
+			for y in frange(ty,R.cM,ty): self.w.create_text(OX,scy(y),text=str(y))
+			for y in frange(-ty,R.cm,-ty): self.w.create_text(OX,scy(y),text=str(y))
+
 		for g in self.G.XYs:
 			if 'ls' in g.d:
 				# Least squares
@@ -218,5 +221,5 @@ if __name__=="__main__":
 	padx=1
 	pady=1
 	#viewr=R(-4.5,4.5,-4.5,4.5)
-	G = XYspread(gs,opts={'%':50,'view':viewr,'padx':padx,'pady':pady,'grid':[0.5,0.5],'tick':[1,1]})
+	G = XYspread(gs,opts={'%':25,'view':viewr,'padx':padx,'pady':pady,'grid':[1,1],'tick':[2,2]})
 	draw_graph(G)
