@@ -158,6 +158,7 @@ class XYspread:
 				if t.R.cM > My: My = t.R.cM
 			self.R = R(mx-padx,Mx+padx,my-pady,My+pady)
 		else: self.R = self.d['view']
+		print self.R
 
 class XYPlane:
 	def __init__(self,master,G):
@@ -168,7 +169,10 @@ class XYPlane:
 		self.osd,R,scale = None, self.G.R, self.G.d['%']
 		print R
 		W = 1+scale*(abs(R.dm)+abs(R.dM))
-		H = 1+scale*(abs(R.cm)+abs(R.cM))
+		#H = 1+scale*(abs(R.cm)+abs(R.cM))
+		if (R.cm>0 and R.cM>0) or (R.cm<0 and R.cM<0): H = 1+scale*abs(R.cm-R.cM)
+		else: H = 1+scale*(abs(R.cm)+abs(R.cM))
+		print (H-1)/scale, R.cm, R.cM
 		scalex, scaley = lambda x: scale*(x+abs(R.dm)), lambda y: scale*(-y+abs(R.cM))
 		self.w = Tk.Canvas(self.master, width=W, height=H, background="white")
 		self.w.bind("<Button-1>", self.drawosd)
@@ -227,21 +231,21 @@ def draw_graph(G):
 	root.mainloop()
 
 if __name__=="__main__":
-	normal = [(normalvariate(0,1),normalvariate(0,1)) for _ in xrange(500)]
+	#normal = [(normalvariate(0,1),normalvariate(0,1)) for _ in xrange(500)]
 	gs = []
 	#gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,opts={"color":"red","name":"x","lines":0}))
 	#gs.append(XYpts_linear(xs=x_range(-10,-5,1),m=-2,b=0,opts={"color":"blue","name":"-2x"}))
-	#gs.append(XYpts(pts=lfox(-4.0,4.0,0.1,lambda x:x*x-2),opts={"color":"green","name":"x^2-2","lines":0}))
+	gs.append(XYpts(pts=lfox(-4.0,4.0,0.1,lambda x:x*x-2),opts={"color":"green","name":"x^2-2","lines":0}))
 	#gs.append(XYpts_linear(xs=x_range(-1.0,1.0,0.1),m=2,b=-2,opts={"color":"pink","name":"2x-2"}))
-	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+1)**3-3),opts={"color":"orange","name":"(x+1)^3-3",'ls':0}))
+	gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+1)**3-3),opts={"color":"orange","name":"(x+1)^3-3",'ls':0}))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),opts={"color":"cyan","name":"(x+0.3)^4"}))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:x**5+0.1),opts={"color":"grey","name":"x^5+0.1","lines":0,'nls':0}))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:x**6-1),opts={"color":"brown","name":"x^6-1","lines":0}))
 	#gs.append(XYpts(pts=normal,opts={'name':'normal','color':'blue'}))
-	gs.append(XYpts_poly(xs=x_range(-3.0,3.0,0.1),p=[(2,2),(1,-1),(0,+24)]))
+	#gs.append(XYpts_poly(xs=x_range(-3.0,3.0,0.1),p=[(2,2),(1,-1),(0,+24)]))
 	viewr=None
-	padx=0.5
-	pady=0.2
+	padx=1
+	pady=1
 	#viewr=R(-4.5,4.5,-4.5,4.5)
-	G = XYspread(gs,opts={'%':10,'view':viewr,'padx':padx,'pady':pady})
+	G = XYspread(gs,opts={'%':25,'view':viewr,'padx':padx,'pady':pady})
 	draw_graph(G)
