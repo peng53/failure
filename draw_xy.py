@@ -18,14 +18,6 @@ from random import normalvariate
 
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
-polyTerm = namedtuple("term","xx c")
-
-def fox(x0,x1,dx,F):
-	x = x0
-	while x<x1:
-		yield x,F(x)
-		x += dx
-lfox = lambda x0,x1,dx,F: [(x,y) for (x,y) in fox(x0,x1,dx,F)]
 
 class XYpts:
 	def __init__(self,pts,opts={}): #[(x,y)] form
@@ -41,19 +33,20 @@ class XYpts:
 		return (self.x[0],self.x[0]*W[0]+W[1],self.x[-1],self.x[-1]*W[0]+W[1])
 	def nslq(self,parts):
 		"naive segmented least squares"
-		if self.x.size>>1<parts: return []
-		W, cut = [], self.x.size//parts
+		if self.x.size>>1<parts: return
+		cut = self.x.size//parts
 		for i in xrange(0,self.x.size,cut):
 			x, y = self.x[i:i+cut], self.y[i:i+cut]
 			A = array([x,ones(x.size)])
 			w = linalg.lstsq(A.T,y)[0]
-			W.append((x[0],w[0]*x[0]+w[1]))
-			W.append((x[-1],w[0]*x[-1]+w[1]))
-		return W
+			#W.append((x[0],w[0]*x[0]+w[1])) #W.append((x[-1],w[0]*x[-1]+w[1]))
+			yield (x[0],w[0]*x[0]+w[1])
+			yield (x[-1],w[0]*x[-1]+w[1])
+		#return W
 	def genR(self):
 		# X is assumed to be sorted.
 		my = My = self.y[0]
-		for y in self.y[1:]:
+		for y in self.y:
 			if y < my: my = y
 			elif y > My: My = y
 		self.R = R(self.x[0],self.x[-1],my,My)
@@ -70,20 +63,6 @@ class XYpts_linear(XYpts):
 		self.y = self.x*m+b
 		self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
 
-def op_poly(P):
-	S = sorted(polyTerm(power,coef) for power,coef in P)
-	O = [S.pop()]
-	while len(S)!=0:
-		cur = S.pop()
-		if O[-1].xx < 0 or cur.xx < 0: raise ValueError
-		elif O[-1].xx == cur.xx: O[-1] = O[-1]._replace(c=O[-1].c+cur.c)
-		elif O[-1].xx == cur.xx+1: O.append(cur)
-		else:
-			for x in xrange(O[-1].xx-1,cur.xx,-1): O.append(polyTerm(x,0))
-			O.append(cur)
-	if O[-1].xx > 0:
-		for x in xrange(O[-1].xx-1,-1,-1): O.append(polyTerm(x,0))
-	return O
 def x_poly(P):
 	s = sorted(P,reverse=True)
 	deg, coef = s[0][0], 0
@@ -107,6 +86,16 @@ class XYpts_poly(XYpts):
 		for c in x_poly(p): self.y = self.y * self.x + c
 		self.genR()
 
+class XYspread:
+	def __init__(self,XYs,opts={}):
+		self.d = {"%":1, "view": None, "px": 0, "py": 0}
+		for o in opts: self.d[o] = opts[o]
+		if self.d['%']<0: raise ValueError
+		self.XYs = XYs
+		self.R = R(min(t.R.dm for t in XYs)-self.d['px'],max(t.R.dM for t in XYs)+self.d['px'],\
+			min(t.R.cm for t in XYs)-self.d['py'],max(t.R.cM for t in XYs)+self.d['py'])\
+			if self.d['view'] is None else self.d['view']
+
 def frange(x0,x1,dx):
 	x = x0
 	if dx>0:
@@ -114,31 +103,28 @@ def frange(x0,x1,dx):
 			yield x
 			x+=dx
 	else:
-		while x>x1:
+		 while x>x1:
 			yield x
 			x+=dx
-
-class XYspread:
-	def __init__(self,XYs,opts={}):
-		self.d = {"%":1, "view": None, "padx": 0, "pady": 0}
-		for o in opts: self.d[o] = opts[o]
-		if self.d['%']<0: raise ValueError
-		self.XYs = XYs
-		if self.d['view'] is None:
-			mx,Mx,my,My = XYs[0].R
-			for t in XYs[1:]:
-				if t.R.dm < mx: mx = t.R.dm
-				if t.R.dM > Mx: Mx = t.R.dM
-				if t.R.cm < my: my = t.R.cm
-				if t.R.cM > My: My = t.R.cM
-			self.R = R(mx-self.d['padx'],Mx+self.d['padx'],my-self.d['pady'],My+self.d['pady'])
-		else: self.R = self.d['view']
+def fox(x0,x1,dx,F):
+	x = x0
+	if dx>0:
+		while x<x1:
+			yield x,F(x)
+			x+=dx
+	else:
+		 while x>x1:
+			yield x,F(x)
+			x+=dx
 
 class XYPlane:
 	def __init__(self,master,G):
 		self.master,self.G = master,G
 		Tk.Button(master, text="Close", command=quit).pack()
 		self.make_canvas()
+
+	def LINE(self,x,y,x1,y1,c='black',d=()):
+		self.w.create_line(x,y,x1,y1,fill=c,dash=d)
 
 	def make_canvas(self):
 		self.osd,R,scale = None, self.G.R, self.G.d['%']
@@ -150,33 +136,33 @@ class XYPlane:
 		scy = lambda y: scale*(R.cM-y)
 		scp = lambda x,y: (scale*(x-R.dm), scale*(R.cM-y))
 		OX,OY = scp(0,0)
-		if R.cm<=0 and R.dm<=0: self.w.create_text(OX,OY,text='0,0')
-		if R.cm<=0: self.w.create_line(0,OY,W,OY,fill="#333",dash=[1,2])
-		if R.dm<=0: self.w.create_line(OX,0,OX,H,fill="#333",dash=[1,2]) #y-axis only occurs when R.dm is nonpositive
+		if R.cm<=0 and R.dm<=0: self.w.create_text(OX,OY,text='0')
+		if R.cm<=0: self.LINE(0,OY,W,OY,'#333',(1,2))
+		if R.dm<=0: self.LINE(OX,0,OX,H,"#333",[1,2])
 		if 'grid' in self.G.d:
 			tx,ty = self.G.d['grid']
-			for x in arange(scx(tx),W,scale*tx): self.w.create_line(x,0,x,H,fill="#ccc",dash=[4,4])
-			for x in arange(scx(-tx),0,-scale*tx): self.w.create_line(x,0,x,H,fill="#ccc",dash=[4,4])
-			for y in arange(scy(ty),H,scale*ty): self.w.create_line(0,y,W,y,fill="#ccc",dash=[4,4])
-			for y in arange(scy(-ty),0,-scale*ty): self.w.create_line(0,y,W,y,fill="#ccc",dash=[4,4])
+			for x in arange(scx(tx),W,scale*tx): self.LINE(x,0,x,H,"#ccc",4)
+			for x in arange(scx(-tx),0,-scale*tx): self.LINE(x,0,x,H,"#ccc",4)
+			for y in arange(scy(ty),H,scale*ty): self.LINE(0,y,W,y,"#ccc",4)
+			for y in arange(scy(-ty),0,-scale*ty): self.LINE(0,y,W,y,"#ccc",4)
 		if 'tick' in self.G.d:
 			tx,ty = self.G.d['tick']
-			for x in frange(tx,R.dM,tx): self.w.create_text(scx(x),OY,text=str(x))
-			for x in frange(-tx,R.dm,-tx): self.w.create_text(scx(x),OY,text=str(x))
-			for y in frange(ty,R.cM,ty): self.w.create_text(OX,scy(y),text=str(y))
-			for y in frange(-ty,R.cm,-ty): self.w.create_text(OX,scy(y),text=str(y))
+			for t,x in fox(tx,R.dM,tx,scx): self.w.create_text(x,OY,text=str(t))
+			for t,x in fox(-tx,R.dm,-tx,scx): self.w.create_text(x,OY,text=str(t))
+			for t,y in fox(ty,R.cM,ty,scy): self.w.create_text(OX,y,text=str(t))
+			for t,y in fox(-ty,R.cm,-ty,scy): self.w.create_text(OX,y,text=str(t))
 
 		for g in self.G.XYs:
 			if 'ls' in g.d:
 				# Least squares
 				lr = g.lsq()
-				self.w.create_line(scx(lr[0]),scy(lr[1]),scx(lr[2]),scy(lr[3]),dash=[2,6,2],fill=g.d['color'])
+				self.LINE(scx(lr[0]),scy(lr[1]),scx(lr[2]),scy(lr[3]),g.d['color'],(2,6,2))
 			if 'nls' in g.d:
 				# Naive
 				x0 = y0 = None
-				for x,y in g.nslq(5):
+				for x,y in g.nslq(3):
 					x1, y1 = scp(x,y)
-					if x0 is not None: self.w.create_line(x0,y0,x1,y1,dash=[4,3,4],fill="purple")
+					if x0 is not None: self.LINE(x0,y0,x1,y1,"purple",[4,3,4])
 					x0, y0 = x1, y1
 
 			x0 = y0 = None
@@ -193,7 +179,7 @@ class XYPlane:
 					lpad -=1 # if left-exceptions were not used, use them now
 				if b_draw is True:
 					self.w.create_oval(x,y,x+1,y+1,outline=g.d['color'])
-					if x0 is not None and 'lines' in g.d: self.w.create_line(x0,y0,x,y,fill=g.d['color'])
+					if x0 is not None and 'lines' in g.d: self.LINE(x0,y0,x,y,g.d['color'])
 				x0,y0=x,y
 	def drawosd(self,event):
 		if self.osd is not None:
@@ -213,13 +199,15 @@ def draw_graph(G):
 
 if __name__=="__main__":
 	gs = []
-	gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,opts={"color":"red","name":"x","lines":0}))
+	#gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,opts={"color":"red","name":"x","lines":0}))
 	#gs.append(XYpts(pts=lfox(-4.0,4.0,0.1,lambda x:x*x-2),opts={"color":"green","name":"x^2-2","lines":0}))
-	gs.append(XYpts_poly(xs=x_range(-4,4,0.1),p=[(2,1),(0,-2)],opts={"color":"green","name":"x^2-2","lines":0,"nls":0,"ls":0}))
+	#gs.append(XYpts_poly(xs=x_range(-4,4,0.1),p=[(2,1),(0,-2)],opts={"color":"green","name":"x^2-2","lines":0,"nls":0,"ls":0}))
+	gs.append(XYpts_poly(xs=x_range(-1,1,0.05),p=[(3,1)],opts={'color':'pink','name':'x^3','lines':None,'ls':None}))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),opts={"color":"cyan","name":"(x+0.3)^4"}))
 	viewr=None
 	padx=1
 	pady=1
 	#viewr=R(-4.5,4.5,-4.5,4.5)
-	G = XYspread(gs,opts={'%':25,'view':viewr,'padx':padx,'pady':pady,'grid':[1,1],'tick':[2,2]})
+	viewr=R(-1.25,1,-1.25,1.25)
+	G = XYspread(gs,opts={'%':200,'view':viewr,'px':padx,'py':pady,'grid':[0.25,0.25],'tick':[0.25,0.25]})
 	draw_graph(G)
