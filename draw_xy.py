@@ -15,6 +15,7 @@ import Tkinter as Tk
 from collections import namedtuple
 from numpy import array, arange, ones, linalg, zeros
 from random import normalvariate
+from math import ceil
 
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
@@ -128,7 +129,20 @@ class XYPlane:
 
 	def make_canvas(self):
 		self.osd,R,scale = None, self.G.R, self.G.d['%']
-		W, H = 1 + scale * abs(R.dM - R.dm), 1 + scale * abs(R.cM - R.cm)
+		W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
+		print W,H
+		if W<199 or H<199:
+			print 'm2'
+			scale = (min(W,H)//256+1)*100
+			print "Graph too small! using scale:",scale
+			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
+		elif W>1000 or H>1000:
+			print 'm1'
+			scale = (256//max(W,H)+1)*100
+			print "Graph too large! using scale:",scale
+			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
+			print W,H
+
 		self.w = Tk.Canvas(self.master, width=W, height=H, background="white")
 		self.w.pack()
 		self.w.bind("<Button-1>", self.drawosd)
@@ -202,12 +216,12 @@ if __name__=="__main__":
 	#gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,opts={"color":"red","name":"x","lines":0}))
 	#gs.append(XYpts(pts=lfox(-4.0,4.0,0.1,lambda x:x*x-2),opts={"color":"green","name":"x^2-2","lines":0}))
 	#gs.append(XYpts_poly(xs=x_range(-4,4,0.1),p=[(2,1),(0,-2)],opts={"color":"green","name":"x^2-2","lines":0,"nls":0,"ls":0}))
-	gs.append(XYpts_poly(xs=x_range(-1,1,0.05),p=[(3,1)],opts={'color':'pink','name':'x^3','lines':None,'ls':None}))
+	gs.append(XYpts_poly(xs=x_range(-1,1,0.01),p=[(3,1)],opts={'color':'pink','name':'x^3','lines':None,'ls':None}))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),opts={"color":"cyan","name":"(x+0.3)^4"}))
 	viewr=None
-	padx=1
-	pady=1
+	padx=0
+	pady=0
 	#viewr=R(-4.5,4.5,-4.5,4.5)
-	viewr=R(-1.25,1,-1.25,1.25)
-	G = XYspread(gs,opts={'%':200,'view':viewr,'px':padx,'py':pady,'grid':[0.25,0.25],'tick':[0.25,0.25]})
+	#viewr=R(-1.25,1,-1.25,1.25)
+	G = XYspread(gs,opts={'%':1000,'view':viewr,'px':padx,'py':pady,'grid':[0.25,0.25],'tick':[0.5,0.5]})
 	draw_graph(G)
