@@ -20,6 +20,39 @@ from math import ceil
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
 
+#def nstrpoly(s):
+	#expect_coef = 1
+	#coef_a = coef_b = 0
+	#pow_a = pow_b = 0
+	#one_power = 0
+	#for i,c in enumerate(s):
+		#if expect_coef:
+			#if c.isdigit():
+				#coef_b += 1
+			#elif c=='-' and coef_a==coef_b: #unary minus
+				#coef_b += 1
+			#elif c in ('-','+'): #not unary minus and no power: end coef, output,
+				#yield (0,float(s[coef_a:coef_b]))
+				#coef_a = coef_b = i+1
+			#elif c=='x':
+				#expect_coef = 0
+				#one_power = 1
+				#pow_a = pow_b = i+1
+		#elif c.isdigit():
+			#pow_b += 1
+		#elif c in ('+','-'):
+			#coef = 1 if coef_a==coef_b else -1 if coef_b-coef_a==1 and s[coef_a]=='-' else float(s[coef_a:coef_b])
+			#powi = 1 if one_power and pow_a==pow_b else 0 if pow_a==pow_b else int(s[pow_a:pow_b])
+			#yield(powi,coef)
+			#expect_coef = 1
+			#one_power = 0
+			#if c=='-': coef_a = coef_b = i
+			#else: coef_a = coef_b = i+1
+			#pow_a = pow_b = 0
+	#coef = 1 if coef_a==coef_b else -1 if coef_b-coef_a==1 and s[coef_a]=='-' else float(s[coef_a:coef_b])
+	#powi = 1 if one_power and pow_a==pow_b else 0 if pow_a==pow_b else int(s[pow_a:pow_b])
+	#yield(powi,coef)
+
 def strpoly(s):
 	c, p = [], []
 	i = 0
