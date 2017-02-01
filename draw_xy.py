@@ -20,6 +20,47 @@ from math import ceil
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
 
+def strpoly(s):
+	c, p = [], []
+	i = 0
+	while i<len(s):
+		#eat unary minus
+		if s[i]=='-':
+			c.append('-')
+			i+=1
+		#eat coef
+		while i<len(s) and (s[i].isdigit() or s[i]=='.'): #may be broken to multiple periods
+			c.append(s[i])
+			i+=1
+		#end of coef, do I see an x?
+		if i<len(s) and s[i]=='x': # then we may have a power
+			i+=1
+			# unary minus is not allowed for powers
+			while i<len(s) and s[i].isdigit(): #no floating pt powers allowed!
+				p.append(s[i])
+				i+=1
+			if len(p)==0: #power is 'invisible 1'
+				p.append('1')
+		#either end of poly or an operation (only +/- allowed)
+		#push current term
+		if len(p)==0: #a constant
+			yield (0,float(''.join(c))) #currently defaulting to floats
+		elif len(c)==0: #coef is 'invisible 1'
+			yield (int(''.join(p)),1)
+		else: #we have both a power and a coef
+			if c==['-']: #invisible negative 1
+				yield (int(''.join(p)),-1.)
+			else:
+				yield (int(''.join(p)),float(''.join(c)))
+		c, p = [], []
+		if i<len(s) and s[i]=='-': #minus as operation rather than unary
+			c.append('-')
+		i+=1
+
+# strpoly usage, where s is expression like so: -2x4+4x-3. the integer after a x is a power.
+# for p,c in strpoly('-2x4-4x-3'): print p,c # output should be sorted for use
+
+
 class XYpts:
 	def __init__(self,pts,opts={}): #[(x,y)] form
 		self.d={"color":"black","name":''}
@@ -131,6 +172,16 @@ class XYPlane:
 		self.osd,R,scale = None, self.G.R, self.G.d['%']
 		W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
 		print W,H
+		# if graph is of size [200,1000]: leave alone
+		# else: set scale so it is
+		# work {
+		if W<200 or H<200 or W>1000 or H>1000:
+			scale = round(700./max(R.dM-R.dm,R.cM-R.cm))
+			print "Graph using scale:", scale
+			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
+			print W,H
+		# } end work
+		"""
 		if W<199 or H<199:
 			print 'm2'
 			scale = (min(W,H)//256+1)*100
@@ -142,6 +193,7 @@ class XYPlane:
 			print "Graph too large! using scale:",scale
 			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
 			print W,H
+		"""
 
 		self.w = Tk.Canvas(self.master, width=W, height=H, background="white")
 		self.w.pack()
