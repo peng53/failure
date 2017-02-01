@@ -7,6 +7,8 @@ Phase 4.5: linear regression with numpy
 	http://glowingpython.blogspot.com/2012/03/linear-regression-with-numpy.html
 Phase 5: linear regression
 Phase 6: rebuild(?!?) to use numpy arrays over lists
+Phase 7: polynomial string parsing
+	so that point sets can be drawn via GUI and not by editing the source!
 .
 .
 .
@@ -16,9 +18,38 @@ from collections import namedtuple
 from numpy import array, arange, ones, linalg, zeros
 from random import normalvariate
 from math import ceil
+import re
 
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
+
+#testterms = re.compile("(-?\d*\.?\d*x\d*)|(-?\d+\.?\d*)")
+# strict: of A.axP form, all parameters required (except negative and .0 float)
+strictterms = re.compile("-?\d+\.?\d*x\d+")
+def rspol(s):
+	for t in strictterms.finditer(s):
+		coef,power = t.group(0).split('x')
+		yield int(power),float(coef)
+# because strict requires x, coef, and power, the split will always
+# gives two values: the coef and power; which just needs to be changed
+# in int/float and swapped before yielding. caret can be added to regex
+# for more 'strictness'
+term_single_power = re.compile("-?\d+\.?\d*x\d*")
+def rsppol(s):
+	for t in term_single_power.finditer(s):
+		coef,power = t.group(0).split('x')
+		yield (1 if power=='' else int(power)),float(coef)
+		#yield 1,float(coef) if power=='' else int(power),float(coef)
+# same as strictterms except you can omit the x's power if it is 1
+term_zero_power = re.compile("-?\d+\.?\d*(x\d*)?")
+def rzppol(s):
+	for t in term_zero_power.finditer(s):
+		N = t.group(0).split('x')
+		if len(N)==2: yield (1 if N[1]=='' else int(N[1])),float(N[0])
+		else: yield 0,float(N[0])
+# same as term_single power except you can input constants without x**0
+# uses form A.axP where x and P can be assumed (1x^0) => (1)
+# peak-point cannot improve to assume 'invisible coef' without more check
 
 #def nstrpoly(s):
 	#expect_coef = 1
