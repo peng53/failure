@@ -20,7 +20,8 @@ def rsppol(s):
 		yield (1 if power=='' else int(power)),float(coef)
 		#yield 1,float(coef) if power=='' else int(power),float(coef)
 # same as strictterms except you can omit the x's power if it is 1
-term_zero_power = re.compile("-?\d+\.?\d*(x\d*)?")
+#term_zero_power = re.compile("-?\d+\.?\d*(x\d*)?")
+term_zero_power = re.compile("-?\d+(.\d+)?(x\d*)?")
 def rzppol(s):
 	for t in term_zero_power.finditer(s):
 		N = t.group(0).split('x')
@@ -29,6 +30,29 @@ def rzppol(s):
 # same as term_single power except you can input constants without x**0
 # uses form A.axP where x and P can be assumed (1x^0) => (1)
 # peak-point cannot improve to assume 'invisible coef' without more check
+
+ione_term = re.compile("(-?x\d*)|(-?\d+(\.\d+)?(x\d*)?)")
+# supports: invisible coefficient &| power, floats, constants, and negatives
+# uses two primary cases: x with invis 1 and constant with optional x
+# pretty much should cover all cases in implied form
+# to use x^p rather than xp, replace x with x\^ in regex and in function below (maybe?)
+def riopol(s):
+	for r_t in ione_term.finditer(s):
+		t = r_t.group(0)
+		if 'x' in t:
+			c,p = t.split('x',1)
+			if len(c)==0: c = 1.
+			elif c=='-': c = -1.
+			else: c = float(c)
+			if len(p)==0: p = 1
+			else: p = int(p)
+			yield p,c
+		else: # constant
+			yield 0,float(t)
+	# I will flatten the if-elif tree after this commit
+	# python ternary is more readable to me (but harder to debug!)
+
+
 
 #def nstrpoly(s):
 	#expect_coef = 1
