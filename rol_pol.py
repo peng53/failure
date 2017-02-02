@@ -1,6 +1,7 @@
 #
 # Python module for changing polynomials to usable form
 import re
+import heapq
 
 strictterms = re.compile("-?\d+\.?\d*x\d+")
 def rspol(s):
@@ -85,6 +86,28 @@ def strpoly(s):
 		c, p = [], []
 		if i<len(s) and s[i]=='-': c.append('-')  #minus as operation rather than unary
 		i+=1
+
+def s_poly(S):
+	"""
+	Takes a poly string of implied form and spits out coef in decreasing order
+	while filling zeros inbetween powers. Uses a heap to sort incoming values
+	from string parser. Due to being a min heap, I had to invert the powers
+	but otherwise acts like a max heap. A generator that uses a generator!
+	Ideal for my use since I don't need the values stored (as I use them
+	right away via numpy)
+	"""
+	h = []
+	for p,c in riopol(S): heapq.heappush(h,(-p,c))
+	np,c = heapq.heappop(h)
+	while len(h)!=0:
+		np2,c2 = heapq.heappop(h)
+		if np2 == np: c+=c2
+		else:
+			yield c
+			for d3 in xrange(np+1,np2,1): yield 0
+			np,c = np2,c2
+	yield c
+	for d3 in xrange(np+1,1,1): yield 0
 
 def x_poly(P):
 	"""
