@@ -2,92 +2,60 @@
 # Python module for changing polynomials to usable form
 import re
 
-#testterms = re.compile("(-?\d*\.?\d*x\d*)|(-?\d+\.?\d*)")
-# strict: of A.axP form, all parameters required (except negative and .0 float)
 strictterms = re.compile("-?\d+\.?\d*x\d+")
 def rspol(s):
+	"""
+	strict: of A.axP form, all parameters required (except negative and .0 float)
+	because strict requires x, coef, and power, the split will always
+	gives two values: the coef and power; which just needs to be changed
+	in int/float and swapped before yielding. caret can be added to regex
+	for more 'strictness'
+	"""
 	for t in strictterms.finditer(s):
 		coef,power = t.group(0).split('x')
 		yield int(power),float(coef)
-# because strict requires x, coef, and power, the split will always
-# gives two values: the coef and power; which just needs to be changed
-# in int/float and swapped before yielding. caret can be added to regex
-# for more 'strictness'
+
 term_single_power = re.compile("-?\d+\.?\d*x\d*")
 def rsppol(s):
+	"same as strictterms except you can omit the x's power if it is 1"
 	for t in term_single_power.finditer(s):
 		coef,power = t.group(0).split('x')
 		yield (1 if power=='' else int(power)),float(coef)
-		#yield 1,float(coef) if power=='' else int(power),float(coef)
-# same as strictterms except you can omit the x's power if it is 1
-#term_zero_power = re.compile("-?\d+\.?\d*(x\d*)?")
+
 term_zero_power = re.compile("-?\d+(.\d+)?(x\d*)?")
 def rzppol(s):
+	"""
+	same as term_single power except you can input constants without x**0
+	uses form A.axP where x and P can be assumed (1x^0) => (1)
+	peak-point cannot improve to assume 'invisible coef' without more check
+	"""
 	for t in term_zero_power.finditer(s):
 		N = t.group(0).split('x')
 		if len(N)==2: yield (1 if N[1]=='' else int(N[1])),float(N[0])
 		else: yield 0,float(N[0])
-# same as term_single power except you can input constants without x**0
-# uses form A.axP where x and P can be assumed (1x^0) => (1)
-# peak-point cannot improve to assume 'invisible coef' without more check
 
 ione_term = re.compile("(-?x\d*)|(-?\d+(\.\d+)?(x\d*)?)")
-# supports: invisible coefficient &| power, floats, constants, and negatives
-# uses two primary cases: x with invis 1 and constant with optional x
-# pretty much should cover all cases in implied form
-# to use x^p rather than xp, replace x with x\^ in regex and in function below (maybe?)
 def riopol(s):
+	"""
+	supports: invisible coefficient &| power, floats, constants, and negatives
+	uses two primary cases: x with invis 1 and constant with optional x
+	pretty much should cover all cases in implied form
+	to use x^p rather than xp, replace x with x\^ in regex and in function below (maybe?)
+	"""
 	for r_t in ione_term.finditer(s):
 		t = r_t.group(0)
 		if 'x' in t:
 			c,p = t.split('x',1)
-			if len(c)==0: c = 1.
-			elif c=='-': c = -1.
-			else: c = float(c)
-			if len(p)==0: p = 1
-			else: p = int(p)
+			#       invis 1*       unary minus
+			c = 1 if len(c)==0 else -1 if c=='-' else float(c)
+			#       invis ^1
+			p = 1 if len(p)==0 else int(p)
 			yield p,c
-		else: # constant
-			yield 0,float(t)
-	# I will flatten the if-elif tree after this commit
-	# python ternary is more readable to me (but harder to debug!)
-
-
-
-#def nstrpoly(s):
-	#expect_coef = 1
-	#coef_a = coef_b = 0
-	#pow_a = pow_b = 0
-	#one_power = 0
-	#for i,c in enumerate(s):
-		#if expect_coef:
-			#if c.isdigit():
-				#coef_b += 1
-			#elif c=='-' and coef_a==coef_b: #unary minus
-				#coef_b += 1
-			#elif c in ('-','+'): #not unary minus and no power: end coef, output,
-				#yield (0,float(s[coef_a:coef_b]))
-				#coef_a = coef_b = i+1
-			#elif c=='x':
-				#expect_coef = 0
-				#one_power = 1
-				#pow_a = pow_b = i+1
-		#elif c.isdigit():
-			#pow_b += 1
-		#elif c in ('+','-'):
-			#coef = 1 if coef_a==coef_b else -1 if coef_b-coef_a==1 and s[coef_a]=='-' else float(s[coef_a:coef_b])
-			#powi = 1 if one_power and pow_a==pow_b else 0 if pow_a==pow_b else int(s[pow_a:pow_b])
-			#yield(powi,coef)
-			#expect_coef = 1
-			#one_power = 0
-			#if c=='-': coef_a = coef_b = i
-			#else: coef_a = coef_b = i+1
-			#pow_a = pow_b = 0
-	#coef = 1 if coef_a==coef_b else -1 if coef_b-coef_a==1 and s[coef_a]=='-' else float(s[coef_a:coef_b])
-	#powi = 1 if one_power and pow_a==pow_b else 0 if pow_a==pow_b else int(s[pow_a:pow_b])
-	#yield(powi,coef)
+		else: yield 0,float(t) # constant
 
 def strpoly(s):
+	"""strpoly usage, where s is expression like so: -2x4+4x-3. the integer after a x is a power.
+	   for p,c in strpoly('-2x4-4x-3'): print p,c # output should be sorted for use"""
 	c, p = [], []
 	i = 0
 	while i<len(s):
@@ -106,26 +74,17 @@ def strpoly(s):
 			while i<len(s) and s[i].isdigit(): #no floating pt powers allowed!
 				p.append(s[i])
 				i+=1
-			if len(p)==0: #power is 'invisible 1'
-				p.append('1')
+			if len(p)==0: p.append('1') #power is 'invisible 1'
 		#either end of poly or an operation (only +/- allowed)
 		#push current term
-		if len(p)==0: #a constant
-			yield (0,float(''.join(c))) #currently defaulting to floats
-		elif len(c)==0: #coef is 'invisible 1'
-			yield (int(''.join(p)),1)
+		if len(p)==0: yield (0,float(''.join(c)))  #a constant, defaulting to floats
+		elif len(c)==0: yield (int(''.join(p)),1) #coef is 'invisible 1'
 		else: #we have both a power and a coef
-			if c==['-']: #invisible negative 1
-				yield (int(''.join(p)),-1.)
-			else:
-				yield (int(''.join(p)),float(''.join(c)))
+			if c==['-']: yield (int(''.join(p)),-1.) #invisible negative 1
+			else: yield (int(''.join(p)),float(''.join(c)))
 		c, p = [], []
-		if i<len(s) and s[i]=='-': #minus as operation rather than unary
-			c.append('-')
+		if i<len(s) and s[i]=='-': c.append('-')  #minus as operation rather than unary
 		i+=1
-
-# strpoly usage, where s is expression like so: -2x4+4x-3. the integer after a x is a power.
-# for p,c in strpoly('-2x4-4x-3'): print p,c # output should be sorted for use
 
 def x_poly(P):
 	"""
