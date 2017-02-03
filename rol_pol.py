@@ -129,3 +129,30 @@ def x_poly(P):
 			deg, coef = d2, c2
 	yield coef
 	for d3 in xrange(deg-1,-1,-1): yield 0
+
+# Intended equalities for like input Es
+# strpoly, riopol
+# s_poly, x_poly
+
+def test_eq(g1,g2,E,E2=None):
+	"""
+	Used to test whether two generators given same input (or like input)
+	will return same output. Could have tested equality on the fly (w/o
+	lists) but storing allows quick lookthrough
+	The last parameter (E2) is for when the input type doesn't match
+	"""
+	l1 = list(g1(E))
+	l2 = list(g2(E if E2==None else E2))
+	if len(l1)!=len(l2):
+		print "Different yield sizes! NO!"
+		print len(l1), len(l2)
+		print l1
+		print l2
+		return False
+	for i in xrange(len(l1)):
+		if l1[i]!=l2[i]:
+			print "Non matching items!"
+			print l1[i], l2[i]
+			return False
+	print "Same total yield."
+	return True
