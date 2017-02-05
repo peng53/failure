@@ -54,6 +54,30 @@ def riopol(s):
 			yield p,c
 		else: yield 0,float(t) # constant
 
+def strlin(s):
+	"""
+	For changing a str to a slope intercept pair.
+	Yet to decide how I want to do this
+	"""
+	pass
+
+def conLinPol(s):
+	"""
+	For checking degree of s.
+	Only checks for 0, 1, or 1+
+	Hmm if first term yielded by s_poly has degree 0|1, I can assume s is constant|linear
+	and apply specilized functions..
+	"""
+	d = 0
+	for r_t in ione_term.finditer(s):
+		t = r_t.group(0)
+		if 'x' in t:
+			c,p = t.split('x',1)
+			if len(p)==0 and d==0: d = 1
+			else: d = max(int(p),d)
+	return d
+
+
 def strpoly(s):
 	"""strpoly usage, where s is expression like so: -2x4+4x-3. the integer after a x is a power.
 	   for p,c in strpoly('-2x4-4x-3'): print p,c # output should be sorted for use"""
@@ -144,15 +168,11 @@ def test_eq(g1,g2,E,E2=None):
 	l1 = list(g1(E))
 	l2 = list(g2(E if E2==None else E2))
 	if len(l1)!=len(l2):
-		print "Different yield sizes! NO!"
-		print len(l1), len(l2)
-		print l1
-		print l2
+		print "Different yield sizes. %d - %d\n%s\n%s" %(len(l1),len(l2),', '.join(l1),', '.join(l2))
 		return False
 	for i in xrange(len(l1)):
 		if l1[i]!=l2[i]:
-			print "Non matching items!"
-			print l1[i], l2[i]
+			print "Non matching items: %f ? %f" %(l1[i],l2[i])
 			return False
 	print "Same total yield."
 	return True

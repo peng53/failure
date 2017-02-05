@@ -17,7 +17,7 @@ import Tkinter as Tk
 from collections import namedtuple
 from numpy import array, arange, ones, linalg, zeros
 from math import ceil
-from rol_pol import x_poly
+from rol_pol import x_poly, s_poly
 
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
@@ -72,18 +72,25 @@ class XYpts_poly(XYpts):
 		for o in opts: self.d[o] = opts[o]
 		self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
 		self.y = zeros(len(self.x))
-		for c in x_poly(p): self.y = self.y * self.x + c
+		g = s_poly if isinstance(p,str) else x_poly
+		for c in g(p): self.y = self.y * self.x + c
 		self.genR()
 
 class XYspread:
-	def __init__(self,XYs,opts={}):
+	def __init__(self,XYs=[],opts={}):
 		self.d = {"%":1, "view": None, "px": 0, "py": 0}
 		for o in opts: self.d[o] = opts[o]
 		if self.d['%']<0: raise ValueError
 		self.XYs = XYs
-		self.R = R(min(t.R.dm for t in XYs)-self.d['px'],max(t.R.dM for t in XYs)+self.d['px'],\
-			min(t.R.cm for t in XYs)-self.d['py'],max(t.R.cM for t in XYs)+self.d['py'])\
+
+	def add_set(self,XY):
+		self.XYs.append(XY)
+
+	def recalc_view(self):
+		self.R = R(min(t.R.dm for t in self.XYs)-self.d['px'],max(t.R.dM for t in self.XYs)+self.d['px'],\
+			min(t.R.cm for t in self.XYs)-self.d['py'],max(t.R.cM for t in self.XYs)+self.d['py'])\
 			if self.d['view'] is None else self.d['view']
+		return self.R
 
 def frange(x0,x1,dx):
 	x = x0
@@ -107,16 +114,61 @@ def fox(x0,x1,dx,F):
 			x+=dx
 
 class XYPlane:
-	def __init__(self,master,G):
-		self.master,self.G = master,G
-		Tk.Button(master, text="Close", command=quit).pack()
-		self.make_canvas()
+	def __init__(self,master):
+		self.master = master
+		self.G = XYspread()
+		Tk.Button(master, text="Close", command=quit).grid(row=0,column=3)
+		Tk.Label(master,text="Poly Expression").grid(row=1,column=0)
+		self.p_ent = Tk.Entry(master)
+		self.p_ent.grid(row=1,column=1,columnspan=5,sticky='ew')
+		Tk.Label(master,text="x Bounds").grid(row=2,column=0)
+		self.mx_ent = Tk.Entry(master)
+		self.mx_ent.grid(row=2,column=1,sticky='ew')
+		self.Mx_ent = Tk.Entry(master)
+		self.Mx_ent.grid(row=2,column=2,sticky='ew')
+		Tk.Label(master,text="Interval").grid(row=2,column=3)
+		self.int_ent = Tk.Entry(master)
+		self.int_ent.grid(row=2,column=4,sticky='ew')
+		Tk.Button(master, text="Include Poly", command=self.inc_poly).grid(row=0,column=1)
+		Tk.Button(master, text="Build Canvas", command=self.make_canvas).grid(row=0,column=2)
+		Tk.Label(master,text="Name").grid(row=3,column=0)
+		self.name_ent = Tk.Entry(master)
+		self.name_ent.grid(row=3,column=1)
+		Tk.Label(master,text="Color").grid(row=3,column=2)
+		self.col_ent = Tk.Entry(master)
+		self.col_ent.grid(row=3,column=3)
+
+
+
+
+		#self.make_canvas()
+
+	def inc_poly(self):
+		try:
+			s = self.p_ent.get()
+			self.p_ent.delete(0,'end')
+			mx = float(self.mx_ent.get())
+			Mx = float(self.Mx_ent.get())
+			dx = abs(float(self.int_ent.get()))
+			c = self.col_ent.get()
+			if c=='': c = 'black'
+			self.col_ent.delete(0,'end')
+			N = self.name_ent.get()
+			if N=='': N = s
+			self.name_ent.delete(0,'end')
+			xs = x_range(mx,Mx,dx)
+			xy = XYpts_poly(xs,s,{'name':N,'color':c})
+			self.G.add_set(xy)
+		except Exception as e:
+			print e
+
 
 	def LINE(self,x,y,x1,y1,c='black',d=()):
 		self.w.create_line(x,y,x1,y1,fill=c,dash=d)
 
 	def make_canvas(self):
-		self.osd,R,scale = None, self.G.R, self.G.d['%']
+		self.osd,scale = None, self.G.d['%']
+		R = self.G.recalc_view()
 		W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
 		print W,H
 		# if graph is of size [200,1000]: leave alone
@@ -143,7 +195,7 @@ class XYPlane:
 		"""
 
 		self.w = Tk.Canvas(self.master, width=W, height=H, background="white")
-		self.w.pack()
+		self.w.grid(row=4,columnspan=6)
 		self.w.bind("<Button-1>", self.drawosd)
 		scx = lambda x: scale*(x-R.dm)
 		scy = lambda y: scale*(R.cM-y)
@@ -205,22 +257,22 @@ class XYPlane:
 			self.osd.append(self.w.create_text(cx,cy,text=g.d['name'],fill="black"))
 			cy += 16
 
-def draw_graph(G):
+def draw_graph():
 	root = Tk.Tk()
-	app = XYPlane(root,G)
+	app = XYPlane(root)
 	root.mainloop()
 
 if __name__=="__main__":
-	gs = []
+	#gs = []
 	#gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,opts={"color":"red","name":"x","lines":0}))
 	#gs.append(XYpts(pts=lfox(-4.0,4.0,0.1,lambda x:x*x-2),opts={"color":"green","name":"x^2-2","lines":0}))
 	#gs.append(XYpts_poly(xs=x_range(-4,4,0.1),p=[(2,1),(0,-2)],opts={"color":"green","name":"x^2-2","lines":0,"nls":0,"ls":0}))
-	gs.append(XYpts_poly(xs=x_range(-1,1,0.01),p=[(3,1)],opts={'color':'pink','name':'x^3','lines':None,'ls':None}))
+	#gs.append(XYpts_poly(xs=x_range(-1,1,0.01),p=[(3,1)],opts={'color':'pink','name':'x^3','lines':None,'ls':None}))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),opts={"color":"cyan","name":"(x+0.3)^4"}))
-	viewr=None
-	padx=0
-	pady=0
+	#viewr=None
+	#padx=0
+	#pady=0
 	#viewr=R(-4.5,4.5,-4.5,4.5)
 	#viewr=R(-1.25,1,-1.25,1.25)
-	G = XYspread(gs,opts={'%':1000,'view':viewr,'px':padx,'py':pady,'grid':[0.25,0.25],'tick':[0.5,0.5]})
-	draw_graph(G)
+	#G = XYspread(gs,opts={'%':1000,'view':viewr,'px':padx,'py':pady,'grid':[0.25,0.25],'tick':[0.5,0.5]})
+	draw_graph()
