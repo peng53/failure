@@ -73,17 +73,11 @@ class XYPlane:
 		self.f_but.grid(column=1,row=1,columnspan=2)
 
 		self.d = {\
-			'exp':Entry(self.f_main,width=25),\
-			'xs':Entry(self.f_main,width=25),\
-			'name':Entry(self.f_box2,width=10),\
-			'color':Entry(self.f_box2,width=10),\
-			'view':Entry(self.f_graph,width=10),\
-			'grid':Entry(self.f_graph,width=10),\
-			'pad':Entry(self.f_graph,width=10),\
-			'tick':Entry(self.f_graph,width=10),\
-			'lines':BoolVar(),\
-			'ls':BoolVar(),\
-			'nls':BoolVar(),\
+			'exp':Entry(self.f_main,width=25), 'xs':Entry(self.f_main,width=25),\
+			'name':Entry(self.f_box2,width=10), 'color':Entry(self.f_box2,width=10),\
+			'view':Entry(self.f_graph,width=10), 'grid':Entry(self.f_graph,width=10),\
+			'pad':Entry(self.f_graph,width=10), 'tick':Entry(self.f_graph,width=10),\
+			'lines':BooleanVar(), 'ls':BooleanVar(), 'nls':BooleanVar(),\
 		}
 		self.c = {\
 			'lines':Checkbutton(self.f_box3,text="Lines",variable=self.d['lines']),\
@@ -121,6 +115,9 @@ class XYPlane:
 		Button(self.f_but,text="Pop").grid(row=1,column=0,sticky='ew')
 		Button(self.f_but,text="Draw",command=self.make_canvas).grid(row=0,column=1,sticky='ew')
 		Button(self.f_but,text="Quit",command=quit).grid(row=1,column=1,sticky='ew')
+		self.w = Canvas(self.master, width=200, height=200, background="white")
+		self.w.grid(row=2,columnspan=3)
+		self.w.bind("<Button-1>", self.drawosd)
 
 	def entry_get(self,e):
 		if e in self.d:
@@ -142,12 +139,8 @@ class XYPlane:
 			for k in self.c:
 				b = self.d[k].get()
 				if b: o[k]=True
-			#print(e,x,o)
 			P = XYpts(x,y,o)
-			print(P)
-			print(P.R)
 			self.G.add_set(P)
-
 		except Exception as e:
 			print(e)
 
@@ -159,6 +152,7 @@ class XYPlane:
 		try:
 			v = map(float,self.entry_get('view').split(','))
 			if len(v)==4: o['view'] = R(*v)
+			elif len(v)==2: o['view'] = R(v[0],v[1],v[0],v[1])
 		except Exception as e: print e
 		try:
 			v = map(float,self.entry_get('grid').split(','))
@@ -189,10 +183,8 @@ class XYPlane:
 			print "Graph using scale:", scale
 			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
 			print W,H
-
-		self.w = Canvas(self.master, width=W, height=H, background="white")
-		self.w.grid(row=2,columnspan=3)
-		self.w.bind("<Button-1>", self.drawosd)
+		self.w.delete('all')
+		self.w.config(width=W,height=H)
 		scx = lambda x: scale*(x-R.dm)
 		scy = lambda y: scale*(R.cM-y)
 		scp = lambda x,y: (scale*(x-R.dm), scale*(R.cM-y))
