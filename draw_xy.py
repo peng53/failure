@@ -13,74 +13,18 @@ Phase 7: polynomial string parsing
 .
 .
 """
-import Tkinter as Tk
-from collections import namedtuple
+from Tkinter import *
 from numpy import array, arange, ones, linalg, zeros
 from math import ceil
-from rol_pol import x_poly, s_poly
+from rol_pol import *
 
-R = namedtuple('domain_codomain','dm dM cm cM')
-x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
-
-class XYpts:
-	def __init__(self,pts,opts={}): #[(x,y)] form
-		self.d={"color":"black","name":''}
-		for o in opts: self.d[o] = opts[o]
-		self.x, self.y = array(sorted(pts)).T
-		self.genR()
-	def xy_pts(self):
-		for i,x in enumerate(self.x): yield x,self.y[i]
-	def lsq(self):
-		A = array([self.x,ones(self.x.size)])
-		W = linalg.lstsq(A.T,self.y)[0]
-		return (self.x[0],self.x[0]*W[0]+W[1],self.x[-1],self.x[-1]*W[0]+W[1])
-	def nslq(self,parts):
-		"naive segmented least squares"
-		if self.x.size>>1<parts: return
-		cut = self.x.size//parts
-		for i in xrange(0,self.x.size,cut):
-			x, y = self.x[i:i+cut], self.y[i:i+cut]
-			A = array([x,ones(x.size)])
-			w = linalg.lstsq(A.T,y)[0]
-			#W.append((x[0],w[0]*x[0]+w[1])) #W.append((x[-1],w[0]*x[-1]+w[1]))
-			yield (x[0],w[0]*x[0]+w[1])
-			yield (x[-1],w[0]*x[-1]+w[1])
-		#return W
-	def genR(self):
-		# X is assumed to be sorted.
-		my = My = self.y[0]
-		for y in self.y:
-			if y < my: my = y
-			elif y > My: My = y
-		self.R = R(self.x[0],self.x[-1],my,My)
-	def pixel_pts(self,scale,minx,maxy):
-		SX = scale*(self.x-minx)
-		SY = scale*(maxy-self.y)
-		for i,x in enumerate(SX): yield x,SY[i]
-
-class XYpts_linear(XYpts):
-	def __init__(self,xs,m,b,opts={}):
-		self.d={"color":"black","name":''}
-		for o in opts: self.d[o] = opts[o]
-		self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
-		self.y = self.x*m+b
-		self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
-
-class XYpts_poly(XYpts):
-	def __init__(self,xs,p,opts={}):
-		self.d={"color":"black","name":''}
-		for o in opts: self.d[o] = opts[o]
-		self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
-		self.y = zeros(len(self.x))
-		g = s_poly if isinstance(p,str) else x_poly
-		for c in g(p): self.y = self.y * self.x + c
-		self.genR()
 
 class XYspread:
 	def __init__(self,XYs=[],opts={}):
 		self.d = {"%":1, "view": None, "px": 0, "py": 0}
 		for o in opts: self.d[o] = opts[o]
 		if self.d['%']<0: raise ValueError
+		#self.d = opts
 		self.XYs = XYs
 
 	def add_set(self,XY):
@@ -91,6 +35,9 @@ class XYspread:
 			min(t.R.cm for t in self.XYs)-self.d['py'],max(t.R.cM for t in self.XYs)+self.d['py'])\
 			if self.d['view'] is None else self.d['view']
 		return self.R
+	def set_opts(self,opts):
+		for o in opts:
+			self.d[o]=opts[o]
 
 def frange(x0,x1,dx):
 	x = x0
@@ -115,87 +62,136 @@ def fox(x0,x1,dx,F):
 
 class XYPlane:
 	def __init__(self,master):
-		self.master = master
 		self.G = XYspread()
-		Tk.Button(master, text="Close", command=quit).grid(row=0,column=3)
-		Tk.Label(master,text="Poly Expression").grid(row=1,column=0)
-		self.p_ent = Tk.Entry(master)
-		self.p_ent.grid(row=1,column=1,columnspan=5,sticky='ew')
-		Tk.Label(master,text="x Bounds").grid(row=2,column=0)
-		self.mx_ent = Tk.Entry(master)
-		self.mx_ent.grid(row=2,column=1,sticky='ew')
-		self.Mx_ent = Tk.Entry(master)
-		self.Mx_ent.grid(row=2,column=2,sticky='ew')
-		Tk.Label(master,text="Interval").grid(row=2,column=3)
-		self.int_ent = Tk.Entry(master)
-		self.int_ent.grid(row=2,column=4,sticky='ew')
-		Tk.Button(master, text="Include Poly", command=self.inc_poly).grid(row=0,column=1)
-		Tk.Button(master, text="Build Canvas", command=self.make_canvas).grid(row=0,column=2)
-		Tk.Label(master,text="Name").grid(row=3,column=0)
-		self.name_ent = Tk.Entry(master)
-		self.name_ent.grid(row=3,column=1)
-		Tk.Label(master,text="Color").grid(row=3,column=2)
-		self.col_ent = Tk.Entry(master)
-		self.col_ent.grid(row=3,column=3)
+		self.master = master
+		self.f_main, self.f_box2, self.f_box3, self.f_graph, self.f_but =\
+			Frame(master), Frame(master), Frame(master), Frame(master), Frame(master)
+		self.f_main.grid(column=0,row=0)
+		self.f_box2.grid(column=1,row=0)
+		self.f_box3.grid(column=2,row=0)
+		self.f_graph.grid(column=0,row=1)
+		self.f_but.grid(column=1,row=1,columnspan=2)
 
+		self.d = {\
+			'exp':Entry(self.f_main,width=25),\
+			'xs':Entry(self.f_main,width=25),\
+			'name':Entry(self.f_box2,width=10),\
+			'color':Entry(self.f_box2,width=10),\
+			'view':Entry(self.f_graph,width=10),\
+			'grid':Entry(self.f_graph,width=10),\
+			'pad':Entry(self.f_graph,width=10),\
+			'tick':Entry(self.f_graph,width=10),\
+			'lines':BoolVar(),\
+			'ls':BoolVar(),\
+			'nls':BoolVar(),\
+		}
+		self.c = {\
+			'lines':Checkbutton(self.f_box3,text="Lines",variable=self.d['lines']),\
+			'ls':Checkbutton(self.f_box3,text="LS",variable=self.d['ls']),\
+			'nls':Checkbutton(self.f_box3,text="NLS",variable=self.d['nls']),\
+		}
 
+		Label(self.f_main,text="Polynomial").grid()
+		Label(self.f_main,text="Expression").grid(sticky='w')
+		self.d['exp'].grid()
+		Label(self.f_main,text="x for Eval").grid(sticky='w')
+		self.d['xs'].grid()
 
+		Label(self.f_box2,text="Extra Options").grid(row=0)
+		Label(self.f_box2,text="Name").grid(row=1,sticky='w')
+		self.d['name'].grid(row=2)
+		Label(self.f_box2,text="Color").grid(row=3,sticky='w')
+		self.d['color'].grid(row=4)
 
-		#self.make_canvas()
+		self.c['lines'].grid(row=1,column=0,sticky='w')
+		self.c['ls'].grid(row=2,column=0,sticky='w')
+		self.c['nls'].grid(row=3,column=0,sticky='w')
 
-	def inc_poly(self):
+		Label(self.f_graph,text="Graph").grid(row=0,column=0,columnspan=2)
+		Label(self.f_graph,text="View").grid(row=1,column=0,sticky='w')
+		self.d['view'].grid(row=2,column=0)
+		Label(self.f_graph,text="Grid").grid(row=3,column=0,sticky='w')
+		self.d['grid'].grid(row=4,column=0)
+		Label(self.f_graph,text="Padding").grid(row=1,column=1,sticky='w')
+		self.d['pad'].grid(row=2,column=1)
+		Label(self.f_graph,text="Ticks").grid(row=3,column=1,sticky='w')
+		self.d['tick'].grid(row=4,column=1)
+
+		Button(self.f_but,text="Add",command=self.poly_get).grid(row=0,column=0,sticky='ew')
+		Button(self.f_but,text="Pop").grid(row=1,column=0,sticky='ew')
+		Button(self.f_but,text="Draw",command=self.make_canvas).grid(row=0,column=1,sticky='ew')
+		Button(self.f_but,text="Quit",command=quit).grid(row=1,column=1,sticky='ew')
+
+	def entry_get(self,e):
+		if e in self.d:
+			s = self.d[e].get()
+			return None if len(s)==0 else s
+		else: raise KeyError
+
+	def poly_get(self):
 		try:
-			s = self.p_ent.get()
-			self.p_ent.delete(0,'end')
-			mx = float(self.mx_ent.get())
-			Mx = float(self.Mx_ent.get())
-			dx = abs(float(self.int_ent.get()))
-			c = self.col_ent.get()
-			if c=='': c = 'black'
-			self.col_ent.delete(0,'end')
-			N = self.name_ent.get()
-			if N=='': N = s
-			self.name_ent.delete(0,'end')
-			xs = x_range(mx,Mx,dx)
-			xy = XYpts_poly(xs,s,{'name':N,'color':c})
-			self.G.add_set(xy)
-		except Exception as e:
-			print e
+			e = self.entry_get('exp')
+			x = map(float,self.entry_get('xs').split(','))
+			if e is None or x is None: raise Exception
+			x = arange(*x) if len(x)==3 else array(sorted(x))
+			y = poly_pts(x,e)
+			o={"color":"black","name":''}
+			for k in ['name','color']:
+				s = self.entry_get(k)
+				if s is not None: o[k]=s
+			for k in self.c:
+				b = self.d[k].get()
+				if b: o[k]=True
+			#print(e,x,o)
+			P = XYpts(x,y,o)
+			print(P)
+			print(P.R)
+			self.G.add_set(P)
 
+		except Exception as e:
+			print(e)
 
 	def LINE(self,x,y,x1,y1,c='black',d=()):
 		self.w.create_line(x,y,x1,y1,fill=c,dash=d)
 
+	def gopts(self):
+		o = {}
+		try:
+			v = map(float,self.entry_get('view').split(','))
+			if len(v)==4: o['view'] = R(*v)
+		except Exception as e: print e
+		try:
+			v = map(float,self.entry_get('grid').split(','))
+			if len(v)==1: o['grid'] = v*2
+			elif len(v)==2: o['grid'] = v
+		except Exception as e: print e
+		try:
+			v = map(float,self.entry_get('pad').split(','))
+			if len(v)==1: o['px'] = o['py'] = v[0]
+			elif len(v)==2: o['px'], o['py'] = v
+		except Exception as e: print e
+		try:
+			v = map(float,self.entry_get('tick').split(','))
+			if len(v)==1: o['tick'] = v*2
+			elif len(v)==2: o['tick'] = v
+		except Exception as e: print e
+		print(o)
+		self.G.set_opts(o)
+
+
 	def make_canvas(self):
 		self.osd,scale = None, self.G.d['%']
+		self.gopts()
 		R = self.G.recalc_view()
 		W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
-		print W,H
-		# if graph is of size [200,1000]: leave alone
-		# else: set scale so it is
-		# work {
 		if W<200 or H<200 or W>1000 or H>1000:
 			scale = round(700./max(R.dM-R.dm,R.cM-R.cm))
 			print "Graph using scale:", scale
 			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
 			print W,H
-		# } end work
-		"""
-		if W<199 or H<199:
-			print 'm2'
-			scale = (min(W,H)//256+1)*100
-			print "Graph too small! using scale:",scale
-			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
-		elif W>1000 or H>1000:
-			print 'm1'
-			scale = (256//max(W,H)+1)*100
-			print "Graph too large! using scale:",scale
-			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
-			print W,H
-		"""
 
-		self.w = Tk.Canvas(self.master, width=W, height=H, background="white")
-		self.w.grid(row=4,columnspan=6)
+		self.w = Canvas(self.master, width=W, height=H, background="white")
+		self.w.grid(row=2,columnspan=3)
 		self.w.bind("<Button-1>", self.drawosd)
 		scx = lambda x: scale*(x-R.dm)
 		scy = lambda y: scale*(R.cM-y)
@@ -258,7 +254,7 @@ class XYPlane:
 			cy += 16
 
 def draw_graph():
-	root = Tk.Tk()
+	root = Tk()
 	app = XYPlane(root)
 	root.mainloop()
 

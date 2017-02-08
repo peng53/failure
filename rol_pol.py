@@ -2,6 +2,8 @@
 # Python module for changing polynomials to usable form
 import re
 import heapq
+from collections import namedtuple
+from numpy import array, arange, ones, linalg, zeros
 
 strictterms = re.compile("-?\d+\.?\d*x\d+")
 def rspol(s):
@@ -121,7 +123,9 @@ def s_poly(S):
 	right away via numpy)
 	"""
 	h = []
-	for p,c in riopol(S): heapq.heappush(h,(-p,c))
+	for p,c in riopol(S):
+		if p<0: raise ValueError
+		heapq.heappush(h,(-p,c))
 	np,c = heapq.heappop(h)
 	while len(h)!=0:
 		np2,c2 = heapq.heappop(h)
@@ -131,7 +135,7 @@ def s_poly(S):
 			for d3 in xrange(np+1,np2,1): yield 0
 			np,c = np2,c2
 	yield c
-	for d3 in xrange(np+1,1,1): yield 0
+	for d3 in range(np+1,1,1): yield 0
 
 def x_poly(P):
 	"""
@@ -176,3 +180,71 @@ def test_eq(g1,g2,E,E2=None):
 			return False
 	print "Same total yield."
 	return True
+
+def poly_pts(xs,E):
+	# xs is a numpy array
+	ys = zeros(len(xs))
+	try:
+		for c in s_poly(E):
+			ys = ys*xs + c
+		return ys
+	except ValueError:
+		raise ValueError
+		return
+
+R = namedtuple('domain_codomain','dm dM cm cM')
+x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
+
+class XYpts:
+	def __init__(self,xs,ys,opts={}): #[(x,y)] form
+		self.d=opts
+		self.x = xs
+		self.y = ys
+		self.genR()
+	def __str__(self):
+		return '\n'.join('(%f, %f)' %(x,self.y[i]) for i,x in enumerate(self.x))
+	def xy_pts(self):
+		for i,x in enumerate(self.x): yield x,self.y[i]
+	def lsq(self):
+		A = array([self.x,ones(self.x.size)])
+		W = linalg.lstsq(A.T,self.y)[0]
+		return (self.x[0],self.x[0]*W[0]+W[1],self.x[-1],self.x[-1]*W[0]+W[1])
+	def nslq(self,parts):
+		"naive segmented least squares"
+		if self.x.size>>1<parts: return
+		cut = self.x.size//parts
+		for i in xrange(0,self.x.size,cut):
+			x, y = self.x[i:i+cut], self.y[i:i+cut]
+			A = array([x,ones(x.size)])
+			w = linalg.lstsq(A.T,y)[0]
+			#W.append((x[0],w[0]*x[0]+w[1])) #W.append((x[-1],w[0]*x[-1]+w[1]))
+			yield (x[0],w[0]*x[0]+w[1])
+			yield (x[-1],w[0]*x[-1]+w[1])
+		#return W
+	def genR(self):
+		# X is assumed to be sorted.
+		my = My = self.y[0]
+		for y in self.y:
+			if y < my: my = y
+			elif y > My: My = y
+		self.R = R(self.x[0],self.x[-1],my,My)
+	def pixel_pts(self,scale,minx,maxy):
+		SX = scale*(self.x-minx)
+		SY = scale*(maxy-self.y)
+		for i,x in enumerate(SX): yield x,SY[i]
+
+#class XYpts_linear(XYpts):
+	#def __init__(self,xs,m,b,opts={}):
+		#self.d=opts
+		#self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
+		#self.y = self.x*m+b
+		#self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
+
+#class XYpts_poly(XYpts):
+	#def __init__(self,xs,p,opts={}):
+		#self.d=opts
+		#self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
+		#self.y = zeros(len(self.x))
+		#g = s_poly if isinstance(p,str) else x_poly
+		#for c in g(p): self.y = self.y * self.x + c
+		#self.genR()
