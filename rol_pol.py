@@ -5,38 +5,6 @@ import heapq
 from collections import namedtuple
 from numpy import array, arange, ones, linalg, zeros
 
-strictterms = re.compile("-?\d+\.?\d*x\d+")
-def rspol(s):
-	"""
-	strict: of A.axP form, all parameters required (except negative and .0 float)
-	because strict requires x, coef, and power, the split will always
-	gives two values: the coef and power; which just needs to be changed
-	in int/float and swapped before yielding. caret can be added to regex
-	for more 'strictness'
-	"""
-	for t in strictterms.finditer(s):
-		coef,power = t.group(0).split('x')
-		yield int(power),float(coef)
-
-term_single_power = re.compile("-?\d+\.?\d*x\d*")
-def rsppol(s):
-	"same as strictterms except you can omit the x's power if it is 1"
-	for t in term_single_power.finditer(s):
-		coef,power = t.group(0).split('x')
-		yield (1 if power=='' else int(power)),float(coef)
-
-term_zero_power = re.compile("-?\d+(.\d+)?(x\d*)?")
-def rzppol(s):
-	"""
-	same as term_single power except you can input constants without x**0
-	uses form A.axP where x and P can be assumed (1x^0) => (1)
-	peak-point cannot improve to assume 'invisible coef' without more check
-	"""
-	for t in term_zero_power.finditer(s):
-		N = t.group(0).split('x')
-		if len(N)==2: yield (1 if N[1]=='' else int(N[1])),float(N[0])
-		else: yield 0,float(N[0])
-
 ione_term = re.compile("(-?x\d*)|(-?\d+(\.\d+)?(x\d*)?)")
 def riopol(s):
 	"""
@@ -56,13 +24,6 @@ def riopol(s):
 			yield p,c
 		else: yield 0,float(t) # constant
 
-def strlin(s):
-	"""
-	For changing a str to a slope intercept pair.
-	Yet to decide how I want to do this
-	"""
-	pass
-
 def conLinPol(s):
 	"""
 	For checking degree of s.
@@ -78,7 +39,6 @@ def conLinPol(s):
 			if len(p)==0 and d==0: d = 1
 			else: d = max(int(p),d)
 	return d
-
 
 def strpoly(s):
 	"""strpoly usage, where s is expression like so: -2x4+4x-3. the integer after a x is a power.
@@ -185,7 +145,8 @@ def poly_pts(xs,E):
 	# xs is a numpy array
 	ys = zeros(len(xs))
 	try:
-		for c in s_poly(E):
+		g = s_poly if isinstance(E,str) else x_poly
+		for c in g(E):
 			ys = ys*xs + c
 		return ys
 	except ValueError:
@@ -195,13 +156,19 @@ def poly_pts(xs,E):
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
 
+#class XYpts_linear(XYpts):
+	#def __init__(self,xs,m,b,opts={}):
+		#self.d=opts
+		#self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
+		#self.y = self.x*m+b
+		#self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
+
 class XYpts:
-	def __init__(self,xs,ys,opts={}): #[(x,y)] form
-		self.d=opts
-		self.x = xs
-		self.y = ys
-		self.genR()
+	def __init__(self,xs,ys,d={}): #[(x,y)] form
+		self.d, self.x, self.y = d, xs, ys
 	def __str__(self):
+		return '\n'.join('(%f, %f)' %(x,self.y[i]) for i,x in enumerate(self.x))
+	def __repr__(self):
 		return '\n'.join('(%f, %f)' %(x,self.y[i]) for i,x in enumerate(self.x))
 	def xy_pts(self):
 		for i,x in enumerate(self.x): yield x,self.y[i]
@@ -217,10 +184,8 @@ class XYpts:
 			x, y = self.x[i:i+cut], self.y[i:i+cut]
 			A = array([x,ones(x.size)])
 			w = linalg.lstsq(A.T,y)[0]
-			#W.append((x[0],w[0]*x[0]+w[1])) #W.append((x[-1],w[0]*x[-1]+w[1]))
 			yield (x[0],w[0]*x[0]+w[1])
 			yield (x[-1],w[0]*x[-1]+w[1])
-		#return W
 	def genR(self):
 		# X is assumed to be sorted.
 		my = My = self.y[0]
@@ -232,19 +197,93 @@ class XYpts:
 		SX = scale*(self.x-minx)
 		SY = scale*(maxy-self.y)
 		for i,x in enumerate(SX): yield x,SY[i]
+	def add_opt(self,d):
+		for o in d:
+			self.d[o]=d[o]
 
-#class XYpts_linear(XYpts):
-	#def __init__(self,xs,m,b,opts={}):
-		#self.d=opts
-		#self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
-		#self.y = self.x*m+b
-		#self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
+class XYpts_ex(XYpts):
+	def __init__(self,xs,ex,d={}):
+		# where xs is raw or a range and ex is str expression
+		self.x = arange(*xs) if len(xs)==3 else array(sorted(xs))
+		self.y = poly_pts(self.x,ex)
+		self.d = d
 
-#class XYpts_poly(XYpts):
-	#def __init__(self,xs,p,opts={}):
-		#self.d=opts
-		#self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
-		#self.y = zeros(len(self.x))
-		#g = s_poly if isinstance(p,str) else x_poly
-		#for c in g(p): self.y = self.y * self.x + c
-		#self.genR()
+class XYpts_raw(XYpts):
+	def __init__(self,xs,ys,d={}):
+		xy = array([xs,ys]).T
+		gxy = xy[xy[:,0].argsort()]
+		self.x, self.y = gxy[:,0], gxy[:,1]
+		self.d = d
+
+def d_pts(lx,ly):
+	# Where lx is an x_range or iterable of floats
+	# and ly is list of terms or iterable of floats
+	# *have not solved kinks with certain inputs
+	if len(lx)==len(ly): # raw pts
+		return XYpts_raw(array(lx),array(ly))
+	else:
+		return XYpts_ex(array(lx),ly)
+
+def str_pts(qx,qy):
+	try:
+		for c in qy:
+			if c==',':
+				x, y = array(map(float,qx.split(','))), array(map(float,qy.split(',')))
+				if len(x)!=len(y): raise Exception
+				return XYpts_raw(x,y)
+			if c=='x' or c=='+':
+				x = map(float,qx.split(','))
+				return XYpts_ex(x,qy)
+	except Exception as e:
+		print e
+		raise ValueError
+	#try:
+		#return XYpts_raw(qx,qy) if raw else XYpts_ex(qx,qy)
+		##if raw:
+			##x = array(map(float,qx.split(',')))
+			##y = array(map(float,qy.split(',')))
+			##if len(x)!=len(y): raise Exception
+			##xy = array([x,y]).T
+			##gxy = xy[xy[:,1].argsort()]
+			##return gxy[:,0], gxy[:,1]
+		##else:
+			##x = map(float,qx.split(','))
+			##x = arange(*x) if len(x)==3 else array(sorted(x))
+			##y = poly_pts(x,qy)
+			##return x,y
+	#except Exception as e:
+		#print e
+
+def main():
+	e = "10x+3x3-100"
+	x = "-30,-5,5"
+	x2 = "-30,-25,-20,-15,-10"
+	y2 = "3,2,4,5,1"
+	x3 = [-30,-25,-20,-15,-10]
+	y3 = [3,2,4,5,1]
+	e3 = [(1,10),(3,3),(0,-100)]
+	print "Init XYpts object with"
+	print "-\nExpression and x_range string:"
+	print "%s and %s" %(e,x)
+	XY = str_pts(x,e)
+	print XY
+	print "-\nExpression and x points in string:"
+	print "%s and %s" %(e,x2)
+	XY = str_pts(x2,e)
+	print XY
+	print "-\nx points and y points in seperate strings:"
+	print "%s and %s" %(x2,y2)
+	XY = str_pts(x2,y2)
+	print XY
+	print "-\nx points and y points in seperate lists:"
+	print "%s and %s" %(x3,y3)
+	XY = d_pts(x3,y3)
+	print XY
+	print "-\nx points and expression as lists:"
+	print "%s and %s" %(x3,e3)
+	print "*cavaet: expression is deg,coef, not coef deg as expected"
+	XY = d_pts(x3,e3)
+	print XY
+
+if __name__=="__main__":
+	main()

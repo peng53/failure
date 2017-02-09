@@ -18,7 +18,6 @@ from numpy import array, arange, ones, linalg, zeros
 from math import ceil
 from rol_pol import *
 
-
 class XYspread:
 	def __init__(self,XYs=[],opts={}):
 		self.d = {"%":1, "view": None, "px": 0, "py": 0}
@@ -64,13 +63,18 @@ class XYPlane:
 	def __init__(self,master):
 		self.G = XYspread()
 		self.master = master
-		self.f_main, self.f_box2, self.f_box3, self.f_graph, self.f_but =\
-			Frame(master), Frame(master), Frame(master), Frame(master), Frame(master)
+		self.f_main, self.f_box2, self.f_box3, self.f_graph, self.f_but, self.f_pst =\
+			Frame(master), Frame(master), Frame(master), Frame(master), Frame(master), Frame(master)
+		self.w = Canvas(self.master, width=200, height=200, background="white")
+		self.w.bind("<Button-1>", self.drawosd)
+
 		self.f_main.grid(column=0,row=0)
 		self.f_box2.grid(column=1,row=0)
 		self.f_box3.grid(column=2,row=0)
+		self.f_pst.grid(column=3,row=0,rowspan=2)
 		self.f_graph.grid(column=0,row=1)
 		self.f_but.grid(column=1,row=1,columnspan=2)
+		self.w.grid(column=0,row=2,columnspan=4)
 
 		self.d = {\
 			'exp':Entry(self.f_main,width=25), 'xs':Entry(self.f_main,width=25),\
@@ -79,11 +83,10 @@ class XYPlane:
 			'pad':Entry(self.f_graph,width=10), 'tick':Entry(self.f_graph,width=10),\
 			'lines':BooleanVar(), 'ls':BooleanVar(), 'nls':BooleanVar(),\
 		}
-		self.c = {\
-			'lines':Checkbutton(self.f_box3,text="Lines",variable=self.d['lines']),\
-			'ls':Checkbutton(self.f_box3,text="LS",variable=self.d['ls']),\
-			'nls':Checkbutton(self.f_box3,text="NLS",variable=self.d['nls']),\
-		}
+		self.c = {}
+		for i,k in enumerate(['lines','ls','nls']):
+			self.c[k] = Checkbutton(self.f_box3,text=k.upper(),variable=self.d[k])
+			self.c[k].grid(row=i,sticky='w')
 
 		Label(self.f_main,text="Polynomial").grid()
 		Label(self.f_main,text="Expression").grid(sticky='w')
@@ -97,10 +100,6 @@ class XYPlane:
 		Label(self.f_box2,text="Color").grid(row=3,sticky='w')
 		self.d['color'].grid(row=4)
 
-		self.c['lines'].grid(row=1,column=0,sticky='w')
-		self.c['ls'].grid(row=2,column=0,sticky='w')
-		self.c['nls'].grid(row=3,column=0,sticky='w')
-
 		Label(self.f_graph,text="Graph").grid(row=0,column=0,columnspan=2)
 		Label(self.f_graph,text="View").grid(row=1,column=0,sticky='w')
 		self.d['view'].grid(row=2,column=0)
@@ -112,12 +111,14 @@ class XYPlane:
 		self.d['tick'].grid(row=4,column=1)
 
 		Button(self.f_but,text="Add",command=self.poly_get).grid(row=0,column=0,sticky='ew')
-		Button(self.f_but,text="Pop").grid(row=1,column=0,sticky='ew')
+		Button(self.f_but,text="Pop",command=self.poly_pop).grid(row=1,column=0,sticky='ew')
 		Button(self.f_but,text="Draw",command=self.make_canvas).grid(row=0,column=1,sticky='ew')
 		Button(self.f_but,text="Quit",command=quit).grid(row=1,column=1,sticky='ew')
-		self.w = Canvas(self.master, width=200, height=200, background="white")
-		self.w.grid(row=2,columnspan=3)
-		self.w.bind("<Button-1>", self.drawosd)
+
+		Label(self.f_pst,text="Sets").grid()
+		self.pst = Listbox(self.f_pst)
+		self.pst.grid(sticky='nw')
+
 
 	def entry_get(self,e):
 		if e in self.d:
@@ -128,10 +129,14 @@ class XYPlane:
 	def poly_get(self):
 		try:
 			e = self.entry_get('exp')
-			x = map(float,self.entry_get('xs').split(','))
+			#x = map(float,self.entry_get('xs').split(','))
+			x = self.entry_get('xs')
 			if e is None or x is None: raise Exception
-			x = arange(*x) if len(x)==3 else array(sorted(x))
-			y = poly_pts(x,e)
+			print x
+			print e
+			P = str_pts(x,e)
+			#x = arange(*x) if len(x)==3 else array(sorted(x))
+			#y = poly_pts(x,e)
 			o={"color":"black","name":''}
 			for k in ['name','color']:
 				s = self.entry_get(k)
@@ -139,10 +144,19 @@ class XYPlane:
 			for k in self.c:
 				b = self.d[k].get()
 				if b: o[k]=True
-			P = XYpts(x,y,o)
+			#P = XYpts(x,y,o)
+			P.add_opt(o)
+			P.genR()
 			self.G.add_set(P)
+			self.pst.insert('end', e if o['name']=='' else o['name'])
 		except Exception as e:
 			print(e)
+
+	def poly_pop(self):
+		if len(self.G.XYs)!=0:
+			i = self.pst.index('active')
+			self.G.XYs.pop(i)
+			self.pst.delete(i)
 
 	def LINE(self,x,y,x1,y1,c='black',d=()):
 		self.w.create_line(x,y,x1,y1,fill=c,dash=d)
@@ -254,13 +268,6 @@ if __name__=="__main__":
 	#gs = []
 	#gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,opts={"color":"red","name":"x","lines":0}))
 	#gs.append(XYpts(pts=lfox(-4.0,4.0,0.1,lambda x:x*x-2),opts={"color":"green","name":"x^2-2","lines":0}))
-	#gs.append(XYpts_poly(xs=x_range(-4,4,0.1),p=[(2,1),(0,-2)],opts={"color":"green","name":"x^2-2","lines":0,"nls":0,"ls":0}))
-	#gs.append(XYpts_poly(xs=x_range(-1,1,0.01),p=[(3,1)],opts={'color':'pink','name':'x^3','lines':None,'ls':None}))
 	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),opts={"color":"cyan","name":"(x+0.3)^4"}))
-	#viewr=None
-	#padx=0
-	#pady=0
-	#viewr=R(-4.5,4.5,-4.5,4.5)
-	#viewr=R(-1.25,1,-1.25,1.25)
 	#G = XYspread(gs,opts={'%':1000,'view':viewr,'px':padx,'py':pady,'grid':[0.25,0.25],'tick':[0.5,0.5]})
 	draw_graph()
