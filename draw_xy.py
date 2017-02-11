@@ -66,7 +66,7 @@ class XYPlane:
 		Label(self.f_box2,text="Color").grid(row=3,sticky='w')
 		self.d['color'].grid(row=4)
 
-		Label(self.f_graph,text="Graph").grid(row=0,column=0,columnspan=2)
+		Label(self.f_graph,text="Graph Options").grid(row=0,column=0,columnspan=2)
 		Label(self.f_graph,text="View").grid(row=1,column=0,sticky='w')
 		self.d['view'].grid(row=2,column=0)
 		Label(self.f_graph,text="Grid").grid(row=3,column=0,sticky='w')
@@ -83,7 +83,7 @@ class XYPlane:
 		Button(self.f_but,text="Draw",command=self.make_canvas).grid(row=2,column=0,sticky='ew')
 		Button(self.f_but,text="Quit",command=quit).grid(row=2,column=1,sticky='ew')
 
-		Label(self.f_pst,text="Sets").grid()
+		Label(self.f_pst,text="Data Sets").grid()
 		self.pst_sb = Scrollbar(self.f_pst)
 		self.pst = Listbox(self.f_pst,yscrollcommand=self.pst_sb.set)
 		self.pst.grid(sticky='nesw',column=0,row=1)

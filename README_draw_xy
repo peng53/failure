@@ -1,0 +1,60 @@
+README for draw_xy.py
+
+draw_xy.py is a Python program that draws an XY scatterplot
+(with optional point connection and least squares) using Tkinter.
+
+The graph's view point is automatically calulated based on the input
+x,y pairs. This can be overrided with the 'view' option.
+It is recommend to use 'ticks' option to take in account of the graph
+ scale. (which is also automatically calculated)
+
+At the moment the graph is scaled such that one of its dimensions is
+around 700px. Maybe I'll put an entry to change this in the future(?)
+
+Input options for:
+expression/ an implied form polynomial which is cxp,
+	coeffiecent x then power. c can be left out if 1;
+	x can be left out if p would be 0;
+	and p can be left out if 1.
+	Negative powers are not supported ATM
+	It is also possible to input y coordinates delimited
+	by comma. This requires the below field to be the same
+	with same number of x coords
+
+x for eval/ a x_range, which is a 3-tuple of (start_x,stop_x,change_x)
+	start_x<stop_x and change_x>0 is needed.
+	Also possible for plain x coordinates delimited by comma. This
+	option can be used with 'expression' as an expression
+
+color/ has to be a tkinter-okay color: common name or hex;
+	use the color button for selection.
+
+view/ takes a x_start,x_stop,y_start,y_stop
+
+padding & grid& ticks/ takes 1 or 2 numbers. xANDy or x,y
+	Basically, if y would be the same as x: you only need to include x.
+
+The buttons are more-or-less self-explaining. Pop deletes the selected
+ data-set (on the datasets window). If none is selected, it deletes the
+ last one. File imports comma seperated x y pairs. Doing this uses the
+ current name/color/checkbox options and adds the imported set.
+
+That is currently all the options available from the GUI.
+
+Internals:
+Mostly concerns rol_pol.py.
+Uses regex to parse poly expressions.
+Heapsort to sort terms by degree (bad idea maybe? should use sorted?)
+Horner's Method to evaluate x to y
+Numpy to execute Horner's method, store the points, and least squares.
+	(I assume there is/was a sizable gain from vectorization/array vs list storage
+	but my testing has always been small scale)
+
+Improvements to be done(?):
+	Export dataset/graph function
+	Import/Export for pickles/marshal data
+	Option to change auto-sizing settings
+	Re-implement forced scaling(?) option
+		prob. not
+	Better graph option code
+		currently it abuses exceptions (which is fine in Python?)
