@@ -14,6 +14,8 @@ Phase 7: polynomial string parsing
 .
 """
 from Tkinter import *
+from tkFileDialog import askopenfilename
+from tkColorChooser import askcolor
 from numpy import array, arange, ones, linalg, zeros
 from math import ceil
 from rol_pol import *
@@ -73,13 +75,30 @@ class XYPlane:
 		self.d['tick'].grid(row=4,column=1)
 
 		Button(self.f_but,text="Add",command=self.poly_get).grid(row=0,column=0,sticky='ew')
-		Button(self.f_but,text="Pop",command=self.poly_pop).grid(row=1,column=0,sticky='ew')
-		Button(self.f_but,text="Draw",command=self.make_canvas).grid(row=0,column=1,sticky='ew')
-		Button(self.f_but,text="Quit",command=quit).grid(row=1,column=1,sticky='ew')
+		Button(self.f_but,text="Pop",command=self.poly_pop).grid(row=0,column=1,sticky='ew')
+		Button(self.f_but,text="Color",command=self.cus_color).grid(row=1,column=0,sticky='ew')
+		Button(self.f_but,text="File",command=self.openf).grid(row=1,column=1,sticky='ew')
+		Button(self.f_but,text="Draw",command=self.make_canvas).grid(row=2,column=0,sticky='ew')
+		Button(self.f_but,text="Quit",command=quit).grid(row=2,column=1,sticky='ew')
 
 		Label(self.f_pst,text="Sets").grid()
 		self.pst = Listbox(self.f_pst)
 		self.pst.grid(sticky='nw')
+
+	def openf(self):
+		fn = askopenfilename()
+		with open(fn,'r') as f: l = [map(float,line.strip().split(',')) for line in f]
+		o = self.p_opts()
+		if 'name' not in o: o['name']=fn
+		self.d['name'].delete(0,'end')
+		self.d['color'].delete(0,'end')
+		x,y = zip(*l)
+		try: P = d_pts(x,y)
+		except: return
+		P.add_opt(o)
+		P.genR()
+		self.G.add_set(P)
+		self.pst.insert('end',o['name'])
 
 	def entry_get(self,e):
 		if e in self.d:
@@ -87,31 +106,38 @@ class XYPlane:
 			return None if len(s)==0 else s
 		else: raise KeyError
 
+	def p_opts(self):
+		o = {"color":"black"}
+		for k in ['name','color']:
+			s = self.entry_get(k)
+			if s is not None: o[k]=s
+		for k in self.c:
+			b = self.d[k].get()
+			if b: o[k]=True
+		return o
+
+	def cus_color(self):
+		c = askcolor()
+		if c!=(None, None):
+			self.d['color'].delete(0,'end')
+			self.d['color'].insert(0,c[1])
+
 	def poly_get(self):
 		try:
 			e = self.entry_get('exp')
-			#x = map(float,self.entry_get('xs').split(','))
 			x = self.entry_get('xs')
 			if e is None or x is None: raise Exception
-			print x
-			print e
 			P = str_pts(x,e)
-			#x = arange(*x) if len(x)==3 else array(sorted(x))
-			#y = poly_pts(x,e)
-			o={"color":"black","name":''}
-			for k in ['name','color']:
-				s = self.entry_get(k)
-				if s is not None: o[k]=s
-			for k in self.c:
-				b = self.d[k].get()
-				if b: o[k]=True
-			#P = XYpts(x,y,o)
+			o = self.p_opts()
 			P.add_opt(o)
 			P.genR()
 			self.G.add_set(P)
 			self.pst.insert('end', e if o['name']=='' else o['name'])
-		except Exception as e:
-			print(e)
+			self.d['exp'].delete(0,'end')
+			self.d['name'].delete(0,'end')
+			self.d['color'].delete(0,'end')
+			#for g in self.G.XYs: print id(g.d)
+		except Exception as e: print(e)
 
 	def poly_pop(self):
 		if len(self.G.XYs)!=0:
@@ -124,28 +150,26 @@ class XYPlane:
 
 	def gopts(self):
 		o = {}
-		#for k in ['view','grid','pad','tick']:
-			#self.entry_get(k)
 		try:
 			v = map(float,self.entry_get('view').split(','))
 			if len(v)==4: o['view'] = R(*v)
 			elif len(v)==2: o['view'] = R(v[0],v[1],v[0],v[1])
-		except Exception as e: print e
+		except Exception as e: pass
 		try:
 			v = map(float,self.entry_get('grid').split(','))
 			if len(v)==1: o['grid'] = v*2
 			elif len(v)==2: o['grid'] = v
-		except Exception as e: print e
+		except Exception as e: pass
 		try:
 			v = map(float,self.entry_get('pad').split(','))
 			if len(v)==1: o['px'] = o['py'] = v[0]
 			elif len(v)==2: o['px'], o['py'] = v
-		except Exception as e: print e
+		except Exception as e: pass
 		try:
 			v = map(float,self.entry_get('tick').split(','))
 			if len(v)==1: o['tick'] = v*2
 			elif len(v)==2: o['tick'] = v
-		except Exception as e: print e
+		except Exception as e: pass
 		print(o)
 		self.G.set_opts(o)
 

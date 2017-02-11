@@ -181,8 +181,9 @@ def fox(x0,x1,dx,F):
 			x+=dx
 
 class XYpts:
-	def __init__(self,xs,ys,d={}): #[(x,y)] form
-		self.d, self.x, self.y = d, xs, ys
+	def __init__(self,xs,ys,d=None): #[(x,y)] form
+		self.x, self.y = xs, ys
+		self.d = {} if d is None else d
 	def __str__(self):
 		return '\n'.join('(%f, %f)' %(x,self.y[i]) for i,x in enumerate(self.x))
 	def __repr__(self):
@@ -219,21 +220,21 @@ class XYpts:
 			self.d[o]=d[o]
 
 class XYpts_ex(XYpts):
-	def __init__(self,xs,ex,d={}):
+	def __init__(self,xs,ex,d=None):
 		# where xs is raw or a range and ex is str expression
 		self.x = arange(*xs) if len(xs)==3 else array(sorted(xs))
 		self.y = poly_pts(self.x,ex)
-		self.d = d
+		self.d = {} if d is None else d
 
 class XYpts_raw(XYpts):
-	def __init__(self,xs,ys,d={}):
+	def __init__(self,xs,ys,d=None):
 		xy = array([xs,ys]).T
 		gxy = xy[xy[:,0].argsort()]
 		self.x, self.y = gxy[:,0], gxy[:,1]
-		self.d = d
+		self.d = {} if d is None else d
 
 class XYpts_fx(XYpts):
-	def __init__(self,xr,F,d={}):
+	def __init__(self,xr,F,d=None):
 		if isinstance(xr,x_range):
 			self.x, self.y = [], []
 			for x,y in fox(*xr,F=F):
@@ -242,7 +243,7 @@ class XYpts_fx(XYpts):
 		else:
 			self.x = xr
 			self.y = [F(x) for x in xr]
-		self.d = d
+		self.d = {} if d is None else d
 
 def d_pts(lx,ly):
 	# Where lx is an x_range or iterable of floats
@@ -266,9 +267,12 @@ def str_pts(qx,qy):
 		raise ValueError
 
 class XYspread:
-	def __init__(self,XYs=[],opts={'px':0,'py':0}):
-		self.d = opts
-		self.XYs = XYs
+	def __init__(self,XYs=None,opts=None):
+		self.d = {'px':0, 'py':0}
+		if opts is not None:
+			for k in opts:
+				self.d[k] = opts[k]
+		self.XYs = [] if XYs is None else XYs
 
 	def add_set(self,XY):
 		self.XYs.append(XY)
@@ -278,6 +282,7 @@ class XYspread:
 			min(t.R.cm for t in self.XYs)-self.d['py'],max(t.R.cM for t in self.XYs)+self.d['py'])
 		return self.R
 	def set_opts(self,opts):
+		self.d = {'px':0, 'py':0}
 		for o in opts:
 			self.d[o]=opts[o]
 
