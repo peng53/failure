@@ -24,22 +24,24 @@ class XYPlane:
 	def __init__(self,master):
 		self.G = XYspread([],opts={"px": 0, "py": 0})
 		self.master = master
-		self.f_main, self.f_box2, self.f_box3, self.f_graph, self.f_but, self.f_pst =\
-			Frame(master), Frame(master), Frame(master), Frame(master), Frame(master), Frame(master)
-		self.w = Canvas(self.master, width=200, height=200, background="white")
+		self.f_main, self.f_eopt, self.f_graph, self.f_but, self.f_pst =\
+			Frame(master), Frame(master), Frame(master), Frame(master), Frame(master)
+		self.f_box2, self.f_box3 = Frame(self.f_eopt), Frame(self.f_eopt)
+		self.w = Canvas(self.master, width=1, height=1, background="white")
 		self.w.bind("<Button-1>", self.drawosd)
 
 		self.f_main.grid(column=0,row=0)
-		self.f_box2.grid(column=1,row=0)
-		self.f_box3.grid(column=2,row=0)
-		self.f_pst.grid(column=3,row=0,rowspan=2)
-		self.f_graph.grid(column=0,row=1)
-		self.f_but.grid(column=1,row=1,columnspan=2)
-		self.w.grid(column=0,row=2,columnspan=4)
+		self.f_eopt.grid(column=0,row=1)
+		self.f_graph.grid(column=0,row=2)
+		self.f_but.grid(column=0,row=3)
+		self.f_pst.grid(column=0,row=4)
+		self.w.grid(column=1,row=0,rowspan=5)
+		self.f_box2.grid(column=0,row=1)
+		self.f_box3.grid(column=1,row=1)
 
 		self.d = {\
-			'exp':Entry(self.f_main,width=25), 'xs':Entry(self.f_main,width=25),\
-			'name':Entry(self.f_box2,width=10), 'color':Entry(self.f_box2,width=10),\
+			'exp':Entry(self.f_main,width=28), 'xs':Entry(self.f_main,width=28),\
+			'name':Entry(self.f_box2,width=20), 'color':Entry(self.f_box2,width=20),\
 			'view':Entry(self.f_graph,width=10), 'grid':Entry(self.f_graph,width=10),\
 			'pad':Entry(self.f_graph,width=10), 'tick':Entry(self.f_graph,width=10),\
 			'lines':BooleanVar(), 'ls':BooleanVar(), 'nls':BooleanVar(),\
@@ -58,7 +60,7 @@ class XYPlane:
 		Label(self.f_main,text="x for Eval").grid(sticky='w')
 		self.d['xs'].grid()
 
-		Label(self.f_box2,text="Extra Options").grid(row=0)
+		Label(self.f_eopt,text="Extra Options").grid(row=0,columnspan=2)
 		Label(self.f_box2,text="Name").grid(row=1,sticky='w')
 		self.d['name'].grid(row=2)
 		Label(self.f_box2,text="Color").grid(row=3,sticky='w')
@@ -82,8 +84,11 @@ class XYPlane:
 		Button(self.f_but,text="Quit",command=quit).grid(row=2,column=1,sticky='ew')
 
 		Label(self.f_pst,text="Sets").grid()
-		self.pst = Listbox(self.f_pst)
-		self.pst.grid(sticky='nw')
+		self.pst_sb = Scrollbar(self.f_pst)
+		self.pst = Listbox(self.f_pst,yscrollcommand=self.pst_sb.set)
+		self.pst.grid(sticky='nesw',column=0,row=1)
+		self.pst_sb.config(command=self.pst.yview)
+		self.pst_sb.grid(column=1,row=1,sticky='nesw')
 
 	def openf(self):
 		fn = askopenfilename()
@@ -132,7 +137,7 @@ class XYPlane:
 			P.add_opt(o)
 			P.genR()
 			self.G.add_set(P)
-			self.pst.insert('end', e if o['name']=='' else o['name'])
+			self.pst.insert('end', o['name'] if 'name' in o else e)
 			self.d['exp'].delete(0,'end')
 			self.d['name'].delete(0,'end')
 			self.d['color'].delete(0,'end')
@@ -170,12 +175,9 @@ class XYPlane:
 			if len(v)==1: o['tick'] = v*2
 			elif len(v)==2: o['tick'] = v
 		except Exception as e: pass
-		print(o)
 		self.G.set_opts(o)
 
-
 	def make_canvas(self):
-		#self.osd,scale = None, self.G.d['%']
 		self.osd = None
 		self.gopts()
 		if 'view' in self.G.d:
@@ -185,8 +187,8 @@ class XYPlane:
 		#R = self.G.recalc_view()
 		#W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
 		#if W<200 or H<200 or W>1000 or H>1000:
-		scale = round(700./max(R.dM-R.dm,R.cM-R.cm))
-		print "Graph using scale:", scale
+		self.scale = scale = round(700./max(R.dM-R.dm,R.cM-R.cm))
+		#print "Graph using scale:", scale
 		W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
 			#print W,H
 		self.w.delete('all')
@@ -246,10 +248,12 @@ class XYPlane:
 				self.w.delete(e)
 		else: self.osd = []
 		cx,cy = event.x,event.y
+		self.osd.append(self.w.create_text(cx,cy-32,text="%sx scale" %self.scale))
 		for g in self.G.XYs:
-			self.osd.append(self.w.create_rectangle(cx-16,cy+5,cx+16,cy+7,fill=g.d['color'],width=0))
-			self.osd.append(self.w.create_text(cx,cy,text=g.d['name'],fill="black"))
-			cy += 16
+			if 'name' in g.d:
+				self.osd.append(self.w.create_rectangle(cx-16,cy+5,cx+16,cy+7,fill=g.d['color'],width=0))
+				self.osd.append(self.w.create_text(cx,cy,text=g.d['name'],fill="black"))
+				cy += 16
 
 def draw_graph():
 	root = Tk()
