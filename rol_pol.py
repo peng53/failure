@@ -156,12 +156,29 @@ def poly_pts(xs,E):
 R = namedtuple('domain_codomain','dm dM cm cM')
 x_range = namedtuple('x_range','x0 x1 dx') # x_range should have x0<x1 & 0<dx ATM
 
-#class XYpts_linear(XYpts):
-	#def __init__(self,xs,m,b,opts={}):
-		#self.d=opts
-		#self.x = arange(*xs) if isinstance(xs,x_range) else array(sorted(xs))
-		#self.y = self.x*m+b
-		#self.R = R(self.x[0],self.x[-1],self.y[0],self.y[-1]) if m>0 else R(self.x[0],self.x[-1],self.y[-1],self.y[0])
+def frange(x0,x1,dx):
+	x = x0
+	if dx>0:
+		while x<x1:
+			yield x
+			x+=dx
+	else:
+		 while x>x1:
+			yield x
+			x+=dx
+def fox(x0,x1,dx,F):
+	# Allows to get x,f(x) points on with range and lambda function
+	# Useful for functions like (x-2)^3+4 since implied form doesn't allow
+	# for parenthesis (and negative powers)
+	x = x0
+	if dx>0:
+		while x<x1:
+			yield x,F(x)
+			x+=dx
+	else:
+		 while x>x1:
+			yield x,F(x)
+			x+=dx
 
 class XYpts:
 	def __init__(self,xs,ys,d={}): #[(x,y)] form
@@ -215,14 +232,24 @@ class XYpts_raw(XYpts):
 		self.x, self.y = gxy[:,0], gxy[:,1]
 		self.d = d
 
+class XYpts_fx(XYpts):
+	def __init__(self,xr,F,d={}):
+		if isinstance(xr,x_range):
+			self.x, self.y = [], []
+			for x,y in fox(*xr,F=F):
+				self.x.append(x)
+				self.y.append(y)
+		else:
+			self.x = xr
+			self.y = [F(x) for x in xr]
+		self.d = d
+
 def d_pts(lx,ly):
 	# Where lx is an x_range or iterable of floats
 	# and ly is list of terms or iterable of floats
 	# *have not solved kinks with certain inputs
-	if len(lx)==len(ly): # raw pts
-		return XYpts_raw(array(lx),array(ly))
-	else:
-		return XYpts_ex(array(lx),ly)
+	if len(lx)==len(ly): return XYpts_raw(array(lx),array(ly))
+	else: return XYpts_ex(array(lx),ly)
 
 def str_pts(qx,qy):
 	try:
@@ -237,22 +264,22 @@ def str_pts(qx,qy):
 	except Exception as e:
 		print e
 		raise ValueError
-	#try:
-		#return XYpts_raw(qx,qy) if raw else XYpts_ex(qx,qy)
-		##if raw:
-			##x = array(map(float,qx.split(',')))
-			##y = array(map(float,qy.split(',')))
-			##if len(x)!=len(y): raise Exception
-			##xy = array([x,y]).T
-			##gxy = xy[xy[:,1].argsort()]
-			##return gxy[:,0], gxy[:,1]
-		##else:
-			##x = map(float,qx.split(','))
-			##x = arange(*x) if len(x)==3 else array(sorted(x))
-			##y = poly_pts(x,qy)
-			##return x,y
-	#except Exception as e:
-		#print e
+
+class XYspread:
+	def __init__(self,XYs=[],opts={'px':0,'py':0}):
+		self.d = opts
+		self.XYs = XYs
+
+	def add_set(self,XY):
+		self.XYs.append(XY)
+
+	def recalc_view(self):
+		self.R = R(min(t.R.dm for t in self.XYs)-self.d['px'],max(t.R.dM for t in self.XYs)+self.d['px'],\
+			min(t.R.cm for t in self.XYs)-self.d['py'],max(t.R.cM for t in self.XYs)+self.d['py'])
+		return self.R
+	def set_opts(self,opts):
+		for o in opts:
+			self.d[o]=opts[o]
 
 def main():
 	e = "10x+3x3-100"
@@ -262,6 +289,8 @@ def main():
 	x3 = [-30,-25,-20,-15,-10]
 	y3 = [3,2,4,5,1]
 	e3 = [(1,10),(3,3),(0,-100)]
+	xr = x_range(-30,-5,5)
+	l = lambda x: 10*x + 3*x**3 - 100
 	print "Init XYpts object with"
 	print "-\nExpression and x_range string:"
 	print "%s and %s" %(e,x)
@@ -283,6 +312,14 @@ def main():
 	print "%s and %s" %(x3,e3)
 	print "*cavaet: expression is deg,coef, not coef deg as expected"
 	XY = d_pts(x3,e3)
+	print XY
+	print "-\nx range and lambda function:"
+	print "%s and %s (as x range and lambda)" %(x,e)
+	XY = XYpts_fx(xr,l)
+	print XY
+	print "-\nx list and lambda function:"
+	print "%s and %s (as x list and lambda)" %(x3,e)
+	XY = XYpts_fx(x3,l)
 	print XY
 
 if __name__=="__main__":

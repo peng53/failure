@@ -18,50 +18,9 @@ from numpy import array, arange, ones, linalg, zeros
 from math import ceil
 from rol_pol import *
 
-class XYspread:
-	def __init__(self,XYs=[],opts={}):
-		self.d = {"%":1, "view": None, "px": 0, "py": 0}
-		for o in opts: self.d[o] = opts[o]
-		if self.d['%']<0: raise ValueError
-		#self.d = opts
-		self.XYs = XYs
-
-	def add_set(self,XY):
-		self.XYs.append(XY)
-
-	def recalc_view(self):
-		self.R = R(min(t.R.dm for t in self.XYs)-self.d['px'],max(t.R.dM for t in self.XYs)+self.d['px'],\
-			min(t.R.cm for t in self.XYs)-self.d['py'],max(t.R.cM for t in self.XYs)+self.d['py'])\
-			if self.d['view'] is None else self.d['view']
-		return self.R
-	def set_opts(self,opts):
-		for o in opts:
-			self.d[o]=opts[o]
-
-def frange(x0,x1,dx):
-	x = x0
-	if dx>0:
-		while x<x1:
-			yield x
-			x+=dx
-	else:
-		 while x>x1:
-			yield x
-			x+=dx
-def fox(x0,x1,dx,F):
-	x = x0
-	if dx>0:
-		while x<x1:
-			yield x,F(x)
-			x+=dx
-	else:
-		 while x>x1:
-			yield x,F(x)
-			x+=dx
-
 class XYPlane:
 	def __init__(self,master):
-		self.G = XYspread()
+		self.G = XYspread([],opts={"px": 0, "py": 0})
 		self.master = master
 		self.f_main, self.f_box2, self.f_box3, self.f_graph, self.f_but, self.f_pst =\
 			Frame(master), Frame(master), Frame(master), Frame(master), Frame(master), Frame(master)
@@ -83,10 +42,13 @@ class XYPlane:
 			'pad':Entry(self.f_graph,width=10), 'tick':Entry(self.f_graph,width=10),\
 			'lines':BooleanVar(), 'ls':BooleanVar(), 'nls':BooleanVar(),\
 		}
-		self.c = {}
-		for i,k in enumerate(['lines','ls','nls']):
-			self.c[k] = Checkbutton(self.f_box3,text=k.upper(),variable=self.d[k])
-			self.c[k].grid(row=i,sticky='w')
+		self.d['exp'].insert('end',"-0.33x2+0.05x3")
+		self.d['xs'].insert('end',"-5,9,0.1")
+		self.d['color'].insert('end','red')
+		self.d['grid'].insert('end','1,2')
+		self.d['tick'].insert('end','2,4')
+		self.c = {k:Checkbutton(self.f_box3,text=k.upper(),variable=self.d[k]) for k in ['lines','ls','nls']}
+		for i,k in enumerate(self.c): self.c[k].grid(row=i,sticky='w')
 
 		Label(self.f_main,text="Polynomial").grid()
 		Label(self.f_main,text="Expression").grid(sticky='w')
@@ -118,7 +80,6 @@ class XYPlane:
 		Label(self.f_pst,text="Sets").grid()
 		self.pst = Listbox(self.f_pst)
 		self.pst.grid(sticky='nw')
-
 
 	def entry_get(self,e):
 		if e in self.d:
@@ -163,6 +124,8 @@ class XYPlane:
 
 	def gopts(self):
 		o = {}
+		#for k in ['view','grid','pad','tick']:
+			#self.entry_get(k)
 		try:
 			v = map(float,self.entry_get('view').split(','))
 			if len(v)==4: o['view'] = R(*v)
@@ -188,15 +151,20 @@ class XYPlane:
 
 
 	def make_canvas(self):
-		self.osd,scale = None, self.G.d['%']
+		#self.osd,scale = None, self.G.d['%']
+		self.osd = None
 		self.gopts()
-		R = self.G.recalc_view()
+		if 'view' in self.G.d:
+			R = self.G.d['view']
+		else:
+			R = self.G.recalc_view()
+		#R = self.G.recalc_view()
+		#W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
+		#if W<200 or H<200 or W>1000 or H>1000:
+		scale = round(700./max(R.dM-R.dm,R.cM-R.cm))
+		print "Graph using scale:", scale
 		W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
-		if W<200 or H<200 or W>1000 or H>1000:
-			scale = round(700./max(R.dM-R.dm,R.cM-R.cm))
-			print "Graph using scale:", scale
-			W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
-			print W,H
+			#print W,H
 		self.w.delete('all')
 		self.w.config(width=W,height=H)
 		scx = lambda x: scale*(x-R.dm)
