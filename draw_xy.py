@@ -23,6 +23,7 @@ from rol_pol import *
 class XYPlane:
 	def __init__(self,master):
 		self.G = XYspread([],opts={"px": 0, "py": 0})
+		self.osd = None
 		self.master = master
 		self.f_main, self.f_eopt, self.f_graph, self.f_but, self.f_pst =\
 			Frame(master), Frame(master), Frame(master), Frame(master), Frame(master)
@@ -30,14 +31,14 @@ class XYPlane:
 		self.w = Canvas(self.master, width=1, height=1, background="white")
 		self.w.bind("<Button-1>", self.drawosd)
 
-		self.f_main.grid(column=0,row=0)
-		self.f_eopt.grid(column=0,row=1)
-		self.f_graph.grid(column=0,row=2)
-		self.f_but.grid(column=0,row=3)
-		self.f_pst.grid(column=0,row=4)
-		self.w.grid(column=1,row=0,rowspan=5)
+		self.f_main.grid(row=0)
+		self.f_eopt.grid(row=1)
 		self.f_box2.grid(column=0,row=1)
 		self.f_box3.grid(column=1,row=1)
+		self.f_graph.grid(row=2)
+		self.f_but.grid(row=3)
+		self.f_pst.grid(row=4)
+		self.w.grid(column=1,row=0,rowspan=5)
 
 		self.d = {\
 			'exp':Entry(self.f_main,width=28), 'xs':Entry(self.f_main,width=28),\
@@ -52,7 +53,7 @@ class XYPlane:
 		self.d['grid'].insert('end','1,2')
 		self.d['tick'].insert('end','2,4')
 		self.c = {k:Checkbutton(self.f_box3,text=k.upper(),variable=self.d[k]) for k in ['lines','ls','nls']}
-		for i,k in enumerate(self.c): self.c[k].grid(row=i,sticky='w')
+		for k in self.c: self.c[k].grid(sticky='w')
 
 		Label(self.f_main,text="Polynomial").grid()
 		Label(self.f_main,text="Expression").grid(sticky='w')
@@ -61,10 +62,10 @@ class XYPlane:
 		self.d['xs'].grid()
 
 		Label(self.f_eopt,text="Extra Options").grid(row=0,columnspan=2)
-		Label(self.f_box2,text="Name").grid(row=1,sticky='w')
-		self.d['name'].grid(row=2)
-		Label(self.f_box2,text="Color").grid(row=3,sticky='w')
-		self.d['color'].grid(row=4)
+		Label(self.f_box2,text="Name").grid(sticky='w')
+		self.d['name'].grid()
+		Label(self.f_box2,text="Color").grid(sticky='w')
+		self.d['color'].grid()
 
 		Label(self.f_graph,text="Graph Options").grid(row=0,column=0,columnspan=2)
 		Label(self.f_graph,text="View").grid(row=1,column=0,sticky='w')
@@ -106,16 +107,14 @@ class XYPlane:
 		self.pst.insert('end',o['name'])
 
 	def entry_get(self,e):
-		if e in self.d:
-			s = self.d[e].get()
-			return None if len(s)==0 else s
-		else: raise KeyError
+		s = self.d[e].get()
+		return None if len(s)==0 else s
 
 	def p_opts(self):
 		o = {"color":"black"}
 		for k in ['name','color']:
 			s = self.entry_get(k)
-			if s is not None: o[k]=s
+			if s: o[k]=s
 		for k in self.c:
 			b = self.d[k].get()
 			if b: o[k]=True
@@ -153,44 +152,56 @@ class XYPlane:
 	def LINE(self,x,y,x1,y1,c='black',d=()):
 		self.w.create_line(x,y,x1,y1,fill=c,dash=d)
 
+	def nicecst(self,e,N):
+		v = self.entry_get(e)
+		if v is not None:
+			if ',' in v:
+				v = v.split(',')
+				if len(v) in N: return map(float,v)
+			if 1 in N:
+				return float(v)
+		return None
+
 	def gopts(self):
 		o = {}
-		try:
-			v = map(float,self.entry_get('view').split(','))
-			if len(v)==4: o['view'] = R(*v)
-			elif len(v)==2: o['view'] = R(v[0],v[1],v[0],v[1])
-		except Exception as e: pass
-		try:
-			v = map(float,self.entry_get('grid').split(','))
-			if len(v)==1: o['grid'] = v*2
-			elif len(v)==2: o['grid'] = v
-		except Exception as e: pass
-		try:
-			v = map(float,self.entry_get('pad').split(','))
-			if len(v)==1: o['px'] = o['py'] = v[0]
-			elif len(v)==2: o['px'], o['py'] = v
-		except Exception as e: pass
-		try:
-			v = map(float,self.entry_get('tick').split(','))
-			if len(v)==1: o['tick'] = v*2
-			elif len(v)==2: o['tick'] = v
-		except Exception as e: pass
+		v = self.nicecst('view',[2,4])
+		if v: o['view'] = R(v[0],v[1],v[0],v[1]) if len(v)==2 else R(*v)
+		v = self.nicecst('grid',[1,2])
+		if v: o['grid'] = [v,v] if isinstance(v,float) else v
+		v = self.nicecst('tick',[1,2])
+		if v: o['tick'] = [v,v] if isinstance(v,float) else v
+		v = self.nicecst('pad',[1,2])
+		if v:
+			if isinstance(v,float): o['px'] = o['py'] = v
+			else: o['px'], o['py'] = v
 		self.G.set_opts(o)
+		#try:
+			#v = map(float,self.entry_get('view').split(','))
+			#if len(v)==4: o['view'] = R(*v)
+			#elif len(v)==2: o['view'] = R(v[0],v[1],v[0],v[1])
+		#except Exception as e: pass
+		#try:
+			#v = map(float,self.entry_get('grid').split(','))
+			#if len(v)==1: o['grid'] = v*2
+			#elif len(v)==2: o['grid'] = v
+		#except Exception as e: pass
+		#try:
+			#v = map(float,self.entry_get('pad').split(','))
+			#if len(v)==1: o['px'] = o['py'] = v[0]
+			#elif len(v)==2: o['px'], o['py'] = v
+		#except Exception as e: pass
+		#try:
+			#v = map(float,self.entry_get('tick').split(','))
+			#if len(v)==1: o['tick'] = v*2
+			#elif len(v)==2: o['tick'] = v
+		#except Exception as e: pass
+		#self.G.set_opts(o)
 
 	def make_canvas(self):
-		self.osd = None
 		self.gopts()
-		if 'view' in self.G.d:
-			R = self.G.d['view']
-		else:
-			R = self.G.recalc_view()
-		#R = self.G.recalc_view()
-		#W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
-		#if W<200 or H<200 or W>1000 or H>1000:
+		R = self.G.d['view'] if 'view' in self.G.d else self.G.recalc_view()
 		self.scale = scale = round(700./max(R.dM-R.dm,R.cM-R.cm))
-		#print "Graph using scale:", scale
 		W, H = 1+int(ceil(scale * abs(R.dM - R.dm))), 2+int(ceil(scale * abs(R.cM - R.cm)))
-			#print W,H
 		self.w.delete('all')
 		self.w.config(width=W,height=H)
 		scx = lambda x: scale*(x-R.dm)
@@ -212,20 +223,16 @@ class XYPlane:
 			for t,x in fox(-tx,R.dm,-tx,scx): self.w.create_text(x,OY,text=str(t))
 			for t,y in fox(ty,R.cM,ty,scy): self.w.create_text(OX,y,text=str(t))
 			for t,y in fox(-ty,R.cm,-ty,scy): self.w.create_text(OX,y,text=str(t))
-
 		for g in self.G.XYs:
-			if 'ls' in g.d:
-				# Least squares
+			if 'ls' in g.d: # Least squares
 				lr = g.lsq()
 				self.LINE(scx(lr[0]),scy(lr[1]),scx(lr[2]),scy(lr[3]),g.d['color'],(2,6,2))
-			if 'nls' in g.d:
-				# Naive
+			if 'nls' in g.d: # Naive
 				x0 = y0 = None
 				for x,y in g.nslq(3):
 					x1, y1 = scp(x,y)
 					if x0 is not None: self.LINE(x0,y0,x1,y1,"purple",[4,3,4])
 					x0, y0 = x1, y1
-
 			x0 = y0 = None
 			lpad = rpad = 3
 			for x,y in g.pixel_pts(scale,R.dm,R.cM):
@@ -243,7 +250,7 @@ class XYPlane:
 					if x0 is not None and 'lines' in g.d: self.LINE(x0,y0,x,y,g.d['color'])
 				x0,y0=x,y
 	def drawosd(self,event):
-		if self.osd is not None:
+		if self.osd:
 			for e in self.osd:
 				self.w.delete(e)
 		else: self.osd = []
@@ -261,9 +268,4 @@ def draw_graph():
 	root.mainloop()
 
 if __name__=="__main__":
-	#gs = []
-	#gs.append(XYpts_linear(xs=x_range(-5,5,1),m=1,b=0,opts={"color":"red","name":"x","lines":0}))
-	#gs.append(XYpts(pts=lfox(-4.0,4.0,0.1,lambda x:x*x-2),opts={"color":"green","name":"x^2-2","lines":0}))
-	#gs.append(XYpts(pts=lfox(-2.0,2.0,0.1,lambda x:(x+0.3)**4),opts={"color":"cyan","name":"(x+0.3)^4"}))
-	#G = XYspread(gs,opts={'%':1000,'view':viewr,'px':padx,'py':pady,'grid':[0.25,0.25],'tick':[0.5,0.5]})
 	draw_graph()

@@ -3,7 +3,7 @@
 import re
 import heapq
 from collections import namedtuple
-from numpy import array, arange, ones, linalg, zeros
+from numpy import array, arange, ones, linalg, zeros, empty, power
 
 ione_term = re.compile("(-?x\d*)|(-?\d+(\.\d+)?(x\d*)?)")
 def riopol(s):
@@ -266,10 +266,56 @@ def str_pts(qx,qy):
 		print e
 		raise ValueError
 
+valid_tok = re.compile(r"(\d+(\.\d+)?)|([()+*/^x-])")
+def fixate(s):
+	for t in valid_tok.finditer(s):
+		yield t.group(0)
+
+def ob(s):
+	p = {'+':2,'-':2,'*':3,'/':3,'^':4}
+	sstk, out = [], []
+	c = None
+	for t in fixate(s):
+		if t=='x' or t.lstrip('-').isdigit(): out.append('x' if t=='x' else float(t))
+		elif t in p:
+			if len(sstk)==0 or sstk[-1]=='(' or t==sstk[-1]=='^' or p[t]>p[sstk[-1]]:
+				sstk.append(t)
+			else:
+				out.append(sstk.pop())
+				sstk.append(t)
+		elif t=='(': sstk.append('(')
+		elif t==')':
+			while sstk[-1]!='(':
+				out.append(sstk.pop())
+			sstk.pop()
+	while len(sstk)!=0:
+		c = sstk.pop()
+		if c!='(': out.append(c)
+	return out
+
+def ev_pf(pf,xs):
+	r = 0
+	nstk = []
+	for t in pf:
+		if t=='x': nstk.append(xs)
+		elif isinstance(t,float):
+			a = empty(len(xs))
+			a.fill(t)
+			nstk.append(a)
+		else:
+			b, a = nstk.pop(), nstk.pop()
+			nstk.append(a+b if t=='+' else a-b if t=='-' else a*b if t=='*' else a/b if t=='/' else power(a,b))
+			#if t=='+': nstk.append(a+b)
+			#elif t=='-': nstk.append(a-b)
+			#elif t=='*': nstk.append(a*b)
+			#elif t=='/': nstk.append(a/b)
+			#elif t=='^': nstk.append(power(a,b))
+	return nstk.pop()
+
 class XYspread:
 	def __init__(self,XYs=None,opts=None):
 		self.d = {'px':0, 'py':0}
-		if opts is not None:
+		if opts:
 			for k in opts:
 				self.d[k] = opts[k]
 		self.XYs = [] if XYs is None else XYs
