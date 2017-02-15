@@ -14,7 +14,7 @@ Phase 7: polynomial string parsing
 .
 """
 from Tkinter import *
-from tkFileDialog import askopenfilename
+from tkFileDialog import askopenfilename, asksaveasfilename
 from tkColorChooser import askcolor
 from numpy import array, arange, ones, linalg, zeros
 from math import ceil
@@ -83,6 +83,7 @@ class XYPlane:
 		Button(self.f_but,text="File",command=self.openf).grid(row=1,column=1,sticky='ew')
 		Button(self.f_but,text="Draw",command=self.make_canvas).grid(row=2,column=0,sticky='ew')
 		Button(self.f_but,text="Quit",command=quit).grid(row=2,column=1,sticky='ew')
+		Button(self.f_but,text="Print",command=self.printw).grid(row=2,column=2,sticky='ew')
 
 		Label(self.f_pst,text="Data Sets").grid()
 		self.pst_sb = Scrollbar(self.f_pst)
@@ -261,7 +262,10 @@ class XYPlane:
 				self.osd.append(self.w.create_rectangle(cx-16,cy+5,cx+16,cy+7,fill=g.d['color'],width=0))
 				self.osd.append(self.w.create_text(cx,cy,text=g.d['name'],fill="black"))
 				cy += 16
-
+	def printw(self):
+		fn = asksaveasfilename()
+		with open(fn,'w') as f:
+			f.write(self.w.postscript())
 def draw_graph():
 	root = Tk()
 	app = XYPlane(root)

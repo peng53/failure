@@ -266,7 +266,7 @@ def str_pts(qx,qy):
 		print e
 		raise ValueError
 
-valid_tok = re.compile(r"(\d+(\.\d+)?)|([()+*/^x-])")
+valid_tok = re.compile(r"(-?\d+(\.\d+)?)|([()+*/^x-])")
 def fixate(s):
 	for t in valid_tok.finditer(s):
 		yield t.group(0)
@@ -294,7 +294,6 @@ def ob(s):
 	return out
 
 def ev_pf(pf,xs):
-	r = 0
 	nstk = []
 	for t in pf:
 		if t=='x': nstk.append(xs)
