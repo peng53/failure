@@ -2,6 +2,7 @@
 #include <random>
 #include <ctime>
 #include <cstdlib>
+#include <cstring>
 
 using namespace std;
 
@@ -22,14 +23,18 @@ char c_lookup(bool inc[6],int r){
 }
 
 int main(int argc, char *argv[]){
-	if (argc!=8){
+	if (argc!=3){
 		cout << "Needs more args\n";
+		return 1;
+	}
+	if (strlen(argv[2])<6){
+		cout << "Need to specify all includes and excludes\n";
 		return 1;
 	}
 	int c_len = 0;
 	bool inc[6] = {};
 	for (int i=0;i<6;++i){
-		inc[i] = argv[i+2][0]=='1';
+		inc[i] = argv[2][i]=='1';
 		if (inc[i]) c_len+=C_L[i];
 		//if (argv[i+2][0]=='1'){
 			//inc[i]=1;
@@ -42,7 +47,6 @@ int main(int argc, char *argv[]){
 		cout << c_lookup(inc,rrr(rng));
 	}
 	cout << '\n';
-
 	//for (int i=0;i<c_len;++i){ c_lookup(inc,i); }
 	return 0;
 }
