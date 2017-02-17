@@ -12,8 +12,8 @@ Not meant to beat any password generator.
 After this is complete, I'll try for an easy GUI
 Might collide with inc_test.py/rdata_gen.cpp later on
 """
+from collections import namedtuple
 from random import randint, choice
-from array import array
 import string
 
 #Character includes are the in following order:
@@ -31,9 +31,47 @@ C_R2= [0,26,52,62,78,94]
 #r between C_R2[i] and C_R2[i]+C_L[i]
 # C_tr and C_os are number row symbols and other symbols in the same order as above includes
 C_tr = '!#$%&()*+-=@^_`~'
-#C_os = r'"\',./:;<>?[\\]{|}'
 C_os = '"\',./:;<>?[\\]{|}'
 
+b_inc = namedtuple('included','lower upper digits symbols1 symbols2 space')
+
+def include_chars(incs):
+	if not isinstance(incs,b_inc): return incs
+	if not any(incs): raise ValueError
+	return ''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i])
+
+"""
+inc_exc functions take characters (defined as an iterable or bitset list) and characters from an
+ exclude list and return an iterable of the included minus the excluded. Ideally they should
+ allow for excludes that aren't even included. Basically returning set(incs)-set(exc).
+
+"""
+def inc_exc_chars(incs,exc):
+	c = sorted(include_chars(incs))
+	I = 0
+	for e in sorted(exc):
+		for i in xrange(I,len(c)):
+			if e==c[i]:
+				c.pop(i)
+				I=i
+				break
+	return c
+
+def inc_exc_chars_pop(incs,exc):
+	C = sorted(include_chars(incs))
+	o = []
+	for e in sorted(exc,reverse=True):
+		while len(C)!=0:
+			if C[-1]<e: break #e isn't included to begin with
+			c = C.pop()
+			if c==e: break
+			o.append(c)
+	return o+C
+
+def inc_exc_chars_set(incs,exc):
+	c = set(include_chars(incs))
+	c.difference_update(exc)
+	return c
 
 def rr(incs,length):
 	if not any(incs) or len(incs)>6: raise ValueError
@@ -49,7 +87,7 @@ def rr(incs,length):
 
 def rr_p(incs,length):
 	if not any(incs): raise ValueError
-	c = ''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i])
+	c = include_chars(incs)
 	return ''.join(choice(c) for _ in xrange(length))
 
 def rr_test(incs):
@@ -64,46 +102,3 @@ def rr_test(incs):
 					break
 			else: r+=C_L[i]
 	print p_b
-
-def include_chars(incs):
-	return (''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
-
-def inc_exc_chars(incs,exc):
-	# where incs is a list [lower,upper,digits,numberrowsymbols,othersymbols,space]
-	# exs is a string of excludes
-	if not any(incs): raise ValueError
-	#c = sorted(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
-	c = sorted(include_chars(incs))
-	I = 0
-	# reduce(lambda x,y: x+y if x[-1]!=y else x, sorted(exc))
-	# Also works but uses string cat..
-	for e in sorted(set(exc)):
-		for i in xrange(I,len(c)):
-			if e==c[i]:
-				c.pop(i)
-				I=i
-				break
-	return c
-
-def inc_exc_chars_pop(incs,exc):
-	if not any(incs): raise ValueError
-	#C = sorted(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
-	C = sorted(include_chars(incs))
-	o = []
-	for e in sorted(set(exc),reverse=True):
-		while len(C)!=0:
-			if C[-1]<e: break #e isn't included to begin with
-			c = C.pop()
-			if c==e: break
-			o.append(c)
-	return o+C
-
-def inc_exc_chars_set(incs,exc):
-	# where incs is a list [lower,upper,digits,numberrowsymbols,othersymbols,space]
-	# exs is a string of excludes
-	if not any(incs): raise ValueError
-	# If I'm going to use sets, I might as well use it all the way..
-	#c = set(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
-	c = set(include_chars(incs))
-	c.difference_update(exc)
-	return c
