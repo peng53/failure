@@ -11,53 +11,43 @@ Not meant to beat any password generator.
 
 After this is complete, I'll try for an easy GUI
 Might collide with inc_test.py/rdata_gen.cpp later on
+
+A default string 'C' contains includes for lower and upper case letters;
+digits; number row and other symbols; and spaces.
+C_L defines include lengths
+C_R2 defines start points for the C string
+C_tr and C_os defines number row symbols and other symbols respectively.
+b_inc is an object that state which groups of 'C' is included (see 'C' for order)
+
+inc_exc function take characters (defined as an iterable or bitset list) and characters from an
+ exclude list and return an iterable of the included minus the excluded. Ideally they should
+ allow for excludes that aren't even included. Basically returning set(incs)-set(exc).
 """
 from collections import namedtuple
 from random import randint, choice
 import string
 
-#Character includes are the in following order:
-C=("abcdefghijklmnopqrstuvwxyz" #lowercase alpha
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZ" #uppercase alpha
-	"0123456789" #digits
-	"!#$%&()*+-=@^_`~" #number row symbols
-	"\"',./:;<>?[\\]{|}" #other symbols
-	" ") #space
-
-# C_L are include lengths
+C=("abcdefghijklmnopqrstuvwxyz"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	"0123456789"
+	"!#$%&()*+-=@^_`~"
+	"\"',./:;<>?[\\]{|}"
+	" ")
 C_L = [26,26,10,16,16,1]
-# C_R2 are include start points (which technically can be calculated..)
 C_R2= [0,26,52,62,78,94]
-#r between C_R2[i] and C_R2[i]+C_L[i]
-# C_tr and C_os are number row symbols and other symbols in the same order as above includes
 C_tr = '!#$%&()*+-=@^_`~'
 C_os = '"\',./:;<>?[\\]{|}'
 
 b_inc = namedtuple('included','lower upper digits symbols1 symbols2 space')
 
 def include_chars(incs):
+	if len(incs)==0: raise ValueError
 	if not isinstance(incs,b_inc): return incs
 	if not any(incs): raise ValueError
 	return ''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i])
 
-"""
-inc_exc functions take characters (defined as an iterable or bitset list) and characters from an
- exclude list and return an iterable of the included minus the excluded. Ideally they should
- allow for excludes that aren't even included. Basically returning set(incs)-set(exc).
-
-"""
-def inc_exc_chars(incs,exc):
-	c = sorted(include_chars(incs))
-	I = 0
-	for e in sorted(exc):
-		for i in xrange(I,len(c)):
-			if e==c[i]:
-				c.pop(i)
-				I=i
-				break
-	return c
-
-def inc_exc_chars_pop(incs,exc):
+inc_exc_s = lambda I,E: set(include_chars(I))-set(E)
+def inc_exc(incs,exc):
 	C = sorted(include_chars(incs))
 	o = []
 	for e in sorted(exc,reverse=True):
@@ -67,11 +57,6 @@ def inc_exc_chars_pop(incs,exc):
 			if c==e: break
 			o.append(c)
 	return o+C
-
-def inc_exc_chars_set(incs,exc):
-	c = set(include_chars(incs))
-	c.difference_update(exc)
-	return c
 
 def rr(incs,length):
 	if not any(incs) or len(incs)>6: raise ValueError
@@ -85,11 +70,6 @@ def rr(incs,length):
 			else: r+=C_L[i]
 	return ''.join(o)
 
-def rr_p(incs,length):
-	if not any(incs): raise ValueError
-	c = include_chars(incs)
-	return ''.join(choice(c) for _ in xrange(length))
-
 def rr_test(incs):
 	if not any(incs) or len(incs)>6: raise ValueError
 	r_l = sum(l for i,l in enumerate(C_L) if incs[i])
@@ -102,3 +82,9 @@ def rr_test(incs):
 					break
 			else: r+=C_L[i]
 	print p_b
+
+def rPhase(C,L):
+	"""Given iterable of allowed symbols, return a string of length atleast L
+	The variable length is due to allowing words in the symbols, e.g. 'ab'"""
+	return ''.join(choice(C) for _ in xrange(L))
+
