@@ -21,17 +21,18 @@ C=("abcdefghijklmnopqrstuvwxyz" #lowercase alpha
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ" #uppercase alpha
 	"0123456789" #digits
 	"!#$%&()*+-=@^_`~" #number row symbols
-	",./;'[]<>?:\"{}|\\" #other symbols
-	"\"',./:;<>?[\\]{|}"
+	"\"',./:;<>?[\\]{|}" #other symbols
 	" ") #space
+
 # C_L are include lengths
 C_L = [26,26,10,16,16,1]
 # C_R2 are include start points (which technically can be calculated..)
 C_R2= [0,26,52,62,78,94]
 #r between C_R2[i] and C_R2[i]+C_L[i]
 # C_tr and C_os are number row symbols and other symbols in the same order as above includes
-C_tr = r'!#$%&()*+-=@^_`~'
-C_os = r'"\',./:;<>?[\\]{|}'
+C_tr = '!#$%&()*+-=@^_`~'
+#C_os = r'"\',./:;<>?[\\]{|}'
+C_os = '"\',./:;<>?[\\]{|}'
 
 
 def rr(incs,length):
@@ -64,11 +65,15 @@ def rr_test(incs):
 			else: r+=C_L[i]
 	print p_b
 
+def include_chars(incs):
+	return (''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
+
 def inc_exc_chars(incs,exc):
 	# where incs is a list [lower,upper,digits,numberrowsymbols,othersymbols,space]
 	# exs is a string of excludes
 	if not any(incs): raise ValueError
-	c = sorted(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
+	#c = sorted(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
+	c = sorted(include_chars(incs))
 	I = 0
 	# reduce(lambda x,y: x+y if x[-1]!=y else x, sorted(exc))
 	# Also works but uses string cat..
@@ -80,11 +85,25 @@ def inc_exc_chars(incs,exc):
 				break
 	return c
 
+def inc_exc_chars_pop(incs,exc):
+	if not any(incs): raise ValueError
+	#C = sorted(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
+	C = sorted(include_chars(incs))
+	o = []
+	for e in sorted(set(exc),reverse=True):
+		while len(C)!=0:
+			if C[-1]<e: break #e isn't included to begin with
+			c = C.pop()
+			if c==e: break
+			o.append(c)
+	return o+C
+
 def inc_exc_chars_set(incs,exc):
 	# where incs is a list [lower,upper,digits,numberrowsymbols,othersymbols,space]
 	# exs is a string of excludes
 	if not any(incs): raise ValueError
 	# If I'm going to use sets, I might as well use it all the way..
-	c = set(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
+	#c = set(''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i]))
+	c = set(include_chars(incs))
 	c.difference_update(exc)
-	return sorted(c)
+	return c
