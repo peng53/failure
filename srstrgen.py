@@ -46,7 +46,7 @@ def include_chars(incs):
 	if not any(incs): raise ValueError
 	return ''.join(s for i,s in enumerate([string.lowercase,string.uppercase,string.digits,C_tr,C_os,' ']) if incs[i])
 
-inc_exc_s = lambda I,E: set(include_chars(I))-set(E)
+inc_exc_s = lambda I,E=[]: tuple(set(include_chars(I))-set(E))
 def inc_exc(incs,exc):
 	C = sorted(include_chars(incs))
 	o = []
@@ -83,8 +83,39 @@ def rr_test(incs):
 			else: r+=C_L[i]
 	print p_b
 
-def rPhase(C,L):
-	"""Given iterable of allowed symbols, return a string of length atleast L
-	The variable length is due to allowing words in the symbols, e.g. 'ab'"""
-	return ''.join(choice(C) for _ in xrange(L))
+def rPhase(C,L,W=1,DM=''):
+	"""Given iterable of allowed symbols, return a string with W words of length L
+	delimited by DM. L only denotes the number of symbols in each word and not the
+	actual word length. Default arguments assume a single word.
+	Use: want: 3 groups of 4 digits seperated by space
+	C='0123456789'; L=4; W=3; DM=' '
+	C can be generated with inc_exc_s(b_inc(0,0,1,0,0,0))
+	.. or using string.digits in this case
+	"""
+	return DM.join(''.join(choice(C) for _ in xrange(L)) for _w in xrange(W))
 
+def moonPhase(todo,count=1):
+	D = {}
+	for T in todo:
+		if isinstance(T,str): continue
+		if (T[0],T[1]) not in D:
+			D[(T[0],T[1])] = inc_exc_s(T[0],T[1])
+	#print len(D)
+	S = ''.join(s if isinstance(s,str) else rPhase(D[(s[0],s[1])],*s[2:]) for s in todo)
+	return S
+
+if __name__=="__main__":
+	print "Want 2 groups of 3 lower case letters seperated by - ending with - and 4 lower alphanumeric"
+	C1 = string.lowercase
+	C2 = inc_exc_s(b_inc(1,0,1,0,0,0),'')
+	print "C1 = %s\nC2 = %s" %(C1,''.join(C2))
+	s = rPhase(C1,3,2,'-')
+	s += '-'+rPhase(C2,4)
+	print "s = %s" %(s)
+	print "Want:\n\t3 groups of 4 chars from 'abc' seperated by -;"
+	print "\t'-cookie-';"
+	print "\t1 group of 10 alphanumerics;"
+	print "\t'-';"
+	print "\tand 1 group of 4 chars from 'abc';"
+	s = moonPhase([("abc","",4,3,'-'),'-cookie-',(b_inc(1,1,1,0,0,0),"345abc",10),'-',('abc','',3,1)])
+	print "s = %s" %(s)
