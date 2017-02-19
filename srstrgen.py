@@ -39,7 +39,6 @@ C_tr = '!#$%&()*+-=@^_`~'
 C_os = '"\',./:;<>?[\\]{|}'
 
 b_inc = namedtuple('included','lower upper digits symbols1 symbols2 space')
-b_inc.__repr__ = lambda self: ''.join(s for i,s in enumerate(['az','AZ','09','!@','<>','sP']) if self._fields[i])
 def b_inc_repr(incs):
 	return ''.join(s for i,s in enumerate(['az','AZ','09','!@','<>','sP']) if incs[i])
 
