@@ -72,7 +72,7 @@ def rr(incs,length):
 		r = randint(0,r_l-1)
 		for i,is_inc in enumerate(incs):
 			if is_inc:
-				if C_R2[i]<=r<=C_R2[i]+C_L[i]: o.append(C[r])
+				if C_R2[i]<=r<C_R2[i]+C_L[i]: o.append(C[r])
 			else: r+=C_L[i]
 	return ''.join(o)
 

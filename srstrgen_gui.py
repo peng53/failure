@@ -4,56 +4,43 @@ from srstrgen import *
 class SrApp:
 	def __init__(self,MAS):
 		self.M = MAS
-		self.fChks = Frame(MAS,bg='pink')
-		self.fINCS = Frame(MAS,bg='purple')
-		self.fButs = Frame(MAS,bg='green')
-		self.fParts = Frame(MAS,bg='red')
-		self.tOut = Text(MAS,height=34)
-		#self.fOut = Frame(MAS,bg='blue')
-
+		self.fChks, self.fINCS, self.fButs, self.fParts =\
+			Frame(MAS), Frame(MAS), Frame(MAS), Frame(MAS)
+		self.sbOut = Scrollbar(MAS)
+		self.tOut = Text(MAS,height=34,yscrollcommand=self.sbOut.set)
+		self.sbOut.config(command=self.tOut.yview)
 		self.fChks.grid()
 		self.fINCS.grid()
-
 		self.fButs.grid()
 		self.fParts.grid()
-		#self.fOut.grid()
-
-
 		self.tOut.grid(column=1,row=0,rowspan=4,sticky='n')
-
+		self.sbOut.grid(column=2,row=0,rowspan=4,sticky='ns')
 		self.cks = [IntVar() for _ in xrange(6)]
-		self.c = [Checkbutton(self.fChks,text=k.upper(),variable=self.cks[i]) for i,k in enumerate(['lower','upper','digits','symbols1','symbols2','spaces'])]
-
-		#Label(self.fINCS,text="Random Parts",font='bold').grid(sticky='w')
-		self.c[0].grid(row=0,column=0,sticky='w')
-		self.c[1].grid(row=1,column=0,sticky='w')
-		self.c[2].grid(row=2,column=0,sticky='w')
-		self.c[3].grid(row=0,column=1,sticky='w')
-		self.c[4].grid(row=1,column=1,sticky='w')
-		self.c[5].grid(row=2,column=1,sticky='w')
+		self.c = [Checkbutton(self.fChks,text=k.upper(),variable=self.cks[i]) for i,k in\
+			enumerate(['lower','upper','digits','symbols1','symbols2','spaces'])]
+		for i in xrange(3):
+			self.c[i].grid(row=i,column=0,sticky='w')
+			self.c[i+3].grid(row=i,column=1,sticky='w')
 		self.EE = {}
-		for k,e in [('Excludes/Custom/Constant','ec'),('Length*Words','lw'),('Delimiter','dm')]:
+		for k,e in [('Excludes/Custom/Constant','ec'),('Length*Words','lw'),('Delimiter','dm'),('Count','ct')]:
 			Label(self.fINCS,text=k).grid()
 			self.EE[e]=Entry(self.fINCS)
 			self.EE[e].grid()
-		Label(self.fINCS,text="Count").grid()
-		self.EE["ct"]=Entry(self.fINCS)
-		self.EE["ct"].grid()
-
-		self.sbParts = Scrollbar(self.fParts)
-		self.lbParts = Listbox(self.fParts)
-		self.lbParts.grid(sticky='nesw',column=0,row=0)
-		self.sbParts.grid(column=1,row=0,sticky='nesw')
 
 		Button(self.fButs,text="Random",command=self.get_c).grid(row=0,column=0,sticky='ew')
 		Button(self.fButs,text="Constant",command=self.get_c2).grid(row=0,column=1,sticky='ew')
 		Button(self.fButs,text="Pop",command=self.part_pop).grid(row=1,column=0,sticky='ew')
 		Button(self.fButs,text="Commit",command=self.commit_parts).grid(row=1,column=1,sticky='ew')
-		Button(self.fButs,text="Clear",command=self.commit_parts).grid(row=2,column=0,sticky='ew')
-		Button(self.fButs,text="New",command=self.commit_parts).grid(row=2,column=1,sticky='ew')
+		Button(self.fButs,text="Clear",command=self.clear_out).grid(row=2,column=0,sticky='ew')
+		Button(self.fButs,text="New",command=self.new_part).grid(row=2,column=1,sticky='ew')
 		Button(self.fButs,text="Save",command=quit).grid(row=3,column=0,sticky='ew')
 		Button(self.fButs,text="Quit",command=quit).grid(row=3,column=1,sticky='ew')
 
+		self.sbParts = Scrollbar(self.fParts)
+		self.lbParts = Listbox(self.fParts,yscrollcommand=self.sbParts.set)
+		self.lbParts.grid(sticky='nesw',column=0,row=0)
+		self.sbParts.grid(column=1,row=0,sticky='nesw')
+		self.sbParts.config(command=self.lbParts.yview)
 		self.S = []
 
 	def get_c(self):
@@ -72,13 +59,13 @@ class SrApp:
 		N.append(lw)
 		if '*' in lw:
 			try: L,W = map(int,lw.split('*'))
-			except Exception as e: print e
+			except Exception as e: raise ValueError
 			DM = self.EE['dm'].get()
 			self.S.append((I,E,L,W,DM))
 			if len(DM)!=0: N.append("by %s" %DM)
 		else:
 			try: self.S.append((I,E,int(lw)))
-			except: return
+			except: raise ValueError
 		self.lbParts.insert('end',' '.join(N))
 		print self.S[-1]
 	def get_c2(self):
@@ -94,20 +81,29 @@ class SrApp:
 		self.S.append(t)
 		self.lbParts.insert('end',t)
 		print t
-
 	def part_pop(self):
 		if len(self.S)!=0:
 			i = self.lbParts.index('active')
 			self.S.pop(i)
 			self.lbParts.delete(i)
-
 	def commit_parts(self):
-		out = moonPhase(self.S)
+		if len(self.S)==0: raise ValueError
+		cnt = self.EE['ct'].get()
+		try: cnt = int(cnt)
+		except: cnt = 1
+		out = moonPhase(self.S,cnt)
 		self.tOut.insert('end','\n'.join(out))
 		self.tOut.insert('end','\n')
-
+	def clear_out(self):
+		self.tOut.delete(1.0,'end')
+	def new_part(self):
+		for e in self.EE:
+			self.EE[e].delete(0,'end')
+		for c in self.c:
+			c.deselect()
 def main():
 	root = Tk()
+	root.wm_title("Specialized Random String Generator")
 	app = SrApp(root)
 	root.mainloop()
 
