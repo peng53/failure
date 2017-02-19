@@ -4,41 +4,55 @@ from srstrgen import *
 class SrApp:
 	def __init__(self,MAS):
 		self.M = MAS
-		self.fINCS = Frame(MAS)
-		self.fChks = Frame(self.fINCS)
-		self.cks = [IntVar() for _ in xrange(6)]
-		self.c = [Checkbutton(self.fINCS,text=k.upper(),variable=self.cks[i]) for i,k in enumerate(['lower','upper','digits','symbols1','symbols2','spaces'])]
-		self.fINCS.grid()
+		self.fChks = Frame(MAS,bg='pink')
+		self.fINCS = Frame(MAS,bg='purple')
+		self.fButs = Frame(MAS,bg='green')
+		self.fParts = Frame(MAS,bg='red')
+		self.tOut = Text(MAS,height=34)
+		#self.fOut = Frame(MAS,bg='blue')
+
 		self.fChks.grid()
-		Label(self.fINCS,text="Random Parts",font='bold').grid(sticky='w')
-		Label(self.fINCS,text="Builtins").grid()
-		for e in self.c:
-			e.grid(sticky='w')#column=i)
+		self.fINCS.grid()
+
+		self.fButs.grid()
+		self.fParts.grid()
+		#self.fOut.grid()
+
+
+		self.tOut.grid(column=1,row=0,rowspan=4,sticky='n')
+
+		self.cks = [IntVar() for _ in xrange(6)]
+		self.c = [Checkbutton(self.fChks,text=k.upper(),variable=self.cks[i]) for i,k in enumerate(['lower','upper','digits','symbols1','symbols2','spaces'])]
+
+		#Label(self.fINCS,text="Random Parts",font='bold').grid(sticky='w')
+		self.c[0].grid(row=0,column=0,sticky='w')
+		self.c[1].grid(row=1,column=0,sticky='w')
+		self.c[2].grid(row=2,column=0,sticky='w')
+		self.c[3].grid(row=0,column=1,sticky='w')
+		self.c[4].grid(row=1,column=1,sticky='w')
+		self.c[5].grid(row=2,column=1,sticky='w')
 		self.EE = {}
 		for k,e in [('Excludes/Custom/Constant','ec'),('Length*Words','lw'),('Delimiter','dm')]:
 			Label(self.fINCS,text=k).grid()
 			self.EE[e]=Entry(self.fINCS)
 			self.EE[e].grid()
-		Button(self.fINCS,text="Add as random",command=self.get_c).grid()
-		Button(self.fINCS,text="Add as constant",command=self.get_c2).grid()
 		Label(self.fINCS,text="Count").grid()
 		self.EE["ct"]=Entry(self.fINCS)
 		self.EE["ct"].grid()
-		Label(self.fINCS,text="Parts",font='bold').grid(sticky='w')
-		self.fParts = Frame(MAS,bg='red')
-		self.fParts.grid()
+
 		self.sbParts = Scrollbar(self.fParts)
 		self.lbParts = Listbox(self.fParts)
-		self.lbParts.grid(sticky='nesw',column=0,row=1)
-		self.sbParts.grid(column=1,row=1,sticky='nesw')
-		Button(self.fParts,text="Delete Part",command=self.part_pop).grid(columnspan=2)
-		Button(self.fParts,text="Commit",command=self.commit_parts).grid(columnspan=2)
-		Button(self.fParts,text="Quit",command=quit).grid(columnspan=2)
-		self.fOut = Frame(MAS,bg='blue')
-		self.fOut.grid(row=0,column=1,sticky='nesw',rowspan=2)
-		Label(self.fOut,text="Output",font='bold').grid(sticky='w')
-		self.tOut = Text(self.fOut)
-		self.tOut.grid(sticky='nesw')
+		self.lbParts.grid(sticky='nesw',column=0,row=0)
+		self.sbParts.grid(column=1,row=0,sticky='nesw')
+
+		Button(self.fButs,text="Random",command=self.get_c).grid(row=0,column=0,sticky='ew')
+		Button(self.fButs,text="Constant",command=self.get_c2).grid(row=0,column=1,sticky='ew')
+		Button(self.fButs,text="Pop",command=self.part_pop).grid(row=1,column=0,sticky='ew')
+		Button(self.fButs,text="Commit",command=self.commit_parts).grid(row=1,column=1,sticky='ew')
+		Button(self.fButs,text="Clear",command=self.commit_parts).grid(row=2,column=0,sticky='ew')
+		Button(self.fButs,text="New",command=self.commit_parts).grid(row=2,column=1,sticky='ew')
+		Button(self.fButs,text="Save",command=quit).grid(row=3,column=0,sticky='ew')
+		Button(self.fButs,text="Quit",command=quit).grid(row=3,column=1,sticky='ew')
 
 		self.S = []
 
