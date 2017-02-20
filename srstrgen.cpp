@@ -5,6 +5,8 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <sstream>
+#include <string>
 
 using namespace std;
 
@@ -20,10 +22,6 @@ vector<char> remove_excs(vector<char> I, char *E){
 			for (;i!=I.end();O.push_back(*i++)){
 				if (*i==*e){ ++i; break; }
 			}
-			//while(i!=I.end()){
-				//if (*i==*e){ ++i; break; }
-				//O.push_back(*i++);
-			//}
 		}
 	}
 	O.insert(O.end(),i,I.end());
@@ -54,14 +52,22 @@ vector<char> build_incs(char* I){
 }
 
 template<typename T, typename Ts>
-void rand_word(vector<T> &C, unsigned L,unsigned W,ostream &sout,Ts S){
+void rand_word(vector<T> &C, unsigned L,unsigned W,stringstream &sout,Ts S){
 	mt19937 rng(time(0));
 	uniform_int_distribution<unsigned> r(0,C.size()-1);
 	for (auto w=W;w>0;--w){
 		for (auto l=L;l>0;--l) sout << C[r(rng)];
 		if (w!=1) sout << S;
 	}
-	sout << '\n';
+}
+
+extern "C" const char* plen(char *I, char *E, unsigned L, unsigned W, char *S){
+	stringstream t_out;
+	vector<char> C = remove_excs(build_incs(I),E);
+	rand_word(C,L,W,t_out,S);
+	const string rs = t_out.str();
+	const char* rs2 = rs.c_str();
+	return rs2;
 }
 
 int main(int argc, char *argv[]){
@@ -73,9 +79,11 @@ int main(int argc, char *argv[]){
 		cout << "Need to specify all includes and excludes\n";
 		return 1;
 	}
-	vector<char> C = remove_excs(build_incs(argv[1]),argv[2]);
-	//for (char c : C) cout<<c;
 	unsigned L = atoi(argv[3]), W = atoi(argv[4]);
-	rand_word(C,L,W,cout,argv[5]);
+	//vector<char> C = remove_excs(build_incs(argv[1]),argv[2]);
+	//stringstream t_out;
+	//rand_word(C,L,W,t_out,argv[5]);
+	//cout << t_out.rdbuf() << '\n';
+	cout << plen(argv[1],argv[2],L,W,argv[5]) << '\n';
 	return 0;
 }

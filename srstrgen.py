@@ -104,6 +104,14 @@ def moonPhase(todo,count=1):
 	S = [''.join(s if isinstance(s,str) else rPhase(inc_exc_s(s[0],s[1]),*s[2:]) for s in todo) for _ in xrange(count)]
 	return S
 
+def waxPhase(incs,excs,L,W=1,DM='',loaded={}):
+	if len(loaded)==0:
+		import ctypes
+		loaded['lib'] = ctypes.cdll.LoadLibrary('./lib_srstrgen.so')
+		loaded['plen'] = loaded['lib'].plen
+		loaded['plen'].restype = ctypes.c_char_p
+	return loaded['plen'](incs,excs,L,W,DM)
+
 if __name__=="__main__":
 	print "Want 2 groups of 3 lower case letters seperated by - ending with - and 4 lower alphanumeric"
 	C1 = string.lowercase
