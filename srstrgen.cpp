@@ -13,24 +13,17 @@ vector<char> remove_excs(vector<char> I, char *E){
 	vector<char> O;
 	O.reserve(I.size());
 	auto i = I.begin();
-	unsigned e_len = strlen(E);
+	auto e_len = strlen(E);
 	sort(E,E+e_len);
-	//for (unsigned e_i=0;e_i<e_len;++e_i){
-		//while(i!=I.end()){
-			//if (*i>E[e_i]) break;
-			//if (*i==E[e_i]){
-				//++i;
-				//break;
-			//}
-			//O.push_back(*i++);
-		//}
-	//}
 	for (char *e=E;e!=E+e_len;++e){
 		if (*i<=*e){
-			while(i!=I.end()){
+			for (;i!=I.end();O.push_back(*i++)){
 				if (*i==*e){ ++i; break; }
-				O.push_back(*i++);
 			}
+			//while(i!=I.end()){
+				//if (*i==*e){ ++i; break; }
+				//O.push_back(*i++);
+			//}
 		}
 	}
 	O.insert(O.end(),i,I.end());
@@ -60,8 +53,19 @@ vector<char> build_incs(char* I){
 	return CV;
 }
 
+template<typename T, typename Ts>
+void rand_word(vector<T> &C, unsigned L,unsigned W,ostream &sout,Ts S){
+	mt19937 rng(time(0));
+	uniform_int_distribution<unsigned> r(0,C.size()-1);
+	for (auto w=W;w>0;--w){
+		for (auto l=L;l>0;--l) sout << C[r(rng)];
+		if (w!=1) sout << S;
+	}
+	sout << '\n';
+}
+
 int main(int argc, char *argv[]){
-	if (argc<3){
+	if (argc<6){
 		cout << "Missing arguments..\n";
 		return 1;
 	}
@@ -70,7 +74,8 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	vector<char> C = remove_excs(build_incs(argv[1]),argv[2]);
-	for (char c : C) cout<<c;
-	cout << '\n';
+	//for (char c : C) cout<<c;
+	unsigned L = atoi(argv[3]), W = atoi(argv[4]);
+	rand_word(C,L,W,cout,argv[5]);
 	return 0;
 }
