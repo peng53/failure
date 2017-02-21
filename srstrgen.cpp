@@ -14,17 +14,17 @@ vector<char> remove_excs(vector<char> I, char *E){
 	sort(I.begin(),I.end());
 	vector<char> O;
 	O.reserve(I.size());
-	auto i = I.begin();
+	auto i = I.cbegin();
 	auto e_len = strlen(E);
 	sort(E,E+e_len);
 	for (char *e=E;e!=E+e_len;++e){
 		if (*i<=*e){
-			for (;i!=I.end();O.push_back(*i++)){
+			for (;i!=I.cend();O.push_back(*i++)){
 				if (*i==*e){ ++i; break; }
 			}
 		}
 	}
-	O.insert(O.end(),i,I.end());
+	O.insert(O.end(),i,I.cend());
 	return O;
 }
 
@@ -38,7 +38,7 @@ vector<char> build_incs(char* I){
 	const char *C[]= {lo,up,dt,s1,s2,sp};
 	unsigned C_L[] = {26,26,10,16,16,1};
 	bool inc[6] = {};
-	unsigned c_len = 0;
+	size_t c_len = 0;
 	for (unsigned i=0;i<6;++i){
 		inc[i] = I[i]=='1';
 		if (inc[i]) c_len+=C_L[i];
@@ -51,23 +51,62 @@ vector<char> build_incs(char* I){
 	return CV;
 }
 
+const char* out_to_string(stringstream &sout){
+	const string rs = sout.str();
+	const char* rs2 = rs.c_str();
+	return rs2;
+}
+/*
 template<typename T, typename Ts>
-void rand_word(vector<T> &C, unsigned L,unsigned W,stringstream &sout,Ts S){
+void rand_word(T &C, unsigned L,unsigned W,stringstream &sout,Ts S){
 	mt19937 rng(time(0));
 	uniform_int_distribution<unsigned> r(0,C.size()-1);
 	for (auto w=W;w>0;--w){
 		for (auto l=L;l>0;--l) sout << C[r(rng)];
 		if (w!=1) sout << S;
 	}
+}*/
+
+template<typename T, typename Ts>
+void rand_word_uni(T &C, size_t C_len, unsigned L,unsigned W,stringstream &sout,Ts S){
+	mt19937 rng(time(0));
+	uniform_int_distribution<unsigned> r(0,C_len-1);
+	for (auto w=W;w>0;--w){
+		for (auto l=L;l>0;--l) sout << C[r(rng)];
+		if (w!=1) sout << S;
+	}
+}
+template<typename T, typename Ts>
+const char* stir_mix(T &C, size_t C_len, unsigned L, unsigned W, Ts S){
+	stringstream t_out;
+	rand_word_uni(C,C_len,L,W,t_out,S);
+	return out_to_string(t_out);
 }
 
 extern "C" const char* plen(char *I, char *E, unsigned L, unsigned W, char *S){
+	/*
 	stringstream t_out;
 	vector<char> C = remove_excs(build_incs(I),E);
-	rand_word(C,L,W,t_out,S);
-	const string rs = t_out.str();
-	const char* rs2 = rs.c_str();
-	return rs2;
+	rand_word_uni(C,C.size(),L,W,t_out,S);
+	return out_to_string(t_out);
+	*/
+	//const string rs = t_out.str();
+	//const char* rs2 = rs.c_str();
+	//return rs2;
+	vector<char> C = remove_excs(build_incs(I),E);
+	return stir_mix(C,C.size(),L,W,S);
+}
+
+extern "C" const char* instant_coffee(char *C, size_t C_len, unsigned L, unsigned W, char *S){
+	/*
+	stringstream t_out;
+	rand_word_uni(C,C_len,L,W,t_out,S);
+	return out_to_string(t_out);
+	*/
+	//const string rs = t_out.str();
+	//const char* rs2 = rs.c_str();
+	//return rs2;
+	return stir_mix(C,C_len,L,W,S);
 }
 
 int main(int argc, char *argv[]){
@@ -80,10 +119,6 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	unsigned L = atoi(argv[3]), W = atoi(argv[4]);
-	//vector<char> C = remove_excs(build_incs(argv[1]),argv[2]);
-	//stringstream t_out;
-	//rand_word(C,L,W,t_out,argv[5]);
-	//cout << t_out.rdbuf() << '\n';
 	cout << plen(argv[1],argv[2],L,W,argv[5]) << '\n';
 	return 0;
 }

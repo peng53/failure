@@ -104,6 +104,18 @@ def moonPhase(todo,count=1):
 	S = [''.join(s if isinstance(s,str) else rPhase(inc_exc_s(s[0],s[1]),*s[2:]) for s in todo) for _ in xrange(count)]
 	return S
 
+class Waxing:
+	def __init__(self):
+		import ctypes
+		self.l = ctypes.cdll.LoadLibrary('./lib_srstrgen.so')
+		self._pln = self.l.plen
+		self._isc = self.l.instant_coffee
+		self._pln.restype = self._isc.restype = ctypes.c_char_p
+	def plen(self,incs,excs,L,W=1,DM=''):
+		return self._pln(incs,excs,L,W,DM)
+	def ins_coffee(self,C,L,W=1,DM=''):
+		return self._isc(str(C),len(C),L,W,DM)
+"""
 def waxPhase(incs,excs,L,W=1,DM='',loaded={}):
 	if len(loaded)==0:
 		import ctypes
@@ -111,7 +123,7 @@ def waxPhase(incs,excs,L,W=1,DM='',loaded={}):
 		loaded['plen'] = loaded['lib'].plen
 		loaded['plen'].restype = ctypes.c_char_p
 	return loaded['plen'](incs,excs,L,W,DM)
-
+"""
 if __name__=="__main__":
 	print "Want 2 groups of 3 lower case letters seperated by - ending with - and 4 lower alphanumeric"
 	C1 = string.lowercase
