@@ -115,6 +115,13 @@ class Waxing:
 		return self._pln(incs,excs,L,W,DM)
 	def ins_coffee(self,C,L,W=1,DM=''):
 		return self._isc(str(C),len(C),L,W,DM)
+	def abr_dic(self,words,L,W=1,DM=''):
+		if len(words)>27: raise ValueError
+		D = {chr(i+32):w for i,w in enumerate(words)}
+		S = self.ins_coffee(''.join(D),L,W,'')
+		print S
+		return ''.join(DM if s==DM else D[s] for s in S)
+
 """
 def waxPhase(incs,excs,L,W=1,DM='',loaded={}):
 	if len(loaded)==0:
