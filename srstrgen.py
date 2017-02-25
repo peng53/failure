@@ -114,7 +114,7 @@ class Waxing:
 	def plen(self,incs,excs,L,W=1,DM=''):
 		return self._pln(incs,excs,L,W,DM)
 	def ins_coffee(self,C,L,W=1,DM=''):
-		return self._isc(str(C),len(C),L,W,DM)
+		return self._isc(str(C),L,W,DM)
 	def abr_dic(self,words,L,W=1,DM=''):
 		if len(words)>27: raise ValueError
 		D = {chr(i+32):w for i,w in enumerate(words)}
