@@ -48,20 +48,21 @@ vector<char> build_incs(const char *I){
 	}
 	return CV;
 }
-
 struct Part {
-	unsigned W, L;
-	vector<char> C;
+	unsigned W, L, I;
+	//vector<char> C;
 	const char *DM;
-	Part(const vector<char> &_C,const unsigned _L,const unsigned _W,const char *_DM){
-		C=_C;W=_W;L=_L;DM=_DM;
+	Part(unsigned _I,const unsigned _L,const unsigned _W,const char *_DM){
+		I=_I;W=_W;L=_L;DM=_DM;
 	}
+	/*
 	Part(const char* _C,unsigned _W,const char *_DM,vector<vector<char>> &stored){
 		stored.push_back(vector<char> {_C,_C+strlen(_C)});
-		C=stored[stored.size()-1];
+		C=stored.size()-1;
 		W=_W;L=0;DM=_DM;
-	}
+	}*/
 };
+/*
 ostream& operator<<(ostream& t_out, Part &p){
 	if (p.L==0){
 		for (auto w=p.W;w>0;--w){
@@ -77,52 +78,44 @@ ostream& operator<<(ostream& t_out, Part &p){
 	}
 	return t_out;
 }
+*/
+struct Parts {
+	vector<vector<char>> stored;
+	vector<Part> parts;
+	//Parts(){
+	//	stored = vector<vector<char>>;
+	//	parts = vector<Part>;
+	//}
+};
+ostream& operator<<(ostream& t_out, Parts &P){
+	for (auto p : P.parts){
+		if (p.L==0){
+			for (auto w=p.W;w>0;--w){
+				for (char c : P.stored[p.I]) t_out << c;
+				if (w!=1) t_out << p.DM;
+			}
+		} else {
+			uniform_int_distribution<unsigned> r(0,P.stored[p.I].size()-1);
+			for (auto w=p.W;w>0;--w){
+				for (auto l=p.L;l>0;--l) t_out << P.stored[p.I][r(gen_rng)];
+				if (w!=1) t_out << p.DM;
+			}
+		}
+	}
+	return t_out;
+}
+/*
 const char* partcstr(Part &p){
 	stringstream sout;
 	sout << p;
 	const string rs = sout.str();
 	const char* rs2 = rs.c_str();
 	return rs2;
-}
+}*/
 vector<char> charvec(const char *cc){
 	return vector<char> {cc,cc+strlen(cc)};
 }
-//const char* out_to_string(stringstream &sout){
-	//const string rs = sout.str();
-	//const char* rs2 = rs.c_str();
-	//return rs2;
-//}
 /*
-template<typename Stringlike, typename StreamType>
-void repeat_word_delimited(const Stringlike S, const unsigned W, const Stringlike DM, StreamType &sout){
-	for (auto w=W;w>0;--w) sout << S << DM;
-}*/
-
-//template<typename T, typename Ts, typename StreamType>
-//void rand_word_uni(const T &C, const size_t C_len, const unsigned L, const unsigned W,StreamType &sout,const Ts S){
-	//mt19937 rng(time(0));
-	//uniform_int_distribution<unsigned> r(0,C_len-1);
-	//for (auto w=W;w>0;--w){
-		//for (auto l=L;l>0;--l) sout << C[r(rng)];
-		//if (w!=1) sout << S;
-	//}
-//}
-//template<typename T, typename Ts>
-//const char* stir_mix(const T &C, const size_t C_len, const unsigned L, const unsigned W, const Ts S){
-	//stringstream t_out;
-	//rand_word_uni(C,C_len,L,W,t_out,S);
-	//return out_to_string(t_out);
-//}
-
-//extern "C" const char* plen(const char *I, char *E, const unsigned L, const unsigned W, const char *S){
-	//vector<char> C = remove_excs(build_incs(I),E);
-	//return stir_mix(C,C.size(),L,W,S);
-//}
-
-//extern "C" const char* instant_coffee(const char *C, const size_t C_len, const unsigned L, const unsigned W, const char *S){
-	//return stir_mix(C,C_len,L,W,S);
-//}
-
 const char* stir_mix(const vector<char> &C, const unsigned L, const unsigned W, const char *S){
 	Part p = Part(C,L,W,S);
 	return partcstr(p);
@@ -141,6 +134,7 @@ extern "C" const char* instant_coffee(const char *C, const unsigned L, const uns
 	//Part p = Part(vC,L,W,S);
 	//return partcstr(p);
 }
+*/
 int flag_catcher(char *f){
 	size_t l = strlen(f);
 	if (l!=2 || f[0]!='-') return -1;
@@ -164,7 +158,7 @@ bool good_number(const char* D){
 /*void add_stored(vector<vector<char>> &stored, vector<char> C){
 	stored.push_back(C);
 }*/
-
+/*
 int handle_g(char* arg[],unsigned i, int arc,vector<Part> &parts,vector<vector<char>> &stored){
 	if (arc-i<6 || !good_number(arg[i+3]) || !good_number(arg[i+4])) return ++i;
 	unsigned L = atoi(arg[i+3]), W = atoi(arg[i+4]);
@@ -200,10 +194,10 @@ int handle_c(char* arg[],unsigned i, int arc,vector<Part> &parts,vector<vector<c
 	parts.push_back(Part(arg[i+1],W,arg[i+3],stored));
 	return i+3;
 }
-
+*/
 int main(int argc, char *argv[]){
-	vector<Part> parts;
-	vector<vector<char>> stored;
+	Parts parts;
+	/*
 	int (*handles[])(char* arg[],unsigned i, int arc,vector<Part> &parts,vector<vector<char>> &stored)=
 			{handle_g,handle_u,handle_q,handle_c,handle_r};
 	int i = 1;
@@ -213,7 +207,12 @@ int main(int argc, char *argv[]){
 		if (i_c==-1) ++i;
 		else i=handles[i_c](argv,i,argc,parts,stored);
 	}
-	for (auto P : parts) cout << P;
+	*/
+	parts.stored.push_back(vector<char> {'1','2','3'});
+	parts.parts.push_back(Part(0,3,2,"-"));
+	parts.stored[0]=vector<char> {'5','4','6'};
+
+	cout << parts;
 	cout << '\n';
 	return 0;
 }
