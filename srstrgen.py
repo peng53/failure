@@ -112,6 +112,7 @@ class Waxing:
 		self._isc = self.l.instant_coffee
 		self._pln.restype = self._isc.restype = ctypes.c_char_p
 	def plen(self,incs,excs,L,W=1,DM=''):
+		if len(incs)!=6: raise ValueError
 		return self._pln(incs,excs,L,W,DM)
 	def ins_coffee(self,C,L,W=1,DM=''):
 		return self._isc(str(C),L,W,DM)
