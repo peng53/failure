@@ -22,7 +22,7 @@ This allows two things:
 The program should then be executed as such:
 	./a.out lit0 lit1 dm2 lit3 dm4 -s [0] [1] [0,4,3,2] [0] [3,2,2,4]
 	where -s begins the output form
-	and brackets denote [LITERAL{,LENGTH{,REPEAT,DELIMITER}}]
+	and brackets denote [LITERAL_INDEX{,LENGTH{,REPEAT,DELIMITER_INDEX}}]
 	with curly brackets being optional.
 Note that delimiters could then also be literals and vice-versa.
 
@@ -30,3 +30,11 @@ Implementing this would require argument parsing for variable count
 of numbers.. cases of 0 to 4.
 Thought of doing this either manually, with stringstream, or with
 regex..
+
+The literals & delimiters will be stored in a vector of strings.
+The output form is a vector of an ADT that stores literal_index, length,
+repeat, and delimiter_index. The ADT will be output by overload of
+ostream appropriately on length & repeat. Going over the vector of the
+ADTs will then output the desired string. My thought is to store literal_index
+as literal_ptr instead so that the ADTs do not need to be passed with reference
+to the vector of strings (likewise with delimiters).
