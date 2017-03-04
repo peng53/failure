@@ -110,7 +110,8 @@ class Waxing:
 		self.l = ctypes.cdll.LoadLibrary('./lib_srstrgen.so')
 		self._pln = self.l.plen
 		self._isc = self.l.instant_coffee
-		self._pln.restype = self._isc.restype = ctypes.c_char_p
+		self._sdc = self.l.string_dif_char
+		self._pln.restype = self._isc.restype = self._sdc.restype = ctypes.c_char_p
 	def plen(self,incs,excs,L,W=1,DM=''):
 		if len(incs)!=6: raise ValueError
 		return self._pln(incs,excs,L,W,DM)
@@ -123,15 +124,6 @@ class Waxing:
 		print S
 		return ''.join(DM if s==DM else D[s] for s in S)
 
-"""
-def waxPhase(incs,excs,L,W=1,DM='',loaded={}):
-	if len(loaded)==0:
-		import ctypes
-		loaded['lib'] = ctypes.cdll.LoadLibrary('./lib_srstrgen.so')
-		loaded['plen'] = loaded['lib'].plen
-		loaded['plen'].restype = ctypes.c_char_p
-	return loaded['plen'](incs,excs,L,W,DM)
-"""
 if __name__=="__main__":
 	print "Want 2 groups of 3 lower case letters seperated by - ending with - and 4 lower alphanumeric"
 	C1 = string.lowercase

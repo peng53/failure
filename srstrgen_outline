@@ -1,0 +1,32 @@
+srstrgen_outline
+
+As filename suggests, an outline to what I want srstrgen.cpp
+to do.
+
+The last working version (commit 60a3689) has/had terrible
+argument parsing. While it worked, the way to input argument
+was un-wieldy. The user had to prefix each 'part' with a flag
+such as '-b' for a generated literal with exceptions and '-c'
+for a literal. (for random). These flags (along with their
+respective arguments) also had to be followed by length, word,
+and delimiter arguments: regardless if any were actually used.
+
+What I propose is a new argument system where (most) literals
+will be before the output form. Sort of like a reversed printf
+form.
+
+This allows two things:
+	seperated output form and generated literals (organization)
+	better storage of literals and delimiters
+
+The program should then be executed as such:
+	./a.out lit0 lit1 dm2 lit3 dm4 -s [0] [1] [0,4,3,2] [0] [3,2,2,4]
+	where -s begins the output form
+	and brackets denote [LITERAL{,LENGTH{,REPEAT,DELIMITER}}]
+	with curly brackets being optional.
+Note that delimiters could then also be literals and vice-versa.
+
+Implementing this would require argument parsing for variable count
+of numbers.. cases of 0 to 4.
+Thought of doing this either manually, with stringstream, or with
+regex..
