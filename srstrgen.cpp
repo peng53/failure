@@ -62,13 +62,14 @@ int what_flag(const char *s){
 		case 's': return 1;
 		case 'b': return 2;
 		case 'B': return 3;
+		case 'c': return 4;
 		}
 	}
 	return 9;
 }
-int literal_storer(const int C,char **A,vector<string> &lits){
+int literal_storer(const int start,const int C,char **A,vector<string> &lits){
 	string I;
-	for (int i=2;i<C;++i){
+	for (int i=start;i<C;++i){
 		switch(what_flag(A[i])){
 		case 0: break;
 		case 1: return ++i;
@@ -96,8 +97,13 @@ struct ST {
 	ST(string &s,string &d,unsigned r) : W(r),I(&s),D(&d){}
 	ST(string &s,unsigned c,string &d,unsigned r) : L(c),W(r),I(&s),D(&d){}
 };
+
+binomial_distribution<bool> coin(1,0.5);
+
 ostream& operator<<(ostream& out,ST &P){
-	if (P.L!=0){
+	if (P.W==0){
+		out << (coin(RNG) ? (*P.I) : (*P.D));
+	} else if (P.L!=0){
 		uniform_int_distribution<unsigned> r(0,(*P.I).length()-1);
 		for (unsigned w=P.W;w>0;--w){
 			for (unsigned l=0;l<P.L;++l) out<<(*P.I)[r(RNG)];
@@ -112,15 +118,12 @@ ostream& operator<<(ostream& out,ST &P){
 	return out;
 }
 unsigned trialnerror(unsigned U[4],const string &t){
-	unsigned c=0;
-	unsigned b, n;
-	size_t l=t.length();
-	for (unsigned i=0;i<l && c<4;++c){
-		n = 1;
-		while (i<l && !isdigit(t[i])) ++i; // find start
-		if (i==l) return 0; // no digits..
+	unsigned c=0, b, n;
+	for (size_t i=0,l=t.length();(i<l && c<4);++c){
+		for (n=1;(i<l && !isdigit(t[i]));++i) continue; // find start
+		if (i>=l) return 0; // no digits..
 		for (b=i++;(i<l && isdigit(t[i++]));++n) continue; //count digits
-		U[c] = atoi(t.substr(b,n).c_str());
+		U[c] = stoul(t.substr(b,n)); // or atoi on .c_str()
 	}
 	return c;
 }
@@ -139,7 +142,7 @@ void auto_part(const string &t,vector<string> &lits,list<ST> &P,stack<string*> &
 		case 3: if (U[1]<lits_s) P.push_back(ST(lits.at(U[0]),lits.at(U[1]),U[2])); break;
 		case 4: if (U[2]<lits_s) P.push_back(ST(lits.at(U[0]),U[1],lits.at(U[2]),U[3])); break;
 		}
-	}
+	} else cout << "*ignored '" << t << "'\n";
 }
 list<ST> part_storer(int I,const int C,char **A,vector<string> &lits,stack<string*> &emerg){
 	list<ST> parts;
@@ -165,18 +168,24 @@ extern "C" const char* plen(const char *I,char *E, const unsigned L, const unsig
 	return stir_mix(C,L,W,S);
 }
 int main(int argc,char **argv){
-	if (argc==1) return 1;
+	if (argc<3) return 1;
 	DBOUT << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
-	unsigned C=strlen(argv[1]);
-	if (C==0 || argv[1][0]=='0') return 1;
-	for (unsigned i=0;i<C;++i){
-		if (!isdigit(argv[1][i])) return 1;
+	unsigned C=1;
+	int start=1;
+	if (what_flag(argv[1])==4){
+		C=strlen(argv[2]);
+		if (C==0 || argv[2][0]=='0') return 1;
+		for (unsigned i=0;i<C;++i){
+			if (!isdigit(argv[2][i])) return 1;
+		} // return 1 means -c was caught but following argument was invalid
+		C=atoi(argv[2]);
+		start=3;
 	}
 	vector<string> lits;
-	int i = literal_storer(argc,argv,lits);
+	int i = literal_storer(start,argc,argv,lits);
 	stack<string*> emerg;
 	list<ST> parts = part_storer(i,argc,argv,lits,emerg);
-	for (C=atoi(argv[1]);C>0;--C){
+	for (;C>0;--C){
 		for (auto p : parts) cout << p;
 		cout <<'\n';
 	}
