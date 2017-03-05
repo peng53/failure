@@ -3,8 +3,9 @@
 #include <string>
 #include <cstring>
 #include <algorithm>
-#include <regex>
+//#include <regex>
 #include <random>
+#include <sstream>
 
 using namespace std;
 
@@ -81,8 +82,8 @@ int literal_storer(const int C,char **A,vector<string> &lits){
 }
 struct ST {
 	unsigned L = 0, W = 1;
-	string * I;
-	string * D;
+	string * I = nullptr;
+	string * D = nullptr;
 	ST(string &s) : I(&s){}
 		//I=&s;L=0;W=1;}
 	ST(string &s,unsigned c) : L(c),I(&s){}
@@ -97,28 +98,59 @@ ostream& operator<<(ostream& out,ST &P){
 		uniform_int_distribution<unsigned> r(0,(*P.I).length()-1);
 		for (unsigned w=P.W;w>0;--w){
 			for (unsigned l=0;l<P.L;++l) out<<(*P.I)[r(RNG)];
-			if (w!=1) out<<*P.D;
+			if (w!=1 && P.D!=nullptr) out<<*P.D;
 		}
 	} else {
 		for (unsigned w=P.W;w>0;--w){
 			out<<*P.I;
-			if (w!=1) out<<*P.D;
+			if (w!=1 && P.D!=nullptr) out<<*P.D;
 		}
 	}
 	return out;
 }
-void auto_part(const string &t,vector<string> &lits,vector<ST> &P){
-	if (t.length()==0): return;
-	unsigned U[4];
-	unsigned c = 0;
-	size_t lits_s = lits.size();
-	regex r("[0-9]+");
-	for(auto j=sregex_iterator(t.begin(),t.end(),r);j!=sregex_iterator() && c<4;++j){
-		U[c++]=atoi((*j).str().c_str());
+unsigned trialnerror(unsigned U[4],const string &t){
+	unsigned c=0;
+	unsigned b;
+	unsigned n;
+	size_t l=t.length();
+	for (unsigned i=0;i<l && c<4;++c){
+		n = 0;
+		while (i<l && !isdigit(t[i])){
+			++i;
+		} // find start
+		if (i==l) return 0; // no digits..
+		n++; // found atleast 1
+		b = i;
+		++i; //
+		while (i<l &&isdigit(t[i])){
+			++i;
+			++n;
+		} // count digits
+		U[c] = atoi(t.substr(b,n).c_str());
+		//cout<<U[c]<<'\n';
 	}
+	return c;
+}
+void auto_part(const string &t,vector<string> &lits,vector<ST> &P,vector<string> &emerg){
+	if (t.length()==0) return;
+	unsigned U[4];
+	//unsigned c = 0;
+	unsigned lits_s = lits.size();
+	//regex r("[0-9]+");
+	//for(auto j=sregex_iterator(t.begin(),t.end(),r);j!=sregex_iterator() && c<4;++j){
+	//	U[c++]=atoi((*j).str().c_str());
+	//}
+	unsigned c = trialnerror(U,t);
+	//cout << "caught " << c << " numbers\n";
 	if (c==0){
-		lits.push_back(t);
-		P.push_back(ST(lits.back()));
+		emerg.push_back(t);
+		//cout << "Lits: ";
+		//for (auto s : lits) cout << s << ' ';
+		//cout << '\n';
+		P.push_back(ST(emerg.back()));
+		//cout << "Parts: ";
+		//for (auto p : P) cout << p << ' ';
+		//cout << '\n';
 	} else if (U[0]<lits_s){
 		switch (c){
 		case 1: P.push_back(ST(lits.at(U[0]))); break;
@@ -128,9 +160,17 @@ void auto_part(const string &t,vector<string> &lits,vector<ST> &P){
 		}
 	}
 }
-vector<ST> part_storer(const int I,const int C,char **A,vector<string> &lits){
+
+vector<ST> part_storer(int I,const int C,char **A,vector<string> &lits,vector<string> &emerg){
 	vector<ST> parts;
-	for (int i=I;i<C;++i) auto_part(string {A[i]},lits,parts);
+	//for (int i=I;i<C;++i) auto_part(string {A[i]},lits,parts);
+	for (int i=I;i<C;++i){
+		//parts.reserve(parts.size()+1);
+		auto_part(string {A[i]},lits,parts,emerg);
+		//cout << "Parts: ";
+		//for (auto p : parts) cout << '|' << p  << '|' << ' ';
+		//cout << '\n';
+	}
 	return parts;
 }
 const char* stir_mix(string &C, const unsigned L, const unsigned W, const char *S){
@@ -153,21 +193,31 @@ extern "C" const char* plen(const char *I,char *E, const unsigned L, const unsig
 }
 int main(int argc,char **argv){
 	if (argc==1) return 1;
-	cout << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
+	//cout << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
 	unsigned C=strlen(argv[1]);
 	if (C==0 || argv[1][0]=='0') return 1;
-	for (unsigned i=1;i<C;++i){
+	for (unsigned i=0;i<C;++i){
 		if (!isdigit(argv[1][i])) return 1;
 	}
 	vector<string> lits;
 	int i = literal_storer(argc,argv,lits);
-	vector<ST> parts = part_storer(i,argc,argv,lits);
+	vector<string> emerg;
+	emerg.reserve(argc-i+1);
+	vector<ST> parts = part_storer(i,argc,argv,lits,emerg);
+
 	for (C=atoi(argv[1]);C>0;--C){
 		for (auto p : parts){
 			cout << p;
 		}
 		cout <<'\n';
 	}
+	/*for (auto p: parts){
+		cout << "Part\n";
+		cout << p.L << '\n';
+		cout << p.W << '\n';
+		if (p.I!=nullptr) cout << *p.I << '\n';
+		if (p.D!=nullptr) cout << *p.D << '\n';
+	}*/
 	return 0;
 }
 /*
