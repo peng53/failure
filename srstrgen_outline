@@ -38,3 +38,22 @@ ostream appropriately on length & repeat. Going over the vector of the
 ADTs will then output the desired string. My thought is to store literal_index
 as literal_ptr instead so that the ADTs do not need to be passed with reference
 to the vector of strings (likewise with delimiters).
+
+Notes..
+
+after -s, possible forms, all of them:
+1.		LITERAL_INDEX
+2.		LITERAL_INDEX,COUNT
+3.		LITERAL_INDEX,DELIMITER_INDEX,WORD_COUNT
+4.		LITERAL_INDEX,COUNT,DELIMITER_INDEX,WORD_COUNT
+
+1.		prints literal as is, full string
+2.		prints COUNT of random characters from the literal
+3.		prints literal as is WORD_COUNT times seperated by DELIMITER_INDEX
+4.		prints COUNT of random chars from the literal WORD_COUNT times seperated by DELIMITER_INDEX
+
+Total lengths of the options..
+1.		length of the literal
+2.		count
+3.		length of literal*WORD_COUNT + length of delimiter*(WORD_COUNT-1)
+4.		count*WORD_COUNT + length of delimiter*(WORD_COUNT-1)

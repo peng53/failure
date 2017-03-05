@@ -1,11 +1,18 @@
+#ifdef _DEBUG
+#define DBOUT cout // or any other ostream
+#else
+#define DBOUT 0 && cout
+#endif
+
 #include <iostream>
 #include <vector>
 #include <string>
 #include <cstring>
 #include <algorithm>
-//#include <regex>
 #include <random>
 #include <sstream>
+#include <list>
+#include <stack>
 
 using namespace std;
 
@@ -85,72 +92,46 @@ struct ST {
 	string * I = nullptr;
 	string * D = nullptr;
 	ST(string &s) : I(&s){}
-		//I=&s;L=0;W=1;}
 	ST(string &s,unsigned c) : L(c),I(&s){}
-		//I=&s;L=c;W=1;}
 	ST(string &s,string &d,unsigned r) : W(r),I(&s),D(&d){}
-		//I=&s;D=&d;W=r;L=0;}
 	ST(string &s,unsigned c,string &d,unsigned r) : L(c),W(r),I(&s),D(&d){}
-		//I=&s;D=&d;L=c;W=r;}
 };
 ostream& operator<<(ostream& out,ST &P){
 	if (P.L!=0){
 		uniform_int_distribution<unsigned> r(0,(*P.I).length()-1);
 		for (unsigned w=P.W;w>0;--w){
 			for (unsigned l=0;l<P.L;++l) out<<(*P.I)[r(RNG)];
-			if (w!=1 && P.D!=nullptr) out<<*P.D;
+			if (w!=1) out<<*P.D;
 		}
 	} else {
 		for (unsigned w=P.W;w>0;--w){
 			out<<*P.I;
-			if (w!=1 && P.D!=nullptr) out<<*P.D;
+			if (w!=1) out<<*P.D;
 		}
 	}
 	return out;
 }
 unsigned trialnerror(unsigned U[4],const string &t){
 	unsigned c=0;
-	unsigned b;
-	unsigned n;
+	unsigned b, n;
 	size_t l=t.length();
 	for (unsigned i=0;i<l && c<4;++c){
-		n = 0;
-		while (i<l && !isdigit(t[i])){
-			++i;
-		} // find start
+		n = 1;
+		while (i<l && !isdigit(t[i])) ++i; // find start
 		if (i==l) return 0; // no digits..
-		n++; // found atleast 1
-		b = i;
-		++i; //
-		while (i<l &&isdigit(t[i])){
-			++i;
-			++n;
-		} // count digits
+		for (b=i++;(i<l && isdigit(t[i++]));++n) continue; //count digits
 		U[c] = atoi(t.substr(b,n).c_str());
-		//cout<<U[c]<<'\n';
 	}
 	return c;
 }
-void auto_part(const string &t,vector<string> &lits,vector<ST> &P,vector<string> &emerg){
+void auto_part(const string &t,vector<string> &lits,list<ST> &P,stack<string*> &emerg){
 	if (t.length()==0) return;
 	unsigned U[4];
-	//unsigned c = 0;
-	unsigned lits_s = lits.size();
-	//regex r("[0-9]+");
-	//for(auto j=sregex_iterator(t.begin(),t.end(),r);j!=sregex_iterator() && c<4;++j){
-	//	U[c++]=atoi((*j).str().c_str());
-	//}
-	unsigned c = trialnerror(U,t);
-	//cout << "caught " << c << " numbers\n";
+	unsigned lits_s = lits.size(), c = trialnerror(U,t);
 	if (c==0){
-		emerg.push_back(t);
-		//cout << "Lits: ";
-		//for (auto s : lits) cout << s << ' ';
-		//cout << '\n';
-		P.push_back(ST(emerg.back()));
-		//cout << "Parts: ";
-		//for (auto p : P) cout << p << ' ';
-		//cout << '\n';
+		emerg.push(new string{t});
+		DBOUT << emerg.top() << " made\n";
+		P.push_back(ST(*emerg.top()));
 	} else if (U[0]<lits_s){
 		switch (c){
 		case 1: P.push_back(ST(lits.at(U[0]))); break;
@@ -160,17 +141,9 @@ void auto_part(const string &t,vector<string> &lits,vector<ST> &P,vector<string>
 		}
 	}
 }
-
-vector<ST> part_storer(int I,const int C,char **A,vector<string> &lits,vector<string> &emerg){
-	vector<ST> parts;
-	//for (int i=I;i<C;++i) auto_part(string {A[i]},lits,parts);
-	for (int i=I;i<C;++i){
-		//parts.reserve(parts.size()+1);
-		auto_part(string {A[i]},lits,parts,emerg);
-		//cout << "Parts: ";
-		//for (auto p : parts) cout << '|' << p  << '|' << ' ';
-		//cout << '\n';
-	}
+list<ST> part_storer(int I,const int C,char **A,vector<string> &lits,stack<string*> &emerg){
+	list<ST> parts;
+	for (int i=I;i<C;++i) auto_part(string {A[i]},lits,parts,emerg);
 	return parts;
 }
 const char* stir_mix(string &C, const unsigned L, const unsigned W, const char *S){
@@ -193,7 +166,7 @@ extern "C" const char* plen(const char *I,char *E, const unsigned L, const unsig
 }
 int main(int argc,char **argv){
 	if (argc==1) return 1;
-	//cout << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
+	DBOUT << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
 	unsigned C=strlen(argv[1]);
 	if (C==0 || argv[1][0]=='0') return 1;
 	for (unsigned i=0;i<C;++i){
@@ -201,40 +174,12 @@ int main(int argc,char **argv){
 	}
 	vector<string> lits;
 	int i = literal_storer(argc,argv,lits);
-	vector<string> emerg;
-	emerg.reserve(argc-i+1);
-	vector<ST> parts = part_storer(i,argc,argv,lits,emerg);
-
+	stack<string*> emerg;
+	list<ST> parts = part_storer(i,argc,argv,lits,emerg);
 	for (C=atoi(argv[1]);C>0;--C){
-		for (auto p : parts){
-			cout << p;
-		}
+		for (auto p : parts) cout << p;
 		cout <<'\n';
 	}
-	/*for (auto p: parts){
-		cout << "Part\n";
-		cout << p.L << '\n';
-		cout << p.W << '\n';
-		if (p.I!=nullptr) cout << *p.I << '\n';
-		if (p.D!=nullptr) cout << *p.D << '\n';
-	}*/
+	for(;!emerg.empty();emerg.pop()){ DBOUT<< emerg.top() << " deleted\n"; delete emerg.top();}
 	return 0;
 }
-/*
-after -s, possible forms, all of them:
-1.		LITERAL_INDEX
-2.		LITERAL_INDEX,COUNT
-3.		LITERAL_INDEX,DELIMITER_INDEX,WORD_COUNT
-4.		LITERAL_INDEX,COUNT,DELIMITER_INDEX,WORD_COUNT
-
-1.		prints literal as is, full string
-2.		prints COUNT of random characters from the literal
-3.		prints literal as is WORD_COUNT times seperated by DELIMITER_INDEX
-4.		prints COUNT of random chars from the literal WORD_COUNT times seperated by DELIMITER_INDEX
-
-Total lengths of the options..
-1.		length of the literal
-2.		count
-3.		length of literal*WORD_COUNT + length of delimiter*(WORD_COUNT-1)
-4.		count*WORD_COUNT + length of delimiter*(WORD_COUNT-1)
-*/
