@@ -13,6 +13,7 @@
 #include <sstream>
 #include <list>
 #include <stack>
+#include <cstdlib>
 
 using namespace std;
 
@@ -117,20 +118,26 @@ ostream& operator<<(ostream& out,ST &P){
 	}
 	return out;
 }
-unsigned trialnerror(unsigned U[4],const string &t){
+
+unsigned justnumbers(unsigned U[],unsigned m,const string &t){
+	// Given a string, fill array U with up to m unsigned ints
+	// Non-digits are ignored (or treated as delimiter)
+	// while a sequence of digits as a number; unary minus and
+	// decimal '.' are ignored as well.
 	unsigned c=0, b, n;
-	for (size_t i=0,l=t.length();(i<l && c<4);++c){
+	for (size_t i=0,l=t.length();(i<l && c<m);++c){
 		for (n=1;(i<l && !isdigit(t[i]));++i) continue; // find start
-		if (i>=l) return 0; // no digits..
-		for (b=i++;(i<l && isdigit(t[i++]));++n) continue; //count digits
-		U[c] = stoul(t.substr(b,n)); // or atoi on .c_str()
+		if (i<l){
+			for (b=i++;(i<l && isdigit(t[i++]));++n) continue; //count digits
+			U[c] = stoul(t.substr(b,n)); // or atoi on .c_str()
+		}
 	}
 	return c;
 }
 void auto_part(const string &t,vector<string> &lits,list<ST> &P,stack<string*> &emerg){
 	if (t.length()==0) return;
 	unsigned U[4];
-	unsigned lits_s = lits.size(), c = trialnerror(U,t);
+	unsigned lits_s = lits.size(), c = justnumbers(U,4,t);
 	if (c==0){
 		emerg.push(new string{t});
 		DBOUT << emerg.top() << " made\n";
