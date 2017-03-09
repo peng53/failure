@@ -19,6 +19,23 @@ ostream& operator<<(ostream& out,ST &P){
 	}
 	return out;
 }
+void PartedString::add_part(const string &s){
+			emerg.push(new string {s});
+			//cout<< "made " << emerg.top()<<'\n';
+			parts.emplace_back(*emerg.top());
+		}
+void PartedString::add_part(unsigned I){
+	parts.emplace_back(literals[I]);
+}
+void PartedString::add_part(unsigned I, unsigned L){
+	parts.emplace_back(literals[I],L);
+}
+void PartedString::add_part(unsigned I, unsigned D, unsigned R){
+	parts.emplace_back(literals[I],literals[D],R);
+}
+void PartedString::add_part(unsigned I, unsigned L, unsigned D, unsigned W){
+	parts.emplace_back(literals[I],L,literals[D],W);
+}
 ostream& operator<<(ostream& out,PartedString &PS){
 	for (auto p : PS.parts) out << p;
 	return out;

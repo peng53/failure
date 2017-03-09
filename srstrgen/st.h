@@ -40,26 +40,11 @@ class PartedString {
 		void add_literal(string s){
 			literals.push_back(s);
 		}
-		string& get_lit(unsigned i){
-			return literals[i];
-		}
-		void add_part(unsigned I){
-			parts.emplace_back(literals[I]);
-		}
-		void add_part(const string &s){
-			emerg.push(new string {s});
-			//cout<< "made " << emerg.top()<<'\n';
-			parts.emplace_back(*emerg.top());
-		}
-		void add_part_2(unsigned I, unsigned L){
-			parts.emplace_back(literals[I],L);
-		}
-		void add_part_3(unsigned I, unsigned D, unsigned R){
-			parts.emplace_back(literals[I],literals[D],R);
-		}
-		void add_part_4(unsigned I, unsigned L, unsigned D, unsigned W){
-			parts.emplace_back(literals[I],L,literals[D],W);
-		}
+		void add_part(unsigned I);
+		void add_part(const string &s);
+		void add_part(unsigned I, unsigned L);
+		void add_part(unsigned I, unsigned D, unsigned R);
+		void add_part(unsigned I, unsigned L, unsigned D, unsigned W);
 		~PartedString(){
 			for(;!emerg.empty();emerg.pop()){ /*cout<< "deleting " << emerg.top()<<'\n';*/delete emerg.top();}\
 		}

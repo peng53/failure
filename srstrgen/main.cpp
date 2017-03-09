@@ -38,7 +38,6 @@ void literal_storer(char** &A,char **A_end,PartedString &P){
 	}
 	return;
 }
-
 unsigned justnumbers(unsigned U[],unsigned m,const string &t){
 	// Given a string, fill array U with up to m unsigned ints
 	// Non-digits are ignored (or treated as delimiter)
@@ -60,14 +59,10 @@ void auto_part(const string &t, PartedString &P){
 	if (c==0) P.add_part(t);
 	else if (U[0]<lits_s){
 		switch (c){
-		//case 1: P.add_part(ST(P.get_lit(U[0]))); break;
 		case 1: P.add_part(U[0]); break;
-		//case 2: P.add_part(ST(P.get_lit(U[0]),U[1])); break;
-		case 2: P.add_part_2(U[0],U[1]); break;
-		//case 3: if (U[1]<lits_s) P.add_part(ST(P.get_lit(U[0]),P.get_lit(U[1]),U[2])); break;
-		case 3: if (U[1]<lits_s) P.add_part_3(U[0],U[1],U[2]); break;
-		//case 4: if (U[2]<lits_s) P.add_part(ST(P.get_lit(U[0]),U[1],P.get_lit(U[2]),U[3])); break;
-		case 4: if (U[2]<lits_s) P.add_part_4(U[0],U[1],U[2],U[3]); break;
+		case 2: P.add_part(U[0],U[1]); break;
+		case 3: if (U[1]<lits_s) P.add_part(U[0],U[1],U[2]); break;
+		case 4: if (U[2]<lits_s) P.add_part(U[0],U[1],U[2],U[3]); break;
 		}
 	}
 }
