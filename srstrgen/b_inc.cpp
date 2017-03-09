@@ -13,13 +13,13 @@ string b_incs(const char* I){
 	};
 	const unsigned C_L[] = {26,26,10,16,16,1};
 	string CV;
-	unsigned c_len=0;
+	unsigned c_len = 0;
 	for (unsigned i=0;i<6;++i){
 		if (I[i]=='1') c_len += C_L[i];
 	}
-	CV.reserve(CV.size()+c_len);
+	CV.reserve(c_len);
 	for (unsigned i=0;i<6;++i){
-		CV.insert(CV.end(),C[i],C[i]+C_L[i]);
+		if (I[i]=='1') CV.insert(CV.end(),C[i],C[i]+C_L[i]);
 	}
 	return CV;
 }

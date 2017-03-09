@@ -4,7 +4,8 @@
 #include "b_inc.cpp"
 #include "st.cpp"
 
-using namespace std;
+using std::cout;
+using std::string;
 
 int what_flag(const char *s){
 	switch (strlen(s)){

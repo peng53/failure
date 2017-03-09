@@ -2,6 +2,9 @@
 #define MY_ST
 #include "st.h"
 
+std::mt19937 RNG(time(0));
+std::binomial_distribution<bool> coin(1,0.5);
+
 ostream& operator<<(ostream& out,ST &P){
 	if (P.W==0){
 		out << (coin(RNG) ? (*P.I) : (*P.D));
@@ -19,11 +22,14 @@ ostream& operator<<(ostream& out,ST &P){
 	}
 	return out;
 }
+void PartedString::add_literal(const string &s){
+	literals.emplace_back(new string {s});
+	cout<< "made " << *literals.back() << " at " << literals.back()<<'\n';
+}
 void PartedString::add_part(const string &s){
-			emerg.push(new string {s});
-			//cout<< "made " << emerg.top()<<'\n';
-			parts.emplace_back(*emerg.top());
-		}
+	add_literal(s);
+	parts.emplace_back(literals.back());
+}
 void PartedString::add_part(unsigned I){
 	parts.emplace_back(literals[I]);
 }
