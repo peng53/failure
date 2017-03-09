@@ -1,60 +1,11 @@
-#ifdef _DEBUG
-#define DBOUT cout // or any other ostream
-#else
-#define DBOUT 0 && cout
-#endif
-
-#include <iostream>
-#include <vector>
 #include <string>
 #include <cstring>
-#include <algorithm>
-#include <random>
-#include <sstream>
-#include <list>
-#include <stack>
-#include <cstdlib>
+#include <iostream>
+#include "b_inc.cpp"
+#include "st.cpp"
 
 using namespace std;
 
-mt19937 RNG(time(0));
-
-string b_incs(const char* I){
-	const char *C[]= {
-		"abcdefghijklmnopqrstuvwxyz",
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-		"0123456789",
-		"!#$%&()*+-=@^_`~",
-		"\"',./:;<>?[\\]{|}",
-		" "
-	};
-	const unsigned C_L[] = {26,26,10,16,16,1};
-	string CV;
-	for (unsigned i=0;i<6;++i){
-		if (I[i]=='1'){
-			CV.reserve(CV.size()+C_L[i]);
-			CV.insert(CV.end(),C[i],C[i]+C_L[i]);
-		}
-	}
-	return CV;
-}
-string remove_excs(string &I, char *E){
-	sort(I.begin(),I.end());
-	string O;
-	O.reserve(I.length());
-	auto i = I.cbegin();
-	auto e_len = strlen(E);
-	sort(E,E+e_len);
-	for (char *e=E;e!=E+e_len;++e){
-		if (*i<=*e){
-			for (;i!=I.cend();O.push_back(*i++)){
-				if (*i==*e){ ++i; break; }
-			}
-		}
-	}
-	O.insert(O.end(),i,I.cend());
-	return O;
-}
 int what_flag(const char *s){
 	switch (strlen(s)){
 	case 0: return 0;
@@ -68,55 +19,24 @@ int what_flag(const char *s){
 	}
 	return 9;
 }
-int literal_storer(const int start,const int C,char **A,vector<string> &lits){
-	string I;
-	for (int i=start;i<C;++i){
-		switch(what_flag(A[i])){
+void literal_storer(char** &A,char **A_end,PartedString &P){
+	for (string I;A!=A_end;++A){
+		switch(what_flag(*A)){
 		case 0: break;
-		case 1: return ++i;
+		case 1: ++A; return;
 		case 2:
-			if (i+2<C && strlen(A[i+1])==6){
-				I = b_incs(A[++i]);
-				lits.push_back(remove_excs(I,A[++i]));
-			} else lits.push_back(string {A[i]});
-			break;
+			if (A+2<A_end && strlen(*(A+1))==6){
+				I = b_incs(*(++A));
+				P.add_literal(remove_excs(I,*(++A)));
+				break;
+			}
 		case 3:
-			if (i+1<C && strlen(A[i+1])==6) lits.push_back(b_incs(A[++i]));
-			else lits.push_back(string {A[i]});
-			break;
-		default: lits.push_back(string {A[i]}); break;
+			if (A+1<A_end && strlen(*(A+1))==6){
+				P.add_literal(b_incs(*(++A))); break;}
+		default: P.add_literal(string {*A});
 		}
 	}
-	return C;
-}
-struct ST {
-	unsigned L = 0, W = 1;
-	string * I = nullptr;
-	string * D = nullptr;
-	ST(string &s) : I(&s){}
-	ST(string &s,unsigned c) : L(c),I(&s){}
-	ST(string &s,string &d,unsigned r) : W(r),I(&s),D(&d){}
-	ST(string &s,unsigned c,string &d,unsigned r) : L(c),W(r),I(&s),D(&d){}
-};
-
-binomial_distribution<bool> coin(1,0.5);
-
-ostream& operator<<(ostream& out,ST &P){
-	if (P.W==0){
-		out << (coin(RNG) ? (*P.I) : (*P.D));
-	} else if (P.L!=0){
-		uniform_int_distribution<unsigned> r(0,(*P.I).length()-1);
-		for (unsigned w=P.W;w>0;--w){
-			for (unsigned l=0;l<P.L;++l) out<<(*P.I)[r(RNG)];
-			if (w!=1) out<<*P.D;
-		}
-	} else {
-		for (unsigned w=P.W;w>0;--w){
-			out<<*P.I;
-			if (w!=1) out<<*P.D;
-		}
-	}
-	return out;
+	return;
 }
 
 unsigned justnumbers(unsigned U[],unsigned m,const string &t){
@@ -127,58 +47,36 @@ unsigned justnumbers(unsigned U[],unsigned m,const string &t){
 	unsigned c=0, b, n;
 	for (size_t i=0,l=t.length();(i<l && c<m);++c){
 		for (n=1;(i<l && !isdigit(t[i]));++i) continue; // find start
-		if (i<l){
-			for (b=i++;(i<l && isdigit(t[i++]));++n) continue; //count digits
-			U[c] = stoul(t.substr(b,n)); // or atoi on .c_str()
-		}
+		if (i>=l) return 0;
+		for (b=i++;(i<l && isdigit(t[i++]));++n) continue; //count digits
+		U[c] = stoul(t.substr(b,n)); // or atoi on .c_str()
 	}
 	return c;
 }
-void auto_part(const string &t,vector<string> &lits,list<ST> &P,stack<string*> &emerg){
+void auto_part(const string &t, PartedString &P){
 	if (t.length()==0) return;
 	unsigned U[4];
-	unsigned lits_s = lits.size(), c = justnumbers(U,4,t);
-	if (c==0){
-		emerg.push(new string{t});
-		DBOUT << emerg.top() << " made\n";
-		P.push_back(ST(*emerg.top()));
-	} else if (U[0]<lits_s){
+	unsigned lits_s = P.lits_size(), c = justnumbers(U,4,t);
+	if (c==0) P.add_part(t);
+	else if (U[0]<lits_s){
 		switch (c){
-		case 1: P.push_back(ST(lits.at(U[0]))); break;
-		case 2: P.push_back(ST(lits.at(U[0]),U[1])); break;
-		case 3: if (U[1]<lits_s) P.push_back(ST(lits.at(U[0]),lits.at(U[1]),U[2])); break;
-		case 4: if (U[2]<lits_s) P.push_back(ST(lits.at(U[0]),U[1],lits.at(U[2]),U[3])); break;
+		case 1: P.add_part(ST(P.get_lit(U[0]))); break;
+		case 2: P.add_part(ST(P.get_lit(U[0]),U[1])); break;
+		case 3: if (U[1]<lits_s) P.add_part(ST(P.get_lit(U[0]),P.get_lit(U[1]),U[2])); break;
+		case 4: if (U[2]<lits_s) P.add_part(ST(P.get_lit(U[0]),U[1],P.get_lit(U[2]),U[3])); break;
 		}
-	} else cout << "*ignored '" << t << "'\n";
+	}
 }
-list<ST> part_storer(int I,const int C,char **A,vector<string> &lits,stack<string*> &emerg){
-	list<ST> parts;
-	for (int i=I;i<C;++i) auto_part(string {A[i]},lits,parts,emerg);
-	return parts;
-}
-const char* stir_mix(string &C, const unsigned L, const unsigned W, const char *S){
-	string sS=S;
-	ST p(C,L,sS,W);
-	stringstream sout;
-	sout << p;
-	const string rs = sout.str();
-	const char* rs2 = rs.c_str();
-	return rs2;
-}
-extern "C" const char* instant_coffee(const char *C, const unsigned L, const unsigned W, const char *S){
-	string sC=C;
-	return stir_mix(sC,L,W,S);
-}
-extern "C" const char* plen(const char *I,char *E, const unsigned L, const unsigned W, const char *S){
-	string CV=b_incs(I);
-	string C=remove_excs(CV,E);
-	return stir_mix(C,L,W,S);
+void part_storer(char** &A, char** A_end, PartedString &P){
+	for (;A<A_end;++A){
+		auto_part(string {*A},P);
+	}
 }
 int main(int argc,char **argv){
 	if (argc<3) return 1;
-	DBOUT << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
+	cout << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
 	unsigned C=1;
-	int start=1;
+	char** A = argv+1;
 	if (what_flag(argv[1])==4){
 		C=strlen(argv[2]);
 		if (C==0 || argv[2][0]=='0') return 1;
@@ -186,16 +84,13 @@ int main(int argc,char **argv){
 			if (!isdigit(argv[2][i])) return 1;
 		} // return 1 means -c was caught but following argument was invalid
 		C=atoi(argv[2]);
-		start=3;
+		A = argv + 3;
 	}
-	vector<string> lits;
-	int i = literal_storer(start,argc,argv,lits);
-	stack<string*> emerg;
-	list<ST> parts = part_storer(i,argc,argv,lits,emerg);
+	PartedString M;
+	literal_storer(A,argv+argc,M);
+	part_storer(A,argv+argc,M);
 	for (;C>0;--C){
-		for (auto p : parts) cout << p;
-		cout <<'\n';
+		cout << M << '\n';
 	}
-	for(;!emerg.empty();emerg.pop()){ DBOUT<< emerg.top() << " deleted\n"; delete emerg.top();}
 	return 0;
 }
