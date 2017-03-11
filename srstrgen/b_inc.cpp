@@ -7,16 +7,17 @@ string b_incs(const char* I){
 		"abcdefghijklmnopqrstuvwxyz",
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 		"0123456789",
-		"!#$%&()*+-=@^_`~",
-		"\"',./:;<>?[\\]{|}",
-		" "
+		"!#$%&*+-=@^_`~",
+		"\"',./:;?\\|",
+		" ()<>[]{}"
 	};
-	const unsigned C_L[] = {26,26,10,16,16,1};
-	string CV;
+	const unsigned C_L[] = {26,26,8,16,10,9};
 	unsigned c_len = 0;
 	for (unsigned i=0;i<6;++i){
 		if (I[i]=='1') c_len += C_L[i];
 	}
+	if (c_len==0) return string {' '};
+	string CV;
 	CV.reserve(c_len);
 	for (unsigned i=0;i<6;++i){
 		if (I[i]=='1') CV.insert(CV.end(),C[i],C[i]+C_L[i]);

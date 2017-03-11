@@ -28,13 +28,13 @@ void literal_storer(char** &A,char **A_end,PartedString &P){
 		case 2:
 			if (A+2<A_end && strlen(*(A+1))==6){
 				I = b_incs(*(++A));
-				P.add_literal(remove_excs(I,*(++A)));
+				P << remove_excs(I,*(++A));
 				break;
 			}
 		case 3:
 			if (A+1<A_end && strlen(*(A+1))==6){
-				P.add_literal(b_incs(*(++A))); break;}
-		default: P.add_literal(string {*A});
+				P << b_incs(*(++A)); break;}
+		default: P << string {*A};
 		}
 	}
 	return;
@@ -67,6 +67,14 @@ void auto_part(const string &t, PartedString &P){
 		}
 	}
 }
+void dry_run(PartedString &P){
+	unsigned lits = P.lits_size();
+	P << string {'\n'};
+	for (unsigned i=0;i<lits;++i){
+		P.add_part(i);
+		P.add_part(lits);
+	}
+}
 void part_storer(char** &A, char** A_end, PartedString &P){
 	for (;A<A_end;++A){
 		auto_part(string {*A},P);
@@ -88,8 +96,7 @@ int main(int argc,char **argv){
 	}
 	PartedString M;
 	literal_storer(A,argv+argc,M);
-	part_storer(A,argv+argc,M);
-	for (;C>0;--C){
+	for (((A==argv+argc) ? dry_run(M) : part_storer(A,argv+argc,M));C>0;--C){
 		cout << M << '\n';
 	}
 	return 0;

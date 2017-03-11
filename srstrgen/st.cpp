@@ -24,7 +24,10 @@ ostream& operator<<(ostream& out,ST &P){
 }
 void PartedString::add_literal(const string &s){
 	literals.emplace_back(new string {s});
-	cout<< "made " << *literals.back() << " at " << literals.back()<<'\n';
+	//cout<< "made " << *literals.back() << " at " << literals.back()<<'\n';
+}
+PartedString& PartedString::operator<<(const string &s){
+	add_literal(s);
 }
 void PartedString::add_part(const string &s){
 	add_literal(s);
@@ -46,23 +49,4 @@ ostream& operator<<(ostream& out,PartedString &PS){
 	for (auto p : PS.parts) out << p;
 	return out;
 }
-//const char* stir_mix(string &C, const unsigned L, const unsigned W, const char *S){
-	//string sS=S;
-	//ST p(C,L,sS,W);
-	//std::stringstream sout;
-	//sout << p;
-	//const string rs = sout.str();
-	//const char* rs2 = rs.c_str();
-	//return rs2;
-//}
-//extern "C" const char* instant_coffee(const char *C, const unsigned L, const unsigned W, const char *S){
-	//string sC=C;
-	//return stir_mix(sC,L,W,S);
-//}
-//extern "C" const char* plen(const char *I,char *E, const unsigned L, const unsigned W, const char *S){
-	//string CV=b_incs(I);
-	//string C=remove_excs(CV,E);
-	//return stir_mix(C,L,W,S);
-//}
-
 #endif

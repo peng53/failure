@@ -1,13 +1,12 @@
-#include <iostream>
+#include <ostream>
 #include <string>
-#include <sstream>
 #include <list>
 #include <vector>
 #include <random>
 
 using std::string;
 using std::ostream;
-using std::cout;
+//using std::cout;
 
 struct ST {
 	unsigned L = 0, W = 1;
@@ -29,6 +28,7 @@ class PartedString {
 			return literals.size();
 		}
 		void add_literal(const string &s);
+		PartedString& operator<<(const string &s);
 		void add_part(const string &s);
 		void add_part(unsigned I);
 		void add_part(unsigned I, unsigned L);
@@ -36,13 +36,8 @@ class PartedString {
 		void add_part(unsigned I, unsigned L, unsigned D, unsigned W);
 		~PartedString(){
 			for(auto s : literals){
-				cout<< "deleting " << s << '\n'; delete s;
+				/*cout<< "deleting " << s << '\n';*/ delete s;
 			}
 		}
 };
-
 ostream& operator<<(ostream& out,PartedString &PS);
-
-//const char* stir_mix(string &C, const unsigned L, const unsigned W, const char *S);
-//extern "C" const char* instant_coffee(const char *C, const unsigned L, const unsigned W, const char *S);
-//extern "C" const char* plen(const char *I,char *E, const unsigned L, const unsigned W, const char *S);
