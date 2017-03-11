@@ -16,6 +16,7 @@ int what_flag(const char *s){
 		case 'b': return 2;
 		case 'B': return 3;
 		case 'c': return 4;
+		case 'a': return 5;
 		}
 	}
 	return 9;
@@ -34,12 +35,18 @@ void literal_storer(char** &A,char **A_end,PartedString &P){
 		case 3:
 			if (A+1<A_end && strlen(*(A+1))==6){
 				P << b_incs(*(++A)); break;}
+		case 5:
+			if (A+2<A_end && strlen(*(A+1))==6){
+				I = b_incs(*(++A));
+				P << add_cs(I,*(++A));
+				break;
+			}
 		default: P << string {*A};
 		}
 	}
 	return;
 }
-unsigned justnumbers(unsigned U[],unsigned m,const string &t){
+unsigned justnumbers(unsigned U[],const unsigned m,const string &t){
 	// Given a string, fill array U with up to m unsigned ints
 	// Non-digits are ignored (or treated as delimiter)
 	// while a sequence of digits as a number; unary minus and
@@ -53,10 +60,18 @@ unsigned justnumbers(unsigned U[],unsigned m,const string &t){
 	}
 	return c;
 }
+void dry_run(PartedString &P){
+	const unsigned lits = P.lits_size();
+	P << string {'\n'};
+	for (unsigned i=0;i<lits;++i){
+		P.add_part(i);
+		P.add_part(lits);
+	}
+}
 void auto_part(const string &t, PartedString &P){
 	if (t.length()==0) return;
 	unsigned U[4];
-	unsigned lits_s = P.lits_size(), c = justnumbers(U,4,t);
+	const unsigned lits_s = P.lits_size(), c = justnumbers(U,4,t);
 	if (c==0) P.add_part(t);
 	else if (U[0]<lits_s){
 		switch (c){
@@ -65,14 +80,6 @@ void auto_part(const string &t, PartedString &P){
 		case 3: if (U[1]<lits_s) P.add_part(U[0],U[1],U[2]); break;
 		case 4: if (U[2]<lits_s) P.add_part(U[0],U[1],U[2],U[3]); break;
 		}
-	}
-}
-void dry_run(PartedString &P){
-	unsigned lits = P.lits_size();
-	P << string {'\n'};
-	for (unsigned i=0;i<lits;++i){
-		P.add_part(i);
-		P.add_part(lits);
 	}
 }
 void part_storer(char** &A, char** A_end, PartedString &P){

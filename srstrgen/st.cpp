@@ -33,16 +33,16 @@ void PartedString::add_part(const string &s){
 	add_literal(s);
 	parts.emplace_back(literals.back());
 }
-void PartedString::add_part(unsigned I){
+void PartedString::add_part(const unsigned I){
 	parts.emplace_back(literals[I]);
 }
-void PartedString::add_part(unsigned I, unsigned L){
+void PartedString::add_part(const unsigned I,const unsigned L){
 	parts.emplace_back(literals[I],L);
 }
-void PartedString::add_part(unsigned I, unsigned D, unsigned R){
+void PartedString::add_part(const unsigned I,const unsigned D,const unsigned R){
 	parts.emplace_back(literals[I],literals[D],R);
 }
-void PartedString::add_part(unsigned I, unsigned L, unsigned D, unsigned W){
+void PartedString::add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W){
 	parts.emplace_back(literals[I],L,literals[D],W);
 }
 ostream& operator<<(ostream& out,PartedString &PS){

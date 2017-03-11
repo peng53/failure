@@ -30,10 +30,10 @@ class PartedString {
 		void add_literal(const string &s);
 		PartedString& operator<<(const string &s);
 		void add_part(const string &s);
-		void add_part(unsigned I);
-		void add_part(unsigned I, unsigned L);
-		void add_part(unsigned I, unsigned D, unsigned R);
-		void add_part(unsigned I, unsigned L, unsigned D, unsigned W);
+		void add_part(const unsigned I);
+		void add_part(const unsigned I,const unsigned L);
+		void add_part(const unsigned I,const unsigned D,const unsigned R);
+		void add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W);
 		~PartedString(){
 			for(auto s : literals){
 				/*cout<< "deleting " << s << '\n';*/ delete s;
