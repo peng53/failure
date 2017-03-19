@@ -49,7 +49,6 @@ public class PartedString {
 		if (i<lits.size()){
 			parts.add(new StC(i));
 		}
-		//System.out.println(Integer.toString(i));
 	}
 	public void add_part(int i, int l){
 		if (i<lits.size()){
@@ -68,7 +67,6 @@ public class PartedString {
 	}
 	private void out_part(StringBuilder b, int i){
 		if (i<parts.size()){
-			//StringBuilder b = new StringBuilder();
 			StC P = parts.get(i);
 			if (P.W==0){ //case w=0
 				Random coin = new Random();
@@ -88,28 +86,13 @@ public class PartedString {
 					if (w!=1) b.append(lits.get(P.D));
 				}
 			}
-			//return b.toString();
 		}
-		//return "";
 	}
 	public String toString(){
-		int l = parts.size();
 		StringBuilder b = new StringBuilder();
-		for (int i=0;i<l;++i){
-			//b.append(out_part(i));
+		for (int i=0,l=parts.size();i<l;++i){
 			out_part(b,i);
 		}
 		return b.toString();
 	}
-	/*
-	public static void main(String[] arg){
-		String s = "hello world";
-		PartedString M = new PartedString();
-		M.add_lit(s);
-		M.add_lit("abc");
-		M.add_part(0);
-		M.add_part(1,25);
-		System.out.println(M);
-	}
-	*/
 }

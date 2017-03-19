@@ -25,8 +25,6 @@ public class BIncString {
 	public void remove_excs(char[] E){
 		char[] temp_i = C.toCharArray();
 		Arrays.sort(temp_i);
-		//char[] temp_e = E.toCharArray();
-		//Arrays.sort(temp_e);
 		Arrays.sort(E);
 		int ii = 0;
 		int il = C.length();
@@ -50,14 +48,4 @@ public class BIncString {
 		String temp_a = String.valueOf(A);
 		C += temp_a;
 	}
-	/*
-	public static void main(String[] arg){
-		boolean t[] = {false,false,true,false,false,false};
-		BIncString test = new BIncString(t);
-		char[] E = {'1','2','9'};
-		test.remove_excs(E);
-		char[] A = {'A','C','Z'};
-		test.add_chars(A);
-		System.out.println(test.str());
-	}*/
 }
