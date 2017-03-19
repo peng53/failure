@@ -4,33 +4,11 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class PartedString {
-	class StC {
-		public int I, D;
-		public int L = 0, W = 1;
-		public StC(int i){
-			I = i;
-		}
-		public StC(int i,int l){
-			I = i;
-			L = l;
-		}
-		public StC(int i,int d,int w){
-			I = i;
-			D = d;
-			W = w;
-		}
-		public StC(int i,int l,int d,int w){
-			I = i;
-			L = l;
-			D = d;
-			W = w;
-		}
-	}
-	private ArrayList<StC> parts;
+	private ArrayList<int[]> parts;
 	private ArrayList<String> lits;
 	public PartedString(){
 		lits = new ArrayList<String>();
-		parts = new ArrayList<StC>();
+		parts = new ArrayList<int[]>();
 	}
 	public int lit_size(){
 		return lits.size();
@@ -43,47 +21,39 @@ public class PartedString {
 	}
 	public void add_part(String s){
 		lits.add(s);
-		parts.add(new StC(lits.size()-1));
+		parts.add({lits.size()-1,0,-1,1});
 	}
 	public void add_part(int i){
-		if (i<lits.size()){
-			parts.add(new StC(i));
-		}
+		parts.add({i,0,-1,1});
 	}
 	public void add_part(int i, int l){
-		if (i<lits.size()){
-			parts.add(new StC(i,l));
-		}
+		parts.add({i,l,-1,1});
 	}
 	public void add_part(int i, int d, int w){
-		if (i<lits.size() && d<lits.size()){
-			parts.add(new StC(i,d,w));
-		}
+		parts.add({i,0,d,w});
 	}
 	public void add_part(int i, int l, int d, int w){
-		if (i<lits.size() && d<lits.size()){
-			parts.add(new StC(i,l,d,w));
-		}
+		parts.add({i,l,d,w});
 	}
 	private void out_part(StringBuilder b, int i){
 		if (i<parts.size()){
-			StC P = parts.get(i);
-			if (P.W==0){ //case w=0
+			int[] P = parts.get(i);
+			if (P[3]==0){ //case w=0
 				Random coin = new Random();
-				b.append(lits.get(coin.nextInt(1)==1 ? P.I : P.D ));
-			} else if (P.L!=0){ //random
-				int rlen = lits.get(P.I).length();
+				b.append(lits.get(coin.nextInt(1)==1 ? P[0] : P[2] ));
+			} else if (P[1]!=0){ //random
+				int rlen = lits.get(P[0]).length();
 				Random rand = new Random();
-				for (int w=P.W;w>0;--w){
-					for (int l=0;l<P.L;++l){
-						b.append(lits.get(P.I).charAt(rand.nextInt(rlen)));
+				for (int w=P[3];w>0;--w){
+					for (int l=0;l<P[1];++l){
+						b.append(lits.get(P[0]).charAt(rand.nextInt(rlen)));
 					}
-					if (w!=1) b.append(lits.get(P.D));
+					if (w!=1) b.append(lits.get(P[2]));
 				}
 			} else { //case constant
-				for (int w=P.W;w>0;--w){
-					b.append(lits.get(P.I));
-					if (w!=1) b.append(lits.get(P.D));
+				for (int w=P[3];w>0;--w){
+					b.append(lits.get(P[0]));
+					if (w!=1) b.append(lits.get(P[2]));
 				}
 			}
 		}
