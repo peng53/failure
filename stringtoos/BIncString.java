@@ -1,4 +1,4 @@
-package srstrgenj;
+package stringtoos;
 
 import java.util.Arrays;
 
