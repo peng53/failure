@@ -3,6 +3,8 @@ package stringtoos;
 import java.util.ArrayList;
 import java.util.Random;
 
+//boo
+
 public class PartedString {
 	private ArrayList<int[]> parts = new ArrayList<int[]>();
 	private ArrayList<String> lits = new ArrayList<String>();

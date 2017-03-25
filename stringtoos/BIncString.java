@@ -2,6 +2,8 @@ package stringtoos;
 
 import java.util.Arrays;
 
+// boo
+
 public class BIncString {
 	private String C;
 	public String toString(){
