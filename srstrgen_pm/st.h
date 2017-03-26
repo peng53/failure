@@ -3,10 +3,12 @@
 #include <random>
 #include <ctime>
 #include <vector>
+#include <list>
 
 using std::ostream;
 using std::string;
 using std::vector;
+using std::list;
 
 struct Part {
 	virtual void out(ostream& sout) = 0;
@@ -33,4 +35,17 @@ struct DPart : Part {
 	vector<string*> f;
 	void out(ostream& sout);
 };
-
+class PartedString {
+	private:
+		vector<string*> lits;
+		list<Part*> parts;
+		friend ostream& operator<<(ostream& out,PartedString &PS);
+	public:
+		~PartedString();
+		void add_lit(const string& s);
+		void add_part(const string& s);
+		void add_part(const unsigned I);
+		void add_part(const unsigned I,const unsigned L);
+		void add_part(const unsigned I,const unsigned D,const unsigned R);
+		void add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W);
+};
