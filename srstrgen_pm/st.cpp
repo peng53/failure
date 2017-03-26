@@ -22,5 +22,9 @@ void RPart::out(ostream& sout){
 		if (i!=1) sout<<*d;
 	}
 }
+void DPart::out(ostream& sout){
+	std::uniform_int_distribution<unsigned> r(0,f.size()-1);
+	sout << *(f[r(RNG)]);
+}
 
 #endif

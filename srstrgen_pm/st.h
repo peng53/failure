@@ -2,9 +2,11 @@
 #include <string>
 #include <random>
 #include <ctime>
+#include <vector>
 
 using std::ostream;
 using std::string;
+using std::vector;
 
 struct Part {
 	virtual void out(ostream& sout) = 0;
@@ -27,3 +29,8 @@ struct RPart : Part {
 	RPart(string* _c,unsigned _l,string* _d,unsigned _t) : c(_c),l(_l),d(_d),t(_t){};
 	void out(ostream& sout);
 };
+struct DPart : Part {
+	vector<string*> f;
+	void out(ostream& sout);
+};
+
