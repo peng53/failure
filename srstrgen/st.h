@@ -3,9 +3,11 @@
 #include <list>
 #include <vector>
 #include <random>
+#include <utility>
 
 using std::string;
 using std::ostream;
+using std::move;
 //using std::cout;
 
 struct ST {

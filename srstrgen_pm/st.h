@@ -39,10 +39,9 @@ struct DPart : Part {
 class PartedString {
 	private:
 		vector<unique_ptr<string>> lits;
-		list<Part*> parts;
+		list<unique_ptr<Part>> parts;
 		friend ostream& operator<<(ostream& out,PartedString &PS);
 	public:
-		~PartedString();
 		void add_lit(const string& s);
 		void add_part(const string& s);
 		void add_part(const unsigned I);

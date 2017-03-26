@@ -27,8 +27,8 @@ void DPart::out(ostream& sout){
 	sout << *(f[r(RNG)]);
 }
 ostream& operator<<(ostream& out,PartedString &PS){
-	for (auto p : PS.parts){
-		out<<*p;
+	for (auto const &p : PS.parts){
+		out<<*p.get();
 	}
 	return out;
 }
@@ -40,31 +40,28 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 void PartedString::add_lit(const string& s){
 	lits.push_back(make_unique<string>(s));
 }
-PartedString::~PartedString(){
-	for (auto p : parts) delete p;
-}
 void PartedString::add_part(const string& s){
 	add_lit(s);
-	parts.push_back(new CPart(lits.back().get()));
+	parts.emplace_back(make_unique<CPart>(lits.back().get()));
 }
 void PartedString::add_part(const unsigned I){
-	parts.push_back(new CPart(lits[I].get()));
+	parts.emplace_back(make_unique<CPart>(lits[I].get()));
 }
 void PartedString::add_part(const unsigned I,const unsigned L){
-	parts.push_back(new RPart(lits[I].get(),L));
+	parts.emplace_back(make_unique<RPart>(lits[I].get(),L));
 }
 void PartedString::add_part(const unsigned I,const unsigned D,const unsigned R){
 	if (R!=0){
-		parts.push_back(new CPart(lits[I].get(),lits[D].get(),R));
+		parts.emplace_back(make_unique<CPart>(lits[I].get(),lits[D].get(),R));
 	} else {
-		DPart* t = new DPart();
-		parts.push_back(t);
+		unique_ptr<DPart> t = make_unique<DPart>();
 		for (unsigned i=I;i<=D;++i){
-			t->f.push_back(lits[i].get());
+			t.get()->f.push_back(lits[i].get());
 		}
+		parts.push_back(move(t));
 	}
 }
 void PartedString::add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W){
-	parts.push_back(new RPart(lits[I].get(),L,lits[D].get(),W));
+	parts.emplace_back(make_unique<RPart>(lits[I].get(),L,lits[D].get(),W));
 }
 #endif
