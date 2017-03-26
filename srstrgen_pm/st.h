@@ -43,7 +43,11 @@ class PartedString {
 		friend ostream& operator<<(ostream& out,PartedString &PS);
 		void add_lit(const string& s);
 		friend PartedString& operator<<(PartedString& p,const string& s);
+		friend PartedString& operator<<(PartedString& p,const unsigned i);
 	public:
+		unsigned lits_size(){
+			return lits.size();
+		}
 		void add_part(const string& s);
 		void add_part(const unsigned I);
 		void add_part(const unsigned I,const unsigned L);

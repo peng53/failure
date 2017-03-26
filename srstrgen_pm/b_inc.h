@@ -9,6 +9,7 @@ class BInc {
 	private:
 		string s;
 	public:
+		BInc(){}
 		BInc(const char* I);
 		string& rep(){
 			return s;

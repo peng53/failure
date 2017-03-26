@@ -51,6 +51,10 @@ void PartedString::add_part(const string& s){
 void PartedString::add_part(const unsigned I){
 	parts.emplace_back(make_unique<CPart>(lits[I].get()));
 }
+PartedString& operator<<(PartedString& p, const unsigned i){
+	p.add_part(i);
+	return p;
+}
 void PartedString::add_part(const unsigned I,const unsigned L){
 	parts.emplace_back(make_unique<RPart>(lits[I].get(),L));
 }
