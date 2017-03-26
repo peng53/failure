@@ -4,12 +4,13 @@
 #include <ctime>
 #include <vector>
 #include <list>
+#include <memory>
 
 using std::ostream;
 using std::string;
 using std::vector;
 using std::list;
-
+using std::unique_ptr;
 struct Part {
 	virtual void out(ostream& sout) = 0;
 };
@@ -37,7 +38,7 @@ struct DPart : Part {
 };
 class PartedString {
 	private:
-		vector<string*> lits;
+		vector<unique_ptr<string>> lits;
 		list<Part*> parts;
 		friend ostream& operator<<(ostream& out,PartedString &PS);
 	public:
