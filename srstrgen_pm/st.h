@@ -41,8 +41,9 @@ class PartedString {
 		vector<unique_ptr<string>> lits;
 		list<unique_ptr<Part>> parts;
 		friend ostream& operator<<(ostream& out,PartedString &PS);
-	public:
 		void add_lit(const string& s);
+		friend PartedString& operator<<(PartedString& p,const string& s);
+	public:
 		void add_part(const string& s);
 		void add_part(const unsigned I);
 		void add_part(const unsigned I,const unsigned L);

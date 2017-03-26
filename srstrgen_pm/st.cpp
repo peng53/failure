@@ -40,6 +40,10 @@ std::unique_ptr<T> make_unique(Args&&... args) {
 void PartedString::add_lit(const string& s){
 	lits.push_back(make_unique<string>(s));
 }
+PartedString& operator<<(PartedString& p, const string& s){
+	p.add_lit(s);
+	return p;
+}
 void PartedString::add_part(const string& s){
 	add_lit(s);
 	parts.emplace_back(make_unique<CPart>(lits.back().get()));

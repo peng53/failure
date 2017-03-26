@@ -13,12 +13,7 @@ int main(){
 	string s3 {"gmail"};
 	string s4 {"hotmail"};
 	string s5 {"yahoo"};
-	M.add_lit(s0);
-	M.add_lit(s1);
-	M.add_lit(s2);
-	M.add_lit(s3);
-	M.add_lit(s4);
-	M.add_lit(s5);
+	M << s0 << s1 << s2 << s3 << s4 << s5;
 	M.add_part(1);
 	M.add_part(2);
 	M.add_part(0,4,2,3);
