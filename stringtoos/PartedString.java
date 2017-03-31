@@ -3,8 +3,6 @@ package stringtoos;
 import java.util.ArrayList;
 import java.util.Random;
 
-//boo
-
 public class PartedString {
 	private ArrayList<int[]> parts = new ArrayList<int[]>();
 	private ArrayList<String> lits = new ArrayList<String>();
@@ -33,7 +31,7 @@ public class PartedString {
 	private Random rand = new Random();
 	private void out_part(StringBuilder b, int[] P){
 		if (P[3]==0){ //case w=0
-			b.append(lits.get(rand.nextInt(2)==1 ? P[0] : P[2] ));
+			b.append(lits.get(rand.nextBoolean() ? P[0] : P[2] ));
 		} else if (P[1]!=0){ //random
 			int rlen = lits.get(P[0]).length();
 			for (int w=P[3];w>0;--w){

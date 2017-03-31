@@ -2,25 +2,20 @@ package stringtoos;
 
 import java.util.Arrays;
 
-// boo
-
 public class BIncString {
+	static final String CHAR_SEL[]= {
+		"abcdefghijklmnopqrstuvwxyz",
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+		"0123456789",
+		"!#$%&*+-=@^_`~",
+		"\"',./:;?\\|",
+		" ()<>[]{}"
+	};
 	private String C;
-	public String toString(){
-		return C;
-	}
 	public BIncString(boolean[] I){
-		String C2[]= {
-			"abcdefghijklmnopqrstuvwxyz",
-			"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-			"0123456789",
-			"!#$%&*+-=@^_`~",
-			"\"',./:;?\\|",
-			" ()<>[]{}"
-		};
 		StringBuilder b = new StringBuilder();
 		for (int i=0;i<6;++i){
-			if (I[i]) b.append(C2[i]);
+			if (I[i]) b.append(CHAR_SEL[i]);
 		}
 		C = b.toString();
 	}
@@ -49,5 +44,8 @@ public class BIncString {
 	public void add_chars(char[] A){
 		String temp_a = String.valueOf(A);
 		C += temp_a;
+	}
+	public final String toString(){
+		return C;
 	}
 }
