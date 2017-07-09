@@ -68,15 +68,21 @@ class App:
 		self.sum_t.grid(row=0,column=0,sticky='ew')
 		self.sum_sb = Scrollbar(self.fsum)
 		self.sum_sb.grid(row=0,column=1,sticky='ns')
-		self.add_tv(['z2484','05/27/2017 12:55','05/27/2017 14:24','342','Desc here'],res=False)
-		self.add_tv(['z2484','05/27/2017 14:24','05/27/2017 17:55','521','Desc here'],res=False)
-		self.add_tv(['z2484','05/27/2017 12:52','05/27/2017 12:55','103','Desc here'],pos=0,res=False)
-
+		self.add_tv(['z2484','05/27/2017 12:55','05/27/2017 14:24','342','First item added, but 2nd'],res=False)
+		self.add_tv(['z2484','05/27/2017 14:24','05/27/2017 17:55','521','Second item added, but 3rd'],res=False)
+		self.add_tv(['z2484','05/27/2017 12:52','05/27/2017 12:55','103','Third item added, but 1st'],pos=0,res=False)
 		self.add_tv(['x1454','05/27/2017 12:52','05/27/2017 12:55','103','Desc here'])
+		self.rem_tv(1,False)
 
 	def add_tv(self,vs,pos='end',res=True):
 		tv = self.res if res else self.notes
-		tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
+		print tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
+	def rem_tv(self,pos,res=True):
+		# Pos is natural number
+		tv = self.res if res else self.notes
+		iid = tv.identify_row(pos)
+		print iid
+		tv.delete(iid)
 
 
 
