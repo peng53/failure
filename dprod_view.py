@@ -8,63 +8,68 @@ class App:
 	def __init__(self,root):
 
 		self.root = root
-		self.fque = Frame(root)
-		self.v = StringVar()
-		self.tk = {'eque':Entry(self.fque,width=10),
-			'keys':OptionMenu(self.fque,self.v,"Hi","B;i"),
-			'res':Treeview(root,columns=(0,1),displaycolumns=(0,1))}
-		self.tk['eque'].grid(row=0,column=0)
-		self.tk['keys'].grid(row=0,column=1)
-		Button(self.fque,text="Lookup").grid(row=0,column=2)
+
 		Label(root,text="Production Record Viewer").grid()
+		self.fque = Frame(root)
 		self.fque.grid()
+		self.v = StringVar()
+		self.eque = Entry(self.fque)
+		self.eque.grid(row=0,column=0,sticky='ew')
+		self.om = OptionMenu(self.fque,self.v,"UID","Code")
+		self.om.grid(row=0,column=1)
+		Button(self.fque,text="Lookup").grid(row=0,column=2)
+
 		Label(root,text="Results").grid()
-		self.tk['res'].grid()
+		self.res_LR = Frame(root)
+		self.res_LR.grid()
+		self.res_L = Frame(self.res_LR)
+		self.res_L.grid(row=0,column=0)
+		self.res_R = Frame(self.res_LR)
+		self.res_R.grid(row=0,column=1,sticky='n')
+
+		self.res = Treeview(self.res_L,columns=('s','e','c','d'))
+		self.res.grid()
+		self.res_sb = Scrollbar(self.res_L)
+		self.res_sb.grid(row=0,column=1,sticky='ns')
+
+		for x,t,w in [('#0','UID',50),('s','Start Time',100),('e','End Time',100),('c','Code',40),('d','Desc',300)]:
+			self.res.heading(x,text=t)
+			self.res.column(x,width=w)
+
+		Button(self.res_R,text="Clear").grid(sticky='ew')
+		Button(self.res_R,text="Sort").grid(sticky='ew')
+
+
 		Label(root,text="Notes").grid()
+		self.notes_LR = Frame(root)
+		self.notes_LR.grid()
+		self.notes_L = Frame(self.notes_LR,bg='blue')
+		self.notes_L.grid(row=0,column=0,sticky='nesw')
+		self.notes_R = Frame(self.notes_LR,bg='green')
+		self.notes_R.grid(row=0,column=1,sticky='n')
+
+		self.notes = Treeview(self.notes_L,columns=('s','e','c','d'))
+		self.notes.grid()
+		self.notes_sb = Scrollbar(self.notes_L)
+		self.notes_sb.grid(row=0,column=1,sticky='ns')
+
+		for x,t,w in [('#0','UID',50),('s','Start Time',100),('e','End Time',100),('c','Code',40),('d','Desc',300)]:
+			self.notes.heading(x,text=t)
+			self.notes.column(x,width=w)
+
+		Button(self.notes_R,text="Clear").grid(sticky='ew')
+		Button(self.notes_R,text="Sort").grid(sticky='ew')
+		Button(self.notes_R,text="Total").grid(sticky='ew')
+		Button(self.notes_R,text='Save').grid(sticky='ew')
+
 		Label(root,text="Summary").grid()
-		self.tk['res'].insert(parent="",index=0,text="TOUSE",values=("1st","2nd"))
-
-
-		#self.master = master
-		#self.query_box = Tk.Frame(master)
-		#self.query_box.grid(sticky='ew')
-		#Tk.Label(self.query_box,text="Production Records Viewer").grid(row=0,columnspan=3)
-		#self.query_box_entry = Tk.Entry(self.query_box,width=86)
-		#self.query_box_entry.grid(row=1,column=0,sticky='NESW')
-		#self.v = Tk.StringVar(master)
-		#self.query_box_opmenu = Tk.OptionMenu(self.query_box,self.v,"UID","Code")
-		#self.query_box_opmenu.grid(row=1,column=1)
-		#self.query_box_but = Tk.Button(self.query_box,text="Look-up")
-		#self.query_box_but.grid(row=1,column=2)
-
-		#self.result_box = Tk.Frame(master)
-		#self.result_box_but_box = Tk.Frame(self.result_box)
-		#self.result_box_but_sel = Tk.Button(self.result_box_but_box,text="Select")
-		#self.result_box_but_cls = Tk.Button(self.result_box_but_box,text="Clear")
-		#self.result_box_lb = Tk.Listbox(self.result_box,width=100)
-		#self.result_box.grid(sticky='nesw')
-		#Tk.Label(self.result_box,text="Search Results",width=100).grid(row=0,columnspan=2,column=0)
-		#self.result_box_lb.grid(row=1,column=0,sticky='ew')
-
-		#self.result_box_but_box.grid(row=1,column=1)
-		#self.result_box_but_sel.grid(row=0,column=0)
-		#self.result_box_but_cls.grid(row=1,column=0)
-
-		#self.notes = Tk.Frame(master)
-		#self.notes.grid()
-		#self.notes_but = Tk.Frame(self.notes)
-		#self.notes_but.grid(row=1,column=1)
-		#Tk.Label(self.notes,text="Selected").grid(row=0,columnspan=2)
-		#self.notes_lb = Tk.Listbox(self.notes,width=100)
-		#self.notes_lb.grid(row=1,column=0,sticky='NESW')
-		#self.notes_but_sort = Tk.Button(self.notes_but,text="Sort")
-		#self.notes_but_cls = Tk.Button(self.notes_but,text="Clear")
-		#self.notes_but_sum = Tk.Button(self.notes_but,text="Sum")
-		#self.notes_but_del = Tk.Button(self.notes_but,text="Delete")
-		#self.notes_but_sort.grid(row=0,column=0)
-		#self.notes_but_cls.grid(row=1,column=0)
-		#self.notes_but_sum.grid(row=2,column=0)
-		#self.notes_but_del.grid(row=3,column=0)
+		self.fsum = Frame(root,bg='red')
+		self.fsum.grid()
+		self.sum_t = Text(self.fsum)
+		self.sum_t.grid(row=0,column=0,sticky='nesw')
+		self.sum_sb = Scrollbar(self.fsum)
+		self.sum_sb.grid(row=0,column=1,sticky='nws')
+		self.res.insert(parent="",index=0,text="x1454",values=('05/27/2017 12:52','05/27/2017 12:55','103','Desc here'))
 
 
 
