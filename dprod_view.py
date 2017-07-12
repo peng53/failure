@@ -1,17 +1,20 @@
 #!/usr/bin/env python2
 # dprod_view.py
 from Tkinter import *
+from tkFileDialog import askopenfilename, asksaveasfilename
 from ttk import Treeview
 import sqlite3
 
 class App:
 	def __init__(self,root):
 		self.root = root
+		self.conn = None
 
 		menubar = Menu(root)
 		root.config(menu=menubar)
 		m_db = Menu(menubar)
-		m_db.add_command(label="Open Database")
+
+		m_db.add_command(label="Open Database",command=self.open_db)
 		m_db.add_command(label="Close Database")
 		menubar.add_cascade(label="Database",menu=m_db)
 		m_lu = Menu(menubar)
@@ -104,6 +107,21 @@ class App:
 		for x in xrange(30):
 			self.add_tv(['x1454','05/27/2017 12:52','05/27/2017 12:55','103','Desc here'],res=True)
 		self.rem_tv(1,False)
+
+	def open_db(self):
+		s = askopenfilename(filetypes=[("Database file","*.db")])
+		try:
+			conn = sqlite3.connect(s)
+			c = conn.cursor()
+			c_cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
+			if c_cols==[('uid','text'),('start_time','integer'),('end_time','integer'),('code','text'),('desc','text')]:
+				self.conn = conn
+				print self.conn
+		except:
+			# error window?
+			self.conn = None
+		self.conn = None
+
 
 	def add_tv(self,vs,pos='end',res=True):
 		tv = self.res if res else self.notes
