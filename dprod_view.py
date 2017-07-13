@@ -138,40 +138,24 @@ class App:
 	def clear_results(self):
 		self.res.delete(*self.res.get_children())
 	def cmd_lookup(self):
-		s = None
+		q = None
 		self.clear_results()
 		if self.conn:
+			c = self.conn.cursor()
 			s = self.eque.get()
-			if len(s)==0:
-				c = self.conn.cursor()
-				for row in c.execute('select * from prod_records'):
-					r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
-					self.add_tv(r,pos='end',res=True)
+			if len(s)==0: q = c.execute('select * from prod_records')
 			elif s=='*':
 				f = self.v.get()
-				c = self.conn.cursor()
-				if f=='UID':
-					for row in c.execute('select * from prod_records ORDER by uid'):
-						r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
-						self.add_tv(r,pos='end',res=True)
-				else:
-					for row in c.execute('select * from prod_records ORDER by code'):
-						r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
-						self.add_tv(r,pos='end',res=True)
+				if f=='UID': q = c.execute('select * from prod_records ORDER by uid')
+				else: q = c.execute('select * from prod_records ORDER by code')
 			else:
 				f = self.v.get()
-				print f
-				if f=='UID':
-					c = self.conn.cursor()
-					for row in c.execute('select * from prod_records WHERE uid=?',[s]):
-						r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
-						self.add_tv(r,pos='end',res=True)
-				else:
-					c = self.conn.cursor()
-					for row in c.execute('select * from prod_records WHERE code=?',[s]):
-						r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
-						self.add_tv(r,pos='end',res=True)
-
+				if f=='UID': q = c.execute('select * from prod_records WHERE uid=?',[s])
+				else: q = c.execute('select * from prod_records WHERE code=?',[s])
+			if q:
+				for row in q:
+					r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
+					self.add_tv(r,pos='end',res=True)
 		else:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
 	def add_tv(self,vs,pos='end',res=True):
