@@ -5,6 +5,7 @@ from tkFileDialog import askopenfilename, asksaveasfilename
 from tkMessageBox import showerror, showwarning
 from ttk import Treeview
 import sqlite3
+import time
 
 class App:
 	def __init__(self,root):
@@ -59,7 +60,7 @@ class App:
 		self.res_R.grid(row=0,column=1,sticky='n')
 
 		self.res_sb = Scrollbar(self.res_L)
-		self.res = Treeview(self.res_L,columns=('s','e','c','d'),yscrollcommand=self.res_sb.set)
+		self.res = Treeview(self.res_L,columns=('s','e','c','d','si','ei'),displaycolumns=('s','e','c','d'),yscrollcommand=self.res_sb.set)
 		self.res.grid()
 		self.res_sb.config(command=self.res.yview)
 		self.res_sb.grid(row=0,column=1,sticky='ns')
@@ -76,7 +77,7 @@ class App:
 		self.notes_R.grid(row=0,column=1,sticky='n')
 
 		self.notes_sb = Scrollbar(self.notes_L)
-		self.notes = Treeview(self.notes_L,columns=('s','e','c','d'),yscrollcommand=self.notes_sb.set)
+		self.notes = Treeview(self.notes_L,columns=('s','e','c','d','si','ei'),displaycolumns=('s','e','c','d'),yscrollcommand=self.notes_sb.set)
 		self.notes.grid()
 		self.notes_sb.config(command=self.notes.yview)
 		self.notes_sb.grid(row=0,column=1,sticky='ns')
@@ -142,8 +143,11 @@ class App:
 			s = self.eque.get()
 			if len(s)==0:
 				c = self.conn.cursor()
-				for row in c.execute('select uid,datetime(start_time),datetime(end_time),code,desc from prod_records'):
-					self.add_tv(row,pos='end',res=True)
+				for row in c.execute('select * from prod_records'):
+					r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
+					print row[1]
+					print row[2]
+					self.add_tv(r,pos='end',res=True)
 		else:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
 	def add_tv(self,vs,pos='end',res=True):
