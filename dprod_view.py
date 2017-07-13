@@ -2,6 +2,7 @@
 # dprod_view.py
 from Tkinter import *
 from tkFileDialog import askopenfilename, asksaveasfilename
+from tkMessageBox import showerror, showwarning
 from ttk import Treeview
 import sqlite3
 
@@ -15,25 +16,26 @@ class App:
 		m_db = Menu(menubar)
 
 		m_db.add_command(label="Open Database",command=self.open_db)
-		m_db.add_command(label="Close Database")
+		m_db.add_command(label="Close Database",command=self.close_db)
 		menubar.add_cascade(label="Database",menu=m_db)
 		m_lu = Menu(menubar)
-		m_lu.add_command(label="Lookup Query")
-		m_lu.add_command(label="Clear Query")
+		m_lu.add_command(label="Lookup Query",command=self.cmd_lookup)
+		m_lu.add_command(label="Clear Query",command=self.clear_query)
 		menubar.add_cascade(label="Lookup",menu=m_lu)
 		m_rs = Menu(menubar)
 		m_rs.add_command(label="Add to Notes")
 		m_rs.add_command(label="Sort by..")
-		m_rs.add_command(label="Clear Results")
+		m_rs.add_command(label="Clear Results",command=self.clear_results)
 		menubar.add_cascade(label="Results",menu=m_rs)
 		m_nt = Menu(menubar)
 		m_nt.add_command(label="Sort by..")
 		m_nt.add_command(label="Sum Time")
+		m_nt.add_command(label="Clear Notes",command=self.clear_notes)
 		menubar.add_cascade(label="Notes",menu=m_nt)
 		m_sy = Menu(menubar)
 		m_sy.add_command(label="Save")
 		m_sy.add_command(label="Print")
-		m_sy.add_command(label="Clear")
+		m_sy.add_command(label="Clear",command=self.clear_notes)
 		menubar.add_cascade(label="Summary",menu=m_sy)
 		menubar.add_command(label="Quit",command=root.quit)
 
@@ -46,7 +48,7 @@ class App:
 		self.eque.grid(row=0,column=0,sticky='ew')
 		self.om = OptionMenu(self.fque,self.v,"UID","Code")
 		self.om.grid(row=0,column=1)
-		Button(self.fque,text="Lookup").grid(row=0,column=2)
+		Button(self.fque,text="Lookup",command=self.cmd_lookup).grid(row=0,column=2)
 
 		Label(root,text="Results").grid(sticky='w')
 		self.res_LR = Frame(root)
@@ -62,7 +64,7 @@ class App:
 		self.res_sb.config(command=self.res.yview)
 		self.res_sb.grid(row=0,column=1,sticky='ns')
 
-		Button(self.res_R,text="Clear").grid(sticky='ew')
+		Button(self.res_R,text="Clear",command=self.clear_results).grid(sticky='ew')
 		Button(self.res_R,text="Sort").grid(sticky='ew')
 
 		Label(root,text="Notes").grid(sticky='w')
@@ -85,7 +87,7 @@ class App:
 			self.notes.heading(x,text=t)
 			self.notes.column(x,width=w)
 
-		Button(self.notes_R,text="Clear").grid(sticky='ew')
+		Button(self.notes_R,text="Clear",command=self.clear_notes).grid(sticky='ew')
 		Button(self.notes_R,text="Sort").grid(sticky='ew')
 		Button(self.notes_R,text="Total").grid(sticky='ew')
 		Button(self.notes_R,text='Save').grid(sticky='ew')
@@ -110,19 +112,40 @@ class App:
 
 	def open_db(self):
 		s = askopenfilename(filetypes=[("Database file","*.db")])
-		try:
-			conn = sqlite3.connect(s)
-			c = conn.cursor()
-			c_cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
-			if c_cols==[('uid','text'),('start_time','integer'),('end_time','integer'),('code','text'),('desc','text')]:
-				self.conn = conn
-				print self.conn
-		except:
-			# error window?
-			self.conn = None
-		self.conn = None
-
-
+		if len(s)>0:
+			try:
+				conn = sqlite3.connect(s)
+				c = conn.cursor()
+				c_cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
+				if c_cols==[('uid','text'),('start_time','integer'),('end_time','integer'),('code','text'),('desc','text')]:
+					self.conn = conn
+					print self.conn
+			except:
+				showerror(title="No file loaded",message="Please select valid database for reading.")
+				self.conn = None
+		else:
+			showwarning(title="No file selected",message="Please select valid database for reading.")
+	def close_db(self):
+		if self.conn:
+			self.conn.close()
+		else:
+			showwarning(title="No file open",message="No action taken.")
+	def clear_query(self):
+		self.eque.delete(0,'end')
+	def clear_notes(self):
+		self.notes.delete(*self.notes.get_children())
+	def clear_results(self):
+		self.res.delete(*self.res.get_children())
+	def cmd_lookup(self):
+		self.clear_results()
+		if self.conn:
+			s = self.eque.get()
+			if len(s)==0:
+				c = self.conn.cursor()
+				for row in c.execute('select uid,datetime(start_time),datetime(end_time),code,desc from prod_records'):
+					self.add_tv(row,pos='end',res=True)
+		else:
+			showerror(title="No file loaded",message="Please load a file for lookup.")
 	def add_tv(self,vs,pos='end',res=True):
 		tv = self.res if res else self.notes
 		print tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
