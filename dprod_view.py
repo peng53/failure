@@ -7,6 +7,20 @@ from ttk import Treeview
 import sqlite3
 import time
 
+dq = {'':'SELECT * FROM prod_records'}
+for k in ('uid','code'):
+	dq['*'+k] = '%s ORDER BY %s' %(dq[''],k)
+	dq['q'+k] = '%s WHERE %s=?' %(dq[''],k)
+dq['*date'] = dq['*before'] = '%s ORDER BY start_time' %dq['']
+dq['*after'] = '%s ORDER BY end_time' %dq['']
+
+dq['qdate'] = '%s WHERE start_time BETWEEN ? AND ? OR end_time BETWEEN ? AND ?' %dq['']
+dq['qbefore'] = '%s WHERE start_time<=? OR end_time <=?' %dq['']
+dq['qafter'] = '%s WHERE start_time>=? OR end_time >=?' %dq['']
+
+def intStrf(i):
+	return time.strftime('%m/%d/%Y %H:%M',time.localtime(i))
+
 class App:
 	def __init__(self,root):
 		self.root = root
@@ -129,68 +143,34 @@ class App:
 		self.notes.delete(*self.notes.get_children())
 	def clear_results(self):
 		self.res.delete(*self.res.get_children())
+	def nice_date(self,s):
+		try:
+			d = map(int,s.split('/',2))
+			if len(d)==3:return time.mktime(time.struct_time([d[2],d[0],d[1],0,0,0,0,0,-1]))
+			showerror(title="Invalid date",message="Date missing month, day, or year.")
+		except Exception as e:
+			showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
 	def cmd_lookup(self):
-		#dq = {'':'SELECT * FROM prod_records'}
-		#for k in ('uid','code'):
-		#	dq['*'+k] = '%s ORDER BY %s=?' %(dq[''],k)
-		#	dq['*'+s] = '%s WHERE %s=?' %(dq[''],k)
-
 		q = None
 		self.clear_results()
 		if self.conn:
 			c = self.conn.cursor()
 			s = self.eque.get()
-			if len(s)==0: q = c.execute('select * from prod_records')
-			elif s=='*':
-				f = self.v.get()
-				#q = c.execute('select * from prod_records ORDER by %s' %f)
-				if f=='UID': q = c.execute('select * from prod_records ORDER by uid')
-				else: q = c.execute('select * from prod_records ORDER by code')
+			if len(s)==0: q = c.execute(dq[''])
+			elif s=='*': q = c.execute(dq['*'+self.v.get().lower()])
 			else:
-				f = self.v.get()
-				if f=='UID': q = c.execute('select * from prod_records WHERE uid=?',[s])
-				elif f=='Code': q = c.execute('select * from prod_records WHERE code=?',[s])
-				elif f=='Before':
-					# using MM/DD/YYYY format
-					if '/' in s:
-						try:
-							s = map(int,s.split('/',2))
-							if len(s)<3:
-								showerror(title="Invalid date",message="Date missing month, day, or year.")
-							else:
-								d = time.mktime(time.struct_time([s[2],s[0],s[1],0,0,0,0,0,-1]))+1
-								q = c.execute('select * from prod_records WHERE start_time<? OR end_time<?',[d,d])
-						except:
-							showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
-				elif f=='After':
-					# using MM/DD/YYYY format
-					if '/' in s:
-						try:
-							s = map(int,s.split('/',2))
-							if len(s)<3:
-								showerror(title="Invalid date",message="Date missing month, day, or year.")
-							else:
-								d = time.mktime(time.struct_time([s[2],s[0],s[1],0,0,0,0,0,-1]))-1
-								q = c.execute('select * from prod_records WHERE start_time>? OR end_time>?',[d,d])
-						except Exception as e:
-							print e
-							showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
-				elif f=='Date':
-					# using MM/DD/YYYY format
-					if '/' in s:
-						try:
-							s = map(int,s.split('/',2))
-							if len(s)<3:
-								showerror(title="Invalid date",message="Date missing month, day, or year.")
-							else:
-								d = time.mktime(time.struct_time([s[2],s[0],s[1],0,0,0,0,0,-1]))
-								q = c.execute('select * from prod_records WHERE start_time BETWEEN ? AND ? OR end_time BETWEEN ? AND ?',[d,d+86401,d,86401])
-						except Exception as e:
-							print e
-							showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
+				f = self.v.get().lower()
+				if f in ('uid','code'):
+					args = (s)
+				else:
+					d = self.nice_date(s)
+					print d
+					if not d: return
+					args = (d,d+86400,d,d+86400) if f=='date' else (d,d)
+				q = c.execute(dq['q'+f],args)
 			if q:
 				for row in q:
-					r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
+					r = [row[0],intStrf(row[1]),intStrf(row[2]),row[3],row[4],row[1],row[2]]
 					self.add_tv(r,pos='end',res=True)
 		else:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
