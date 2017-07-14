@@ -47,7 +47,7 @@ class App:
 		self.v = StringVar(value="UID")
 		self.eque = Entry(self.fque)
 		self.eque.grid(row=0,column=0,sticky='ew')
-		self.om = OptionMenu(self.fque,self.v,"UID","Code")
+		self.om = OptionMenu(self.fque,self.v,"UID","Code","Date","Before","After")
 		self.om.grid(row=0,column=1)
 		Button(self.fque,text="Lookup",command=self.cmd_lookup).grid(row=0,column=2)
 
@@ -103,14 +103,6 @@ class App:
 		self.sum_sb.grid(row=0,column=1,sticky='ns')
 		self.sum_sb.config(command=self.sum_t.yview)
 
-		self.add_tv(['z2484','05/27/2017 12:55','05/27/2017 14:24','342','First item added, but 2nd'],res=False)
-		self.add_tv(['z2484','05/27/2017 14:24','05/27/2017 17:55','521','Second item added, but 3rd'],res=False)
-		self.add_tv(['z2484','05/27/2017 12:52','05/27/2017 12:55','103','Third item added, but 1st'],pos=0,res=False)
-		self.add_tv(['x1454','05/27/2017 12:52','05/27/2017 12:55','103','Desc here'])
-		for x in xrange(30):
-			self.add_tv(['x1454','05/27/2017 12:52','05/27/2017 12:55','103','Desc here'],res=True)
-		self.rem_tv(1,False)
-
 	def open_db(self):
 		s = askopenfilename(filetypes=[("Database file","*.db")])
 		if len(s)>0:
@@ -138,6 +130,11 @@ class App:
 	def clear_results(self):
 		self.res.delete(*self.res.get_children())
 	def cmd_lookup(self):
+		#dq = {'':'SELECT * FROM prod_records'}
+		#for k in ('uid','code'):
+		#	dq['*'+k] = '%s ORDER BY %s=?' %(dq[''],k)
+		#	dq['*'+s] = '%s WHERE %s=?' %(dq[''],k)
+
 		q = None
 		self.clear_results()
 		if self.conn:
@@ -146,12 +143,51 @@ class App:
 			if len(s)==0: q = c.execute('select * from prod_records')
 			elif s=='*':
 				f = self.v.get()
+				#q = c.execute('select * from prod_records ORDER by %s' %f)
 				if f=='UID': q = c.execute('select * from prod_records ORDER by uid')
 				else: q = c.execute('select * from prod_records ORDER by code')
 			else:
 				f = self.v.get()
 				if f=='UID': q = c.execute('select * from prod_records WHERE uid=?',[s])
-				else: q = c.execute('select * from prod_records WHERE code=?',[s])
+				elif f=='Code': q = c.execute('select * from prod_records WHERE code=?',[s])
+				elif f=='Before':
+					# using MM/DD/YYYY format
+					if '/' in s:
+						try:
+							s = map(int,s.split('/',2))
+							if len(s)<3:
+								showerror(title="Invalid date",message="Date missing month, day, or year.")
+							else:
+								d = time.mktime(time.struct_time([s[2],s[0],s[1],0,0,0,0,0,-1]))+1
+								q = c.execute('select * from prod_records WHERE start_time<? OR end_time<?',[d,d])
+						except:
+							showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
+				elif f=='After':
+					# using MM/DD/YYYY format
+					if '/' in s:
+						try:
+							s = map(int,s.split('/',2))
+							if len(s)<3:
+								showerror(title="Invalid date",message="Date missing month, day, or year.")
+							else:
+								d = time.mktime(time.struct_time([s[2],s[0],s[1],0,0,0,0,0,-1]))-1
+								q = c.execute('select * from prod_records WHERE start_time>? OR end_time>?',[d,d])
+						except Exception as e:
+							print e
+							showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
+				elif f=='Date':
+					# using MM/DD/YYYY format
+					if '/' in s:
+						try:
+							s = map(int,s.split('/',2))
+							if len(s)<3:
+								showerror(title="Invalid date",message="Date missing month, day, or year.")
+							else:
+								d = time.mktime(time.struct_time([s[2],s[0],s[1],0,0,0,0,0,-1]))
+								q = c.execute('select * from prod_records WHERE start_time BETWEEN ? AND ? OR end_time BETWEEN ? AND ?',[d,d+86401,d,86401])
+						except Exception as e:
+							print e
+							showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
 			if q:
 				for row in q:
 					r = [row[0],time.strftime('%m/%d/%Y %H:%M',time.localtime(row[1])),time.strftime('%m/%d/%Y %H:%M',time.localtime(row[2])),row[3],row[4],row[1],row[2]]
@@ -160,15 +196,13 @@ class App:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
 	def add_tv(self,vs,pos='end',res=True):
 		tv = self.res if res else self.notes
-		print tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
+		tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
 	def rem_tv(self,pos,res=True):
 		# Pos is natural number
 		tv = self.res if res else self.notes
 		iid = tv.identify_row(pos)
-		print iid
+		#print iid
 		tv.delete(iid)
-
-
 
 root = Tk()
 app = App(root)
