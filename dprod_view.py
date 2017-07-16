@@ -5,7 +5,6 @@ from tkFileDialog import askopenfilename, asksaveasfilename
 from tkMessageBox import showerror, showwarning
 from ttk import Treeview
 import sqlite3
-import time
 
 dq = {'':'SELECT * FROM prod_records'}
 for k in ('uid','code'):
@@ -14,12 +13,9 @@ for k in ('uid','code'):
 dq['*date'] = dq['*before'] = '%s ORDER BY start_time' %dq['']
 dq['*after'] = '%s ORDER BY end_time' %dq['']
 
-dq['qdate'] = '%s WHERE start_time BETWEEN ? AND ? OR end_time BETWEEN ? AND ?' %dq['']
-dq['qbefore'] = '%s WHERE start_time<=? OR end_time <=?' %dq['']
-dq['qafter'] = '%s WHERE start_time>=? OR end_time >=?' %dq['']
-
-def intStrf(i):
-	return time.strftime('%m/%d/%Y %H:%M',time.localtime(i))
+dq['qdate'] = '%s WHERE date(start_time)=? OR date(end_time)=?' %dq['']
+dq['qbefore'] = '%s WHERE date(start_time)<? OR date(end_time)<?' %dq['']
+dq['qafter'] = '%s WHERE date(start_time)>? OR date(end_time)>?' %dq['']
 
 class App:
 	def __init__(self,root):
@@ -61,6 +57,9 @@ class App:
 		self.v = StringVar(value="UID")
 		self.eque = Entry(self.fque)
 		self.eque.grid(row=0,column=0,sticky='ew')
+		l_enter_lookup = lambda x:self.cmd_lookup()
+		self.eque.bind("<Return>",l_enter_lookup)
+		self.eque.bind("<KP_Enter>",l_enter_lookup)
 		self.om = OptionMenu(self.fque,self.v,"UID","Code","Date","Before","After")
 		self.om.grid(row=0,column=1)
 		Button(self.fque,text="Lookup",command=self.cmd_lookup).grid(row=0,column=2)
@@ -74,7 +73,7 @@ class App:
 		self.res_R.grid(row=0,column=1,sticky='n')
 
 		self.res_sb = Scrollbar(self.res_L)
-		self.res = Treeview(self.res_L,columns=('s','e','c','d','si','ei'),displaycolumns=('s','e','c','d'),yscrollcommand=self.res_sb.set)
+		self.res = Treeview(self.res_L,columns=('s','e','c','d'),yscrollcommand=self.res_sb.set)
 		self.res.grid()
 		self.res_sb.config(command=self.res.yview)
 		self.res_sb.grid(row=0,column=1,sticky='ns')
@@ -91,7 +90,7 @@ class App:
 		self.notes_R.grid(row=0,column=1,sticky='n')
 
 		self.notes_sb = Scrollbar(self.notes_L)
-		self.notes = Treeview(self.notes_L,columns=('s','e','c','d','si','ei'),displaycolumns=('s','e','c','d'),yscrollcommand=self.notes_sb.set)
+		self.notes = Treeview(self.notes_L,columns=('s','e','c','d'),yscrollcommand=self.notes_sb.set)
 		self.notes.grid()
 		self.notes_sb.config(command=self.notes.yview)
 		self.notes_sb.grid(row=0,column=1,sticky='ns')
@@ -124,9 +123,11 @@ class App:
 				conn = sqlite3.connect(s)
 				c = conn.cursor()
 				c_cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
-				if c_cols==[('uid','text'),('start_time','integer'),('end_time','integer'),('code','text'),('desc','text')]:
+				if c_cols==[('uid','text'),('start_time','datetime'),('end_time','datetime'),('code','text'),('desc','text')]:
 					self.conn = conn
 					print self.conn
+				else:
+					showerror(title="Error",message="File selected does not match schema!")
 			except:
 				showerror(title="No file loaded",message="Please select valid database for reading.")
 				self.conn = None
@@ -145,11 +146,19 @@ class App:
 		self.res.delete(*self.res.get_children())
 	def nice_date(self,s):
 		try:
-			d = map(int,s.split('/',2))
-			if len(d)==3:return time.mktime(time.struct_time([d[2],d[0],d[1],0,0,0,0,0,-1]))
-			showerror(title="Invalid date",message="Date missing month, day, or year.")
+			if '/' in s:
+				d = map(int,s.split('/',2))
+				if len(d)==3:return "%04d-%02d-%02d" %(d[2],d[0],d[1])
+				showerror(title="Invalid date",message="Date missing month, day, or year.")
+			elif '-' in s:
+				d = map(int,s.split('-',2))
+				if len(d)==3:return "%04d-%02d-%02d" %(d[0],d[1],d[2])
+				showerror(title="Invalid date",message="Date missing month, day, or year.")
+			elif len(s)==8: return '-'.join((s[4:8],s[0:2],s[2:4]))
+			else:
+				showerror(title="Invalid date",message="Format un-recognized.")
 		except Exception as e:
-			showerror(title="Invalid date",message="Please enter a valid date in M/D/Y format.")
+			showerror(title="Invalid date",message="Please enter a valid date in M/D/Y OR YYYY-MM-DD OR MMDDYYYY format.")
 	def cmd_lookup(self):
 		q = None
 		self.clear_results()
@@ -161,17 +170,15 @@ class App:
 			else:
 				f = self.v.get().lower()
 				if f in ('uid','code'):
-					args = (s)
+					args = (s,)
 				else:
 					d = self.nice_date(s)
-					print d
 					if not d: return
-					args = (d,d+86400,d,d+86400) if f=='date' else (d,d)
+					args = (d,d)
 				q = c.execute(dq['q'+f],args)
 			if q:
 				for row in q:
-					r = [row[0],intStrf(row[1]),intStrf(row[2]),row[3],row[4],row[1],row[2]]
-					self.add_tv(r,pos='end',res=True)
+					self.add_tv(row,pos='end',res=True)
 		else:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
 	def add_tv(self,vs,pos='end',res=True):
