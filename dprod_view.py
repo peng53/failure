@@ -34,7 +34,7 @@ class App:
 		m_lu.add_command(label="Clear Query",command=self.clear_query)
 		menubar.add_cascade(label="Lookup",menu=m_lu)
 		m_rs = Menu(menubar)
-		m_rs.add_command(label="Add to Notes")
+		m_rs.add_command(label="Add to Notes",command=self.cmd_addtonotes)
 		m_rs.add_command(label="Sort by..")
 		m_rs.add_command(label="Clear Results",command=self.clear_results)
 		menubar.add_cascade(label="Results",menu=m_rs)
@@ -73,7 +73,7 @@ class App:
 		self.res_R.grid(row=0,column=1,sticky='n')
 
 		self.res_sb = Scrollbar(self.res_L)
-		self.res = Treeview(self.res_L,columns=('s','e','c','d'),yscrollcommand=self.res_sb.set)
+		self.res = Treeview(self.res_L,columns=('s','e','c','d'),yscrollcommand=self.res_sb.set,selectmode='extended')
 		self.res.grid()
 		self.res_sb.config(command=self.res.yview)
 		self.res_sb.grid(row=0,column=1,sticky='ns')
@@ -90,7 +90,7 @@ class App:
 		self.notes_R.grid(row=0,column=1,sticky='n')
 
 		self.notes_sb = Scrollbar(self.notes_L)
-		self.notes = Treeview(self.notes_L,columns=('s','e','c','d'),yscrollcommand=self.notes_sb.set)
+		self.notes = Treeview(self.notes_L,columns=('s','e','c','d'),yscrollcommand=self.notes_sb.set,selectmode='extended')
 		self.notes.grid()
 		self.notes_sb.config(command=self.notes.yview)
 		self.notes_sb.grid(row=0,column=1,sticky='ns')
@@ -181,6 +181,10 @@ class App:
 					self.add_tv(row,pos='end',res=True)
 		else:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
+	def cmd_addtonotes(self):
+		for I in self.res.selection():
+			II = self.res.item(I)
+			self.notes.insert(parent='',index='end',text=II['text'], values=II['values'])
 	def add_tv(self,vs,pos='end',res=True):
 		tv = self.res if res else self.notes
 		tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
