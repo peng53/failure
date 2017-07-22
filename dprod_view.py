@@ -123,6 +123,7 @@ class App:
 
 		self.notes_sb = Scrollbar(self.notes_L)
 		self.notes = Treeview(self.notes_L,columns=('s','e','c','d'),yscrollcommand=self.notes_sb.set,selectmode='extended')
+		self.notes.bind("<Double-1>", self.on_double_click_notes)
 		self.notes.grid()
 		self.notes_sb.config(command=self.notes.yview)
 		self.notes_sb.grid(row=0,column=1,sticky='ns')
@@ -238,12 +239,15 @@ class App:
 		if not o: return
 		print o
 		tv = self.res if res else self.notes
-		print o[0]
-		L = sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[o[0]-1], reverse=o[1])
+		L = self.sorted_recs(tv,o[0]-1,o[1])
+		#L = sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[o[0]-1], reverse=o[1])
 		if res:	self.clear_results()
 		else: self.clear_notes()
 		for e in L:
 			self.add_tv(e,res=res)
+	def sorted_recs(self,tv,col,rev):
+		return sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[col], reverse=rev)
+
 	def add_tv(self,vs,pos='end',res=True):
 		tv = self.res if res else self.notes
 		tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
@@ -253,6 +257,14 @@ class App:
 		iid = tv.identify_row(pos)
 		#print iid
 		tv.delete(iid)
+	def on_double_click_notes(self, event):
+		region = self.notes.identify("region", event.x, event.y)
+		if region=='heading':
+			o = int(self.notes.identify_column(event.x)[1:])
+			L = self.sorted_recs(self.notes,o,False)
+			self.clear_notes()
+			for e in L:
+				self.notes.insert(parent='',index='end',text=e[0],values=e[1:])
 
 root = Tk()
 root.title("Production Record Viewer")
