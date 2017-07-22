@@ -35,13 +35,18 @@ class App:
 		menubar.add_cascade(label="Lookup",menu=m_lu)
 		m_rs = Menu(menubar)
 		m_rs.add_command(label="Add to Notes",command=self.cmd_addtonotes)
-		m_rs.add_command(label="Sort by..")
+		rs_sortby = lambda: self.tv_sortby(res=True)
+		m_rs.add_command(label="Sort by..",command=rs_sortby)
 		m_rs.add_command(label="Clear Results",command=self.clear_results)
 		menubar.add_cascade(label="Results",menu=m_rs)
 		m_nt = Menu(menubar)
-		m_nt.add_command(label="Sort by..")
+		nt_sortby = lambda: self.tv_sortby(res=False)
+		m_nt.add_command(label="Sort by..",command=nt_sortby)
 		m_nt.add_command(label="Sum Time")
 		m_nt.add_command(label="Clear Notes",command=self.clear_notes)
+		m_nt.add_command(label="Delete Note(s)",command=self.del_noteS)
+		m_nt.add_command(label="Move Up",command=self.note_up)
+		m_nt.add_command(label="Move Down",command=self.note_dn)
 		menubar.add_cascade(label="Notes",menu=m_nt)
 		m_sy = Menu(menubar)
 		m_sy.add_command(label="Save")
@@ -79,7 +84,8 @@ class App:
 		self.res_sb.grid(row=0,column=1,sticky='ns')
 
 		Button(self.res_R,text="Clear",command=self.clear_results).grid(sticky='ew')
-		Button(self.res_R,text="Sort").grid(sticky='ew')
+		Button(self.res_R,text="Note",command=self.cmd_addtonotes).grid(sticky='ew')
+		Button(self.res_R,text="Sort",command=rs_sortby).grid(sticky='ew')
 
 		Label(root,text="Notes").grid(sticky='w')
 		self.notes_LR = Frame(root)
@@ -102,7 +108,11 @@ class App:
 			self.notes.column(x,width=w)
 
 		Button(self.notes_R,text="Clear",command=self.clear_notes).grid(sticky='ew')
-		Button(self.notes_R,text="Sort").grid(sticky='ew')
+		Button(self.notes_R,text="Delete",command=self.del_noteS).grid(sticky='ew')
+		Button(self.notes_R,text="Move Up",command=self.note_up).grid(sticky='ew')
+		Button(self.notes_R,text="Move Down",command=self.note_dn).grid(sticky='ew')
+
+		Button(self.notes_R,text="Sort",command=nt_sortby).grid(sticky='ew')
 		Button(self.notes_R,text="Total").grid(sticky='ew')
 		Button(self.notes_R,text='Save').grid(sticky='ew')
 
@@ -185,6 +195,25 @@ class App:
 		for I in self.res.selection():
 			II = self.res.item(I)
 			self.notes.insert(parent='',index='end',text=II['text'], values=II['values'])
+	def del_noteS(self):
+		for I in self.notes.selection():
+			self.notes.delete(I)
+	def note_up(self):
+		for I in self.notes.selection():
+			if self.notes.index(I)==0:
+				return
+			self.notes.move(I,'',self.notes.index(I)-1)
+	def note_dn(self):
+		for I in self.notes.selection():
+			self.notes.move(I,'',self.notes.index(I)+1)
+	def tv_sortby(self,res=True):
+		# by desc
+		tv = self.res if res else self.notes
+		L = sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[4])
+		if res:	self.clear_results()
+		else: self.clear_notes()
+		for e in L:
+			self.add_tv(e,res=res)
 	def add_tv(self,vs,pos='end',res=True):
 		tv = self.res if res else self.notes
 		tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
