@@ -17,8 +17,34 @@ dq['qdate'] = '%s WHERE date(start_time)=? OR date(end_time)=?' %dq['']
 dq['qbefore'] = '%s WHERE date(start_time)<? OR date(end_time)<?' %dq['']
 dq['qafter'] = '%s WHERE date(start_time)>? OR date(end_time)>?' %dq['']
 
+class SortByAttr:
+	def __init__(self,root):
+		self.sel = None
+		self.root = root
+		self.dialog = Toplevel(root,takefocus=True)
+		self.dialog.title("Sort by..")
+		self.dialog.grab_set()
+		self.dialog.transient(root)
+		self.dialog.grid()
+		Label(self.dialog,text="Attribute to sort by").grid(row=0,columnspan=2)
+		self.v=StringVar(value="UID")
+		self.op = {"UID":1,"Start Time":2,"End Time":3,"Code":4,"Desc":5}
+		self.om = OptionMenu(self.dialog,self.v,*self.op)
+		self.om.grid(row=1,columnspan=2,sticky='ew')
+		self.b=BooleanVar(value=False)
+		Checkbutton(self.dialog,text='Reverse Order',variable=self.b).grid(row=2,columnspan=2)
+		Button(self.dialog,text='Sort',command=self.choose).grid(row=3,column=0,sticky='ew')
+		Button(self.dialog,text='Cancel',command=self.dialog.destroy).grid(row=3,column=1,sticky='ew')
+	def choose(self):
+		self.sel = (self.op[self.v.get()],self.b.get())
+		self.dialog.destroy()
+	def show_dialog(self):
+		self.root.wait_window(self.dialog)
+		return self.sel
+
 class App:
 	def __init__(self,root):
+
 		self.root = root
 		self.conn = None
 
@@ -109,8 +135,8 @@ class App:
 
 		Button(self.notes_R,text="Clear",command=self.clear_notes).grid(sticky='ew')
 		Button(self.notes_R,text="Delete",command=self.del_noteS).grid(sticky='ew')
-		Button(self.notes_R,text="Move Up",command=self.note_up).grid(sticky='ew')
-		Button(self.notes_R,text="Move Down",command=self.note_dn).grid(sticky='ew')
+		Button(self.notes_R,text="Up",command=self.note_up).grid(sticky='ew')
+		Button(self.notes_R,text="Down",command=self.note_dn).grid(sticky='ew')
 
 		Button(self.notes_R,text="Sort",command=nt_sortby).grid(sticky='ew')
 		Button(self.notes_R,text="Total").grid(sticky='ew')
@@ -207,9 +233,13 @@ class App:
 		for I in self.notes.selection():
 			self.notes.move(I,'',self.notes.index(I)+1)
 	def tv_sortby(self,res=True):
-		# by desc
+		t = SortByAttr(self.root)
+		o = t.show_dialog()
+		if not o: return
+		print o
 		tv = self.res if res else self.notes
-		L = sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[4])
+		print o[0]
+		L = sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[o[0]-1], reverse=o[1])
 		if res:	self.clear_results()
 		else: self.clear_notes()
 		for e in L:
@@ -225,5 +255,6 @@ class App:
 		tv.delete(iid)
 
 root = Tk()
+root.title("Production Record Viewer")
 app = App(root)
 root.mainloop()
