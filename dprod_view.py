@@ -50,6 +50,16 @@ class RecordView(Treeview):
 	def append(self,vs):
 		# Add item vs to end
 		self.insert(parent='',index='end',text=vs[0],values=vs[1:])
+	def remove(self):
+		for I in self.selection():
+			self.delete(I)
+	def moveUp(self):
+		for I in self.selection():
+			if self.index(I)==0: return
+			self.move(I,'',self.index(I)-1)
+	def moveDn(self):
+		for I in self.selection():
+			self.move(I,'',self.index(I)+1)
 	def sort(self,col,rev):
 		L = sorted(([self.item(I)['text']]+self.item(I)['values'] for I in self.get_children()), key=lambda v:v[col], reverse=rev)
 		self.clear()
@@ -61,23 +71,16 @@ class RecordView(Treeview):
 		if o:
 			self.sort(o[0]-1,o[1])
 	def b_dbck_col(self,event):
-		region = self.identify('region',event.x,event.y)
-		if region=='heading':
+		if self.identify('region',event.x,event.y)=='heading':
 			self.sort(int(self.identify_column(event.x)[1:]),False)
 
 class App:
 	def __init__(self,root):
 		self.root = root
 		self.conn = None
-		#dialogSortResults = lambda: self.
-		rs_sortby = lambda: self.tv_sortby(res=True)
-		nt_sortby = lambda: self.tv_sortby(res=False)
-		menubar = Menu(root)
-		root.config(menu=menubar)
-		m_db = Menu(menubar)
+		self.fque,self.res_LR,self.notes_LR,self.fsum = Frame(root),Frame(root),Frame(root),Frame(root)
 
 		Label(root,text="Production Record Viewer").grid()
-		self.fque = Frame(root)
 		self.fque.grid(sticky='ew')
 		self.fque.grid_columnconfigure(0,weight=1)
 		self.v = StringVar(value="UID")
@@ -91,37 +94,40 @@ class App:
 		Button(self.fque,text="Lookup",command=self.cmd_lookup).grid(row=0,column=2)
 
 		Label(root,text="Results").grid(sticky='w')
-		self.res_LR = Frame(root)
 		self.res_LR.grid()
 		self.res_L = Frame(self.res_LR)
 		self.res_L.grid(row=0,column=0)
 		self.res_R = Frame(self.res_LR)
 		self.res_R.grid(row=0,column=1,sticky='n')
-
 		self.res_sb = Scrollbar(self.res_L)
 		self.res = RecordView(self.res_L,columns=('s','e','c','d'),yscrollcommand=self.res_sb.set,selectmode='extended')
+		self.res.bind_col()
 		self.res.grid()
 		self.res_sb.config(command=self.res.yview)
 		self.res_sb.grid(row=0,column=1,sticky='ns')
-
-		Button(self.res_R,text="Clear",command=self.clear_results).grid(sticky='ew')
+		Button(self.res_R,text="Clear",command=self.res.clear).grid(sticky='ew')
 		Button(self.res_R,text="Note",command=self.cmd_addtonotes).grid(sticky='ew')
 		Button(self.res_R,text="Sort",command=self.res.sort_by).grid(sticky='ew')
 
 		Label(root,text="Notes").grid(sticky='w')
-		self.notes_LR = Frame(root)
 		self.notes_LR.grid()
-		self.notes_L = Frame(self.notes_LR,bg='blue')
+		self.notes_L = Frame(self.notes_LR)
 		self.notes_L.grid(row=0,column=0,sticky='nesw')
-		self.notes_R = Frame(self.notes_LR,bg='green')
+		self.notes_R = Frame(self.notes_LR)
 		self.notes_R.grid(row=0,column=1,sticky='n')
-
 		self.notes_sb = Scrollbar(self.notes_L)
-		#self.notes = Treeview(self.notes_L,columns=('s','e','c','d'),yscrollcommand=self.notes_sb.set,selectmode='extended')
 		self.notes = RecordView(self.notes_L,columns=('s','e','c','d'),yscrollcommand=self.notes_sb.set,selectmode='extended')
+		self.notes.bind_col()
 		self.notes.grid()
 		self.notes_sb.config(command=self.notes.yview)
 		self.notes_sb.grid(row=0,column=1,sticky='ns')
+		Button(self.notes_R,text="Clear",command=self.notes.clear).grid(sticky='ew')
+		Button(self.notes_R,text="Delete",command=self.notes.remove).grid(sticky='ew')
+		Button(self.notes_R,text="Up",command=self.notes.moveUp).grid(sticky='ew')
+		Button(self.notes_R,text="Down",command=self.notes.moveDn).grid(sticky='ew')
+		Button(self.notes_R,text="Sort",command=self.notes.sort_by).grid(sticky='ew')
+		Button(self.notes_R,text="Total").grid(sticky='ew')
+		Button(self.notes_R,text='Save',command=self.res.clear).grid(sticky='ew')
 
 		for x,t,w in [('#0','UID',76),('s','Start Time',120),('e','End Time',120),('c','Code',40),('d','Desc',300)]:
 			self.res.heading(x,text=t)
@@ -129,17 +135,7 @@ class App:
 			self.notes.heading(x,text=t)
 			self.notes.column(x,width=w)
 
-		Button(self.notes_R,text="Clear",command=self.clear_notes).grid(sticky='ew')
-		Button(self.notes_R,text="Delete",command=self.del_noteS).grid(sticky='ew')
-		Button(self.notes_R,text="Up",command=self.note_up).grid(sticky='ew')
-		Button(self.notes_R,text="Down",command=self.note_dn).grid(sticky='ew')
-
-		Button(self.notes_R,text="Sort",command=self.notes.sort_by).grid(sticky='ew')
-		Button(self.notes_R,text="Total").grid(sticky='ew')
-		Button(self.notes_R,text='Save',command=self.res.clear).grid(sticky='ew')
-
 		Label(root,text="Summary").grid(sticky='w')
-		self.fsum = Frame(root)
 		self.fsum.grid(sticky='ew')
 		self.fsum.grid_columnconfigure(0,weight=1)
 		self.sum_sb = Scrollbar(self.fsum)
@@ -148,35 +144,24 @@ class App:
 		self.sum_sb.grid(row=0,column=1,sticky='ns')
 		self.sum_sb.config(command=self.sum_t.yview)
 
-		self.res.bind_col()
-		self.notes.bind_col()
-
-		m_db.add_command(label="Open Database",command=self.open_db)
-		m_db.add_command(label="Close Database",command=self.close_db)
+		menubar = Menu(root)
+		root.config(menu=menubar)
+		m_db,m_lu,m_rs,m_nt,m_sy = Menu(menubar),Menu(menubar),Menu(menubar),Menu(menubar),Menu(menubar)
+		lemenu = {
+			m_db: [('Open Database',self.open_db),('Close Database',self.close_db)],
+			m_lu: [('Lookup Query',self.cmd_lookup),('Clear Query',self.clear_query)],
+			m_rs: [("Add to Notes",self.cmd_addtonotes),("Sort by..",self.res.sort_by),("Clear Results",self.res.clear)],
+			m_nt: [("Sort by..",self.notes.sort_by),("Sum Time",None),("Clear Notes",self.notes.clear),
+				("Delete Note(s)",self.notes.remove),("Move Up",self.notes.moveUp),("Move Down",self.notes.moveDn)],
+			m_sy: [("Save",None),("Print",None),("Clear",None)]
+		}
+		for k in lemenu:
+			for l,c in lemenu[k]:
+				k.add_command(label=l,command=c)
 		menubar.add_cascade(label="Database",menu=m_db)
-		m_lu = Menu(menubar)
-		m_lu.add_command(label="Lookup Query",command=self.cmd_lookup)
-		m_lu.add_command(label="Clear Query",command=self.clear_query)
 		menubar.add_cascade(label="Lookup",menu=m_lu)
-		m_rs = Menu(menubar)
-		m_rs.add_command(label="Add to Notes",command=self.cmd_addtonotes)
-		m_rs.add_command(label="Sort by..",command=self.res.sort_by)
-		#m_rs.add_command(label="Sort by..",command=rs_sortby)
-		m_rs.add_command(label="Clear Results",command=self.clear_results)
 		menubar.add_cascade(label="Results",menu=m_rs)
-		m_nt = Menu(menubar)
-
-		m_nt.add_command(label="Sort by..",command=nt_sortby)
-		m_nt.add_command(label="Sum Time")
-		m_nt.add_command(label="Clear Notes",command=self.clear_notes)
-		m_nt.add_command(label="Delete Note(s)",command=self.del_noteS)
-		m_nt.add_command(label="Move Up",command=self.note_up)
-		m_nt.add_command(label="Move Down",command=self.note_dn)
 		menubar.add_cascade(label="Notes",menu=m_nt)
-		m_sy = Menu(menubar)
-		m_sy.add_command(label="Save")
-		m_sy.add_command(label="Print")
-		m_sy.add_command(label="Clear",command=self.clear_notes)
 		menubar.add_cascade(label="Summary",menu=m_sy)
 		menubar.add_command(label="Quit",command=root.quit)
 
@@ -189,7 +174,6 @@ class App:
 				c_cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
 				if c_cols==[('uid','text'),('start_time','datetime'),('end_time','datetime'),('code','text'),('desc','text')]:
 					self.conn = conn
-					print self.conn
 				else:
 					showerror(title="Error",message="File selected does not match schema!")
 			except:
@@ -204,10 +188,6 @@ class App:
 			showwarning(title="No file open",message="No action taken.")
 	def clear_query(self):
 		self.eque.delete(0,'end')
-	def clear_notes(self):
-		self.notes.delete(*self.notes.get_children())
-	def clear_results(self):
-		self.res.delete(*self.res.get_children())
 	def nice_date(self,s):
 		try:
 			if '/' in s:
@@ -225,7 +205,7 @@ class App:
 			showerror(title="Invalid date",message="Please enter a valid date in M/D/Y OR YYYY-MM-DD OR MMDDYYYY format.")
 	def cmd_lookup(self):
 		q = None
-		self.res.clear() #self.clear_results()
+		self.res.clear()
 		if self.conn:
 			c = self.conn.cursor()
 			s = self.eque.get()
@@ -242,77 +222,12 @@ class App:
 				q = c.execute(dq['q'+f],args)
 			if q:
 				for row in q:
-					self.res.append(row) #self.add_tv(row,pos='end',res=True)
+					self.res.append(row)
 		else:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
 	def cmd_addtonotes(self):
 		for I in self.res.selection():
-			II = self.res.item(I)
-			self.notes.insert(parent='',index='end',text=II['text'], values=II['values'])
-	def del_noteS(self):
-		for I in self.notes.selection():
-			self.notes.delete(I)
-	def note_up(self):
-		for I in self.notes.selection():
-			if self.notes.index(I)==0:
-				return
-			self.notes.move(I,'',self.notes.index(I)-1)
-	def note_dn(self):
-		for I in self.notes.selection():
-			self.notes.move(I,'',self.notes.index(I)+1)
-	def tv_sortby(self,res=True):
-		t = SortByAttr(self.root)
-		o = t.show_dialog()
-		if not o: return
-		print o
-		tv = self.res if res else self.notes
-		L = self.sorted_recs(tv,o[0]-1,o[1])
-		#L = sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[o[0]-1], reverse=o[1])
-		if res:	self.clear_results()
-		else: self.clear_notes()
-		for e in L:
-
-			self.add_tv(e,res=res)
-	def sorted_recs(self,tv,col,rev):
-		return sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[col], reverse=rev)
-
-	#def sortedRecords(self,tv,col,rev):
-	#	return sorted(([tv.item(I)['text']]+tv.item(I)['values'] for I in tv.get_children()),key=lambda x:x[col], reverse=rev)
-	#def treeviewSortDialog(self,tv):
-	#	d = SortByAttr(self.root)
-	#	r = d.show_dialog()
-	#	if not r: return
-	#	L = self.sortedRecords(tv,r[0]-1,r[1])
-	#	tv.clearRecords()
-	def treeviewAppend(self,tv,vs):
-		# Add item vs to end of tv
-		tv.insert(parent='',index='end',text=vs[0],values=vs[1:])
-
-	def add_tv(self,vs,pos='end',res=True):
-		tv = self.res if res else self.notes
-		tv.insert(parent='',index=pos,text=vs[0], values=vs[1:])
-	def rem_tv(self,pos,res=True):
-		# Pos is natural number
-		tv = self.res if res else self.notes
-		iid = tv.identify_row(pos)
-		#print iid
-		tv.delete(iid)
-	def on_double_click_notes(self,event):
-		region = self.notes.identify('region',event.x,event.y)
-		if region=='heading':
-			o = int(self.notes.identify_column(event.x)[1:])
-			self.notes.sort(o,False)
-	'''
-	def on_double_click_notes(self, event):
-		region = self.notes.identify("region", event.x, event.y)
-		if region=='heading':
-			o = int(self.notes.identify_column(event.x)[1:])
-			L = self.sorted_recs(self.notes,o,False)
-			self.clear_notes()
-			for e in L:
-				self.treeviewAppend(self.notes,e)
-				#self.notes.insert(parent='',index='end',text=e[0],values=e[1:])
-	'''
+			self.notes.append([self.res.item(I)['text']]+self.res.item(I)['values'])
 
 root = Tk()
 root.title("Production Record Viewer")
