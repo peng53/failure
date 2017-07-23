@@ -19,10 +19,10 @@ def main(args):
 	c = conn.cursor()
 	#c.execute('CREATE TABLE prod_records(uid text,start_time integer,end_time integer,code text,desc text)')
 	c.execute('CREATE TABLE prod_records(uid text,start_time datetime,end_time datetime,code text,desc text)')
-	t1='2039-01-04 03:27'
-	t2='2039-01-04 03:33'
-	t3='2039-01-04 03:46'
-	t4='2039-01-04 05:02'
+	t1='2022-01-04 03:27'
+	t2='2022-01-04 03:33'
+	t3='2022-01-04 03:46'
+	t4='2022-01-04 05:02'
 	#t1=time.mktime(time.struct_time([2001,1,4,3,27,0,0,0,-1]))
 	#t2=time.mktime(time.struct_time([2001,1,4,3,33,0,0,0,-1]))
 	#t3=time.mktime(time.struct_time([2001,1,4,3,46,0,0,0,-1]))
@@ -36,9 +36,9 @@ def main(args):
 	#t1=time.mktime(time.struct_time([2000,12,29,3,27,0,0,0,-1]))
 	#t2=time.mktime(time.struct_time([2000,12,29,3,33,0,0,0,-1]))
 	#t3=time.mktime(time.struct_time([2000,12,29,3,46,0,0,0,-1]))
-	t1='2041-12-29 03:27'
-	t2='2041-12-29 03:33'
-	t3='2041-12-29 03:46'
+	t1='2023-12-29 03:27'
+	t2='2023-12-29 03:33'
+	t3='2023-12-29 03:46'
 	c.execute('INSERT into prod_records VALUES("t421",?,?,"222","break")',[t1,t2])
 	c.execute('INSERT into prod_records VALUES("t421",?,?,"908","lunch")',[t2,t3])
 	conn.commit()

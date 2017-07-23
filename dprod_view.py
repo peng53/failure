@@ -5,6 +5,7 @@ from tkFileDialog import askopenfilename, asksaveasfilename
 from tkMessageBox import showerror, showwarning
 from ttk import Treeview
 import sqlite3
+import time
 
 dq = {'':'SELECT * FROM prod_records'}
 for k in ('uid','code'):
@@ -151,7 +152,7 @@ class App:
 			m_db: [('Open Database',self.open_db),('Close Database',self.close_db)],
 			m_lu: [('Lookup Query',self.cmd_lookup),('Clear Query',self.clear_query)],
 			m_rs: [("Add to Notes",self.cmd_addtonotes),("Sort by..",self.res.sort_by),("Clear Results",self.res.clear)],
-			m_nt: [("Sort by..",self.notes.sort_by),("Sum Time",None),("Clear Notes",self.notes.clear),
+			m_nt: [("Sort by..",self.notes.sort_by),("Sum Time",self.totalt),("Clear Notes",self.notes.clear),
 				("Delete Note(s)",self.notes.remove),("Move Up",self.notes.moveUp),("Move Down",self.notes.moveDn)],
 			m_sy: [("Save",None),("Print",None),("Clear",None)]
 		}
@@ -204,9 +205,9 @@ class App:
 		except Exception as e:
 			showerror(title="Invalid date",message="Please enter a valid date in M/D/Y OR YYYY-MM-DD OR MMDDYYYY format.")
 	def cmd_lookup(self):
-		q = None
 		self.res.clear()
 		if self.conn:
+			q = None
 			c = self.conn.cursor()
 			s = self.eque.get()
 			if len(s)==0: q = c.execute(dq[''])
@@ -228,6 +229,29 @@ class App:
 	def cmd_addtonotes(self):
 		for I in self.res.selection():
 			self.notes.append([self.res.item(I)['text']]+self.res.item(I)['values'])
+	def totalt(self):
+		# by uid & total in notes
+		t = {}
+		for row in self.notes.get_children():
+			u = self.notes.item(row)['text']
+			if u not in t:
+				t[u] = {}
+			vs = self.notes.item(row)['values']
+			if vs[2] not in t[u]:
+				t[u][vs[2]] = 0
+			t0 = time.mktime(time.strptime(vs[0], '%Y-%m-%d %H:%M'))
+			t1 = time.mktime(time.strptime(vs[1], '%Y-%m-%d %H:%M'))
+			t[u][vs[2]] += t1-t0
+		self.sum_t.delete('0.0','end')
+		self.sum_t.insert('0.0','Total time of notes by UID and Code\n')
+		for u in t:
+			self.sum_t.insert('end',u)
+			self.sum_t.insert('end','\n')
+			s = 0
+			for c in t[u]:
+				self.sum_t.insert('end','%10s : %4d mins\n' %(c,t[u][c]//60))
+				s += t[u][c]
+			self.sum_t.insert('end','Total %5d mins\n' %(s//60))
 
 root = Tk()
 root.title("Production Record Viewer")
