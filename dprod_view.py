@@ -46,6 +46,8 @@ class SortByAttr:
 class RecordView(Treeview):
 	def bind_col(self):
 		self.bind("<Double-1>", self.b_dbck_col)
+		self.bind("<End>", self.b_end)
+		self.bind("<Home>", self.b_home)
 	def clear(self):
 		self.delete(*self.get_children())
 	def append(self,vs):
@@ -74,11 +76,16 @@ class RecordView(Treeview):
 	def b_dbck_col(self,event):
 		if self.identify('region',event.x,event.y)=='heading':
 			self.sort(int(self.identify_column(event.x)[1:]),False)
+	def b_end(self,event):
+		self.yview_moveto(1)
+	def b_home(self,event):
+		self.yview_moveto(0)
 
 class App:
 	def __init__(self,root):
 		self.root = root
 		self.conn = None
+		self.lastq = (None,None)
 		self.fque,self.res_LR,self.notes_LR,self.fsum = Frame(root),Frame(root),Frame(root),Frame(root)
 
 		Label(root,text="Production Record Viewer").grid()
@@ -109,6 +116,7 @@ class App:
 		Button(self.res_R,text="Clear",command=self.res.clear).grid(sticky='ew')
 		Button(self.res_R,text="Note",command=self.cmd_addtonotes).grid(sticky='ew')
 		Button(self.res_R,text="Sort",command=self.res.sort_by).grid(sticky='ew')
+		Button(self.res_R,text="Sort?",command=self.sort_last_q).grid(sticky='ew')
 
 		Label(root,text="Notes").grid(sticky='w')
 		self.notes_LR.grid()
@@ -127,7 +135,7 @@ class App:
 		Button(self.notes_R,text="Up",command=self.notes.moveUp).grid(sticky='ew')
 		Button(self.notes_R,text="Down",command=self.notes.moveDn).grid(sticky='ew')
 		Button(self.notes_R,text="Sort",command=self.notes.sort_by).grid(sticky='ew')
-		Button(self.notes_R,text="Total").grid(sticky='ew')
+		Button(self.notes_R,text="Total",command=self.totalt).grid(sticky='ew')
 		Button(self.notes_R,text='Save',command=self.res.clear).grid(sticky='ew')
 
 		for x,t,w in [('#0','UID',76),('s','Start Time',120),('e','End Time',120),('c','Code',40),('d','Desc',300)]:
@@ -154,7 +162,7 @@ class App:
 			m_rs: [("Add to Notes",self.cmd_addtonotes),("Sort by..",self.res.sort_by),("Clear Results",self.res.clear)],
 			m_nt: [("Sort by..",self.notes.sort_by),("Sum Time",self.totalt),("Clear Notes",self.notes.clear),
 				("Delete Note(s)",self.notes.remove),("Move Up",self.notes.moveUp),("Move Down",self.notes.moveDn)],
-			m_sy: [("Save",None),("Print",None),("Clear",None)]
+			m_sy: [("Save",None),("Print",None),("Clear",self.clear_sum_t)]
 		}
 		for k in lemenu:
 			for l,c in lemenu[k]:
@@ -224,11 +232,34 @@ class App:
 			if q:
 				for row in q:
 					self.res.append(row)
+				self.lastq = (s, self.v.get().lower())
 		else:
 			showerror(title="No file loaded",message="Please load a file for lookup.")
 	def cmd_addtonotes(self):
 		for I in self.res.selection():
 			self.notes.append([self.res.item(I)['text']]+self.res.item(I)['values'])
+	def sort_last_q(self):
+		if self.lastq == (None, None):
+			return
+		t = SortByAttr(self.root)
+		o = t.show_dialog()
+		if o:
+			c = self.conn.cursor()
+			if self.lastq[0]=='*':
+				self.lastq = ('*',[None,"uid","start_time","end_time","code","desc"][o[0]])
+				args = self.lastq
+				l = 'SELECT * from prod_records ORDER BY '+self.lastq[1]
+				if o[1]:
+					l += ' DESC'
+				q = c.execute(l)
+			else:
+				pass
+
+			self.res.clear()
+			for row in q:
+				self.res.append(row)
+	def clear_sum_t(self):
+		self.sum_t.delete('0.0','end')
 	def totalt(self):
 		# by uid & total in notes
 		t = {}
