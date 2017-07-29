@@ -25,6 +25,9 @@ def sqlsel(cur,t,args=None):
 		Q = cur.execute(SELS[t],args)
 		for r in Q:
 			yield r
+def sqlmat(cur):
+	cols = [col[1:3] for col in cur.execute('pragma table_info(prod_records)')]
+	return cols==[('uid','text'),('start_time','datetime'),('end_time','datetime'),('code','text'),('desc','text')]
 
 def dlookup_d():
 	print "Record lookup choices"
@@ -116,6 +119,8 @@ class Viewer:
 			'pn': lambda: self.cprev(False),
 			'nr': lambda: self.cnext(True),
 			'nn': lambda: self.cnext(False),
+			'Sr': lambda: self.csort(True),
+			'Sn': lambda: self.csort(False),
 		}
 	def print_rows(self,R=True):
 		rows,s = (self.R,self.R_S) if R else (self.N,self.N_S)
@@ -143,8 +148,9 @@ class Viewer:
 			if os.path.isfile(s):
 				conn = sqlite3.connect(s)
 				c = conn.cursor()
-				cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
-				if cols==[('uid','text'),('start_time','datetime'),('end_time','datetime'),('code','text'),('desc','text')]:
+				#cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
+				#if cols==[('uid','text'),('start_time','datetime'),('end_time','datetime'),('code','text'),('desc','text')]:
+				if sqlmat(c):
 					print "'%s' loaded for viewing." %(s)
 					self.conn = conn
 					self.c = self.conn.cursor()
@@ -215,6 +221,25 @@ class Viewer:
 		else:
 			self.N, self.N_S = [], 0
 		self.delta = 1
+	def csort(self,R=True):
+		print "Table sorting."
+		print "Choose column to sort by."
+		print "Append r for reversed."
+		print "(u)id (c)ode (s)tart-time (e)nd-time (d)esc"
+		s = raw_input("::")
+		if len(s)>0:
+			c = {'u':0,'c':3,'s':1,'e':2,'d':4}
+			if s[0] not in c:
+				print "Unknown column."
+			else:
+				r = len(s)==2 and s[1]=='r'
+				s = c[s[0]]
+				if R:
+					self.R.sort(key=lambda v:v[s],reverse=r)
+				else:
+					self.N.sort(key=lambda v:v[s],reverse=r)
+				self.delta = 1
+
 	def mainloop(self):
 		while self.delta!=-1:
 			if self.delta:
