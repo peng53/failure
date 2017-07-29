@@ -2,6 +2,7 @@
 
 import os
 import sqlite3
+import time
 
 SELS = {
 	'': "SELECT * FROM prod_records",
@@ -121,6 +122,8 @@ class Viewer:
 			'nn': lambda: self.cnext(False),
 			'Sr': lambda: self.csort(True),
 			'Sn': lambda: self.csort(False),
+			'sr': lambda: self.ctotal(True),
+			'sn': lambda: self.ctotal(False),
 		}
 	def print_rows(self,R=True):
 		rows,s = (self.R,self.R_S) if R else (self.N,self.N_S)
@@ -239,7 +242,26 @@ class Viewer:
 				else:
 					self.N.sort(key=lambda v:v[s],reverse=r)
 				self.delta = 1
-
+	def ctotal(self,R=True):
+		rows = self.R if R else self.N
+		# by uid & total in notes
+		t = {}
+		for row in rows:
+			if row[0] not in t:
+				t[row[0]] = {}
+			if row[3] not in t[row[0]]:
+				t[row[0]][row[3]] = 0
+			t0 = time.mktime(time.strptime(row[1], '%Y-%m-%d %H:%M'))
+			t1 = time.mktime(time.strptime(row[2], '%Y-%m-%d %H:%M'))
+			t[row[0]][row[3]] += t1-t0
+		print 'Total time of notes by UID and Code'
+		for u in t:
+			print u
+			s = 0
+			for c in t[u]:
+				print '%10s : %4d mins' %(c,t[u][c]//60)
+				s += t[u][c]
+			print 'Total %5d mins' %(s//60)
 	def mainloop(self):
 		while self.delta!=-1:
 			if self.delta:
