@@ -29,6 +29,10 @@ def sqlsel(cur,t,args=None):
 def sqlmat(cur):
 	cols = [col[1:3] for col in cur.execute('pragma table_info(prod_records)')]
 	return cols==[('uid','text'),('start_time','datetime'),('end_time','datetime'),('code','text'),('desc','text')]
+def sqlemp(cur,uids):
+	for u in uids:
+		cur.execute("SELECT * from employees WHERE uid=?",(u,))
+		yield cur.fetchone()
 
 def dlookup_d():
 	print "Record lookup choices"
@@ -99,6 +103,12 @@ def drowchoose(length,offset,count):
 		print "Input is out of stated bounds."
 	return None
 
+QFTR = {
+	'<' : lambda v,x: v<x,
+	'>' : lambda v,x: v>x,
+	'=' : lambda v,x: v==x,
+	'!' : lambda v,x: v!=x,
+}
 class Viewer:
 	def __init__(self):
 		self.R, self.N = [], []
@@ -124,6 +134,10 @@ class Viewer:
 			'Sn': lambda: self.csort(False),
 			'sr': lambda: self.ctotal(True),
 			'sn': lambda: self.ctotal(False),
+			'er': lambda: self.cemp(True),
+			'en': lambda: self.cemp(False),
+			'fr': lambda: self.cfil(True),
+			'fn': lambda: self.cfil(False),
 		}
 	def print_rows(self,R=True):
 		rows,s = (self.R,self.R_S) if R else (self.N,self.N_S)
@@ -144,6 +158,7 @@ class Viewer:
 		print "Command Bar"
 		print "(L)oad (Q)uit (l)ookup (a)dd-to-notes (d)elete-from-notes"
 		print "(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize"
+		print "(e)mployee (f)ilter"
 	def open_db(self):
 		print "Opening DB for viewing.\nPlease enter file name.\n"
 		s = raw_input("File name: ")
@@ -151,8 +166,6 @@ class Viewer:
 			if os.path.isfile(s):
 				conn = sqlite3.connect(s)
 				c = conn.cursor()
-				#cols = [col[1:3] for col in c.execute('pragma table_info(prod_records)')]
-				#if cols==[('uid','text'),('start_time','datetime'),('end_time','datetime'),('code','text'),('desc','text')]:
 				if sqlmat(c):
 					print "'%s' loaded for viewing." %(s)
 					self.conn = conn
@@ -262,6 +275,43 @@ class Viewer:
 				print '%10s : %4d mins' %(c,t[u][c]//60)
 				s += t[u][c]
 			print 'Total %5d mins' %(s//60)
+	def cemp(self,R=True):
+		rows,offset = (self.R,self.R_S) if R else (self.N,self.N_S)
+		q = drowchoose(len(rows),offset,self.ic)
+		if q:
+			q = set([rows[n][0] for n in q])
+			print '_'*65
+			print "  UID  |   First Name   |    Last Name   | E-Mail Address "
+			print '-'*65
+			for r in sqlemp(self.c,q):
+				print "%6s | %14s | %14s | %22s" %(r[0],r[1],r[2],r[3])
+			print '='*65
+	def cfil(self,R=True):
+		print "Filter by which column?"
+		print "(u)id (c)ode (s)tart-time (e)nd-time (d)esc"
+		s = raw_input("::")
+		if len(s)>0:
+			c = {'u':0,'c':3,'s':1,'e':2,'d':4}
+			if s in c:
+				print "Enter requirement."
+				print "Prepend with: <>=!"
+				q = raw_input("::::")
+				if len(q)>0
+					if q[0] in QFTR:
+						rows = self.R if R else self.N
+						l = QFTR[q[0]]
+						s = c[s]
+						r = q[1:]
+						length = len(rows)
+						for i in xrange(length-1,-1,-1):
+							if not l(rows[i][s],r):
+								rows.pop(i)
+						self.delta = 1
+					else:
+						print "Missing operator."
+			else:
+				print "Unknown Column."
+
 	def mainloop(self):
 		while self.delta!=-1:
 			if self.delta:
