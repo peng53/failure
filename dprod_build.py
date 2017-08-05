@@ -5,7 +5,6 @@ import sqlite3
 import time
 
 def main(args):
-	pass
 	s = 'test.db'
 	if len(args)==1:
 		print "Using test.db as name."
@@ -37,6 +36,7 @@ def main(args):
 	c.execute('INSERT into employees VALUES("s203","John","Speck","js@atemail.com")')
 	c.execute('INSERT into employees VALUES("b777","Marz","Tindaz","mtz@atemail.com")')
 	c.execute('INSERT into employees VALUES("t421","Nxy","Rne","nr@atemail.com")')
+	c.execute('CREATE TABLE arc_rec(uid text,int,lname text,email text)')
 	conn.commit()
 	conn.close()
 

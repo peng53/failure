@@ -296,7 +296,7 @@ class Viewer:
 				print "Enter requirement."
 				print "Prepend with: <>=!"
 				q = raw_input("::::")
-				if len(q)>0
+				if len(q)>0:
 					if q[0] in QFTR:
 						rows = self.R if R else self.N
 						l = QFTR[q[0]]
