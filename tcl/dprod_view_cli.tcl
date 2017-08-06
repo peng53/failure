@@ -1,22 +1,5 @@
 #!/usr/bin/tclsh8.6
 package require sqlite3
-array set SELS {
-	0 {SELECT * FROM prod_records}
-	" u" {SELECT * from prod_records ORDER by uid}
-	" c" {SELECT * from prod_records ORDER by code}
-	" s" {SELECT * from prod_records ORDER by start_time}
-	" e" {SELECT * from prod_records ORDER by end_time}
-	" d" {SELECT * from prod_records ORDER by desc}
-	u {SELECT * from prod_records WHERE uid=?}
-	c {SELECT * from prod_records WHERE code=?}
-	b {SELECT * from prod_records WHERE date(end_time)<?}
-	a {SELECT * from prod_records WHERE date(start_time)>?}
-	d {SELECT * from prod_records WHERE date(start_time)=?}
-}
-set ORD [list "" " u" " c" " s" " e" " d"]
-set EXT [list u c]
-set DTE [list b a d]
-
 proc sqlmat {db} {
 	array set ccols {
 		uid {text} start_time {datetime} end_time {datetime} code {text} desc {text}
@@ -77,12 +60,55 @@ proc open_db {} {
 	return false
 }
 
-set db_open [open_db]
-if {$db_open} {
-	set R [list]
-	db eval $SELS(0) {
-		lappend R "$uid $start_time $end_time $code $desc"
+proc main {} {
+	array set SELS {
+		0 {SELECT * FROM prod_records}
+		" u" {SELECT * from prod_records ORDER by uid}
+		" c" {SELECT * from prod_records ORDER by code}
+		" s" {SELECT * from prod_records ORDER by start_time}
+		" e" {SELECT * from prod_records ORDER by end_time}
+		" d" {SELECT * from prod_records ORDER by desc}
+		u {SELECT * from prod_records WHERE uid=?}
+		c {SELECT * from prod_records WHERE code=?}
+		b {SELECT * from prod_records WHERE date(end_time)<?}
+		a {SELECT * from prod_records WHERE date(start_time)>?}
+		d {SELECT * from prod_records WHERE date(start_time)=?}
 	}
+	set ORD [list "" " u" " c" " s" " e" " d"]
+	set EXT [list u c]
+	set DTE [list b a d]
+
+
+	set R [list]
+	set r_s 0
+	set r_c 10
 	set N [list]
-	draw_screen $R 0 10 $N 0 10
+	set n_s 0
+	set n_c 10
+	set delta 1
+	while {$delta!=-1} {
+		if {$delta==1} {
+			draw_screen $R $r_s $r_c $N $n_s $n_c
+			set delta 0
+		}
+		gets stdin s
+		if {[string length $s]==0} {
+			set delta 1
+		} elseif {$s eq "L"} {
+			set db_open [open_db]
+		} elseif {$s eq "l"} {
+			if {[info exists db_open] && $db_open} {
+				set R [list]
+				set r_s 0
+				set delta 1
+				db eval $SELS(0) {
+					lappend R "$uid $start_time $end_time $code $desc"
+				}
+			}
+		} elseif {$s eq "Q"} {
+			return
+		}
+	}
 }
+
+main
