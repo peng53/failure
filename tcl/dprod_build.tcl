@@ -12,7 +12,7 @@ if {[file exists $s]} {
 }
 sqlite3 conn $s
 set t(1) "2022-01-04 03:27"
-set	t(2) "2022-01-04 03:33"
+set t(2) "2022-01-04 03:33"
 set t(3) "2022-01-04 03:46"
 set t(4) "2022-01-04 05:02"
 conn transaction {

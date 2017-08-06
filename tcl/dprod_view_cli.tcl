@@ -37,27 +37,22 @@ proc print_rows {rows off c} {
 	puts {RN  /  UID   /   Start Time     /    End Time      / Code  /  Desc}
 	puts [string repeat - 82]
 	set n 0
-	set i $off
-	set l [expr min($c+$off,[llength $rows])]
-	while {$i<$l} {
-		puts [format "%2d | %6s | %16s | %16s | %5s | %-22s" $n {*}[lindex $rows $i]]
-		#puts [format "%2d | %74s | %16s" $n {*}[lindex $rows $i]]
-		incr i
+	foreach r [lrange $rows $off [expr min($c+$off,[llength $rows])]] {
+		puts [format "%2d | %6s | %10s %5s | %10s %5s | %5s | %-22s" $n {*}$r]
 		incr n
 	}
-
-	#for n,i in enumerate(xrange(s,min(self.ic+s,len(rows)))):
-		#print "%2d | %6s | %16s | %16s | %5s | %-22s" %(n,rows[i][0],rows[i][1],rows[i][2],rows[i][3],rows[i][4])
-	#for _ in xrange(len(rows),s+self.ic):
-		#print "   | %6s | %16s | %16s | %5s |" %('','','','')
-	#print '='*59, "%21s %d" %("Page",s//self.ic)
+	while {$n<$c} {
+		puts [format "   | %6s | %16s | %16s | %5s |" "" "" "" ""]
+		incr n
+	}
+	puts "[string repeat = 69] [format "%10s %2d" "Page" [expr $off/$c]]"
 }
 proc draw_screen {results r_i r_c notes n_i n_c} {
 	puts {Productivity Viewer}
 	puts {Results table from lookup}
-	print_rows results r_i r_c
+	print_rows $results $r_i $r_c
 	puts {Noted records}
-	print_rows notes n_i n_c
+	print_rows $notes $n_i $n_c
 	puts {Command Bar}
 	puts {(L)oad (Q)uit (l)ookup (a)dd-to-notes (d)elete-from-notes}
 	puts {(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize}
@@ -84,12 +79,10 @@ proc open_db {} {
 
 set db_open [open_db]
 if {$db_open} {
-	set l [list]
+	set R [list]
 	db eval $SELS(0) {
-		lappend l "$uid $start_time $end_time $code $desc"
+		lappend R "$uid $start_time $end_time $code $desc"
 	}
-	#foreach r $l {
-	#	puts $r
-	#}
-	print_rows $l 0 10
+	set N [list]
+	draw_screen $R 0 10 $N 0 10
 }
