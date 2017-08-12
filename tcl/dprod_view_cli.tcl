@@ -118,8 +118,6 @@ proc main {} {
 	set ORD [list "" " u" " c" " s" " e" " d"]
 	set EXT [list u c]
 	set DTE [list b a d]
-
-
 	set R [list]
 	set r_s 0
 	set r_c 10
@@ -135,19 +133,53 @@ proc main {} {
 		gets stdin s
 		if {[string length $s]==0} {
 			set delta 1
-		} elseif {$s eq "L"} {
-			set db_open [open_db]
-		} elseif {$s eq "l"} {
-			if {[info exists db_open] && $db_open} {
-				set R [list]
-				set r_s 0
-				set delta 1
-				db eval $SELS(0) {
-					lappend R "$uid $start_time $end_time $code $desc"
+		}
+		switch $s {
+			L { set db_open [open_db] }
+			l {
+				if {[info exists db_open] && $db_open} {
+					set R [list]
+					set r_s 0
+					set delta 1
+					db eval $SELS(0) {
+						lappend R "$uid $start_time $end_time $code $desc"
+					}
 				}
 			}
-		} elseif {$s eq "Q"} {
-			return
+			a {
+				set q [row_choose [llength $R]]
+				foreach r $q {
+					puts [lindex $R $r]
+					lappend N [lindex $R $r]
+				}
+				set delta 1
+			}
+			d {
+				set q [lsort -unique [row_choose [llength $N]]]
+				puts $q
+				if {[string length q]>0} {
+					set q_i 0
+					set n_l [llength $N]
+					set NN [list]
+					for {set i 0} {$i<$n_l} {incr i} {
+						if {$i==[lindex $q $q_i]} {
+							incr q_i
+							if {$q_i == [llength $q]} {
+								puts $NN
+								puts [lrange $N $i+1 [llength $N]]
+								lappend NN {*}[lrange $N $i+1 [llength $N]+1]
+								break
+							}
+						} else {
+							lappend NN [lindex $N $i]
+						}
+					}
+					set N $NN
+					unset NN
+					set delta 1
+				}
+			}
+			Q { return }
 		}
 	}
 }
