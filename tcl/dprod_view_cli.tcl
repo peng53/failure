@@ -59,6 +59,47 @@ proc open_db {} {
 	}
 	return false
 }
+proc row_choose {max} {
+	puts "Row selection from 0 to [expr $max-1]"
+	puts {To indicate a range, use a hyphen to seperate two numbers.}
+	puts {For specific rows, use commas to seperate numbers.}
+	if {[gets stdin s]>0} {
+		if {[string first - $s]!=-1} {
+			set r [split $s -]
+			foreach n $r {
+				if {[expr !{[string is integer $n]}]} {
+					puts {Invalid numbers.}
+					return
+				}
+			}
+			if {[lindex $r 1]<=[lindex $r 0] || [lindex $r 0]<0 || [lindex $r 1]>=$max} {
+				puts {Invalid range given.}
+				return
+			}
+			set l [list]
+			for {set i [lindex $r 0]} {$i < [lindex $r 1]+1} {incr i} {
+				lappend l $i
+			}
+			return $l
+		} elseif {[string first , $s]!=-1} {
+			set r [split $s ,]
+			foreach n $r {
+				if {[expr !{[string is integer $n]}] || $n >= $max || $n < 0} {
+					puts {Invalid number.}
+					return
+				}
+			}
+			return $r
+		} else {
+			if {[string is integer $s]} {
+				return $s
+			} else {
+				puts {Bad input??}
+				return
+			}
+		}
+	}
+}
 
 proc main {} {
 	array set SELS {
