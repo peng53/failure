@@ -41,11 +41,14 @@ proc draw_screen {results r_i r_c notes n_i n_c} {
 	puts {(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize}
 	puts {(e)mployee (f)ilter}
 }
-proc open_db {} {
-	puts {Opening DB for viewing.}
-	puts {Please enter file name.}
-	puts {File name:}
-	if {[gets stdin s]>0} {
+proc open_db {{s ""}} {
+	if {[string length $s]==0} {
+		puts {Opening DB for viewing.}
+		puts {Please enter file name.}
+		puts {File name:}
+		gets stdin s
+	}
+	if {[string length $s]>0} {
 		if {[file exists $s]} {
 			sqlite3 db $s
 			if {[sqlmat db]} {
@@ -100,8 +103,7 @@ proc row_choose {max} {
 		}
 	}
 }
-
-proc main {} {
+proc main {{f ""}} {
 	array set SELS {
 		0 {SELECT * FROM prod_records}
 		" u" {SELECT * from prod_records ORDER by uid}
@@ -125,6 +127,10 @@ proc main {} {
 	set n_s 0
 	set n_c 10
 	set delta 1
+	if {[string length $f]>0} {
+		puts test
+		set db_open [open_db $f]
+	}
 	while {$delta!=-1} {
 		if {$delta==1} {
 			draw_screen $R $r_s $r_c $N $n_s $n_c
@@ -184,4 +190,8 @@ proc main {} {
 	}
 }
 
-main
+if {[llength $argv]==0} {
+	main
+} else {
+	main [lindex $argv 0]
+}

@@ -4,7 +4,7 @@ if {[llength $argv]==0} {
 	puts {Using test.db as filename}
 	set s "test.db"
 } else {
-	set s [lindex argv 1]
+	set s [lindex $argv 0]
 }
 if {[file exists $s]} {
 	puts "File already exists."
