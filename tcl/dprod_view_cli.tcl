@@ -128,7 +128,6 @@ proc main {{f ""}} {
 	set n_c 10
 	set delta 1
 	if {[string length $f]>0} {
-		puts test
 		set db_open [open_db $f]
 	}
 	while {$delta!=-1} {
@@ -185,7 +184,7 @@ proc main {{f ""}} {
 					set delta 1
 				}
 			}
-			Q { return }
+			Q { set delta -1 }
 		}
 	}
 }
