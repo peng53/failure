@@ -31,41 +31,30 @@ proc print_rows {rows off c} {
 	puts "[string repeat = 69] [format "%10s %2d" "Page" [expr $off/$c]]"
 }
 proc draw_screen {results r_i r_c notes n_i n_c} {
-	puts {Productivity Viewer}
-	puts {Results table from lookup}
+	puts "Productivity Viewer\nResults table from lookup"
 	print_rows $results $r_i $r_c
 	puts {Noted records}
 	print_rows $notes $n_i $n_c
-	puts {Command Bar}
-	puts {(L)oad (Q)uit (l)ookup (a)dd-to-notes (d)elete-from-notes}
-	puts {(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize}
-	puts {(e)mployee (f)ilter}
+	puts "Command Bar\n(L)oad (Q)uit (l)ookup (a)dd-to-notes (d)elete-from-notes\n(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize\n(e)mployee (f)ilter"
 }
 proc open_db {{s ""}} {
 	if {[string length $s]==0} {
-		puts {Opening DB for viewing.}
-		puts {Please enter file name.}
-		puts {File name:}
+		puts "Opening DB for viewing.\nPlease enter file name.\nFile name:"
 		gets stdin s
 	}
-	if {[string length $s]>0} {
-		if {[file exists $s]} {
-			sqlite3 db $s
-			if {[sqlmat db]} {
-				puts [format "'%s' loaded for viewing." $s]
-				return true
-			} else {
-				puts {Database schema does not match intended.}
-				puts {Closing file.}
-			}
+	if {[string length $s]>0 && [file exists $s]} {
+		sqlite3 db $s
+		if {[sqlmat db]} {
+			puts "'$s' loaded for viewing."
+			return true
+		} else {
+			puts "Database schema does not match intended.\nClosing file."
 		}
 	}
 	return false
 }
 proc row_choose {max} {
-	puts "Row selection from 0 to [expr $max-1]"
-	puts {To indicate a range, use a hyphen to seperate two numbers.}
-	puts {For specific rows, use commas to seperate numbers.}
+	puts "Row selection from 0 to [expr $max-1]\nTo indicate a range, use a hyphen to seperate two numbers.\nFor specific rows, use commas to seperate numbers."
 	if {[gets stdin s]>0} {
 		if {[string first - $s]!=-1} {
 			set r [split $s -]
@@ -103,7 +92,10 @@ proc row_choose {max} {
 		}
 	}
 }
-proc main {{f ""}} {
+
+set ORD [list "" " u" " c" " s" " e" " d"]
+set EXT [list u c]
+proc d_lookup {} {
 	array set SELS {
 		0 {SELECT * FROM prod_records}
 		" u" {SELECT * from prod_records ORDER by uid}
@@ -113,13 +105,37 @@ proc main {{f ""}} {
 		" d" {SELECT * from prod_records ORDER by desc}
 		u {SELECT * from prod_records WHERE uid=?}
 		c {SELECT * from prod_records WHERE code=?}
-		b {SELECT * from prod_records WHERE date(end_time)<?}
-		a {SELECT * from prod_records WHERE date(start_time)>?}
-		d {SELECT * from prod_records WHERE date(start_time)=?}
+		bad {SELECT * from prod_records WHERE date(%s%\"04d-%02d-%02d\"}
 	}
-	set ORD [list "" " u" " c" " s" " e" " d"]
-	set EXT [list u c]
-	set DTE [list b a d]
+	array set DTE {
+		b {end_time)<}
+		a {start_time)>}
+		d {start_time)=}
+	}
+	puts "Record lookup choices\n()all\nExact / Limited\n(u)id (c)ode (b)efore (d)ate (a)fter\nBy Order (prepend with space)\n( u)id ( c)ode ( s)tart ( e)nd ( d)esc"
+	gets stdin s
+	switch [string length $s] {
+		0 { return $SELS(0) }
+		1 {
+			switch $s {
+				b - a - d {
+					set q $SELS(bad)
+					puts {Enter requirement}
+					if {[gets stdin t]==0} {
+						puts {Requirement is required.}
+					} elseif {[string first / $t]!=-1} {
+						if {[llength [set t [split $t /]]]==3} {
+							puts $t
+							return [format $SELS(bad) $DTE($s) [lindex $t 2] {*}[lrange $t 0 1]]
+						}
+						
+					}
+				}
+			}
+		}
+	}
+}
+proc main {{f ""}} {
 	set R [list]
 	set r_s 0
 	set r_c 10
@@ -143,11 +159,14 @@ proc main {{f ""}} {
 			L { set db_open [open_db] }
 			l {
 				if {[info exists db_open] && $db_open} {
+					if {[string length [set q [d_lookup]]]!=0} {
 					set R [list]
 					set r_s 0
-					set delta 1
-					db eval $SELS(0) {
+					puts $q
+					db eval $q {
 						lappend R "$uid $start_time $end_time $code $desc"
+					}
+					set delta 1
 					}
 				}
 			}
