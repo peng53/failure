@@ -112,24 +112,45 @@ proc date_in {} {
 	}
 }
 proc d_lookup {} {
-	array set DTE {
+	array set WHE {
 		b {WHERE date(end_time)<}
 		a {WHERE date(start_time)>}
 		d {WHERE date(start_time)=}
+		u {WHERE uid=}
+		c {WHERE code=}
+		ou {ORDER by uid}
+		oc {ORDER by code}
+		os {ORDER by start_time}
+		oe {ORDER by end_time}
+		od {ORDER by desc}
 	}
-	puts "Record lookup choices\n()all\nExact / Limited\n(u)id (c)ode (b)efore (d)ate (a)fter\nBy Order (prepend with space)\n( u)id ( c)ode ( s)tart ( e)nd ( d)esc"
+	puts "Record lookup choices\n()all\nExact / Limited\n(u)id (c)ode (b)efore (d)ate (a)fter\nBy Order\n(ou)id (oc)ode (os)tart (oe)nd (od)esc"
 	gets stdin s
 	switch [string length $s] {
 		0 { return {SELECT * from prod_records} }
 		1 {
+			puts {Enter requirement}
 			switch $s {
 				b - a - d {
-					puts {Enter requirement}
 					if {[string length [set t [date_in]]]==0} {
 						puts {Requirement is required.}
 					} else {
-						return  "SELECT * from prod_records $DTE($s)\"$t\""
+						return "SELECT * from prod_records $WHE($s)\"$t\""
 					}
+				}
+				u - c {
+					if {[gets stdin t]==0} {
+						puts {Requirement is required.}
+					} else {
+						return "SELECT * from prod_records $WHE($s)\"$t\""
+					}
+				}
+			}
+		}
+		2 {
+			switch $s {
+				ou - oc - os - oe - od {
+					return "SELECT * from prod_records $WHE($s)"
 				}
 			}
 		}
