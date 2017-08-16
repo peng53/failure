@@ -92,43 +92,43 @@ proc row_choose {max} {
 		}
 	}
 }
-
-set ORD [list "" " u" " c" " s" " e" " d"]
-set EXT [list u c]
-proc d_lookup {} {
-	array set SELS {
-		0 {SELECT * FROM prod_records}
-		" u" {SELECT * from prod_records ORDER by uid}
-		" c" {SELECT * from prod_records ORDER by code}
-		" s" {SELECT * from prod_records ORDER by start_time}
-		" e" {SELECT * from prod_records ORDER by end_time}
-		" d" {SELECT * from prod_records ORDER by desc}
-		u {SELECT * from prod_records WHERE uid=?}
-		c {SELECT * from prod_records WHERE code=?}
-		bad {SELECT * from prod_records WHERE date(%s%\"04d-%02d-%02d\"}
+proc all_int {l} {
+	foreach n $l {
+		if {[string is integer $n]==0} { return 0 }
 	}
+	return 1
+}
+proc date_in {} {
+	if {[gets stdin s]==0} return
+	if {[string first / $s]!=-1 && [llength [set s [split $s /]]]==3} {
+		if {[all_int $s]==1} { return [format %04d-%02d-%02d [lindex $s 2] {*}[lrange $s 0 1]] }
+	} elseif {[string first - $s]!=-1 && [llength [set s [split $s -]]]==3} {
+		if {[all_int $s]==1} { return [format %04d-%02d-%02d {*}$s] }
+	} elseif {[string length $s]>=8} {
+		for {set i 0} {$i<8} {incr i} {
+			if {[string is integer [string index $s $i]]==0} return
+		}
+		return "[string range $s 4 7]-[string range $s 0 1]-[string range $s 2 3]"
+	}
+}
+proc d_lookup {} {
 	array set DTE {
-		b {end_time)<}
-		a {start_time)>}
-		d {start_time)=}
+		b {WHERE date(end_time)<}
+		a {WHERE date(start_time)>}
+		d {WHERE date(start_time)=}
 	}
 	puts "Record lookup choices\n()all\nExact / Limited\n(u)id (c)ode (b)efore (d)ate (a)fter\nBy Order (prepend with space)\n( u)id ( c)ode ( s)tart ( e)nd ( d)esc"
 	gets stdin s
 	switch [string length $s] {
-		0 { return $SELS(0) }
+		0 { return {SELECT * from prod_records} }
 		1 {
 			switch $s {
 				b - a - d {
-					set q $SELS(bad)
 					puts {Enter requirement}
-					if {[gets stdin t]==0} {
+					if {[string length [set t [date_in]]]==0} {
 						puts {Requirement is required.}
-					} elseif {[string first / $t]!=-1} {
-						if {[llength [set t [split $t /]]]==3} {
-							puts $t
-							return [format $SELS(bad) $DTE($s) [lindex $t 2] {*}[lrange $t 0 1]]
-						}
-						
+					} else {
+						return  "SELECT * from prod_records $DTE($s)\"$t\""
 					}
 				}
 			}

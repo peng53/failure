@@ -2,19 +2,19 @@
 package require sqlite3
 if {[llength $argv]==0} {
 	puts {Using test.db as filename}
-	set s "test.db"
+	set s {test.db}
 } else {
 	set s [lindex $argv 0]
 }
 if {[file exists $s]} {
-	puts "File already exists."
+	puts {File already exists.}
 	exit 1
 }
 sqlite3 conn $s
-set t(1) "2022-01-04 03:27"
-set t(2) "2022-01-04 03:33"
-set t(3) "2022-01-04 03:46"
-set t(4) "2022-01-04 05:02"
+set t(1) {2022-01-04 03:27}
+set t(2) {2022-01-04 03:33}
+set t(3) {2022-01-04 03:46}
+set t(4) {2022-01-04 05:02}
 conn transaction {
 	conn eval {CREATE TABLE prod_records(uid text,start_time datetime,end_time datetime,code text,desc text)}
 	conn eval {INSERT into prod_records VALUES("s203",$t(1),$t(2),"112","work")}
@@ -31,4 +31,8 @@ conn transaction {
 	conn eval {INSERT into employees VALUES("t421","Nxy","Rne","nr@atemail.com")}
 	conn eval {CREATE TABLE arc_rec(uid text,int,lname text,email text)}
 }
-
+set t(1) {2022-05-10 08:47}
+set t(2) {2022-05-10 10:33}
+conn transaction {
+	conn eval {INSERT into prod_records VALUES("s203",$t(1),$t(2),"112","project")}
+}
