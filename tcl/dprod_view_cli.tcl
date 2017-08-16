@@ -83,7 +83,7 @@ proc row_choose {max} {
 			}
 			return $r
 		} else {
-			if {[string is integer $s]} {
+			if {[string is integer $s] && $s<$max} {
 				return $s
 			} else {
 				puts {Bad input??}
