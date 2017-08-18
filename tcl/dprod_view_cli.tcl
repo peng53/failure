@@ -1,236 +1,184 @@
 #!/usr/bin/tclsh8.6
 package require sqlite3
-proc sqlmat {db} {
-	array set ccols {
-		uid {text} start_time {datetime} end_time {datetime} code {text} desc {text}
-	}
-	db eval {pragma table_info(prod_records)} {
-		try {
-			if {$ccols($name) ne $type} {
-				return false
+
+namespace eval viewer {
+	variable R [list]
+	variable N [list]
+	variable R_o 0
+	variable N_o 0
+	variable R_c 10
+	variable N_c 5
+	variable delta 1
+	variable db_open 0
+	proc sqlmat {} {
+		array set ccols { uid {text} start_time {datetime} end_time {datetime} code {text} desc {text} }
+		db eval {pragma table_info(prod_records)} {
+			try {
+				if {$ccols($name) ne $type} { return 0 }
+			} on error {} {
+				return 0
 			}
-		} on error {} {
-			return false
+		}
+		return 1
+	}
+	proc open_db_silent {s} {
+		if {[file exists $s]} {
+			sqlite3 db $s
+			if {[sqlmat]} {
+				variable db_open
+				set db_open 1
+			}
 		}
 	}
-	return true
-}
-proc print_rows {rows off c} {
-	puts [string repeat _ 82]
-	puts {RN  /  UID   /   Start Time     /    End Time      / Code  /  Desc}
-	puts [string repeat - 82]
-	set n 0
-	foreach r [lrange $rows $off [expr min($c+$off,[llength $rows])]] {
-		puts [format "%2d | %6s | %10s %5s | %10s %5s | %5s | %-22s" $n {*}$r]
-		incr n
-	}
-	while {$n<$c} {
-		puts [format "   | %6s | %16s | %16s | %5s |" "" "" "" ""]
-		incr n
-	}
-	puts "[string repeat = 69] [format "%10s %2d" "Page" [expr $off/$c]]"
-}
-proc draw_screen {results r_i r_c notes n_i n_c} {
-	puts "Productivity Viewer\nResults table from lookup"
-	print_rows $results $r_i $r_c
-	puts {Noted records}
-	print_rows $notes $n_i $n_c
-	puts "Command Bar\n(L)oad (Q)uit (l)ookup (a)dd-to-notes (d)elete-from-notes\n(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize\n(e)mployee (f)ilter"
-}
-proc open_db {{s ""}} {
-	if {[string length $s]==0} {
+	proc open_db {} {
 		puts "Opening DB for viewing.\nPlease enter file name.\nFile name:"
-		gets stdin s
-	}
-	if {[string length $s]>0 && [file exists $s]} {
-		sqlite3 db $s
-		if {[sqlmat db]} {
-			puts "'$s' loaded for viewing."
-			return true
-		} else {
-			puts "Database schema does not match intended.\nClosing file."
-		}
-	}
-	return false
-}
-proc row_choose {max} {
-	puts "Row selection from 0 to [expr $max-1]\nTo indicate a range, use a hyphen to seperate two numbers.\nFor specific rows, use commas to seperate numbers."
-	if {[gets stdin s]>0} {
-		if {[string first - $s]!=-1} {
-			set r [split $s -]
-			foreach n $r {
-				if {[expr !{[string is integer $n]}]} {
-					puts {Invalid numbers.}
-					return
-				}
-			}
-			if {[lindex $r 1]<=[lindex $r 0] || [lindex $r 0]<0 || [lindex $r 1]>=$max} {
-				puts {Invalid range given.}
-				return
-			}
-			set l [list]
-			for {set i [lindex $r 0]} {$i < [lindex $r 1]+1} {incr i} {
-				lappend l $i
-			}
-			return $l
-		} elseif {[string first , $s]!=-1} {
-			set r [split $s ,]
-			foreach n $r {
-				if {[expr !{[string is integer $n]}] || $n >= $max || $n < 0} {
-					puts {Invalid number.}
-					return
-				}
-			}
-			return $r
-		} else {
-			if {[string is integer $s] && $s<$max} {
-				return $s
+		if {[gets stdin s]>0 && [file exists $s]} {
+			sqlite3 db $s
+			if {[sqlmat]} {
+				puts "'$s' loaded for viewing."
+				variable db_open
+				set db_open 1
 			} else {
-				puts {Bad input??}
-				return
+				puts "Database schema does not match intended.\nClosing file."
 			}
 		}
 	}
-}
-proc all_int {l} {
-	foreach n $l {
-		if {[string is integer $n]==0} { return 0 }
-	}
-	return 1
-}
-proc date_in {} {
-	if {[gets stdin s]==0} return
-	if {[string first / $s]!=-1 && [llength [set s [split $s /]]]==3} {
-		if {[all_int $s]==1} { return [format %04d-%02d-%02d [lindex $s 2] {*}[lrange $s 0 1]] }
-	} elseif {[string first - $s]!=-1 && [llength [set s [split $s -]]]==3} {
-		if {[all_int $s]==1} { return [format %04d-%02d-%02d {*}$s] }
-	} elseif {[string length $s]>=8} {
-		for {set i 0} {$i<8} {incr i} {
-			if {[string is integer [string index $s $i]]==0} return
+	proc all_int {l} {
+		foreach n $l {
+			if {[string is integer $n]==0} { return 0 }
 		}
-		return "[string range $s 4 7]-[string range $s 0 1]-[string range $s 2 3]"
+		return 1
 	}
-}
-proc d_lookup {} {
-	array set WHE {
-		b {WHERE date(end_time)<}
-		a {WHERE date(start_time)>}
-		d {WHERE date(start_time)=}
-		u {WHERE uid=}
-		c {WHERE code=}
-		ou {ORDER by uid}
-		oc {ORDER by code}
-		os {ORDER by start_time}
-		oe {ORDER by end_time}
-		od {ORDER by desc}
+	proc date_in {} {
+		if {[gets stdin s]==0} return
+		if {[string first / $s]!=-1 && [llength [set s [split $s /]]]==3} {
+			if {[all_int $s]==1} { return [format %04d-%02d-%02d [lindex $s 2] {*}[lrange $s 0 1]] }
+		} elseif {[string first - $s]!=-1 && [llength [set s [split $s -]]]==3} {
+			if {[all_int $s]==1} { return [format %04d-%02d-%02d {*}$s] }
+		} elseif {[string length $s]>=8} {
+			for {set i 0} {$i<8} {incr i} {
+				if {[string is integer [string index $s $i]]==0} return
+			}
+			return "[string range $s 4 7]-[string range $s 0 1]-[string range $s 2 3]"
+		}
 	}
-	puts "Record lookup choices\n()all\nExact / Limited\n(u)id (c)ode (b)efore (d)ate (a)fter\nBy Order\n(ou)id (oc)ode (os)tart (oe)nd (od)esc"
-	gets stdin s
-	switch [string length $s] {
-		0 { return {SELECT * from prod_records} }
-		1 {
-			puts {Enter requirement}
-			switch $s {
-				b - a - d {
-					if {[string length [set t [date_in]]]==0} {
-						puts {Requirement is required.}
-					} else {
-						return "SELECT * from prod_records $WHE($s)\"$t\""
+	proc d_lookup {} {
+		if {$viewer::db_open==0} { return }
+		set base {SELECT * from prod_records}
+		array set WHE {
+			b {WHERE date(end_time)<} a {WHERE date(start_time)>} d {WHERE date(start_time)=}
+			u {WHERE uid=} c {WHERE code=} ou {ORDER by uid} oc {ORDER by code}
+			os {ORDER by start_time} oe {ORDER by end_time} od {ORDER by desc}
+		}
+		puts "Record lookup choices\n()all\nExact / Limited\n(u)id (c)ode (b)efore (d)ate (a)fter\nBy Order\n(ou)id (oc)ode (os)tart (oe)nd (od)esc"
+		switch [gets stdin s] {
+			0 {
+				db_q $base
+			} 1 {
+				puts {Enter requirement}
+				switch $s {
+					b - a - d {
+						if {[string length [set t [date_in]]]==0} {
+							puts {Requirement is required.}
+						} else { db_q "$base $WHE($s)\"$t\"" }
+					} u - c {
+						if {[gets stdin t]==0} { puts {Requirement is required.}
+						} else { db_q "$base $WHE($s)\"$t\"" }
 					}
 				}
-				u - c {
-					if {[gets stdin t]==0} {
-						puts {Requirement is required.}
-					} else {
-						return "SELECT * from prod_records $WHE($s)\"$t\""
-					}
-				}
-			}
-		}
-		2 {
-			switch $s {
-				ou - oc - os - oe - od {
-					return "SELECT * from prod_records $WHE($s)"
+			} 2 {
+				switch $s {
+					ou - oc - os - oe - od { db_q "$base $WHE($s)" }
 				}
 			}
 		}
 	}
-}
-proc main {{f ""}} {
-	set R [list]
-	set r_s 0
-	set r_c 10
-	set N [list]
-	set n_s 0
-	set n_c 10
-	set delta 1
-	if {[string length $f]>0} {
-		set db_open [open_db $f]
+	proc db_q {q} {
+		variable R
+		variable R_o
+		variable delta
+		set R [list]
+		set R_o 0
+		set delta 1
+		db eval $q { lappend R "$uid $start_time $end_time $code $desc" }
 	}
-	while {$delta!=-1} {
-		if {$delta==1} {
-			draw_screen $R $r_s $r_c $N $n_s $n_c
-			set delta 0
+	proc print_rows {rows off c} {
+		puts [string repeat _ 82]
+		puts {RN  /  UID   /   Start Time     /    End Time      / Code  /  Desc}
+		puts [string repeat - 82]
+		set n 0
+		foreach r [lrange $rows $off [expr min($c+$off,[llength $rows])]] {
+			puts [format "%2d | %6s | %10s %5s | %10s %5s | %5s | %-22s" $n {*}$r]
+			incr n
 		}
-		gets stdin s
-		if {[string length $s]==0} {
-			set delta 1
+		while {$n<$c} {
+			puts [format "   | %6s | %16s | %16s | %5s |" "" "" "" ""]
+			incr n
+		}
+		puts "[string repeat = 69] [format "%10s %2d" "Page" [expr $off/$c]]"
+	}
+	proc draw_screen {} {
+		variable delta
+		set delta 0
+		puts "Productivity Viewer\nResults table from lookup"
+		print_rows $viewer::R $viewer::R_o $viewer::R_c
+		puts {Noted records}
+		print_rows $viewer::N $viewer::N_o $viewer::N_c
+		puts "Command Bar\n(L)oad (Q)uit (l)ookup (a)dd-to-notes (d)elete-from-notes\n(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize\n(e)mployee (f)ilter"
+	}
+	proc d_addnote {} {
+		variable N
+		variable delta
+		foreach i [row_choose [llength $viewer::R]] {
+			lappend N [lindex $viewer::R $i]
+		}
+		set delta 1
+	}
+	proc d_delnote {} {
+		variable N
+		variable delta
+		set n_l [llength $N]
+		set q [lsort -unique [row_choose $n_l]]
+		set q_i 0
+		set n_i 0
+		set NN [list]
+		foreach n $N {
+			if {$n_i==[lindex $q $q_i]} {
+				incr q_i
+				if {$q_i == [llength $q]} {
+					lappend NN {*}[lrange $N $n_i+1 [llength $N]+1]
+					break
+				}
+			} else {
+				lappend NN $n
+			}
+			incr n_i
+		}
+		set N $NN
+		set delta 1
+	}
+	proc active {} {
+		variable delta
+		if {$viewer::delta==1} {
+			draw_screen
+		}
+		if {[gets stdin s]==0} {
+			draw_screen
+			return 1
 		}
 		switch $s {
-			L { set db_open [open_db] }
-			l {
-				if {[info exists db_open] && $db_open} {
-					if {[string length [set q [d_lookup]]]!=0} {
-					set R [list]
-					set r_s 0
-					puts $q
-					db eval $q {
-						lappend R "$uid $start_time $end_time $code $desc"
-					}
-					set delta 1
-					}
-				}
-			}
-			a {
-				set q [row_choose [llength $R]]
-				foreach r $q {
-					puts [lindex $R $r]
-					lappend N [lindex $R $r]
-				}
-				set delta 1
-			}
-			d {
-				set q [lsort -unique [row_choose [llength $N]]]
-				puts $q
-				if {[string length q]>0} {
-					set q_i 0
-					set n_l [llength $N]
-					set NN [list]
-					for {set i 0} {$i<$n_l} {incr i} {
-						if {$i==[lindex $q $q_i]} {
-							incr q_i
-							if {$q_i == [llength $q]} {
-								puts $NN
-								puts [lrange $N $i+1 [llength $N]]
-								lappend NN {*}[lrange $N $i+1 [llength $N]+1]
-								break
-							}
-						} else {
-							lappend NN [lindex $N $i]
-						}
-					}
-					set N $NN
-					unset NN
-					set delta 1
-				}
-			}
-			Q { set delta -1 }
+			L { open_db }
+			l { d_lookup }
+			a { d_addnote }
+			d { d_delnote }
+			Q { return 0 }
 		}
+		return 1
 	}
 }
-
-if {[llength $argv]==0} {
-	main
-} else {
-	main [lindex $argv 0]
+if {[llength $argv]>0} {
+	viewer::open_db_silent [lindex $argv 0]
+}
+while {[viewer::active]==1} {
+	continue
 }
