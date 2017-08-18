@@ -103,28 +103,69 @@ namespace eval viewer {
 		db eval $q { lappend R "$uid $start_time $end_time $code $desc" }
 	}
 	proc print_rows {rows off c} {
-		puts [string repeat _ 82]
-		puts {RN  /  UID   /   Start Time     /    End Time      / Code  /  Desc}
-		puts [string repeat - 82]
+		puts [string repeat _ 62]
+		puts { # {  UID /    Start Time   \ /    End Time     }  Code | Desc}
 		set n 0
 		foreach r [lrange $rows $off [expr min($c+$off,[llength $rows])]] {
-			puts [format "%2d | %6s | %10s %5s | %10s %5s | %5s | %-22s" $n {*}$r]
+			puts [format "%2d ! %4s | %10s %5s | %10s %5s | %5s | %-22s" [expr $n+$off] {*}$r]
 			incr n
 		}
-		while {$n<$c} {
-			puts [format "   | %6s | %16s | %16s | %5s |" "" "" "" ""]
-			incr n
+		if {$n!=0 || $n<$c} {
+			incr n 1
+			while {$n<$c} {
+				puts [format "   '%6s'%18s'%18s'%7s'" "" "" "" ""]
+				incr n
+			}
 		}
-		puts "[string repeat = 69] [format "%10s %2d" "Page" [expr $off/$c]]"
+		puts "[string repeat # 62] Pg [expr $off/$c]"
 	}
 	proc draw_screen {} {
 		variable delta
 		set delta 0
-		puts "Productivity Viewer\nResults table from lookup"
+		puts "Productivity Viewer\nLookup Results"
 		print_rows $viewer::R $viewer::R_o $viewer::R_c
 		puts {Noted records}
 		print_rows $viewer::N $viewer::N_o $viewer::N_c
 		puts "Command Bar\n(L)oad (Q)uit (l)ookup (a)dd-to-notes (d)elete-from-notes\n(S)ort (C)lear (1)st-page (n)ext-page (p)rev-page (s)ummarize\n(e)mployee (f)ilter"
+	}
+	proc row_choose {max} {
+		puts "Row selection from 0 to [expr $max-1]\nTo indicate a range, use a hyphen to seperate two numbers.\nFor specific rows, use commas to seperate numbers."
+		if {[gets stdin s]>0} {
+			if {[string first - $s]!=-1} {
+				set r [split $s -]
+				foreach n $r {
+					if {[expr !{[string is integer $n]}]} {
+						puts {Invalid numbers.}
+						return
+					}
+				}
+				if {[lindex $r 1]<=[lindex $r 0] || [lindex $r 0]<0 || [lindex $r 1]>=$max} {
+					puts {Invalid range given.}
+					return
+				}
+				set l [list]
+				for {set i [lindex $r 0]} {$i < [lindex $r 1]+1} {incr i} {
+					lappend l $i
+				}
+				return $l
+			} elseif {[string first , $s]!=-1} {
+				set r [split $s ,]
+				foreach n $r {
+					if {[expr !{[string is integer $n]}] || $n >= $max || $n < 0} {
+						puts {Invalid number.}
+						return
+					}
+				}
+				return $r
+			} else {
+				if {[string is integer $s] && $s<$max} {
+					return $s
+				} else {
+					puts {Bad input??}
+					return
+				}
+			}
+		}
 	}
 	proc d_addnote {} {
 		variable N
@@ -157,6 +198,74 @@ namespace eval viewer {
 		set N $NN
 		set delta 1
 	}
+	proc d_next {c} {
+		switch $c {
+			R {
+				variable R_o
+				if {$R_o<[llength $viewer::R]} {
+					variable delta
+					set delta 1
+					incr R_o $viewer::R_c
+				}
+			} N {
+				variable N_o
+				if {$N_o<[llength $viewer::N]} {
+					variable delta
+					set delta 1
+					incr N_o $viewer::N_c
+				}
+			}
+		}
+	}
+	proc d_prev {c} {
+		switch $c {
+			R {
+				variable R_o
+				if {$R_o!=0} {
+					variable delta
+					set delta 1
+					incr R_o [expr -$viewer::R_c]
+				}
+			} N {
+				variable N_o
+				if {$N_o!=0} {
+					variable delta
+					set delta 1
+					incr N_o [expr -$viewer::N_c]
+				}
+			}
+		}
+	}
+	proc d_first {c} {
+		variable delta
+		set delta 1
+		switch $c {
+			R {
+				variable R_o
+				set R_o 0
+			} N {
+				variable N_o
+				set N_o 0
+			}
+		}
+	}
+	proc d_clear {c} {
+		variable delta
+		set delta 1
+		switch $c {
+			R {
+				variable R
+				variable R_o
+				set R [list]
+				set R_o 0
+			} N {
+				variable N
+				variable N_o
+				set N [list]
+				set N_o 0
+			}
+		}
+	}
 	proc active {} {
 		variable delta
 		if {$viewer::delta==1} {
@@ -171,6 +280,14 @@ namespace eval viewer {
 			l { d_lookup }
 			a { d_addnote }
 			d { d_delnote }
+			nr { d_next R }
+			nn { d_next N }
+			pr { d_prev R }
+			pn { d_prev N }
+			1r { d_first R }
+			1n { d_first N }
+			Cr { d_clear R }
+			Cn { d_clear N }
 			Q { return 0 }
 		}
 		return 1
