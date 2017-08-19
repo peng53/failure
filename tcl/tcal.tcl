@@ -1,4 +1,4 @@
-#!/usr/bin/tclsh8.6
+#!/usr/bin/env tclsh8.6
 package require Tk
 namespace eval Cal {
 	array set days { Sun {0} Mon {1} Tue {2} Wed {3} Thu {4} Fri {5} Sat {6} }
@@ -12,7 +12,7 @@ namespace eval Cal {
 		variable selB
 		set selA "$Cal::c_mth $Cal::c_yr"
 		set selB 0
-		sel_RC 
+		sel_RC
 	}
 	proc dowMY {m y} {
 		set w [clock format [clock scan $m-01-$y -format %m-%d-%Y] -format %a]
