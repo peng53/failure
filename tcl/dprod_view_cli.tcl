@@ -21,17 +21,20 @@ namespace eval viewer {
 	proc open_db_silent {s} {
 		if {[file exists $s]} {
 			sqlite3 db $s
-			if {[sqlmat]} { variable db_open 1 }
-		}
+			if {[sqlmat]} {
+				variable db_open 1
+				return 0
+			} else { return 2 }
+		} else { return 1 }
 	}
 	proc open_db {} {
-		puts "Opening DB for viewing.\nPlease enter file name.\nFile name:"
-		if {[gets stdin s]>0 && [file exists $s]} {
-			sqlite3 db $s
-			if {[sqlmat]} {
-				puts "'$s' loaded for viewing."
-				variable db_open 1
-			} else { puts "Database schema does not match intended.\nClosing file." }
+		puts {Enter file name:}
+		if {[gets stdin s]>0} {
+			switch [open_db_silent $s] {
+				0 { puts "'$s' loaded for viewing." }
+				1 { puts {File does not exist.} }
+				2 { puts {Database schema does not match intended. Closing file.} }
+			}
 		}
 	}
 	proc all_int {l} {
