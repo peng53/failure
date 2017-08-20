@@ -3,7 +3,7 @@ package require Tk
 namespace eval Cal {
 	array set days { Sun {0} Mon {1} Tue {2} Wed {3} Thu {4} Fri {5} Sat {6} }
 	variable SQS 64 mth {31 31 28 31 30 31 30 31 31 30 31 30 31} imth {Null January Febuary March April May June July August September October November December}
-	variable c_mth 1 c_yr 2000 selA 0 selB 0
+	variable c_mth 1 c_yr 2000 selA 0 selB 0 dfont {Arial 21}
 	proc dowMY {m y} {
 		# Returns first-day-of-the-week given month & year. Where Sun=0 .. Sat=6
 		return $Cal::days([clock format [clock scan $m-01-$y -format %m-%d-%Y] -format %a])
@@ -53,7 +53,7 @@ namespace eval Cal {
 		.fcal.can create rect 1 1 [expr $Cal::SQS*7] $Cal::SQS -fill #000
 		set y [set x [expr $Cal::SQS/2]]
 		foreach d {S M T W T F S} {
-			.fcal.can create text $x $y -text $d -fill #fff
+			.fcal.can create text $x $y -text $d -font $Cal::dfont -fill #fff
 			incr x $Cal::SQS
 		}
 	}
@@ -79,7 +79,7 @@ namespace eval Cal {
 			}
 			while {$d<=$l} {
 				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
-				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag ndays
+				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -fill #666 -tag ndays
 				incr x $Cal::SQS
 				incr d
 			}
@@ -96,7 +96,7 @@ namespace eval Cal {
 				set c #ccc
 			}
 			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill $c -outline $c -tag $T
-			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -tag $T
+			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -tag $T
 			incr f
 			incr x $Cal::SQS
 			incr d
@@ -110,7 +110,7 @@ namespace eval Cal {
 		set d 1
 		while {$f<7} {
 			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
-			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag ndays
+			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -fill #666 -tag ndays
 			incr f
 			incr x $Cal::SQS
 			incr d
@@ -121,7 +121,7 @@ namespace eval Cal {
 			set x 1
 			while {$f<7} {
 				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
-				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag ndays
+				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -fill #666 -tag ndays
 				incr f
 				incr x $Cal::SQS
 				incr d
@@ -169,22 +169,14 @@ namespace eval Cal {
 
 	}
 }
-frame .fcal
-frame .fcal.mth
-button .fcal.mth.prv -text < -command Cal::prev_mth
-button .fcal.mth.nxt -text > -command Cal::next_mth
-label .fcal.mth.mthl -text NULL
-canvas .fcal.can -width [expr 7*$Cal::SQS] -height [expr 7*$Cal::SQS] -bg white
-button .bquit -text Quit -command exit
-entry .date_range
-grid .fcal.mth.prv -column 0 -row 0
-grid .fcal.mth.mthl -column 1 -row 0
-grid .fcal.mth.nxt -column 2 -row 0
-grid .fcal.mth
-grid .fcal.can
-grid .fcal
-grid .date_range
-grid .bquit
+grid [frame .fcal]
+grid [frame .fcal.mth]
+grid [canvas .fcal.can -width [expr 7*$Cal::SQS] -height [expr 7*$Cal::SQS] -bg white]
+grid [button .fcal.mth.prv -text < -command Cal::prev_mth] -column 0 -row 0
+grid [label .fcal.mth.mthl] -column 1 -row 0
+grid [button .fcal.mth.nxt -text > -command Cal::next_mth] -column 2 -row 0
+grid [entry .date_range]
+grid [button .bquit -text Quit -command exit]
 
 bind .fcal.can <ButtonPress-1> {
 	# Selects a rect (a day) on the canvas (calender).
