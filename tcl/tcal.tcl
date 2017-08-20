@@ -7,13 +7,6 @@ namespace eval Cal {
 	variable c_yr
 	variable selA
 	variable selB
-	proc setSel {r c} {
-		variable selA
-		variable selB
-		set selA "$Cal::c_mth $Cal::c_yr"
-		set selB 0
-		sel_RC
-	}
 	proc dowMY {m y} {
 		set w [clock format [clock scan $m-01-$y -format %m-%d-%Y] -format %a]
 		return $Cal::days($w)
@@ -49,11 +42,17 @@ namespace eval Cal {
 		}
 		cal_day
 	}
+	proc date_at {r c} {
+		variable c_mth
+		variable c_yr
+		set c [Cal::dowMY $c_mth $c_yr]
+
+	}
 	proc sel_RC {r c} {
-		sel_SQ [expr $c*$Cal::SQS] [expr $r*$Cal::SQS]
+		sel_YX [expr $r*$Cal::SQS] [expr $c*$Cal::SQS]
 	}
 	proc sel_YX {y x} {
-		.fcal.can create rect [expr $x+1] [expr $y+1] [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -outline red -tags sel
+		.fcal.can create rect [expr $x+1] [expr $y+1] [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -outline #666 -tags sel
 	}
 	proc cal_base {} {
 		.fcal.can create rect 1 1 [expr $Cal::SQS*7] $Cal::SQS -fill #000
@@ -123,6 +122,28 @@ namespace eval Cal {
 			}
 		}
 	}
+	proc rc_date {r c} {
+		variable c_mth
+		variable c_yr
+		set l [lindex $Cal::mth $c_mth]
+		set f [dowMY $c_mth $c_yr]
+		set d [expr {$c-$f+7*$r-6}]
+		if {$d<1} {
+			if {$c_mth==3 && [is_lpyr $c_yr]} { return [format "2 %d %d" [expr {29+$d}] $c_yr]
+			} elseif {$c_mth==1} { return [format "1 %d %d" [expr {31+$d}] [expr {$c_yr-1}]]
+			} else { return [format "%d %d %d" [expr {$c_mth-1}] [expr {[lindex $Cal::mth [expr {$c_mth-1}]]+$d}] $c_yr] }
+		} elseif {$d>$l} {
+			if {$c_mth==12} { return [format "1 %d %d" [expr {$l-$d}] [expr {$c_yr+1}]]
+			} else { return [format "%d %d %d" [expr {$c_mth+1}] [expr {$d-$l}] $c_yr] }
+		} else { return [format "%d %d %d" $c_mth $d $c_yr] }
+	}
+	proc setSel {r c} {
+		variable selB 0 selA [rc_date $r $c]
+		sel_RC $r $c
+		.date_range delete 0 end
+		#.date_range insert 0 "$r $c |"
+		.date_range insert end $Cal::selA
+	}
 }
 frame .fcal
 frame .fcal.mth
@@ -131,21 +152,22 @@ button .fcal.mth.nxt -text > -command Cal::next_mth
 label .fcal.mth.mthl -text NULL
 canvas .fcal.can -width [expr 7*$Cal::SQS] -height [expr 7*$Cal::SQS] -bg white
 button .bquit -text Quit -command exit
+entry .date_range
 grid .fcal.mth.prv -column 0 -row 0
 grid .fcal.mth.mthl -column 1 -row 0
 grid .fcal.mth.nxt -column 2 -row 0
 grid .fcal.mth
 grid .fcal.can
 grid .fcal
+grid .date_range
 grid .bquit
 
 bind .fcal.can <ButtonPress-1> {
-	if {[set r [expr int([%W canvasy %y]/24)]]<1} { return }
-	set c [expr int([%W canvasx %x]/24)]
-	set bset "$r $c"
-	#.fcal.can delete -tags sel
-	#sel_at $r $c
-#}
+	if {[set r [expr int([%W canvasy %y]/$Cal::SQS)]]<1} { return }
+	set c [expr int([%W canvasx %x]/$Cal::SQS)]
+	.fcal.can delete -tags sel
+	Cal::setSel $r $c
+}
 #bind .fcal.can <Shift-ButtonPress-1> {
 	#if {[set r [expr int([%W canvasy %y]/24)]]<1} { return }
 	#set c [expr int([%W canvasx %x]/24)]
@@ -190,9 +212,6 @@ bind .fcal.can <ButtonPress-1> {
 
 proc main {} {
 	lassign [clock format [clock seconds] -format "%N %Y"] m y
-	puts $m
 	Cal::draw_cal $m $y
-	#CL::cal_base
-	#CL::cal_day $m $y
 }
 main
