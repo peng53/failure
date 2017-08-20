@@ -3,26 +3,23 @@ package require Tk
 namespace eval Cal {
 	array set days { Sun {0} Mon {1} Tue {2} Wed {3} Thu {4} Fri {5} Sat {6} }
 	variable SQS 64 mth {31 31 28 31 30 31 30 31 31 30 31 30 31} imth {Null January Febuary March April May June July August September October November December}
-	variable c_mth
-	variable c_yr
-	variable selA
-	variable selB
+	variable c_mth 1 c_yr 2000 selA 0 selB 0
 	proc dowMY {m y} {
-		set w [clock format [clock scan $m-01-$y -format %m-%d-%Y] -format %a]
-		return $Cal::days($w)
+		# Returns first-day-of-the-week given month & year. Where Sun=0 .. Sat=6
+		return $Cal::days([clock format [clock scan $m-01-$y -format %m-%d-%Y] -format %a])
 	}
 	proc is_lpyr {y} {
+		# Returns whether a year is a leap-year.
 		return [expr $y%4==0 && ($y%100!=0 || $y%400==0)]
 	}
-	proc draw_cal { m y } {
-		variable c_mth
-		variable c_yr
-		set c_mth $m
-		set c_yr $y
+	proc Init { m y } {
+		# Calls/sets init procs and vars for Cal
+		variable c_mth $m c_yr $y
 		cal_base
 		cal_day
 	}
 	proc prev_mth {} {
+		# Set current shown month back by 1 and redraws.
 		variable c_mth
 		incr c_mth -1
 		if {$c_mth==0} {
@@ -33,6 +30,7 @@ namespace eval Cal {
 		cal_day
 	}
 	proc next_mth {} {
+		# Set current shown month forward by 1 and redraws.
 		variable c_mth
 		incr c_mth
 		if {$c_mth==13} {
@@ -42,36 +40,36 @@ namespace eval Cal {
 		}
 		cal_day
 	}
-	proc date_at {r c} {
-		variable c_mth
-		variable c_yr
-		set c [Cal::dowMY $c_mth $c_yr]
-
-	}
 	proc sel_RC {r c} {
+		# Draw selection rect at row and column.
 		sel_YX [expr $r*$Cal::SQS] [expr $c*$Cal::SQS]
 	}
 	proc sel_YX {y x} {
+		# Draw selection rect at y,x coordinate.
 		.fcal.can create rect [expr $x+1] [expr $y+1] [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -outline #666 -tags sel
 	}
 	proc cal_base {} {
+		# Draws base of calender; the day-name header.
 		.fcal.can create rect 1 1 [expr $Cal::SQS*7] $Cal::SQS -fill #000
-		set x [expr $Cal::SQS/2]
-		set y $x
+		set y [set x [expr $Cal::SQS/2]]
 		foreach d {S M T W T F S} {
 			.fcal.can create text $x $y -text $d -fill #fff
 			incr x $Cal::SQS
 		}
 	}
 	proc cal_day {} {
-		.fcal.can delete -tag days
+		# Draws days of the c_mth and c_yr.
+		.fcal.can delete -tag ndays
+		.fcal.can delete -tag odays
+		.fcal.can delete -tag edays
 		set m $Cal::c_mth
 		set y $Cal::c_yr
 		.fcal.mth.mthl configure -text "[lindex $Cal::imth $Cal::c_mth] $Cal::c_yr"
 		set f [Cal::dowMY $m $y]
 		set x 1
 		set y [expr $Cal::SQS+1]
-		if {$f>0} { # past month days
+		# Past month's days
+		if {$f>0} {
 			if {$m==3 && [Cal::is_lpyr $y]} {
 				set l 29
 				set d [expr 29-$f]
@@ -80,18 +78,25 @@ namespace eval Cal {
 				set d [expr $l+1-$f]
 			}
 			while {$d<=$l} {
-				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag days
-				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag days
+				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
+				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag ndays
 				incr x $Cal::SQS
 				incr d
 			}
 		}
+		# Current month's days
 		set d 1
 		set l [expr ($m==2 && [Cal::is_lpyr $y]) ? 29 : [lindex $Cal::mth $m]]
 		while {$d<=$l} {
-			set c [expr ($d % 2==0)?"#ccc":"#ddd"]
-			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill $c -outline $c -tag days
-			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -tag days
+			if {[expr {$d%2}]} {
+				set T odays
+				set c #ddd
+			} else {
+				set T edays
+				set c #ccc
+			}
+			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill $c -outline $c -tag $T
+			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -tag $T
 			incr f
 			incr x $Cal::SQS
 			incr d
@@ -101,10 +106,11 @@ namespace eval Cal {
 				incr y $Cal::SQS
 			}
 		}
+		# Next month's days
 		set d 1
 		while {$f<7} {
-			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag days
-			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag days
+			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
+			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag ndays
 			incr f
 			incr x $Cal::SQS
 			incr d
@@ -114,8 +120,8 @@ namespace eval Cal {
 			set f 0
 			set x 1
 			while {$f<7} {
-				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag days
-				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag days
+				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
+				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -fill #666 -tag ndays
 				incr f
 				incr x $Cal::SQS
 				incr d
@@ -123,6 +129,7 @@ namespace eval Cal {
 		}
 	}
 	proc rc_date {r c} {
+		# Returns the date shown on canvas with row and column.
 		variable c_mth
 		variable c_yr
 		set l [lindex $Cal::mth $c_mth]
@@ -137,12 +144,29 @@ namespace eval Cal {
 			} else { return [format "%d %d %d" [expr {$c_mth+1}] [expr {$d-$l}] $c_yr] }
 		} else { return [format "%d %d %d" $c_mth $d $c_yr] }
 	}
+	proc dateC {m d y m2 d2 y2} {
+		# returns 0 if equal -1 if < and 1 if >
+		foreach n [list [string compare $y $y2] [string compare $m $m2] [string compare $d $d2]] {
+			if {$n!=0} { return $n }
+		}
+		return 0
+	}
 	proc setSel {r c} {
+		# Set the selection rect to the row and column.
 		variable selB 0 selA [rc_date $r $c]
+		.fcal.can delete -tags sel
 		sel_RC $r $c
 		.date_range delete 0 end
-		#.date_range insert 0 "$r $c |"
 		.date_range insert end $Cal::selA
+	}
+	proc adSel {r c} {
+		# Adjusts the selection rect(s) to expand/shrink to the row and column.
+		variable selA
+		if {$selA==0} {
+			setSel $r $c
+			return
+		}
+
 	}
 }
 frame .fcal
@@ -163,55 +187,18 @@ grid .date_range
 grid .bquit
 
 bind .fcal.can <ButtonPress-1> {
+	# Selects a rect (a day) on the canvas (calender).
 	if {[set r [expr int([%W canvasy %y]/$Cal::SQS)]]<1} { return }
 	set c [expr int([%W canvasx %x]/$Cal::SQS)]
-	.fcal.can delete -tags sel
 	Cal::setSel $r $c
 }
-#bind .fcal.can <Shift-ButtonPress-1> {
-	#if {[set r [expr int([%W canvasy %y]/24)]]<1} { return }
-	#set c [expr int([%W canvasx %x]/24)]
-	#.fcal.can delete -tags sel
-	#if {$bset=="false"} {
-		#set bset "$r $c"
-		#set x [expr $c*24+1]
-		#set y [expr $r*24+1]
-		#sel_24 $y $x
-	#} else {
-		#set r2 [lindex $bset 0]
-		#set c2 [lindex $bset 1]
-		#set bset "$r $c"
-		#if {$r2<$r} {
-			#set rt $r2
-			#set ct $c2
-			#set r2 $r
-			#set c2 $c
-			#set r $rt
-			#set c $ct
-		#}
-		#set x [expr $c*24+1]
-		#set y [expr $r*24+1]
-		#while {$r<$r2} {
-			#while {$c<7} {
-				#sel_24 $y $x
-				#incr c
-				#incr x 24
-			#}
-			#set c 0
-			#set x 0
-			#incr r
-			#incr y 24
-		#}
-		#while {$c<=$c2} {
-			#sel_24 $y $x
-			#incr c
-			#incr x 24
-		#}
-	#}
-#}
-
-proc main {} {
-	lassign [clock format [clock seconds] -format "%N %Y"] m y
-	Cal::draw_cal $m $y
+bind .fcal.can <Shift-ButtonPress-1> {
+	# Adds rect(s) (day(s)) to (previous) selection.
+	if {[set r [expr int([%W canvasy %y]/$Cal::SQS)]]<1} { return }
+	set c [expr int([%W canvasx %x]/$Cal::SQS)]
+	Cal::adSel $r $c
 }
-main
+
+# Init Cal with the current month and year.
+lassign [clock format [clock seconds] -format "%N %Y"] m y
+Cal::Init $m $y
