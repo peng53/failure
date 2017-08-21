@@ -190,6 +190,25 @@ namespace eval viewer {
 			N { variable N [list] N_o 0 }
 		}
 	}
+	variable cmp_col 0
+	proc row_cmp {a b} {
+		return [string compare [lindex $a $viewer::cmp_col] [lindex $b $viewer::cmp_col]]
+	}
+	proc d_sort {L} {
+		puts "Sort by which?\n(0) UID (1) Start-Date (2) Start-Time (3) End-Date (4) End-Time (5) Code (6) Desc"
+		if {[gets stdin s]>0 && $s>=0 && $s<7} {
+			variable cmp_col $s delta 1
+			switch $L {
+				R {
+					variable R
+					set R [lsort -command row_cmp $R]
+				} N {
+					variable N
+					set N [lsort -command row_cmp $N]
+				}
+			}
+		}
+	}
 	proc active {} {
 		if {$viewer::delta==1} { draw_screen }
 		if {[gets stdin s]==0} { return 1 }
@@ -198,6 +217,7 @@ namespace eval viewer {
 			L { open_db } Q { return 0 } l { d_lookup } a { d_addnote } d { d_delnote }
 			nr { d_next R } nn { d_next N } pr { d_prev R } pn { d_prev N }
 			1r { d_first R } 1n { d_first N } Cr { d_clear R } Cn { d_clear N }
+			Sr { d_sort R } Sn { d_sort N }
 		}
 		return 1
 	}

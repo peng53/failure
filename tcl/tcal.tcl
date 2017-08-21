@@ -10,7 +10,7 @@ namespace eval Cal {
 	}
 	proc is_lpyr {y} {
 		# Returns whether a year is a leap-year.
-		return [expr $y%4==0 && ($y%100!=0 || $y%400==0)]
+		return [expr {(($y%4==0) && ($y%100!=0 || $y%400==0))}]
 	}
 	proc Init { m y } {
 		# Calls/sets init procs and vars for Cal
