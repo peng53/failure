@@ -140,63 +140,48 @@ namespace eval Cal {
 		variable selB
 		.fcal.can delete -tags sel
 		if {$selA==0} { return }
-		lassign $selA m d y r c
+		lassign $selA ma da ya ra ca
 		lassign [month_range] m0 d0 y0 m1 d1 y1
+		puts "Selected A: $selA"
+		puts "Selected B: $selB"
+		puts "MonBegin: $m0 $d0 $y0"
+		puts "MonEnd  : $m1 $d1 $y1"
 		if {$selB==0} {
-			if {[dateC $m0 $d0 $y0 $m $d $y]!=1 && [dateC $m $d $y $m1 $d1 $y1]!=1} {
+			if {[dateC $m0 $d0 $y0 $ma $da $ya]!=1 && [dateC $ma $da $ya $m1 $d1 $y1]!=1} {
 				#selA is on the current month
-				sel_RC $r $c
+				sel_RC $ra $ca
 			}
 		} else {
 			lassign $selB mb db yb rb cb
-			lassign [trim_range < $m $d $y $m0 $d0 $y0] ms ds ys
-			lassign [trim_range < $m1 $d1 $y1 $mb $db $yb] msb dsb ysb
-			.date_range delete 0 end
-			.date_range insert end "$ms $ds $ys - $msb $dsb $ysb"
-		}
-	}
-	proc trim_range {o m d y m1 d1 y1} {
-		set c [dateC $m $d $y $m1 $d1 $y1]
-		switch $o {
-			< {
-				if {$c==1} {
-					return "$m $d $y"
-				} else {
-					return "$m1 $d1 $y1"
+			if {[dateC $mb $db $yb $m0 $d0 $y0]==-1 || [dateC $ma $da $ya $m1 $d1 $y1]==1} {
+				# Selected dates end before current month or start after current month.
+				return
+			}
+			if {[dateC $m0 $d0 $y0 $ma $da $ya]==1} {
+				# Selected dates begin before current month (but may end during or after).
+				set ra 1
+				set ca 0
+			}
+			if {[dateC $mb $db $yb $m1 $d1 $y1]==1} {
+				# Selected dates end after current month (but may begin during or before).
+				set rb 6
+				set cb 6
+			}
+			while {$ra<$rb} {
+				while {$ca<7} {
+					sel_RC $ra $ca
+					incr ca
 				}
+				incr ra
+				set ca 0
 			}
-		
+			while {$ca<=$cb} {
+				sel_RC $ra $ca
+				incr ca
+			}
 		}
 	}
-	proc cal_day_sel {} {
-		# Draws selection boxes in range of selected days
-		.fcal.can delete -tags sel
-		variable c_yr
-		variable c_mth
-		variable selA
-		variable selB
-		if {$selA==0} { return }
-		lassign $selA m d y r c
-		# Check if day can be shown
-		if {$m>$c_mth} { return }
-		if {$selB==0} {
-			if {$m==$c_mth && $y==$c_yr} {
-				sel_RC $r $c
-			}
-			return
-		}
-		lassign m2 d2 y2 r2 c2
-		if {$y2<$c_yr} { return }
-		if {$m2==[expr {$c_mth+1}]} {
-			#..
-		
-		}
-		if {[expr {$m+1}]==$c_mth} {
-			#..
-			
-		}
-		# Lots of possibilities, need to consider.
-	}
+
 	proc rc_date {r c} {
 		# Returns the date shown on canvas with row and column.
 		variable c_mth
@@ -206,7 +191,7 @@ namespace eval Cal {
 		set d [expr {$c-$f+7*$r-6}]
 		if {$d<1} {
 			if {$c_mth==3 && [is_lpyr $c_yr]} { return [format "2 %d %d" [expr {29+$d}] $c_yr]
-			} elseif {$c_mth==1} { return [format "1 %d %d" [expr {31+$d}] [expr {$c_yr-1}]]
+			} elseif {$c_mth==1} { return [format "12 %d %d" [expr {31+$d}] [expr {$c_yr-1}]]
 			} else { return [format "%d %d %d" [expr {$c_mth-1}] [expr {[lindex $Cal::mth [expr {$c_mth-1}]]+$d}] $c_yr] }
 		} elseif {$d>$l} {
 			if {$c_mth==12} { return [format "1 %d %d" [expr {$d-$l}] [expr {$c_yr+1}]]
@@ -224,9 +209,32 @@ namespace eval Cal {
 	}
 	proc dateC {m d y m2 d2 y2} {
 		# returns 0 if equal -1 if < and 1 if >
-		foreach n [list [numc $y $y2] [numc $m $m2] [numc $d $d2]] {
-			if {$n!=0} { return $n }
+		#foreach n [list [numc $y $y2] [numc $m $m2] [numc $d $d2]] {
+		#	if {$n!=0} { return $n }
+		#}
+		#return 0
+		if {$y<$y2} {
+			puts "$y<$y2"
+			return -1
 		}
+		if {$y>$y2} {
+			puts "$y>$y2"
+			return 1
+		}
+		if {$m<$m2} {
+			puts "$m<$m2"
+			return -1
+		}
+		if {$m>$m2} {
+		return 1
+		}
+		if {$d<$d2} {
+		return -1
+		}
+		if {$d>$d2} {
+		return 1
+		}
+		# At this point the MDY must match.
 		return 0
 	}
 	proc setSel {r c} {
@@ -259,12 +267,14 @@ namespace eval Cal {
 			}
 		}
 		if {[dateC {*}[lrange $selA 0 2] {*}[lrange $selB 0 2]]==1} {
+			# Swap selected indices so that selA occurs before selB
 			set T $selA
 			set selA $selB
 			set selB $T
 		}
 		.date_range delete 0 end
 		.date_range insert end "$selA - $selB"
+		shown_dates
 	}
 }
 grid [frame .fcal]
