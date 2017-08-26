@@ -28,6 +28,7 @@ namespace eval Cal {
 			incr c_yr -1
 		}
 		cal_day
+		shown_dates
 	}
 	proc next_mth {} {
 		# Set current shown month forward by 1 and redraws.
@@ -39,6 +40,7 @@ namespace eval Cal {
 			incr c_yr
 		}
 		cal_day
+		shown_dates
 	}
 	proc sel_RC {r c} {
 		# Draw selection rect at row and column.
@@ -129,11 +131,42 @@ namespace eval Cal {
 		}
 	}
 	proc month_range {} {
-		variable c_mth
-		variable c_yr
 		set a_date [rc_date 1 0]
 		set b_date [rc_date 6 6]
 		return "$a_date $b_date"
+	}
+	proc shown_dates {} {
+		variable selA
+		variable selB
+		.fcal.can delete -tags sel
+		if {$selA==0} { return }
+		lassign $selA m d y r c
+		lassign [month_range] m0 d0 y0 m1 d1 y1
+		if {$selB==0} {
+			if {[dateC $m0 $d0 $y0 $m $d $y]!=1 && [dateC $m $d $y $m1 $d1 $y1]!=1} {
+				#selA is on the current month
+				sel_RC $r $c
+			}
+		} else {
+			lassign $selB mb db yb rb cb
+			lassign [trim_range < $m $d $y $m0 $d0 $y0] ms ds ys
+			lassign [trim_range < $m1 $d1 $y1 $mb $db $yb] msb dsb ysb
+			.date_range delete 0 end
+			.date_range insert end "$ms $ds $ys - $msb $dsb $ysb"
+		}
+	}
+	proc trim_range {o m d y m1 d1 y1} {
+		set c [dateC $m $d $y $m1 $d1 $y1]
+		switch $o {
+			< {
+				if {$c==1} {
+					return "$m $d $y"
+				} else {
+					return "$m1 $d1 $y1"
+				}
+			}
+		
+		}
 	}
 	proc cal_day_sel {} {
 		# Draws selection boxes in range of selected days
@@ -180,9 +213,18 @@ namespace eval Cal {
 			} else { return [format "%d %d %d" [expr {$c_mth+1}] [expr {$d-$l}] $c_yr] }
 		} else { return [format "%d %d %d" $c_mth $d $c_yr] }
 	}
+	proc numc {n m} {
+		if {[expr $n<$m]} {
+			return -1
+		} elseif {[expr $n>$m]} {
+			return 1
+		} else {
+			return 0
+		}
+	}
 	proc dateC {m d y m2 d2 y2} {
 		# returns 0 if equal -1 if < and 1 if >
-		foreach n [list [string compare $y $y2] [string compare $m $m2] [string compare $d $d2]] {
+		foreach n [list [numc $y $y2] [numc $m $m2] [numc $d $d2]] {
 			if {$n!=0} { return $n }
 		}
 		return 0
@@ -201,8 +243,28 @@ namespace eval Cal {
 		if {$selA==0} {
 			setSel $r $c
 			return
+		} else {
+			variable selB
+			if {$selB==0} {
+				set selB "[rc_date $r $c] $r $c"
+			} else {
+				lassign [rc_date $r $c] m d y
+				lassign $selA ma da ya
+				lassign $selB mb db yb
+				if {[dateC $m $d $y $ma $da $ya]==-1} {
+					set selA "$m $d $y $r $c"
+				} else {
+					set selB "$m $d $y $r $c"
+				}
+			}
 		}
-
+		if {[dateC {*}[lrange $selA 0 2] {*}[lrange $selB 0 2]]==1} {
+			set T $selA
+			set selA $selB
+			set selB $T
+		}
+		.date_range delete 0 end
+		.date_range insert end "$selA - $selB"
 	}
 }
 grid [frame .fcal]
