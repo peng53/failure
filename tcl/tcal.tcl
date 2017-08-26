@@ -18,15 +18,28 @@ namespace eval Cal {
 		cal_base
 		cal_day
 	}
+	proc mth_day_ct {m y} {
+		# Returns days in month and year.
+		if {$m==2 && [is_lpyr $y]} { return 29 }
+		return [lindex $Cal::mth $m]
+	}
+	proc mthyr-- {m y} {
+		# Returns month and year minus 1 month.
+		if {$m==1} { return "12 [expr {$y-1}]" }
+		return "[expr {$m-1}] $y"
+	}
+	proc mthyr++ {m y} {
+		# Returns month and year plus 1 month.
+		if {$m==12} { return "1 [expr {$y+1}]" }
+		return "[expr {$m+1}] $y"
+	}
 	proc prev_mth {} {
 		# Set current shown month back by 1 and redraws.
 		variable c_mth
-		incr c_mth -1
-		if {$c_mth==0} {
-			set c_mth 12
-			variable c_yr
-			incr c_yr -1
-		}
+		variable c_yr
+		lassign [mthyr-- $c_mth $c_yr] m y
+		set c_mth $m
+		set c_yr $y
 		cal_day
 		shown_dates
 	}
@@ -61,73 +74,52 @@ namespace eval Cal {
 	}
 	proc cal_day {} {
 		# Draws days of the c_mth and c_yr.
-		.fcal.can delete -tag ndays
-		.fcal.can delete -tag odays
-		.fcal.can delete -tag edays
-		set m $Cal::c_mth
-		set y $Cal::c_yr
-		.fcal.mth.mthl configure -text "[lindex $Cal::imth $Cal::c_mth] $Cal::c_yr"
-		set f [Cal::dowMY $m $y]
+		.fcal.can delete -tag days
+		variable c_mth
+		variable c_yr
+		variable SQS
+		set SQH [expr {$SQS/2}]
+		.fcal.mth.mthl configure -text "[lindex $Cal::imth $c_mth] $c_yr"
+		set f [dowMY $c_mth $c_yr]
 		set x 1
-		set y [expr $Cal::SQS+1]
+		set y [expr $SQS+1]
 		# Past month's days
-		if {$f>0} {
-			if {$m==3 && [Cal::is_lpyr $y]} {
-				set l 29
-				set d [expr {29-$f}]
-			} else {
-				set l [lindex $Cal::mth [expr {$m-1}]]
-				set d [expr {$l+1-$f}]
-			}
-			while {$d<=$l} {
-				.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill #eee -outline #ddd -tag ndays
-				.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -fill #666 -tag ndays
-				incr x $Cal::SQS
-				incr d
-			}
+		set l [mth_day_ct {*}[mthyr-- $c_mth $c_yr]]
+		for {set d [expr $l+1-$f]} {$d<=$l} {incr d} {
+			.fcal.can create rect $x $y [incr x $SQS] [expr {$y+$SQS}] -fill #eee -outline #ddd -tag {past days}
+			.fcal.can create text [expr {$x-$SQH}] [expr {$y+$SQH}] -text $d -font $Cal::dfont -fill #666 -tag {past days}
 		}
 		# Current month's days
-		set d 1
-		set l [expr ($m==2 && [Cal::is_lpyr $y]) ? 29 : [lindex $Cal::mth $m]]
-		while {$d<=$l} {
-			if {[expr {$d%2}]} {
-				set T odays
+		set l [mth_day_ct $c_mth $c_yr]
+		for {set d 1} {$d<=$l} {incr d} {
+			if {$d%2} {
+				set T odd
 				set c #ddd
 			} else {
-				set T edays
+				set T even
 				set c #ccc
 			}
- 			.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill $c -outline $c -tag $T
- 			.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -tag $T
-			incr f
-			incr x $Cal::SQS
-			incr d
-			if {$f==7} {
+ 			.fcal.can create rect $x $y [incr x $SQS] [expr {$y+$SQS}] -fill $c -outline $c -tag "$T days"
+ 			.fcal.can create text [expr {$x-$SQH}] [expr {$y+$SQH}] -text $d -font $Cal::dfont -tag "$T days"
+			if {$f==6} {
 				set x 1
 				set f 0
-				incr y $Cal::SQS
+				incr y $SQS
+			} else {
+				incr f
 			}
 		}
 		# Next month's days
 		set d 1
-		while {$f<7} {
-			.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill #eee -outline #ddd -tag ndays
-			.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -fill #666 -tag ndays
-			incr f
-			incr x $Cal::SQS
-			incr d
-		}
-		if {$y!=[expr {6*$Cal::SQS}]} {
-			incr y $Cal::SQS
-			set f 0
-			set x 1
-			while {$f<7} {
-				.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill #eee -outline #ddd -tag ndays
-				.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -fill #666 -tag ndays
-				incr f
-				incr x $Cal::SQS
+		set last_row [expr {7*$SQS}]
+		for {set d 1} {$y<$last_row} {incr y $SQS} {
+			for {set f $f} {$f<7} {incr f} {
+				.fcal.can create rect $x $y [incr x $SQS] [expr {$y+$SQS}] -fill #eee -outline #ddd -tag {fut days}
+				.fcal.can create text [expr {$x-$SQH}] [expr {$y+$SQH}] -text $d -font $Cal::dfont -fill #666 -tag {fut days}
 				incr d
 			}
+			set x 1
+			set f 0
 		}
 	}
 	proc month_range {} {
@@ -142,10 +134,6 @@ namespace eval Cal {
 		if {$selA==0} { return }
 		lassign $selA ma da ya ra ca
 		lassign [month_range] m0 d0 y0 m1 d1 y1
-		puts "Selected A: $selA"
-		puts "Selected B: $selB"
-		puts "MonBegin: $m0 $d0 $y0"
-		puts "MonEnd  : $m1 $d1 $y1"
 		if {$selB==0} {
 			if {[dateC $m0 $d0 $y0 $ma $da $ya]!=1 && [dateC $ma $da $ya $m1 $d1 $y1]!=1} {
 				#selA is on the current month
@@ -186,54 +174,25 @@ namespace eval Cal {
 		# Returns the date shown on canvas with row and column.
 		variable c_mth
 		variable c_yr
-		set l [lindex $Cal::mth $c_mth]
-		set f [dowMY $c_mth $c_yr]
-		set d [expr {$c-$f+7*$r-6}]
+		set d [expr {$c-[dowMY $c_mth $c_yr]+7*$r-6}]
 		if {$d<1} {
-			if {$c_mth==3 && [is_lpyr $c_yr]} { return [format "2 %d %d" [expr {29+$d}] $c_yr]
-			} elseif {$c_mth==1} { return [format "12 %d %d" [expr {31+$d}] [expr {$c_yr-1}]]
-			} else { return [format "%d %d %d" [expr {$c_mth-1}] [expr {[lindex $Cal::mth [expr {$c_mth-1}]]+$d}] $c_yr] }
-		} elseif {$d>$l} {
-			if {$c_mth==12} { return [format "1 %d %d" [expr {$d-$l}] [expr {$c_yr+1}]]
-			} else { return [format "%d %d %d" [expr {$c_mth+1}] [expr {$d-$l}] $c_yr] }
-		} else { return [format "%d %d %d" $c_mth $d $c_yr] }
-	}
-	proc numc {n m} {
-		if {[expr $n<$m]} {
-			return -1
-		} elseif {[expr $n>$m]} {
-			return 1
-		} else {
-			return 0
+			lassign [mthyr-- $c_mth $c_yr] m y
+			return "$m [expr {[mth_day_ct $m $y]+$d}] $y"
 		}
+		if {$d>[set l [mth_day_ct $c_mth $c_yr]]} {
+			lassign [mthyr++ $c_mth $c_yr] m y
+			return "$m [expr {$d-$l}] $y"
+		}
+		return "$c_mth $d $c_yr"
 	}
 	proc dateC {m d y m2 d2 y2} {
 		# returns 0 if equal -1 if < and 1 if >
-		#foreach n [list [numc $y $y2] [numc $m $m2] [numc $d $d2]] {
-		#	if {$n!=0} { return $n }
-		#}
-		#return 0
-		if {$y<$y2} {
-			puts "$y<$y2"
-			return -1
-		}
-		if {$y>$y2} {
-			puts "$y>$y2"
-			return 1
-		}
-		if {$m<$m2} {
-			puts "$m<$m2"
-			return -1
-		}
-		if {$m>$m2} {
-		return 1
-		}
-		if {$d<$d2} {
-		return -1
-		}
-		if {$d>$d2} {
-		return 1
-		}
+		if {$y<$y2} { return -1 }
+		if {$y>$y2} { return 1 }
+		if {$m<$m2} { return -1 }
+		if {$m>$m2} { return 1 }
+		if {$d<$d2} { return -1 }
+		if {$d>$d2} { return 1 }
 		# At this point the MDY must match.
 		return 0
 	}
