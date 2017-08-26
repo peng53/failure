@@ -72,14 +72,14 @@ namespace eval Cal {
 		if {$f>0} {
 			if {$m==3 && [Cal::is_lpyr $y]} {
 				set l 29
-				set d [expr 29-$f]
+				set d [expr {29-$f}]
 			} else {
-				set l [lindex $Cal::mth [expr $m-1]]
-				set d [expr $l+1-$f]
+				set l [lindex $Cal::mth [expr {$m-1}]]
+				set d [expr {$l+1-$f}]
 			}
 			while {$d<=$l} {
-				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
-				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -fill #666 -tag ndays
+				.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill #eee -outline #ddd -tag ndays
+				.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -fill #666 -tag ndays
 				incr x $Cal::SQS
 				incr d
 			}
@@ -95,8 +95,8 @@ namespace eval Cal {
 				set T edays
 				set c #ccc
 			}
-			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill $c -outline $c -tag $T
-			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -tag $T
+ 			.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill $c -outline $c -tag $T
+ 			.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -tag $T
 			incr f
 			incr x $Cal::SQS
 			incr d
@@ -109,24 +109,60 @@ namespace eval Cal {
 		# Next month's days
 		set d 1
 		while {$f<7} {
-			.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
-			.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -fill #666 -tag ndays
+			.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill #eee -outline #ddd -tag ndays
+			.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -fill #666 -tag ndays
 			incr f
 			incr x $Cal::SQS
 			incr d
 		}
-		if {$y!=[expr 6*$Cal::SQS]} {
+		if {$y!=[expr {6*$Cal::SQS}]} {
 			incr y $Cal::SQS
 			set f 0
 			set x 1
 			while {$f<7} {
-				.fcal.can create rect $x $y [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #eee -outline #ddd -tag ndays
-				.fcal.can create text [expr $x+$Cal::SQS/2] [expr $y+$Cal::SQS/2] -text $d -font $Cal::dfont -fill #666 -tag ndays
+				.fcal.can create rect $x $y [expr {$x+$Cal::SQS}] [expr {$y+$Cal::SQS}] -fill #eee -outline #ddd -tag ndays
+				.fcal.can create text [expr {$x+$Cal::SQS/2}] [expr {$y+$Cal::SQS/2}] -text $d -font $Cal::dfont -fill #666 -tag ndays
 				incr f
 				incr x $Cal::SQS
 				incr d
 			}
 		}
+	}
+	proc month_range {} {
+		variable c_mth
+		variable c_yr
+		set a_date [rc_date 1 0]
+		set b_date [rc_date 6 6]
+		return "$a_date $b_date"
+	}
+	proc cal_day_sel {} {
+		# Draws selection boxes in range of selected days
+		.fcal.can delete -tags sel
+		variable c_yr
+		variable c_mth
+		variable selA
+		variable selB
+		if {$selA==0} { return }
+		lassign $selA m d y r c
+		# Check if day can be shown
+		if {$m>$c_mth} { return }
+		if {$selB==0} {
+			if {$m==$c_mth && $y==$c_yr} {
+				sel_RC $r $c
+			}
+			return
+		}
+		lassign m2 d2 y2 r2 c2
+		if {$y2<$c_yr} { return }
+		if {$m2==[expr {$c_mth+1}]} {
+			#..
+		
+		}
+		if {[expr {$m+1}]==$c_mth} {
+			#..
+			
+		}
+		# Lots of possibilities, need to consider.
 	}
 	proc rc_date {r c} {
 		# Returns the date shown on canvas with row and column.
@@ -140,7 +176,7 @@ namespace eval Cal {
 			} elseif {$c_mth==1} { return [format "1 %d %d" [expr {31+$d}] [expr {$c_yr-1}]]
 			} else { return [format "%d %d %d" [expr {$c_mth-1}] [expr {[lindex $Cal::mth [expr {$c_mth-1}]]+$d}] $c_yr] }
 		} elseif {$d>$l} {
-			if {$c_mth==12} { return [format "1 %d %d" [expr {$l-$d}] [expr {$c_yr+1}]]
+			if {$c_mth==12} { return [format "1 %d %d" [expr {$d-$l}] [expr {$c_yr+1}]]
 			} else { return [format "%d %d %d" [expr {$c_mth+1}] [expr {$d-$l}] $c_yr] }
 		} else { return [format "%d %d %d" $c_mth $d $c_yr] }
 	}
@@ -153,7 +189,7 @@ namespace eval Cal {
 	}
 	proc setSel {r c} {
 		# Set the selection rect to the row and column.
-		variable selB 0 selA [rc_date $r $c]
+		variable selB 0 selA "[rc_date $r $c] $r $c"
 		.fcal.can delete -tags sel
 		sel_RC $r $c
 		.date_range delete 0 end
@@ -189,6 +225,10 @@ bind .fcal.can <Shift-ButtonPress-1> {
 	if {[set r [expr int([%W canvasy %y]/$Cal::SQS)]]<1} { return }
 	set c [expr int([%W canvasx %x]/$Cal::SQS)]
 	Cal::adSel $r $c
+}
+bind .fcal.can <ButtonPress-3> {
+	.date_range delete 0 end
+	.date_range insert end [Cal::month_range]
 }
 
 # Init Cal with the current month and year.
