@@ -23,21 +23,24 @@ namespace eval Cal {
 		if {$m==2 && [is_lpyr $y]} { return 29 }
 		return [lindex $Cal::mth $m]
 	}
-	proc mthyr-- {m y} {
-		# Returns month and year minus 1 month.
-		if {$m==1} { return "12 [expr {$y-1}]" }
-		return "[expr {$m-1}] $y"
-	}
-	proc mthyr++ {m y} {
-		# Returns month and year plus 1 month.
-		if {$m==12} { return "1 [expr {$y+1}]" }
-		return "[expr {$m+1}] $y"
+	proc mthyr {sub m y} {
+		# Returns month and year applying subcommand.
+		switch $sub {
+			-- {
+				if {$m==1} { return "12 [expr {$y-1}]" }
+				return "[expr {$m-1}] $y"
+			}
+			++ {
+				if {$m==12} { return "1 [expr {$y+1}]" }
+				return "[expr {$m+1}] $y"
+			}
+		}
 	}
 	proc prev_mth {} {
 		# Set current shown month back by 1 and redraws.
 		variable c_mth
 		variable c_yr
-		lassign [mthyr-- $c_mth $c_yr] m y
+		lassign [mthyr -- $c_mth $c_yr] m y
 		set c_mth $m
 		set c_yr $y
 		cal_day
@@ -84,7 +87,7 @@ namespace eval Cal {
 		set x 1
 		set y [expr $SQS+1]
 		# Past month's days
-		set l [mth_day_ct {*}[mthyr-- $c_mth $c_yr]]
+		set l [mth_day_ct {*}[mthyr -- $c_mth $c_yr]]
 		for {set d [expr $l+1-$f]} {$d<=$l} {incr d} {
 			.fcal.can create rect $x $y [incr x $SQS] [expr {$y+$SQS}] -fill #eee -outline #ddd -tag {past days}
 			.fcal.can create text [expr {$x-$SQH}] [expr {$y+$SQH}] -text $d -font $Cal::dfont -fill #666 -tag {past days}
@@ -176,11 +179,11 @@ namespace eval Cal {
 		variable c_yr
 		set d [expr {$c-[dowMY $c_mth $c_yr]+7*$r-6}]
 		if {$d<1} {
-			lassign [mthyr-- $c_mth $c_yr] m y
+			lassign [mthyr -- $c_mth $c_yr] m y
 			return "$m [expr {[mth_day_ct $m $y]+$d}] $y"
 		}
 		if {$d>[set l [mth_day_ct $c_mth $c_yr]]} {
-			lassign [mthyr++ $c_mth $c_yr] m y
+			lassign [mthyr ++ $c_mth $c_yr] m y
 			return "$m [expr {$d-$l}] $y"
 		}
 		return "$c_mth $d $c_yr"
