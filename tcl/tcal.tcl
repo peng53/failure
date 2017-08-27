@@ -37,6 +37,12 @@ namespace eval Cal {
 			}
 		}
 	}
+	proc set_mth_yr {m y} {
+		if {$m<1 || $m>12 | $y<1 || $y>9999} {
+			return
+		}
+		variable c_mth $m c_yr $y
+	}
 	proc prev_mth {} {
 		# Set current shown month back by 1 and redraws.
 		variable c_mth
@@ -65,7 +71,7 @@ namespace eval Cal {
 	}
 	proc sel_YX {y x} {
 		# Draw selection rect at y,x coordinate.
-		.fcal.can create rect [expr $x+1] [expr $y+1] [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -outline #666 -tags sel
+		.fcal.can create rect [expr $x+1] [expr $y+1] [expr $x+$Cal::SQS] [expr $y+$Cal::SQS] -fill #fff -outline #fff -tags sel
 	}
 	proc cal_base {} {
 		# Draws base of calender; the day-name header.
@@ -99,7 +105,7 @@ namespace eval Cal {
 				set c #ccc
 			}
  			.fcal.can create rect $x $y [incr x $SQS] [expr {$y+$SQS}] -fill $c -outline $c -tag "$T days"
- 			.fcal.can create text [expr {$x-$tOff}] [expr {$y+$tOff}] -text $d -font $Cal::dfont -tag "$T days"
+ 			.fcal.can create text [expr {$x-$tOff}] [expr {$y+$tOff}] -text $d -font $Cal::dfont -tag "$T days text"
 			if {$f==6} {
 				set x 1
 				set f 0
@@ -115,6 +121,7 @@ namespace eval Cal {
 		return "$c_mth 1 $c_yr $c_mth [mth_day_ct $c_mth $c_yr] $c_yr"
 	}
 	proc shown_dates {} {
+		.date_range delete 0 end
 		variable selA
 		.fcal.can delete -tags sel
 		if {$selA==0} { return }
@@ -123,8 +130,8 @@ namespace eval Cal {
 		if {$selB==0} {
 			if {$Cal::c_yr==$ya && $Cal::c_mth==$ma} {
 				sel_RC $ra $ca
-				.date_range delete 0 end
-				.date_range insert end "$ma $da $ya"
+				.fcal.can raise text sel
+				.date_range insert end [format {%02d/%02d/%04d} $ma $da $ya]
 			}
 		} else {
 			lassign $selB mb db yb rb cb
@@ -132,7 +139,7 @@ namespace eval Cal {
 				return
 			}
 			.date_range delete 0 end
-			.date_range insert end "$ma $da $ya - $mb $db $yb"
+			.date_range insert end [format {%02d/%02d/%04d - %02d/%02d/%04d} $ma $da $ya $mb $db $yb]
 			if {$ma<$Cal::c_mth || $ya<$Cal::c_yr} {
 				set da 1
 				set ra 1
@@ -151,7 +158,12 @@ namespace eval Cal {
 					incr ca
 				}
 			}
+			.fcal.can raise text sel
 		}
+	}
+	proc clearSel {} {
+		variable selA 0 variable selB 0
+		shown_dates
 	}
 	proc rc_date {r c} {
 		# Returns the date shown on canvas with row and column.
@@ -228,6 +240,7 @@ grid [entry .date_range]
 grid [button .bquit -text Quit -command exit]
 
 bind .fcal.can <ButtonPress-1> {
+	focus .fcal.can
 	# Selects a rect (a day) on the canvas (calender).
 	if {[set r [expr int([%W canvasy %y]/$Cal::SQS)]]<1} { return }
 	set c [expr int([%W canvasx %x]/$Cal::SQS)]
@@ -240,8 +253,62 @@ bind .fcal.can <Shift-ButtonPress-1> {
 	Cal::adSel $r $c
 }
 bind .fcal.can <ButtonPress-3> {
-	.date_range delete 0 end
-	.date_range insert end [Cal::month_range]
+	Cal::clearSel
+}
+bind .fcal.can <Control-Key-Left> {
+	Cal::prev_mth
+}
+bind .fcal.can <Control-Key-Right> {
+	Cal::next_mth
+}
+bind .fcal.can <Control-Key-Left> {
+	Cal::prev_mth
+}
+bind .fcal.can <Control-Key-Up> {
+	Cal::set_mth_yr $Cal::c_mth [expr $Cal::c_yr-1]
+	Cal::cal_day
+}
+bind .fcal.can <Control-Key-Down> {
+	Cal::set_mth_yr $Cal::c_mth [expr $Cal::c_yr+1]
+	Cal::cal_day
+}
+bind .fcal.can <Key-Left> {
+	if {$Cal::selA==0} { return }
+	if {$Cal::selB!=0} { return }
+	lassign $Cal::selA m d y r c
+	if {$c==0} {
+		Cal::prev_mth
+		Cal::setSel $r 6
+	} else {
+		Cal::setSel $r [expr $c-1]
+	}
+}
+bind .fcal.can <Key-Right> {
+	if {$Cal::selA==0} { return }
+	if {$Cal::selB!=0} { return }
+	lassign $Cal::selA m d y r c
+	if {$c==6} {
+		Cal::next_mth
+		Cal::setSel $r 0
+	} else {
+		Cal::setSel $r [expr $c+1]
+	}
+}
+bind .fcal.can <Key-Up> {
+	if {$Cal::selA==0} { return }
+	if {$Cal::selB!=0} { return }
+	lassign $Cal::selA m d y r c
+	if {$r!=0} {
+		Cal::setSel [expr $r-1] $c
+	}
+}
+bind .fcal.can <Key-Down> {
+	if {$Cal::selA==0} { return }
+	if {$Cal::selB!=0} { return }
+	lassign $Cal::selA m d y r c
+	if {$r!=7} {
+		Cal::setSel [expr $r+1] $c
+	}
 }
 
 # Init Cal with the current month and year.
