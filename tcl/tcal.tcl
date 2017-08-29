@@ -40,21 +40,19 @@ namespace eval Cal {
 		set v::MTH $m
 		set v::YR $y
 	}
-	proc Init {parent m y sqs toff dfont} {
+	proc Cal {parent m y sqs toff dfont} {
 		# Calls/sets init procs and vars for Cal
 		set_mth_yr $m $y
 		set v::SQS $sqs
 		set v::tOff $toff
 		set v::dfont $dfont
 		set v::P $parent
-		grid [frame $parent]
+		frame $parent
 		grid [frame $parent.mth]
 		grid [canvas $parent.can -width [expr 7*$v::SQS] -height [expr 7*$v::SQS] -bg #eee]
 		grid [button $parent.mth.prv -text < -command Cal::prev_mth] -column 0 -row 0
 		grid [label $parent.mth.mthl] -column 1 -row 0
 		grid [button $parent.mth.nxt -text > -command Cal::next_mth] -column 2 -row 0
-		grid [entry $parent.date_range]
-		grid [button .bquit -text Quit -command exit]
 		bind $parent.can <ButtonPress-1> {
 			focus $Cal::v::P.can
 			# Selects a rect (a day) on the canvas (calender).
@@ -89,8 +87,7 @@ namespace eval Cal {
 			Cal::cal_day
 		}
 		bind $v::P.can <Key-Left> {
-			if {$Cal::v::selA==0} { return }
-			if {$Cal::v::selB!=0} { return }
+			if {$Cal::v::selA==0 || $Cal::v::selB!=0} { return }
 			lassign $Cal::v::selA m d y r c
 			if {$c==0} {
 				Cal::prev_mth
@@ -100,8 +97,7 @@ namespace eval Cal {
 			}
 		}
 		bind $v::P.can <Key-Right> {
-			if {$Cal::v::selA==0} { return }
-			if {$Cal::v::selB!=0} { return }
+			if {$Cal::v::selA==0 || $Cal::v::selB!=0} { return }
 			lassign $Cal::v::selA m d y r c
 			if {$c==6} {
 				Cal::next_mth
@@ -122,6 +118,14 @@ namespace eval Cal {
 			lassign $Cal::v::selA m d y r c
 			if {$r!=7} {
 				Cal::setSel [expr $r+1] $c
+			}
+		}
+		proc $v::P.get_selected {} {
+			if {$v::selA==0} { return }
+			if {$v::selB==0} {
+				return $v::selA 
+			} else {
+				return "$v::selA $v::selB"
 			}
 		}
 		cal_base
@@ -194,7 +198,6 @@ namespace eval Cal {
 		return "$v::MTH 1 $v::YR $v::MTH [mth_day_ct $v::MTH $v::YR] $v::YR"
 	}
 	proc shown_dates {} {
-		$v::P.date_range delete 0 end
 		$v::P.can delete -tags sel
 		if {$v::selA==0} { return }
 		lassign $v::selA ma da ya ra ca
@@ -202,17 +205,12 @@ namespace eval Cal {
 			if {$v::YR==$ya && $v::MTH==$ma} {
 				sel_RC $ra $ca
 				$v::P.can raise text sel
-				$v::P.date_range insert end [format {%02d/%02d/%04d} $ma $da $ya]
 			}
 		} else {
 			lassign $v::selB mb db yb rb cb
-			if {$mb<$v::MTH || $yb<$v::YR || $ma>$v::MTH || $ya>$v::YR} {
-				return
-			}
-			$v::P.date_range insert end [format {%02d/%02d/%04d - %02d/%02d/%04d} $ma $da $ya $mb $db $yb]
+			if {$mb<$v::MTH || $yb<$v::YR || $ma>$v::MTH || $ya>$v::YR} { return }
 			if {$ma<$v::MTH || $ya<$v::YR} {
-				set da 1
-				set ra 1
+				set da [set ra 1]
 				set ca [dowMY $v::MTH $v::YR]
 			}
 			if {$mb>$v::MTH || $yb>$v::YR} {
@@ -274,19 +272,12 @@ namespace eval Cal {
 		lassign [rc_date $r $c] m d y
 		if {$m!=$v::MTH} { return }
 		if {$v::selA==0} {
-			setSel $r $c
-			return
+			return [setSel $r $c]
 		} else {
-			if {$v::selB==0} {
+			if {$v::selB==0 || [dateC $m $d $y {*}[lrange $v::selB 0 2]]==1} {
 				set v::selB "$m $d $y $r $c"
 			} else {
-				lassign $v::selA ma da ya
-				lassign $v::selB mb db yb
-				if {[dateC $m $d $y $ma $da $ya]==-1} {
-					set v::selA "$m $d $y $r $c"
-				} else {
-					set v::selB "$m $d $y $r $c"
-				}
+				set v::selA "$m $d $y $r $c"
 			}
 		}
 		if {[dateC {*}[lrange $v::selA 0 2] {*}[lrange $v::selB 0 2]]==1} {
@@ -300,17 +291,26 @@ namespace eval Cal {
 	proc rc_canvas {y x} {
 		return "[expr {int($y/$v::SQS)}] [expr {int($x/$v::SQS)}]"
 	}
+}
+proc main {} {
 	bind . <Control-Key-q> {
 		exit
 	}
-}
-proc main {} {
 	set square_size 26
 	set text_offset 13
 	set day_font {Arial 12}
 	# Init Cal with the current month and year.
-	lassign [clock format [clock seconds] -format "%N %Y"] m y
+	lassign [clock format [clock seconds] -format {%N %Y}] m y
 	set f .cal
-	Cal::Init .cal $m $y $square_size $text_offset $day_font
+	Cal::Cal $f $m $y $square_size $text_offset $day_font
+	grid $f
+	grid [entry .mydate]
+	proc put_mydate {} {
+		set f .cal
+		.mydate delete 0 end
+		.mydate insert 0 [Cal::$f.get_selected]
+	}
+	grid [button .goo -text Gooo -command put_mydate]
+	grid [button .bquit -text Quit -command exit]
 }
 main 
