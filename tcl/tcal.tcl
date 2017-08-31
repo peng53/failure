@@ -2,8 +2,8 @@
 package require Tk
 namespace eval Cal {
 	namespace eval v {
-		variable MTH_DAYS {-1 31 28 31 30 31 30 31 31 30 31 30 31}
-		variable MTH_NAME {NULL January Febuary March April May June July August September October November December}
+		variable MTH_DAYS [list -1 31 28 31 30 31 30 31 31 30 31 30 31]
+		variable MTH_NAME [list NULL January Febuary March April May June July August September October November December]
 		variable MTH 1 YR 2000
 		variable selA 0 selB 0
 		variable SQS 26 tOff 13 dfont {Arial 10}
@@ -17,21 +17,25 @@ namespace eval Cal {
 		# Returns whether a year is a leap-year.
 		return [expr {(($y%4==0) && ($y%100!=0 || $y%400==0))}]
 	}
+	#~ proc mth_day_ct {m y} {
+		#~ # Returns days in month and year.
+		#~ if {$m==2 && [is_lpyr $y]} { return 29 }
+		#~ return [lindex $v::MTH_DAYS $m]
+	#~ }
 	proc mth_day_ct {m y} {
-		# Returns days in month and year.
-		if {$m==2 && [is_lpyr $y]} { return 29 }
-		return [lindex $v::MTH_DAYS $m]
+		# Returns days for month & year.
+		return [expr {($m==2 && [is_lpyr $y]) ? 29 : [lindex $v::MTH_DAYS $m]}]
 	}
 	proc mthyr {sub m y} {
 		# Returns month and year applying subcommand.
 		switch $sub {
 			-- {
-				if {$m==1} { return "12 [expr {$y-1}]" }
-				return "[expr {$m-1}] $y"
+				if {$m==1} { return [list 12 [expr {$y-1}]] }
+				return [list [expr {$m-1}] $y]
 			}
 			++ {
-				if {$m==12} { return "1 [expr {$y+1}]" }
-				return "[expr {$m+1}] $y"
+				if {$m==12} { return [list 1 [expr {$y+1}]] }
+				return [list [expr {$m+1}] $y]
 			}
 		}
 	}
@@ -74,9 +78,6 @@ namespace eval Cal {
 		}
 		bind $v::P.can <Control-Key-Right> {
 			Cal::next_mth
-		}
-		bind $v::P.can <Control-Key-Left> {
-			Cal::prev_mth
 		}
 		bind $v::P.can <Control-Key-Up> {
 			Cal::set_mth_yr $Cal::v::MTH [expr $Cal::v::YR-1]
@@ -125,7 +126,7 @@ namespace eval Cal {
 			if {$v::selB==0} {
 				return $v::selA 
 			} else {
-				return "$v::selA $v::selB"
+				return [list $v::selA $v::selB]
 			}
 		}
 		cal_base
@@ -159,6 +160,10 @@ namespace eval Cal {
 	}
 	proc cal_base {} {
 		# Draws base of calender; the day-name header.
+		set y [expr $v::SQS+1]
+		set x 1
+		$v::P.can create rect $x $y [incr x $v::SQS] [expr 7*$v::SQS] -fill #ddd -outline #ddd
+		$v::P.can create rect [incr x [expr 5*$v::SQS]] $y [incr x $v::SQS] [expr 7*$v::SQS] -fill #ddd -outline #ddd
 		$v::P.can create rect 1 1 [expr $v::SQS*7] $v::SQS -fill #000
 		set y [set x [expr $v::SQS/2]]
 		foreach d {S M T W T F S} {
@@ -171,8 +176,9 @@ namespace eval Cal {
 		$v::P.can delete -tag days
 		$v::P.mth.mthl configure -text "[lindex $v::MTH_NAME $v::MTH] $v::YR"
 		set f [dowMY $v::MTH $v::YR]
-		set x [expr {1+$f*$v::SQS}]
-		set y [expr $v::SQS+1]
+		#set x [expr {1+$f*$v::SQS}]
+		set x [expr {1+$f*$v::SQS+$v::tOff}]
+		set y [expr $v::SQS+$v::tOff+1]
 		# Current month's days
 		set l [mth_day_ct $v::MTH $v::YR]
 		for {set d 1} {$d<=$l} {incr d} {
@@ -183,19 +189,21 @@ namespace eval Cal {
 				set T even
 				set c #ccc
 			}
- 			$v::P.can create rect $x $y [incr x $v::SQS] [expr {$y+$v::SQS}] -fill $c -outline $c -tag "$T days"
- 			$v::P.can create text [expr {$x-$v::tOff}] [expr {$y+$v::tOff}] -text $d -font $v::dfont -tag "$T days text"
+			
+ 			#$v::P.can create rect $x $y [expr $x+$v::SQS] [expr {$y+$v::SQS}] -fill $c -outline $c -tag "$T days"
+			$v::P.can create text $x $y -text $d -font $v::dfont -tag "$T days text"
 			if {$f==6} {
-				set x 1
+				set x [expr 1+$v::tOff]
 				set f 0
 				incr y $v::SQS
 			} else {
 				incr f
+				incr x $v::SQS
 			}
 		}
 	}
 	proc month_range {} {
-		return "$v::MTH 1 $v::YR $v::MTH [mth_day_ct $v::MTH $v::YR] $v::YR"
+		return [list $v::MTH 1 $v::YR $v::MTH [mth_day_ct $v::MTH $v::YR] $v::YR]
 	}
 	proc shown_dates {} {
 		$v::P.can delete -tags sel
@@ -239,24 +247,25 @@ namespace eval Cal {
 		set d [expr {$c-[dowMY $v::MTH $v::YR]+7*$r-6}]
 		if {$d<1} {
 			lassign [mthyr -- $v::MTH $v::YR] m y
-			return "$m [expr {[mth_day_ct $m $y]+$d}] $y"
+			return [list $m [expr {[mth_day_ct $m $y]+$d}] $y]
 		}
 		if {$d>[set l [mth_day_ct $v::MTH $v::YR]]} {
 			lassign [mthyr ++ $v::MTH $v::YR] m y
-			return "$m [expr {$d-$l}] $y"
+			return [list $m [expr {$d-$l}] $y]
 		}
-		return "$v::MTH $d $v::YR"
+		return [list $v::MTH $d $v::YR]
 	}
 	proc dateC {m d y m2 d2 y2} {
 		# returns 0 if equal -1 if < and 1 if >
-		if {$y<$y2} { return -1 }
-		if {$y>$y2} { return 1 }
-		if {$m<$m2} { return -1 }
-		if {$m>$m2} { return 1 }
-		if {$d<$d2} { return -1 }
-		if {$d>$d2} { return 1 }
+		return [expr {($y<$y2 ? -1 : ($y>$y2 ? 1 : ($m<$m2 ? -1 : ($m>$m2 ? 1 : ($d<$d2 ? -1 : ($d>$d2 ? 1 : 0))))))}]
+		#if {$y<$y2} { return -1 }
+		#if {$y>$y2} { return 1 }
+		#if {$m<$m2} { return -1 }
+		#if {$m>$m2} { return 1 }
+		#if {$d<$d2} { return -1 }
+		#if {$d>$d2} { return 1 }
 		# At this point the MDY must match.
-		return 0
+		#return 0
 	}
 	proc setSel {r c} {
 		# Set the selection rect to the row and column.
@@ -275,9 +284,9 @@ namespace eval Cal {
 			return [setSel $r $c]
 		} else {
 			if {$v::selB==0 || [dateC $m $d $y {*}[lrange $v::selB 0 2]]==1} {
-				set v::selB "$m $d $y $r $c"
+				set v::selB [list $m $d $y $r $c]
 			} else {
-				set v::selA "$m $d $y $r $c"
+				set v::selA [list $m $d $y $r $c]
 			}
 		}
 		if {[dateC {*}[lrange $v::selA 0 2] {*}[lrange $v::selB 0 2]]==1} {
@@ -289,7 +298,7 @@ namespace eval Cal {
 		shown_dates
 	}
 	proc rc_canvas {y x} {
-		return "[expr {int($y/$v::SQS)}] [expr {int($x/$v::SQS)}]"
+		return [list [expr {int($y/$v::SQS)}] [expr {int($x/$v::SQS)}]]
 	}
 }
 proc main {} {
@@ -305,12 +314,11 @@ proc main {} {
 	Cal::Cal $f $m $y $square_size $text_offset $day_font
 	grid $f
 	grid [entry .mydate]
-	proc put_mydate {} {
-		set f .cal
+	proc put_mydate {f} {
 		.mydate delete 0 end
 		.mydate insert 0 [Cal::$f.get_selected]
 	}
-	grid [button .goo -text Gooo -command put_mydate]
+	grid [button .goo -text Gooo -command "put_mydate $f"]
 	grid [button .bquit -text Quit -command exit]
 }
 main 
