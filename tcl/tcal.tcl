@@ -17,11 +17,6 @@ namespace eval Cal {
 		# Returns whether a year is a leap-year.
 		return [expr {(($y%4==0) && ($y%100!=0 || $y%400==0))}]
 	}
-	#~ proc mth_day_ct {m y} {
-		#~ # Returns days in month and year.
-		#~ if {$m==2 && [is_lpyr $y]} { return 29 }
-		#~ return [lindex $v::MTH_DAYS $m]
-	#~ }
 	proc mth_day_ct {m y} {
 		# Returns days for month & year.
 		return [expr {($m==2 && [is_lpyr $y]) ? 29 : [lindex $v::MTH_DAYS $m]}]
@@ -58,17 +53,15 @@ namespace eval Cal {
 		grid [label $parent.mth.mthl] -column 1 -row 0
 		grid [button $parent.mth.nxt -text > -command Cal::next_mth] -column 2 -row 0
 		bind $parent.can <ButtonPress-1> {
-			focus $Cal::v::P.can
 			# Selects a rect (a day) on the canvas (calender).
+			focus $Cal::v::P.can
 			lassign [Cal::rc_canvas [%W canvasy %y] [%W canvasx %x]] r c
-			if {$r<1} { return }
-			Cal::setSel $r $c
+			if {$r>0} { Cal::setSel $r $c }
 		}
 		bind $parent.can <Shift-ButtonPress-1> {
 			# Adds rect(s) (day(s)) to (previous) selection.
 			lassign [Cal::rc_canvas [%W canvasy %y] [%W canvasx %x]] r c
-			if {$r<1} { return }
-			Cal::adSel $r $c
+			if {$r>0} { Cal::adSel $r $c }
 		}
 		bind $v::P.can <ButtonPress-3> {
 			Cal::clearSel
@@ -80,54 +73,42 @@ namespace eval Cal {
 			Cal::next_mth
 		}
 		bind $v::P.can <Control-Key-Up> {
-			Cal::set_mth_yr $Cal::v::MTH [expr $Cal::v::YR-1]
+			Cal::set_mth_yr $Cal::v::MTH [expr {$Cal::v::YR+1}]
 			Cal::cal_day
 		}
 		bind $v::P.can <Control-Key-Down> {
-			Cal::set_mth_yr $Cal::v::MTH [expr $Cal::v::YR+1]
+			Cal::set_mth_yr $Cal::v::MTH [expr {$Cal::v::YR+1}]
 			Cal::cal_day
 		}
 		bind $v::P.can <Key-Left> {
 			if {$Cal::v::selA==0 || $Cal::v::selB!=0} { return }
-			lassign $Cal::v::selA m d y r c
+			lassign [lrange $Cal::v::selA 3 4] r c
 			if {$c==0} {
 				Cal::prev_mth
 				Cal::setSel $r 6
-			} else {
-				Cal::setSel $r [expr $c-1]
-			}
+			} else { Cal::setSel $r [expr {$c-1}] }
 		}
 		bind $v::P.can <Key-Right> {
 			if {$Cal::v::selA==0 || $Cal::v::selB!=0} { return }
-			lassign $Cal::v::selA m d y r c
+			lassign [lrange $Cal::v::selA 3 4] r c
 			if {$c==6} {
 				Cal::next_mth
 				Cal::setSel $r 0
-			} else {
-				Cal::setSel $r [expr $c+1]
-			}
+			} else { Cal::setSel $r [expr {$c+1}] }
 		}
 		bind $v::P.can <Key-Up> {
 			if {$Cal::v::selA==0 || $Cal::v::selB!=0 } { return }
-			lassign $Cal::v::selA m d y r c
-			if {$r!=0} {
-				Cal::setSel [expr $r-1] $c
-			}
+			lassign [lrange $Cal::v::selA 3 4] r c
+			if {$r!=0} { Cal::setSel [expr {$r-1}] $c }
 		}
 		bind $v::P.can <Key-Down> {
 			if {$Cal::v::selA==0 || $Cal::v::selB!=0 } { return }
-			lassign $Cal::v::selA m d y r c
-			if {$r!=7} {
-				Cal::setSel [expr $r+1] $c
-			}
+			lassign [lrange $Cal::v::selA 3 4] r c
+			if {$r!=7} { Cal::setSel [expr {$r+1}] $c }
 		}
 		proc $v::P.get_selected {} {
-			if {$v::selA==0} { return }
-			if {$v::selB==0} {
-				return $v::selA 
-			} else {
-				return [list $v::selA $v::selB]
-			}
+			if {$v::selB!=0} { return [list $v::selA $v::selB] }
+			if {$v::selA!=0} { return $v::selA }
 		}
 		cal_base
 		cal_day
@@ -152,11 +133,7 @@ namespace eval Cal {
 	}
 	proc sel_RC {r c} {
 		# Draw selection rect at row and column.
-		sel_YX [expr $r*$v::SQS] [expr $c*$v::SQS]
-	}
-	proc sel_YX {y x} {
-		# Draw selection rect at y,x coordinate.
-		$v::P.can create rect [expr $x+1] [expr $y+1] [expr $x+$v::SQS] [expr $y+$v::SQS] -fill #fff -outline #fff -tags sel
+		$v::P.can create rect [set x [expr {$c*$v::SQS+1}]] [set y [expr {$r*$v::SQS+1}]] [incr x $v::SQS] [incr y $v::SQS] -fill #fff -outline #fff -tags sel
 	}
 	proc cal_base {} {
 		# Draws base of calender; the day-name header.
@@ -221,18 +198,14 @@ namespace eval Cal {
 				set da [set ra 1]
 				set ca [dowMY $v::MTH $v::YR]
 			}
-			if {$mb>$v::MTH || $yb>$v::YR} {
-				set db [mth_day_ct $v::MTH $v::YR]
-			}
+			if {$mb>$v::MTH || $yb>$v::YR} { set db [mth_day_ct $v::MTH $v::YR] }
 			while {$da<=$db} {
 				sel_RC $ra $ca
 				incr da
 				if {$ca==6} {
 					incr ra
 					set ca 0
-				} else {
-					incr ca
-				}
+				} else { incr ca }
 			}
 			$v::P.can raise text sel
 		}
@@ -258,21 +231,13 @@ namespace eval Cal {
 	proc dateC {m d y m2 d2 y2} {
 		# returns 0 if equal -1 if < and 1 if >
 		return [expr {($y<$y2 ? -1 : ($y>$y2 ? 1 : ($m<$m2 ? -1 : ($m>$m2 ? 1 : ($d<$d2 ? -1 : ($d>$d2 ? 1 : 0))))))}]
-		#if {$y<$y2} { return -1 }
-		#if {$y>$y2} { return 1 }
-		#if {$m<$m2} { return -1 }
-		#if {$m>$m2} { return 1 }
-		#if {$d<$d2} { return -1 }
-		#if {$d>$d2} { return 1 }
-		# At this point the MDY must match.
-		#return 0
 	}
 	proc setSel {r c} {
 		# Set the selection rect to the row and column.
-		lassign [rc_date $r $c] m d y
-		if {$m==$v::MTH} {
-			set v::selB 0 
-			set v::selA "$m $d $y $r $c"
+		set d [expr {$c-[dowMY $v::MTH $v::YR]+7*$r-6}]
+		if {$d>0 && $d<=[mth_day_ct $v::MTH $v::YR]} {
+			set v::selB 0
+			set v::selA [list $v::MTH $d $v::YR $r $c]
 			shown_dates
 		}
 	}
@@ -280,20 +245,15 @@ namespace eval Cal {
 		# Adjusts the selection rect(s) to expand/shrink to the row and column.
 		lassign [rc_date $r $c] m d y
 		if {$m!=$v::MTH} { return }
-		if {$v::selA==0} {
-			return [setSel $r $c]
-		} else {
-			if {$v::selB==0 || [dateC $m $d $y {*}[lrange $v::selB 0 2]]==1} {
-				set v::selB [list $m $d $y $r $c]
-			} else {
-				set v::selA [list $m $d $y $r $c]
-			}
+		if {$v::selA==0} { return [setSel $r $c] }
+		if {$v::selB==0 || [dateC $m $d $y {*}[lrange $v::selB 0 2]]==1} {
+			set v::selB [list $m $d $y $r $c]
+		} else { 
+			set v::selA [list $m $d $y $r $c]
 		}
 		if {[dateC {*}[lrange $v::selA 0 2] {*}[lrange $v::selB 0 2]]==1} {
 			# Swap selected indices so that selA occurs before selB
-			set T $v::selA
-			set v::selA $v::selB
-			set v::selB $T
+			set v::selA $v::selB[set v::selB $v::selA; list]
 		}
 		shown_dates
 	}
