@@ -133,18 +133,43 @@ namespace eval Cal {
 	}
 	proc sel_RC {r c} {
 		# Draw selection rect at row and column.
-		$v::P.can create rect [set x [expr {$c*$v::SQS+1}]] [set y [expr {$r*$v::SQS+1}]] [incr x $v::SQS] [incr y $v::SQS] -fill #fff -outline #fff -tags sel
+		$v::P.can create rect [set x [expr {$c*$v::SQS+1}]] [set y [expr {$r*$v::SQS+1}]] [incr x $v::SQS] [incr y $v::SQS] -fill #76AF2C -outline #C50080 -tags sel
 	}
 	proc cal_base {} {
 		# Draws base of calender; the day-name header.
-		set y [expr $v::SQS+1]
 		set x 1
-		$v::P.can create rect $x $y [incr x $v::SQS] [expr 7*$v::SQS] -fill #ddd -outline #ddd
-		$v::P.can create rect [incr x [expr 5*$v::SQS]] $y [incr x $v::SQS] [expr 7*$v::SQS] -fill #ddd -outline #ddd
-		$v::P.can create rect 1 1 [expr $v::SQS*7] $v::SQS -fill #000
+		set x2 [expr 6*$v::SQS+1]
+		for {set y [expr $v::SQS+1]; set r 1} {$r<7} {incr r} {
+			if {$r%2} {
+				set f #E266B7
+				set f2 #E238A7
+			} else {
+				set f #E238A7
+				set f2 #E266B7
+			}
+			$v::P.can create rect $x $y [expr $x+$v::SQS] [expr $y+$v::SQS] -fill $f -outline $f
+			$v::P.can create rect $x2 $y [expr $x2+$v::SQS] [expr $y+$v::SQS] -fill $f2 -outline $f2
+			incr y $v::SQS
+		}
+		set y [expr $v::SQS+1]
+		set x [expr $v::SQS+1]
+		for {set r 1} {$r<7} {incr r} {
+			for {set c 1} {$c<6} {incr c} {
+				if {[expr {($c+$r)%2}]} {
+					set f #6D89D5
+				} else {
+					set f #476DD5
+				}
+				$v::P.can create rect $x $y [expr $x+$v::SQS] [expr {$y+$v::SQS}] -fill $f -outline $f
+				incr x $v::SQS
+			}
+			incr y $v::SQS
+			set x [expr $v::SQS+1]
+		}
+		$v::P.can create rect 1 1 [expr $v::SQS*7] $v::SQS -fill #062270 -outline #062270
 		set y [set x [expr $v::SQS/2]]
 		foreach d {S M T W T F S} {
-			$v::P.can create text $x $y -text $d -font $v::dfont -fill #fff
+			$v::P.can create text $x $y -text $d -font $v::dfont -fill #6D89D5
 			incr x $v::SQS
 		}
 	}
@@ -161,14 +186,10 @@ namespace eval Cal {
 		for {set d 1} {$d<=$l} {incr d} {
 			if {$d%2} {
 				set T odd
-				set c #ddd
 			} else {
 				set T even
-				set c #ccc
 			}
-			
- 			#$v::P.can create rect $x $y [expr $x+$v::SQS] [expr {$y+$v::SQS}] -fill $c -outline $c -tag "$T days"
-			$v::P.can create text $x $y -text $d -font $v::dfont -tag "$T days text"
+			$v::P.can create text $x $y -text $d -font $v::dfont -fill #062270 -tag "$T days text"
 			if {$f==6} {
 				set x [expr 1+$v::tOff]
 				set f 0
@@ -211,8 +232,7 @@ namespace eval Cal {
 		}
 	}
 	proc clearSel {} {
-		set v::selA 0 
-		set v::selB 0
+		set v::selA [set v::selB 0]
 		shown_dates
 	}
 	proc rc_date {r c} {
@@ -265,9 +285,9 @@ proc main {} {
 	bind . <Control-Key-q> {
 		exit
 	}
-	set square_size 26
-	set text_offset 13
-	set day_font {Arial 12}
+	set square_size 100
+	set text_offset 12
+	set day_font {Arial 10}
 	# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
 	set f .cal
