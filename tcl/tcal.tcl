@@ -6,9 +6,8 @@ namespace eval Cal {
 		variable MTH_NAME [list NULL January Febuary March April May June July August September October November December]
 		variable MTH 1 YR 2000
 		variable selA 0 selB 0
-		variable SQS 26 tOff 13 dfont {Arial 10}
+		variable SQS 26 tOff 13 hh 14 dfont {Arial 10}
 		variable P
-		variable hh
 	}
 	proc dowMY {m y} {
 		# Returns first-day-of-the-week given month & year. Where Sun=0 .. Sat=6
@@ -45,30 +44,23 @@ namespace eval Cal {
 		set_mth_yr $m $y
 		set v::SQS $sqs
 		set v::tOff $toff
+		set v::hh $hh
 		set v::dfont $dfont
 		set v::P $parent
-		set v::hh $hh
 		frame $parent
 		grid [frame $parent.mth]
-		grid [canvas $parent.can -width [expr 7*$v::SQS] -height [expr $hh+6*$v::SQS] -bg #eee]
-		#grid [canvas $parent.can -width [expr 7*$v::SQS] -height [expr 7*$v::SQS] -bg #eee]
+		grid [canvas $parent.can -width [expr 7*$v::SQS] -height [expr $hh+6*$v::SQS]]
 		grid [button $parent.mth.prv -text < -command Cal::prev_mth] -column 0 -row 0
 		grid [label $parent.mth.mthl] -column 1 -row 0
 		grid [button $parent.mth.nxt -text > -command Cal::next_mth] -column 2 -row 0
 		bind $parent.can <ButtonPress-1> {
 			# Selects a rect (a day) on the canvas (calender).
 			focus $Cal::v::P.can
-			if {[set y [%W canvasy %y]]<$Cal::v::hh} { return }
-			#lassign [Cal::rc_canvas [%W canvasy %y] [%W canvasx %x]] r c
-			#if {$r>0} { Cal::setSel $r $c }
-			Cal::setSel {*}[Cal::rc_canvas $y [%W canvasx %x]]
+			if {[set y [%W canvasy %y]]>$Cal::v::hh} { Cal::setSel {*}[Cal::rc_canvas $y [%W canvasx %x]]}
 		}
 		bind $parent.can <Shift-ButtonPress-1> {
 			# Adds rect(s) (day(s)) to (previous) selection.
-			#lassign [Cal::rc_canvas [%W canvasy %y] [%W canvasx %x]] r c
-			#if {$r>0} { Cal::adSel $r $c }
-			if {[set y [%W canvasy %y]]<$Cal::v::hh} { return }
-			Cal::adSel {*}[Cal::rc_canvas $y [%W canvasx %x]]
+			if {[set y [%W canvasy %y]]>$Cal::v::hh} { Cal::adSel {*}[Cal::rc_canvas $y [%W canvasx %x]]}
 		}
 		bind $v::P.can <ButtonPress-3> {
 			Cal::clearSel
@@ -106,12 +98,12 @@ namespace eval Cal {
 		bind $v::P.can <Key-Up> {
 			if {$Cal::v::selA==0 || $Cal::v::selB!=0 } { return }
 			lassign [lrange $Cal::v::selA 3 4] r c
-			if {$r!=0} { Cal::setSel [expr {$r-1}] $c }
+			Cal::setSel [expr {$r-1}] $c
 		}
 		bind $v::P.can <Key-Down> {
 			if {$Cal::v::selA==0 || $Cal::v::selB!=0 } { return }
 			lassign [lrange $Cal::v::selA 3 4] r c
-			if {$r!=7} { Cal::setSel [expr {$r+1}] $c }
+			Cal::setSel [expr {$r+1}] $c
 		}
 		proc $v::P.get_selected {} {
 			if {$v::selB!=0} { return [list $v::selA $v::selB] }
@@ -140,14 +132,14 @@ namespace eval Cal {
 	}
 	proc sel_RC {r c} {
 		# Draw selection rect at row and column.
-		#$v::P.can create rect [set x [expr {$c*$v::SQS+1}]] [set y [expr {$r*$v::SQS+1}]] [incr x $v::SQS] [incr y $v::SQS] -fill #76AF2C -outline #C50080 -tags sel
 		$v::P.can create rect [set x [expr {$c*$v::SQS+1}]] [set y [expr {$r*$v::SQS+1+$v::hh}]] [incr x $v::SQS] [incr y $v::SQS] -fill #76AF2C -outline #C50080 -tags sel
 	}
 	proc cal_base {} {
 		# Draws base of calender; the day-name header.
 		set x 1
-		set x2 [expr 6*$v::SQS+1]
-		for {set y [expr 1+$v::hh]; set r 1} {$r<7} {incr r} {
+		set x2 [expr {6*$v::SQS+1}]
+		set y [expr {1+$v::hh}]
+		for {set r 0} {$r<6} {incr r} {
 			if {$r%2} {
 				set f #E266B7
 				set f2 #E238A7
@@ -155,28 +147,30 @@ namespace eval Cal {
 				set f #E238A7
 				set f2 #E266B7
 			}
-			$v::P.can create rect $x $y [expr $x+$v::SQS] [expr $y+$v::SQS] -fill $f -outline $f
-			$v::P.can create rect $x2 $y [expr $x2+$v::SQS] [expr $y+$v::SQS] -fill $f2 -outline $f2
+			$v::P.can create rect $x $y [expr {$x+$v::SQS}] [expr {$y+$v::SQS}] -fill $f -outline $f2 -tags {bg sun}
+			$v::P.can create rect $x2 $y [expr {$x2+$v::SQS}] [expr {$y+$v::SQS}] -fill $f2 -outline $f -tags {bg sat}
 			incr y $v::SQS
 		}
 		set y [expr 1+$v::hh]
 		set x [expr $v::SQS+1]
-		for {set r 1} {$r<7} {incr r} {
+		for {set r 0} {$r<6} {incr r} {
 			for {set c 1} {$c<6} {incr c} {
 				if {[expr {($c+$r)%2}]} {
+					set t a
 					set f #6D89D5
 				} else {
+					set t b
 					set f #476DD5
 				}
-				$v::P.can create rect $x $y [expr $x+$v::SQS] [expr {$y+$v::SQS}] -fill $f -outline $f
+				$v::P.can create rect $x $y [expr {$x+$v::SQS}] [expr {$y+$v::SQS}] -fill $f -outline $f -tags "bg $t"
 				incr x $v::SQS
 			}
 			incr y $v::SQS
-			set x [expr $v::SQS+1]
+			set x [expr {$v::SQS+1}]
 		}
-		$v::P.can create rect 1 1 [expr $v::SQS*7] $v::hh -fill #062270 -outline #062270
-		set x [expr $v::SQS/2]
-		set y [expr $v::hh/2]
+		$v::P.can create rect 1 1 [expr {$v::SQS*7}] $v::hh -fill #062270 -outline #6D89D5
+		set x [expr {$v::SQS/2}]
+		set y [expr {$v::hh/2}]
 		foreach d {SUN MON TUE WED THR FRI SAT} {
 			$v::P.can create text $x $y -text $d -font $v::dfont -fill #6D89D5
 			incr x $v::SQS
@@ -187,9 +181,8 @@ namespace eval Cal {
 		$v::P.can delete -tag days
 		$v::P.mth.mthl configure -text "[lindex $v::MTH_NAME $v::MTH] $v::YR"
 		set f [dowMY $v::MTH $v::YR]
-		#set x [expr {1+$f*$v::SQS}]
 		set x [expr {1+$f*$v::SQS+$v::tOff}]
-		set y [expr $v::hh+$v::tOff+1]
+		set y [expr {$v::hh+$v::tOff+1}]
 		# Current month's days
 		set l [mth_day_ct $v::MTH $v::YR]
 		for {set d 1} {$d<=$l} {incr d} {
@@ -200,7 +193,7 @@ namespace eval Cal {
 			}
 			$v::P.can create text $x $y -text $d -font $v::dfont -fill #062270 -tag "$T days text"
 			if {$f==6} {
-				set x [expr 1+$v::tOff]
+				set x [expr {$v::tOff+1}]
 				set f 0
 				incr y $v::SQS
 			} else {
@@ -246,7 +239,6 @@ namespace eval Cal {
 	}
 	proc rc_date {r c} {
 		# Returns the date shown on canvas with row and column.
-		set d [expr {$c-[dowMY $v::MTH $v::YR]+7*$r-6}]
 		set d [expr {$c-[dowMY $v::MTH $v::YR]+7*$r+1}]
 		if {$d<1} {
 			lassign [mthyr -- $v::MTH $v::YR] m y
@@ -264,7 +256,6 @@ namespace eval Cal {
 	}
 	proc setSel {r c} {
 		# Set the selection rect to the row and column.
-		set d [expr {$c-[dowMY $v::MTH $v::YR]+7*$r-6}]
 		set d [expr {$c-[dowMY $v::MTH $v::YR]+7*$r+1}]
 		if {$d>0 && $d<=[mth_day_ct $v::MTH $v::YR]} {
 			set v::selB 0
@@ -289,16 +280,16 @@ namespace eval Cal {
 		shown_dates
 	}
 	proc rc_canvas {y x} {
-		return [list [expr {int(($y-$v::hh) /$v::SQS)}] [expr {int($x/$v::SQS)}]]
-		#return [list [expr {int($y/$v::SQS)}] [expr {int($x/$v::SQS)}]]
+		# Given y & x coords, return row & col.
+		return [list [expr {int(($y-$v::hh)/$v::SQS)}] [expr {int($x/$v::SQS)}]]
 	}
 }
 proc main {} {
 	bind . <Control-Key-q> {
 		exit
 	}
-	set square_size 100
-	set text_offset 12
+	set square_size 128
+	set text_offset 8
 	set day_font {Arial 10}
 	set hh 16
 	# Init Cal with the current month and year.
