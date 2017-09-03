@@ -288,7 +288,7 @@ proc main {} {
 	bind . <Control-Key-q> {
 		exit
 	}
-	set square_size 128
+	set square_size 32
 	set text_offset 8
 	set day_font {Arial 10}
 	set hh 16

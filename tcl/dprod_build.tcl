@@ -11,28 +11,24 @@ if {[file exists $s]} {
 	exit 1
 }
 sqlite3 conn $s
-set t(1) {2022-01-04 03:27}
-set t(2) {2022-01-04 03:33}
-set t(3) {2022-01-04 03:46}
-set t(4) {2022-01-04 05:02}
 conn transaction {
 	conn eval {CREATE TABLE prod_records(uid text,start_time datetime,end_time datetime,code text,desc text)}
-	conn eval {INSERT into prod_records VALUES("s203",$t(1),$t(2),"112","work")}
-	conn eval {INSERT into prod_records VALUES("s203",$t(2),$t(3),"222","break")}
-	conn eval {INSERT into prod_records VALUES("s203",$t(4),$t(4),"112","work")}
-	conn eval {INSERT into prod_records VALUES("b777",$t(1),$t(3),"112","basic desc")}
-	conn eval {INSERT into prod_records VALUES("b777",$t(3),$t(4),"908","lunch")}
-	conn eval {INSERT into prod_records VALUES("s203",$t(3),$t(4),"112","work")}
-	conn eval {INSERT into prod_records VALUES("t421",$t(1),$t(2),"222","break")}
-	conn eval {INSERT into prod_records VALUES("t421",$t(2),$t(3),"908","lunch")}
 	conn eval {CREATE TABLE employees(uid text,fname text,lname text,email text)}
-	conn eval {INSERT into employees VALUES("s203","John","Speck","js@atemail.com")}
-	conn eval {INSERT into employees VALUES("b777","Marz","Tindaz","mtz@atemail.com")}
-	conn eval {INSERT into employees VALUES("t421","Nxy","Rne","nr@atemail.com")}
-	conn eval {CREATE TABLE arc_rec(uid text,int,lname text,email text)}
+	for {set i 97} {$i<123} {incr i} {
+		set uid [format {%c%d} $i [expr {int(rand()*100)}]]
+		set bmth [expr {int(rand()*12)}]
+		set bday [expr {int(rand()*28)}]
+		set byr [expr {int(rand()*99)}]
+		set code [expr {int(rand()*700)}]
+		for {set n 0} {$n<5} {incr n} {
+			set bhr [expr {int(rand()*12)}]
+			set bmin 0
+			set d [format {%4d-%02d-%02d %02d:%02d} [expr {$byr+2000}] $bmth $bday $bhr $bmin]
+			incr bmin [expr {int(rand()*60)+1}]
+			set d2 [format {%4d-%02d-%02d %02d:%02d} [expr {$byr+2000}] $bmth $bday $bhr $bmin]
+			conn eval {INSERT into prod_records VALUES($uid,$d,$d2,$code,$n)}
+		}
+		conn eval {INSERT into employees VALUES($uid,$uid_Fname,$uid_Lname,"$uid@email.com")}
+	}
 }
-set t(1) {2022-05-10 08:47}
-set t(2) {2022-05-10 10:33}
-conn transaction {
-	conn eval {INSERT into prod_records VALUES("s203",$t(1),$t(2),"112","project")}
-}
+
