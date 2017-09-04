@@ -11,6 +11,9 @@ if {[file exists $s]} {
 	exit 1
 }
 sqlite3 conn $s
+proc randint {a b} {
+	return [expr {$a+int(rand()*b)}]
+}
 conn transaction {
 	conn eval {CREATE TABLE prod_records(uid text,start_time datetime,end_time datetime,code text,desc text)}
 	conn eval {CREATE TABLE employees(uid text,fname text,lname text,email text)}

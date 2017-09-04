@@ -1,5 +1,6 @@
 #!/usr/bin/env tclsh8.6
 package require Tk
+package provide Tcal 1.0
 namespace eval Cal {
 	namespace eval v {
 		variable MTH_DAYS [list -1 31 28 31 30 31 30 31 31 30 31 30 31]
@@ -298,6 +299,9 @@ proc main {} {
 	Cal::Cal $f $m $y $square_size $text_offset $day_font $hh
 	grid $f
 	grid [entry .mydate]
+	bind $f.can <Key-Return> {
+		focus .mydate
+	}
 	proc put_mydate {f} {
 		.mydate delete 0 end
 		.mydate insert 0 [Cal::$f.get_selected]
@@ -305,4 +309,6 @@ proc main {} {
 	grid [button .goo -text Gooo -command "put_mydate $f"]
 	grid [button .bquit -text Quit -command exit]
 }
-main 
+if {[string match *tcal.tcl $argv0]} {
+	main
+}
