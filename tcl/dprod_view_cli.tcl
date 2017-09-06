@@ -20,7 +20,7 @@ namespace eval viewer {
 	}
 	proc open_db_silent {s} {
 		if {[file exists $s]} {
-			sqlite3 db $s
+			sqlite3 db $s -readonly 1
 			if {[sqlmat]} {
 				variable db_open 1
 				return 0
