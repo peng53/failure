@@ -34,20 +34,11 @@ namespace eval EventStor {
 		conn eval {DELETE from events WHERE rowid=$rowid}
 		return 1
 	}
-	proc get_all_rows {} {
-		# Yields single row at a time from open database.
-		# Returns 0 if not open. For use as coroutine.
-		if {$v::is_open==0} { return 0 }
-		yield 1
-		conn eval {SELECT * from events} {
-			yield [list $rowid $start_date $end_date $event_name $desc_more]
-		}
-		yield 0
-	}
 	proc wheres {vs} {
 		# Checks where cols & operators for validity.
 		set ws [list]
 		foreach {COL OP X} $vs {
+			#puts "$COL $OP $X"
 			if {$COL in $v::col_names && $OP in $v::where_operators} {
 				lappend ws "$COL$OP$X"
 			}
@@ -56,7 +47,7 @@ namespace eval EventStor {
 			return "WHERE [join $ws { AND }]"
 		}
 	}
-	proc second_date {year {mth 01} {day 01}} {
+	proc second_date {year {mth 1} {day 1}} {
 		# Returns seconds since unix epoch. (shortcut)
 		return [clock scan [format %02d/%02d/%04d $mth $day $year] -format %D]
 	}
@@ -79,6 +70,16 @@ namespace eval EventStor {
 		if {[llength $os]>0} {
 			return "ORDER BY [join $os ,]"
 		}
+	}
+	proc get_all_rows {{ws {}} {os {}}} {
+		# Yields single row at a time from open database.
+		# Returns 0 if not open.
+		if {$v::is_open==0} { return 0 }
+		set rs [list]
+		conn eval "SELECT * from events [wheres $ws] [orders $os]" {
+			lappend rs [list $rowid $start_date $end_date $event_name $desc_more]
+		}
+		return $rs
 	}
 	proc get_base_rows {{ws {}} {os {}}} {
 		# Yields single row at a time from open database.
@@ -129,7 +130,8 @@ namespace eval EventStor {
 		set n 0
 		foreach {year mth day} {2017 1 23 2018 3 22 2017 1 25 2017 2 11 } {
 			set date [second_date $year $mth $day]
-			add_row $date $date $n test
+			add_row $date $date $n {;DROP TABLE events;}
+			add_row $date $date $n {red}
 			incr n
 		}
 		puts {Getting rows}
@@ -150,6 +152,21 @@ namespace eval EventStor {
 			return 1
 		}
 		foreach r $rs { puts [join $r] }
+		puts {Getting rows where desc_more = ;DROP TABLE events;}
+		if {[set rs [get_base_rows {desc_more = "';DROP TABLE events;'"}]]==0} {
+			puts {get_base_rows failed}
+			return 1
+		}
+		foreach r $rs { puts [join $r] }
+		puts {Confirming table & row still exists with get_all_rows}
+		if {[set rs [get_all_rows]]==0} {
+			puts {get_base_rows failed}
+			return 1
+		}
+		foreach r $rs { puts [join $r] }
+		puts <
+		puts [get_all_rows {desc_more = "'red'"} ]
+		puts >
 		puts {Closing DB}
 		if {![close_db]} {
 			puts {close_db failed}
