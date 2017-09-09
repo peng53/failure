@@ -6,6 +6,7 @@ namespace eval EventStor {
 		variable is_open 0
 		variable col_names [list end_date event_name desc_more rowid start_date {strftime('%Y',start_date)} {strftime('%M',start_date)}]
 		variable where_operators [list < <= = >= >]
+		variable 
 	}
 	proc open_db {file_name} {
 		# Open file_name as sqlite3 database. Returns 1/0 for success/fail.
@@ -119,6 +120,21 @@ namespace eval EventStor {
 		set v::is_open 0
 		conn close
 		return 1
+	}
+	proc xth_dow {mth year d xth} {
+		# Where 0<=d<=6 for sunday-saturday.
+		# Where xth is 0-indexed
+		# Ex: Want to find 3rd Monday of Sept 2017
+		# Use: xth_dow 9 2017 1 3-1
+		set f [clock format [clock scan $mth/01/$year -format %D] -format %w]
+		return [expr {$d-$f+7*$xth+($f>$d ? 8:1)}]
+		#return [expr {1+$d-$f+7*($f>$d ? $xth+1 : $xth)}]
+		#if {$f>$d} { #	incr xth #}
+		#return [expr {$d-$f+7*$xth+1}]
+	}
+	proc holidays_us {year} {
+		if {!$v::is_open} { return 0 }
+		set hs [list 12 25 Christmas 11 4thThurs Thanksgiving 5 2ndSun Mothers 7 4 Independence 6 3rdSun Fathers 10 31 Halloween 2 14 Valentines 3 17 St.Patrick 1 1 NewYearsEve 1 15 MLK 5 LastMon Memorial 9 1stMon Labor 10 2ndMon Columbus 11 11 Veterans]
 	}
 	proc test {} {
 		puts {Building DB in memory}
