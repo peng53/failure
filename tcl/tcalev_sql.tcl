@@ -4,7 +4,7 @@ package require sqlite3
 namespace eval EventStor {
 	namespace eval v {
 		variable is_open 0
-		variable col_names [list end_date event_name desc_more rowid start_date {strftime('%Y',start_date)} {strftime('%M',start_date)}]
+		variable col_names [list end_date event_name desc_more rowid start_date {strftime('%Y',start_date)} {strftime('%m',start_date)}]
 		variable where_operators [list < <= = >= >]
 		variable 
 	}
@@ -64,13 +64,9 @@ namespace eval EventStor {
 		# Returns seconds since unix epoch. (shortcut)
 		return [clock scan [format %02d/%02d/%04d $mth $day $year] -format %D]
 	}
-	proc exp_date {year {mth 0}} {
+	proc exp_date {op year {mth 0}} {
 		# Returns where-value-list for a year (and month)
-		set vs [list {strftime('%Y',start_date)} == $year]
-		if {$mth!=0} {
-			lappend vs {strftime('%m',start_date)} == $mth
-		}
-		return vs
+		return [list start_date $op [second_date $year [expr {($mth==0 ? 1:$mth)}]]]
 	}
 	proc get_all_rows {{ws {}} {os {}}} {
 		# Yields single row at a time from open database.
@@ -87,19 +83,20 @@ namespace eval EventStor {
 		# Returns 0 if not open.
 		# Only basic stuff
 		if {!$v::is_open} { return 0 }
+		puts $ws
 		set rs [list]
 		conn eval "SELECT rowid,date(start_date,'unixepoch','localtime') as date,event_name from events [wheres $ws] [orders $os]" {
 			lappend rs [list $rowid $date $event_name]
 		}
 		return $rs
 	}
-	proc get_month_rows {month year} {
-		# Yields rows for one calendar page.
+	proc get_a_cal {year {mth 0}} {
+		# Yields rows for one calendar {page}.
 		if {!$v::is_open} { return 0 }
-		yield 1
-		conn eval {SELECT rowid,day($start_date),$event_name from events WHERE year(start_date)=$year AND month(start_date)=$month} {
-			yield [list $rowid $start_date $event_name]
+		if {$mth==0} {
+			return [get_base_rows [list [exp_date >= $year] [exp_date < [expr $year+1]]]]
 		}
+		#return [get_base_rows [list [exp_date >= $year $mth] [exp_date < [expr $year+1]]]]
 	}
 	proc build_db {file_name} {
 		# Builds a database if one isn't already open.
@@ -128,9 +125,6 @@ namespace eval EventStor {
 		# Use: xth_dow 9 2017 1 3-1
 		set f [clock format [clock scan $mth/01/$year -format %D] -format %w]
 		return [expr {$d-$f+7*$xth+($f>$d ? 8:1)}]
-		#return [expr {1+$d-$f+7*($f>$d ? $xth+1 : $xth)}]
-		#if {$f>$d} { #	incr xth #}
-		#return [expr {$d-$f+7*$xth+1}]
 	}
 	proc holidays_us {year} {
 		if {!$v::is_open} { return 0 }
@@ -142,9 +136,10 @@ namespace eval EventStor {
 			set date [second_date $year $mth [xth_dow $mth $year $day $xth]]
 			add_row $date [expr {$date+86399}] $name
 		}
+		set date [expr {[second_date 2017 6 [xth_dow 6 2017 1 0]]-604800}]
+		# I find first Monday of the month after and go back 7 days.
+		add_row $date [expr {$date+86399}] {Memorial Day}
 		return 1
-		
-		#~ 5 LastMon Memorial 
 	}
 	proc test {} {
 		puts {Building DB in memory}
@@ -183,6 +178,11 @@ namespace eval EventStor {
 		puts {Gettings rows ordered by event_name then start_date}
 		foreach r [get_base_rows {} {event_name start_date}] { puts [join $r ,] }
 
+		puts {Getting rows with start_date in Sept-Dec 2017}
+		foreach r [get_base_rows [list start_date >= [second_date 2017 9] start_date < [second_date 2018]] {start_date}] { puts [join $r ,] }
+
+		puts {Getting 2017}
+		foreach r [get_a_cal 2017] { puts [join $r ,] }
 		puts {Closing DB}
 		if {![close_db]} {
 			puts {close_db failed}
