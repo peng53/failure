@@ -49,11 +49,11 @@ namespace eval Cal {
 		set v::dfont $dfont
 		set v::P $parent
 		frame $parent
-		grid [frame $parent.mth]
-		grid [canvas $parent.can -width [expr 7*$v::SQS] -height [expr $hh+6*$v::SQS]]
-		grid [button $parent.mth.prv -text < -command Cal::prev_mth] -column 0 -row 0
-		grid [label $parent.mth.mthl] -column 1 -row 0
-		grid [button $parent.mth.nxt -text > -command Cal::next_mth] -column 2 -row 0
+		pack [frame $parent.mth]
+		pack [button $parent.mth.prv -text < -command Cal::prev_mth] -side left
+		pack [label $parent.mth.mthl] -side left
+		pack [button $parent.mth.nxt -text > -command Cal::next_mth] -side left
+		pack [canvas $parent.can -width [expr 7*$v::SQS] -height [expr $hh+6*$v::SQS]]
 		bind $parent.can <ButtonPress-1> {
 			# Selects a rect (a day) on the canvas (calender).
 			focus $Cal::v::P.can
@@ -112,6 +112,7 @@ namespace eval Cal {
 		}
 		cal_base
 		cal_day
+		return $parent
 	}
 	proc prev_mth {} {
 		# Set current shown month back by 1 and redraws.
@@ -297,8 +298,8 @@ proc main {} {
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
 	set f .cal
 	Cal::Cal $f $m $y $square_size $text_offset $day_font $hh
-	grid $f
-	grid [entry .mydate]
+	pack $f
+	pack [entry .mydate]
 	bind $f.can <Key-Return> {
 		focus .mydate
 	}
@@ -306,8 +307,8 @@ proc main {} {
 		.mydate delete 0 end
 		.mydate insert 0 [Cal::$f.get_selected]
 	}
-	grid [button .goo -text Gooo -command "put_mydate $f"]
-	grid [button .bquit -text Quit -command exit]
+	pack [button .goo -text Gooo -command "put_mydate $f"] -side left
+	pack [button .bquit -text Quit -command exit] -side right
 }
 if {[string match *tcal.tcl $argv0]} {
 	main
