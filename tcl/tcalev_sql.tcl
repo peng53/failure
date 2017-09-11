@@ -191,4 +191,6 @@ namespace eval EventStor {
 		puts {Successful.}
 	}
 }
-EventStor::test
+if {[string match *tcalev_sql.tcl $argv0]} {
+	EventStor::test
+}
