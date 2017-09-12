@@ -108,26 +108,33 @@ proc main2 {} {
 	#~ .men add command -label Calender -command {hideshow .mframe.cal}
 	.men add command -label Quit -command exit
 	pack [labelframe .mframe.search -text Search -font 16] -fill x
-	pack [frame .mframe.search.date]
-	pack [labelframe .mframe.search.date.mths -text Months] -side left
+	pack [frame .mframe.search.options] -side left -expand 1 -fill x
+	pack [frame .mframe.search.options.date]
+	pack [labelframe .mframe.search.options.date.mths -text Months] -side left
 	#pack [label .mframe.search.mths.l -text Months -font 10] -side left
 	for {set m 1} {$m<13} {incr m} {
-		pack [checkbutton .mframe.search.date.mths.cb_$m -indicatoron 0 -width 2 -text $m] -side left
+		pack [checkbutton .mframe.search.options.date.mths.cb_$m -indicatoron 0 -width 2 -text $m] -side left
 	}
-	pack [labelframe .mframe.search.date.yr -text Year] -side left
-	pack [entry .mframe.search.date.yr.e -width 5] -side left
-	pack [label .mframe.search.date.yr.l2 -text - -font 10] -side left
-	pack [entry .mframe.search.date.yr.e2 -width 5] -side left
-	pack [labelframe .mframe.search.wh -text Where]
-	pack [ttk::combobox .mframe.search.wh.cb] -side left
-	pack [ttk::combobox .mframe.search.wh.cb2 -width 4] -side left
-	pack [entry .mframe.search.wh.e] -side left
-	pack [button .mframe.search.wh.add -text Add] -side left
-	pack [labelframe .mframe.search.or -text Order]
-	pack [ttk::combobox .mframe.search.or.cb] -side left
-	pack [button .mframe.search.or.add -text Add] -side left
-	pack [labelframe .mframe.evets -text Events -font 16] -expand 1 -fill both
+	pack [labelframe .mframe.search.options.date.yr -text Year] -side left
+	pack [entry .mframe.search.options.date.yr.e -width 5] -side left
+	pack [label .mframe.search.options.date.yr.l2 -text - -font 10] -side left
+	pack [entry .mframe.search.options.date.yr.e2 -width 5] -side left
+	pack [labelframe .mframe.search.options.wh -text Where]
+	pack [ttk::combobox .mframe.search.options.wh.cb] -side left
+	pack [ttk::combobox .mframe.search.options.wh.cb2 -width 4] -side left
+	pack [entry .mframe.search.options.wh.e] -side left
+	pack [button .mframe.search.options.wh.add -text Add] -side left
+	pack [labelframe .mframe.search.options.or -text Order]
+	pack [ttk::combobox .mframe.search.options.or.cb] -side left
+	pack [button .mframe.search.options.or.add -text Add] -side left
 
+	pack [labelframe .mframe.search.got -text Options]
+	pack [listbox .mframe.search.got.lb -height 7 -yscrollcommand {.mframe.search.got.sb set}] -side left
+	pack [scrollbar .mframe.search.got.sb -command {.mframe.search.got.lb yview}] -side left -fill y
+	pack [button .mframe.search.ok -text Search] -side bottom
+	pack [button .mframe.search.clear -text Clear] -side bottom
+
+	pack [labelframe .mframe.evets -text Events -font 16] -expand 1 -fill both
 	pack [ttk::treeview .mframe.evets.evs -columns {Day Event} -yscrollcommand {.mframe.evets.sb set}] -expand 1 -fill both -side left
 	#-show headings
 	pack [scrollbar .mframe.evets.sb -command {.mframe.evets.evs yview}] -side left -fill y
