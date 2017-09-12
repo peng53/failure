@@ -82,7 +82,13 @@ proc add_all_events {w} {
 		#$w insert {} end -values test
 	}
 }
-
+#~ proc hideshow {f} {
+	#~ if {[string length [grid info $f]]==0} {
+		#~ grid $f
+	#~ } else {
+		#~ grid remove $f
+	#~ }
+#~ }
 proc main2 {} {
 	wm title . Events
 	set square_size 64
@@ -92,13 +98,6 @@ proc main2 {} {
 	# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
 	pack [frame .mframe] -expand 1 -fill both
-	#~ proc hideshow {f} {
-		#~ if {[string length [grid info $f]]==0} {
-			#~ grid $f
-		#~ } else {
-			#~ grid remove $f
-		#~ }
-	#~ }
 	menu .men
 	. configure -menu .men
 	menu .men.view
@@ -107,29 +106,43 @@ proc main2 {} {
 	.men.view add radiobutton -label Floating -variable calpos
 	.men add cascade -menu .men.view -label View
 	#~ .men add command -label Calender -command {hideshow .mframe.cal}
-	#~ .men add command -label Events -command {hideshow .mframe.evets}
 	.men add command -label Quit -command exit
+	pack [labelframe .mframe.search -text Search -font 16] -fill x
+	pack [frame .mframe.search.date]
+	pack [labelframe .mframe.search.date.mths -text Months] -side left
+	#pack [label .mframe.search.mths.l -text Months -font 10] -side left
+	for {set m 1} {$m<13} {incr m} {
+		pack [checkbutton .mframe.search.date.mths.cb_$m -indicatoron 0 -width 2 -text $m] -side left
+	}
+	pack [labelframe .mframe.search.date.yr -text Year] -side left
+	pack [entry .mframe.search.date.yr.e -width 5] -side left
+	pack [label .mframe.search.date.yr.l2 -text - -font 10] -side left
+	pack [entry .mframe.search.date.yr.e2 -width 5] -side left
+	pack [labelframe .mframe.search.wh -text Where]
+	pack [ttk::combobox .mframe.search.wh.cb] -side left
+	pack [ttk::combobox .mframe.search.wh.cb2 -width 4] -side left
+	pack [entry .mframe.search.wh.e] -side left
+	pack [button .mframe.search.wh.add -text Add] -side left
+	pack [labelframe .mframe.search.or -text Order]
+	pack [ttk::combobox .mframe.search.or.cb] -side left
+	pack [button .mframe.search.or.add -text Add] -side left
+	pack [labelframe .mframe.evets -text Events -font 16] -expand 1 -fill both
 
-	#grid [frame .mframe.evets] -column 1 -row 0
-	pack [frame .mframe.evets] -expand 1 -fill both
-	#	-sticky nesw
-	#grid rowconfigure .mframe.evets 1 -weight 1
-	pack [label .mframe.evets.l -text Events -font 16]
 	pack [ttk::treeview .mframe.evets.evs -columns {Day Event} -yscrollcommand {.mframe.evets.sb set}] -expand 1 -fill both -side left
-	
 	#-show headings
+	pack [scrollbar .mframe.evets.sb -command {.mframe.evets.evs yview}] -side left -fill y
 	.mframe.evets.evs column #0 -width 100 -minwidth 100 -stretch 0
 	.mframe.evets.evs heading #1 -text Day
 	.mframe.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
 	.mframe.evets.evs heading #2 -text Event
 	#new_props_win
 	#new_cal_win $square_size $text_offset $day_font $hh $m $y
-	EventStor::build_db :memory:
-	EventStor::holidays_us 2016
-	EventStor::holidays_us 2017
-	EventStor::holidays_us 2018
-	add_all_events .mframe.evets.evs
-	pack [scrollbar .mframe.evets.sb -command {.mframe.evets.evs yview}] -side left -fill y
+	#EventStor::build_db :memory:
+	#EventStor::holidays_us 2016
+	#EventStor::holidays_us 2017
+	#EventStor::holidays_us 2018
+	#add_all_events .mframe.evets.evs
+
 }
 
 main2
