@@ -52,11 +52,6 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 }
 
 proc add_all_events {w} {
-	#set y [.mframe.evets.evs insert {} end -text {2017}]
-	#set m [.mframe.evets.evs insert $y end -text {May}]
-	#.mframe.evets.evs insert $m end -values {5}
-	#puts $y
-	#puts $m
 	set cy 0
 	set cm 0
 	set cyi {}
@@ -79,7 +74,6 @@ proc add_all_events {w} {
 			set cmi [$w insert $cyi end -text $cm]
 			$w insert $cmi end -values [list $d [lindex $r 2]]
 		}
-		#$w insert {} end -values test
 	}
 }
 #~ proc hideshow {f} {
@@ -89,6 +83,68 @@ proc add_all_events {w} {
 		#~ grid remove $f
 	#~ }
 #~ }
+
+proc get_range_ac {A B {L {}}} {
+	# Runs through checkbutton array to spans of 'trues'.
+	# Returns List of ranges.
+	# E.g {{1 2} 4} would mean 1 to 2 and just 4 are checked.
+	# {1 3 5 7} would mean just 1, 3, 5, 7.
+	# {1 12} would mean 1 to 12.
+	# This algo uses recursive acumulator; since TCL does not
+	# have tail call opt, it shouldn't be used for large B-A.
+	# Loop version coming soon.
+	if {$A>$B} { return $L }
+	global cb
+	set a 0
+	for {set i $A} {$i<=$B} {incr i} {
+		if {$cb($i)==1} {
+			set a $i
+			break
+		}
+	}
+	if {$a==0} { return $L }
+	for {set b [expr {$a+1}]} {$b<=$B} {incr b} {
+		if {$cb($b)==0} {
+			if {$b==[expr {$a+1}]} {
+				return [get_range_ac [expr {$b+1}] $B [list {*}$L $a]]
+			} else {
+				return [get_range_ac [expr {$b+1}] $B [list {*}$L [list $a [expr $b-1]]]]
+			}
+		}
+	}
+	return [list {*}$L [list $a $B]]
+}
+
+proc get_range_i {A B} {
+	global cb
+	set o [list]
+	for {set I $A} {$I<=$B} {incr I} {
+		while {$I<=$B && $cb($I)==0} {
+			incr I
+		}
+		if {$I>$B} {
+			return $o
+		}
+		if {$cb($I)==1} {
+			set a $I
+			incr $I
+			while {$I<=$B && $cb($I)==1} {
+				incr I
+			}
+			if {$a==[expr {$I-1}]} {
+				lappend o $a
+			} else {
+				lappend o [list $a [expr {min($B,$I-1)}]]
+			}
+		}
+	}
+	return $o
+}
+
+proc search_ops {} {
+	puts [get_range_ac 1 12]
+	puts [get_range_i 1 12]
+}
 proc main2 {} {
 	wm title . Events
 	set square_size 64
@@ -97,51 +153,53 @@ proc main2 {} {
 	set hh 20
 	# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
-	pack [frame .mframe] -expand 1 -fill both
+	#pack [frame .mframe] -expand 1 -fill both
 	menu .men
 	. configure -menu .men
-	menu .men.view
-	set calpos Window
-	.men.view add radiobutton -label Window -variable calpos
-	.men.view add radiobutton -label Floating -variable calpos
-	.men add cascade -menu .men.view -label View
-	#~ .men add command -label Calender -command {hideshow .mframe.cal}
+	#menu .men.view
+	#set calpos Window
+	#.men.view add radiobutton -label Window -variable calpos
+	#.men.view add radiobutton -label Floating -variable calpos
+	#.men add cascade -menu .men.view -label View
 	.men add command -label Quit -command exit
-	pack [labelframe .mframe.search -text Search -font 16] -fill x
-	pack [frame .mframe.search.options] -side left -expand 1 -fill x
-	pack [frame .mframe.search.options.date]
-	pack [labelframe .mframe.search.options.date.mths -text Months] -side left
-	#pack [label .mframe.search.mths.l -text Months -font 10] -side left
-	for {set m 1} {$m<13} {incr m} {
-		pack [checkbutton .mframe.search.options.date.mths.cb_$m -indicatoron 0 -width 2 -text $m] -side left
+	pack [labelframe .search -text Search -font 16] -fill x
+	pack [frame .search.options] -side left -expand 1 -fill x
+	pack [frame .search.options.date]
+	pack [labelframe .search.options.date.mths -text Months] -side left
+	#~ for {set m 1} {$m<13} {incr m} {
+		#~ pack [checkbutton .search.options.date.mths.m$m -indicatoron 0 -variable t($m) -width 2 -text $m] -side left
+	#~ }
+	global cb
+	for {set i 1} {$i<13} {incr i} {
+		pack [checkbutton .search.options.date.mths.cb_$i -variable cb($i) -text $i -width 2 -indicatoron 0] -side left
 	}
-	pack [labelframe .mframe.search.options.date.yr -text Year] -side left
-	pack [entry .mframe.search.options.date.yr.e -width 5] -side left
-	pack [label .mframe.search.options.date.yr.l2 -text - -font 10] -side left
-	pack [entry .mframe.search.options.date.yr.e2 -width 5] -side left
-	pack [labelframe .mframe.search.options.wh -text Where]
-	pack [ttk::combobox .mframe.search.options.wh.cb] -side left
-	pack [ttk::combobox .mframe.search.options.wh.cb2 -width 4] -side left
-	pack [entry .mframe.search.options.wh.e] -side left
-	pack [button .mframe.search.options.wh.add -text Add] -side left
-	pack [labelframe .mframe.search.options.or -text Order]
-	pack [ttk::combobox .mframe.search.options.or.cb] -side left
-	pack [button .mframe.search.options.or.add -text Add] -side left
+	pack [labelframe .search.options.date.yr -text Year] -side left
+	pack [entry .search.options.date.yr.e -width 5] -side left
+	pack [label .search.options.date.yr.l2 -text - -font 10] -side left
+	pack [entry .search.options.date.yr.e2 -width 5] -side left
+	pack [labelframe .search.options.wh -text Where]
+	pack [ttk::combobox .search.options.wh.cb] -side left
+	pack [ttk::combobox .search.options.wh.cb2 -width 4] -side left
+	pack [entry .search.options.wh.e] -side left
+	pack [button .search.options.wh.add -text Add] -side left
+	pack [labelframe .search.options.or -text Order]
+	pack [ttk::combobox .search.options.or.cb] -side left
+	pack [button .search.options.or.add -text Add] -side left
 
-	pack [labelframe .mframe.search.got -text Options]
-	pack [listbox .mframe.search.got.lb -height 7 -yscrollcommand {.mframe.search.got.sb set}] -side left
-	pack [scrollbar .mframe.search.got.sb -command {.mframe.search.got.lb yview}] -side left -fill y
-	pack [button .mframe.search.ok -text Search] -side bottom
-	pack [button .mframe.search.clear -text Clear] -side bottom
+	pack [labelframe .search.got -text Options]
+	pack [listbox .search.got.lb -height 7 -yscrollcommand {.search.got.sb set}] -side left
+	pack [scrollbar .search.got.sb -command {.search.got.lb yview}] -side left -fill y
+	pack [button .search.ok -text Search -command search_ops] -side bottom
+	pack [button .search.clear -text Clear] -side bottom
 
-	pack [labelframe .mframe.evets -text Events -font 16] -expand 1 -fill both
-	pack [ttk::treeview .mframe.evets.evs -columns {Day Event} -yscrollcommand {.mframe.evets.sb set}] -expand 1 -fill both -side left
+	pack [labelframe .evets -text Events -font 16] -expand 1 -fill both
+	pack [ttk::treeview .evets.evs -columns {Day Event} -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
 	#-show headings
-	pack [scrollbar .mframe.evets.sb -command {.mframe.evets.evs yview}] -side left -fill y
-	.mframe.evets.evs column #0 -width 100 -minwidth 100 -stretch 0
-	.mframe.evets.evs heading #1 -text Day
-	.mframe.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
-	.mframe.evets.evs heading #2 -text Event
+	pack [scrollbar .evets.sb -command {.evets.evs yview}] -side left -fill y
+	.evets.evs column #0 -width 100 -minwidth 100 -stretch 0
+	.evets.evs heading #1 -text Day
+	.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
+	.evets.evs heading #2 -text Event
 	#new_props_win
 	#new_cal_win $square_size $text_offset $day_font $hh $m $y
 	#EventStor::build_db :memory:
@@ -149,6 +207,7 @@ proc main2 {} {
 	#EventStor::holidays_us 2017
 	#EventStor::holidays_us 2018
 	#add_all_events .mframe.evets.evs
+	search_ops
 
 }
 
