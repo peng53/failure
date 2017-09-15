@@ -37,20 +37,27 @@ proc check_open {} {
 	}
 	return 0
 }
-
 proc new_cal_win {square_size text_offset day_font hh m y} {
 	toplevel .calwin
 	wm transient .calwin .
-	set size [expr {$square_size*7}]
+	set size [expr {$square_size*7+12}]
 	wm maxsize .calwin $size $size
 	wm title .calwin Calender
 	bind .calwin <Control-Key-q> {
 		exit
 	}
+	wm protocol .calwin WM_DELETE_WINDOW {
+		if {[tk_messageBox -message "Quit?" -type yesno] eq "yes"} {
+			wm forget .calwin
+		}
+	}
 	pack [Cal::Cal .calwin.cal $m $y $square_size $text_offset $day_font $hh]
-
+	pack [button .calwin.b1 -text {Search M/Y}] -side left
+	pack [button .calwin.b2 -text {Search WHE}] -side left
+	pack [button .calwin.b3 -text {Properties Date}] -side left
+	pack [button .calwin.b4 -text Hide] -side left
+	
 }
-
 proc add_all_events {w} {
 	set cy 0
 	set cm 0
@@ -157,7 +164,13 @@ proc search_ops {} {
 	puts $wh
 }
 proc clear_ents {} {
-
+	global cb
+	for {set i 1} {$i<13} {incr i} {
+		set cb($i) 0
+	}
+	foreach w {date.yr.e date.yr.e2 wh.e} {
+		.search.options.$w delete 0 end
+	}
 }
 proc main2 {} {
 	wm title . Events
@@ -167,18 +180,13 @@ proc main2 {} {
 	set hh 20
 	# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
-	#pack [frame .mframe] -expand 1 -fill both
 	menu .men
 	. configure -menu .men
-	#menu .men.view
-	#set calpos Window
-	#.men.view add radiobutton -label Window -variable calpos
-	#.men.view add radiobutton -label Floating -variable calpos
-	#.men add cascade -menu .men.view -label View
+	.men add command -label Calender -command "new_cal_win $square_size $text_offset $day_font $hh $m $y"
 	.men add command -label Quit -command exit
 	pack [labelframe .search -text Search -font 16] -fill x
-	pack [frame .search.options] -side left -expand 1 -fill x
-	pack [frame .search.options.date]
+	pack [frame .search.options] -side left
+	pack [frame .search.options.date] -anchor w
 	pack [labelframe .search.options.date.mths -text Months] -side left
 	global cb
 	for {set i 1} {$i<13} {incr i} {
@@ -188,24 +196,25 @@ proc main2 {} {
 	pack [entry .search.options.date.yr.e -width 5] -side left
 	pack [label .search.options.date.yr.l2 -text - -font 10] -side left
 	pack [entry .search.options.date.yr.e2 -width 5] -side left
-	pack [labelframe .search.options.wh -text Where]
+	pack [labelframe .search.options.wh -text Where] -anchor w
 	pack [ttk::combobox .search.options.wh.cb -state readonly -values {start_date event_name}] -side left
 	pack [ttk::combobox .search.options.wh.cb2 -state readonly -values {< <= = >= >} -width 4] -side left
 	pack [entry .search.options.wh.e] -side left
 	pack [button .search.options.wh.add -text Add -command {.search.got.lb insert end [list WHERE [.search.options.wh.cb get] [.search.options.wh.cb2 get] [.search.options.wh.e get]]}] -side left
-	pack [labelframe .search.options.or -text Order]
+	pack [labelframe .search.options.or -text Order] -anchor w
 	pack [ttk::combobox .search.options.or.cb -state readonly -values {start_date event_name}] -side left
-	foreach w {.search.options.or.cb .search.options.wh.cb .search.options.wh.cb2} {
-		$w current 0
+	foreach w {or.cb wh.cb wh.cb2} {
+		.search.options.$w current 0
 	}
 	pack [button .search.options.or.add -text Add -command {.search.got.lb insert end [list ORDER [.search.options.or.cb get]]}] -side left
-
-	pack [labelframe .search.got -text Options]
-	pack [listbox .search.got.lb -height 7 -yscrollcommand {.search.got.sb set} -selectmode multiple] -side left
+	pack [labelframe .search.got -text Options] -side left -expand 1 -fill x
+	pack [listbox .search.got.lb -height 7 -yscrollcommand {.search.got.sb set} -selectmode multiple] -side left -expand 1 -fill x
 	pack [scrollbar .search.got.sb -command {.search.got.lb yview}] -side left -fill y
-	pack [button .search.ok -text Search -command search_ops] -side bottom
-	pack [button .search.clear -text Clear -command {.search.got.lb delete 0 end}] -side bottom
-	pack [button .search.del -text Delete -command {.search.got.lb delete active}] -side bottom
+	pack [frame .search.b] -side left
+	pack [button .search.b.ok -width 9 -text Search -command search_ops]
+	pack [button .search.b.del -width 9 -text Delete -command {.search.got.lb delete active}]
+	pack [button .search.b.cl_ev -width 9 -text {Clear Entries} -command {clear_ents}]
+	pack [button .search.b.cl_en -width 9 -text {Clear Options} -command {.search.got.lb delete 0 end}]
 
 	pack [labelframe .evets -text Events -font 16] -expand 1 -fill both
 	pack [ttk::treeview .evets.evs -columns {Day Event} -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
@@ -216,7 +225,6 @@ proc main2 {} {
 	.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
 	.evets.evs heading #2 -text Event
 	#new_props_win
-	#new_cal_win $square_size $text_offset $day_font $hh $m $y
 	#EventStor::build_db :memory:
 	#EventStor::holidays_us 2016
 	#EventStor::holidays_us 2017
