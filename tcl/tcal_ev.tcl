@@ -118,23 +118,17 @@ proc get_range_ac {A B {L {}}} {
 proc get_range_i {A B} {
 	global cb
 	set o [list]
-	for {set I $A} {$I<=$B} {incr I} {
-		while {$I<=$B && $cb($I)==0} {
-			incr I
-		}
-		if {$I>$B} {
-			return $o
-		}
-		if {$cb($I)==1} {
+	for {set I $A} {$I<=$B} {incr I 2} {
+		while {$I<=$B && !$cb($I)} { incr I }
+		if {$I<=$B && $cb($I)} {
 			set a $I
 			incr $I
-			while {$I<=$B && $cb($I)==1} {
-				incr I
-			}
-			if {$a==[expr {$I-1}]} {
+			while {$I<=$B && $cb($I)} { incr I }
+			incr I -1
+			if {$a==$I} {
 				lappend o $a
 			} else {
-				lappend o [list $a [expr {min($B,$I-1)}]]
+				lappend o [list $a $I]
 			}
 		}
 	}
@@ -142,8 +136,28 @@ proc get_range_i {A B} {
 }
 
 proc search_ops {} {
-	puts [get_range_ac 1 12]
 	puts [get_range_i 1 12]
+	puts [.search.options.date.yr.e get]
+	puts [.search.options.date.yr.e2 get]
+	set wh [list]
+	set or [dict create]
+	foreach o [.search.got.lb get 0 end] {
+		switch [llength $o] {
+			4 {
+				if {[string length [lindex $o 3]]>0} {
+					lappend wh {*}[lrange $o 1 3]
+				}
+			}
+			2 {
+				dict append or [lindex $o 1]
+			}
+		}
+	}
+	puts [dict keys $or]
+	puts $wh
+}
+proc clear_ents {} {
+
 }
 proc main2 {} {
 	wm title . Events
@@ -166,9 +180,6 @@ proc main2 {} {
 	pack [frame .search.options] -side left -expand 1 -fill x
 	pack [frame .search.options.date]
 	pack [labelframe .search.options.date.mths -text Months] -side left
-	#~ for {set m 1} {$m<13} {incr m} {
-		#~ pack [checkbutton .search.options.date.mths.m$m -indicatoron 0 -variable t($m) -width 2 -text $m] -side left
-	#~ }
 	global cb
 	for {set i 1} {$i<13} {incr i} {
 		pack [checkbutton .search.options.date.mths.cb_$i -variable cb($i) -text $i -width 2 -indicatoron 0] -side left
@@ -178,19 +189,23 @@ proc main2 {} {
 	pack [label .search.options.date.yr.l2 -text - -font 10] -side left
 	pack [entry .search.options.date.yr.e2 -width 5] -side left
 	pack [labelframe .search.options.wh -text Where]
-	pack [ttk::combobox .search.options.wh.cb] -side left
-	pack [ttk::combobox .search.options.wh.cb2 -width 4] -side left
+	pack [ttk::combobox .search.options.wh.cb -state readonly -values {start_date event_name}] -side left
+	pack [ttk::combobox .search.options.wh.cb2 -state readonly -values {< <= = >= >} -width 4] -side left
 	pack [entry .search.options.wh.e] -side left
-	pack [button .search.options.wh.add -text Add] -side left
+	pack [button .search.options.wh.add -text Add -command {.search.got.lb insert end [list WHERE [.search.options.wh.cb get] [.search.options.wh.cb2 get] [.search.options.wh.e get]]}] -side left
 	pack [labelframe .search.options.or -text Order]
-	pack [ttk::combobox .search.options.or.cb] -side left
-	pack [button .search.options.or.add -text Add] -side left
+	pack [ttk::combobox .search.options.or.cb -state readonly -values {start_date event_name}] -side left
+	foreach w {.search.options.or.cb .search.options.wh.cb .search.options.wh.cb2} {
+		$w current 0
+	}
+	pack [button .search.options.or.add -text Add -command {.search.got.lb insert end [list ORDER [.search.options.or.cb get]]}] -side left
 
 	pack [labelframe .search.got -text Options]
-	pack [listbox .search.got.lb -height 7 -yscrollcommand {.search.got.sb set}] -side left
+	pack [listbox .search.got.lb -height 7 -yscrollcommand {.search.got.sb set} -selectmode multiple] -side left
 	pack [scrollbar .search.got.sb -command {.search.got.lb yview}] -side left -fill y
 	pack [button .search.ok -text Search -command search_ops] -side bottom
-	pack [button .search.clear -text Clear] -side bottom
+	pack [button .search.clear -text Clear -command {.search.got.lb delete 0 end}] -side bottom
+	pack [button .search.del -text Delete -command {.search.got.lb delete active}] -side bottom
 
 	pack [labelframe .evets -text Events -font 16] -expand 1 -fill both
 	pack [ttk::treeview .evets.evs -columns {Day Event} -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
@@ -207,8 +222,6 @@ proc main2 {} {
 	#EventStor::holidays_us 2017
 	#EventStor::holidays_us 2018
 	#add_all_events .mframe.evets.evs
-	search_ops
-
 }
 
 main2
