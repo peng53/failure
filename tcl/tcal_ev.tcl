@@ -6,7 +6,6 @@ source "tcalev_sql.tcl"
 bind . <Control-Key-q> {
 	exit
 }
-
 proc new_props_win {} {
 	# Create a properties window
 	toplevel .props
@@ -59,13 +58,6 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 	pack [button .calwin.b2 -text {Properties Date}] -side left
 	pack [button .calwin.b3 -text Hide] -side left
 }
-#~ proc hideshow {f} {
-	#~ if {[string length [grid info $f]]==0} {
-		#~ grid $f
-	#~ } else {
-		#~ grid remove $f
-	#~ }
-#~ }
 proc get_range_ac {A B {L {}}} {
 	# Runs through checkbutton array to spans of 'trues'.
 	# Returns List of ranges.
@@ -151,49 +143,37 @@ proc insert_rows {w rs} {
 proc search_by_date {w} {
 	# Gather options for searching by date and
 	# executes search.
-	set y [.search.options.date.yr.e get]
+	set y [.search.date.yr.e get]
 	if {[string length $y]==0} {
-		# Error: need year
+		tk_messageBox -type ok -icon error -message {A year is required!}
+		return
+	}
+	set mths [get_range_i 1 12]
+	if {[llength $mths]==0} {
+		tk_messageBox -type ok -icon error -message {A month is required!}
 		return
 	}
 	$w delete [$w children {}]
 	set rs [list]
-	set mths [get_range_i 1 12]
-	set d [.search.options.date.dy.e get]
-	if {[string length $d]==0} {
-		set d 1
-	}
-	set y2 [.search.options.date.yr.e2 get]
-	if {[string length $y2]==0} {
-		set y2 $y
-	}
-	if {[llength $mths]==1} {
-		set mths [lindex $mths 0]
-		if {[llength $mths]==1} {
-			set m2 [set m [lindex $mths 0]]
+	set d [.search.date.dy.e get]
+	if {[string length $d]==0} { set d 1}
+	set y2 [.search.date.yr.e2 get]
+	if {[string length $y2]==0} { set y2 $y }
+	foreach mm $mths {
+		if {[llength $mm]==1} {
+			set m2 [set m [lindex $mm 0]]
 		} else {
-			lassign $mths m m2
+			lassign $mm m m2
 		}
 		set d2 [Cal::mth_day_ct $m2 $y2]
 		lappend rs {*}[EventStor::ps_get_date_range [list $y $m $d] [list $y2 $m2 $d2]]
-	} else {
-		foreach mm $mths {
-			if {[llength $mm]==1} {
-				set m2 [set m [lindex $mm 0]]
-			} else {
-				lassign $mm m m2
-			}
-			set d2 [Cal::mth_day_ct $m2 $y2]
-			lappend rs {*}[EventStor::ps_get_date_range [list $y $m $d] [list $y2 $m2 $d2]]
-		}
 	}
-	#puts "[list $y $m $d] [list $y2 $m2 $d2]"
 	insert_rows $w $rs
 }
 proc search_by_name {w} {
-	set s [string tolower [.search.options.name.e get]]
+	set s [string tolower [.search.name.e get]]
 	if {[string length $s]==0} {
-		#Error out
+		tk_messageBox -type ok -icon error -message {Event name is required!}
 		return
 	}
 	$w delete [$w children {}]
@@ -207,7 +187,7 @@ proc reset_ents {} {
 		set cb($i) 0
 	}
 	foreach w {date.yr.e date.yr.e2 date.dy.e date.dy.e2 name.e } {
-		.search.options.$w delete 0 end
+		.search.$w delete 0 end
 	}
 }
 proc main2 {} {
@@ -219,36 +199,46 @@ proc main2 {} {
 	# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
 	menu .men
+	menu .men.db
+	menu .men.db.aut
+	menu .men.search
 	. configure -menu .men
+	.men add cascade -label Database -menu .men.db
+	.men.db add command -label {New file}
+	.men.db add command -label {Load file}
+	.men.db add command -label {Close file}
+	.men.db add separator
+	.men.db add cascade -label {Auto..} -menu .men.db.aut
+	.men.db.aut add command -label {US Holidays}
 	.men add command -label Calender -command "new_cal_win $square_size $text_offset $day_font $hh $m $y"
+	.men add cascade -label Search -menu .men.search
+	.men.search add command -label All -command {all_events .evets.evs}
+	.men.search add separator
+	.men.search add command -label {by date} -command {search_by_date .evets.evs}
+	.men.search add command -label {by name} -command {search_by_name .evets.evs}
+	.men.search add separator
+	.men.search add command -label Reset -command reset_ents
 	.men add command -label Quit -command exit
 	pack [labelframe .search -text Search -font 16] -fill x
-	pack [frame .search.options] -side left -expand 1 -fill x
-	pack [frame .search.options.date] -anchor w  -expand 1 -fill x
-	pack [labelframe .search.options.date.mths -text Months] -side left -expand 1 -fill x
+	pack [frame .search.date] -anchor w  -expand 1 -fill x
+	pack [labelframe .search.date.mths -text Months] -side left -expand 1 -fill x
 	global cb
 	for {set i 1} {$i<13} {incr i} {
-		pack [checkbutton .search.options.date.mths.cb_$i -variable cb($i) -text $i -width 2 -indicatoron 0] -side left
+		pack [checkbutton .search.date.mths.cb_$i -variable cb($i) -text $i -width 2 -indicatoron 0] -side left
 	}
-	pack [labelframe .search.options.date.dy -text Day] -side left
-	pack [entry .search.options.date.dy.e -width 3] -side left
-	pack [label .search.options.date.dy.l -text :] -side left
-	pack [entry .search.options.date.dy.e2 -width 3] -side left
-	pack [labelframe .search.options.date.yr -text Year] -side left
-	pack [entry .search.options.date.yr.e -width 5] -side left
-	pack [label .search.options.date.yr.l2 -text - -font 10] -side left
-	pack [entry .search.options.date.yr.e2 -width 5] -side left
-	pack [labelframe .search.options.name -text {Event Name}] -side left -expand 1 -fill x
-	pack [entry .search.options.name.e] -expand 1 -fill x
-
-	pack [frame .search.b]
-	pack [button .search.b.ok -width 9 -text {Search date} -command {search_by_date .evets.evs}]
-	pack [button .search.b.ok2 -width 9 -text {Search name} -command {search_by_name .evets.evs}]
-	pack [button .search.b.cl_ev -width 9 -text Reset -command {reset_ents}]
+	pack [labelframe .search.date.dy -text Day] -side left
+	pack [entry .search.date.dy.e -width 3] -side left
+	pack [label .search.date.dy.l -text :] -side left
+	pack [entry .search.date.dy.e2 -width 3] -side left
+	pack [labelframe .search.date.yr -text Year] -side left
+	pack [entry .search.date.yr.e -width 5] -side left
+	pack [label .search.date.yr.l2 -text - -font 10] -side left
+	pack [entry .search.date.yr.e2 -width 5] -side left
+	pack [labelframe .search.name -text {Event Name}] -side left -expand 1 -fill x
+	pack [entry .search.name.e] -expand 1 -fill x
 
 	pack [labelframe .evets -text Events -font 16] -expand 1 -fill both
 	pack [ttk::treeview .evets.evs -columns {Day Event} -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
-	#-show headings
 	pack [scrollbar .evets.sb -command {.evets.evs yview}] -side left -fill y
 	.evets.evs column #0 -width 100 -minwidth 100 -stretch 0
 	.evets.evs heading #1 -text Day
