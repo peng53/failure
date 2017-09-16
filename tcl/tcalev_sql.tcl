@@ -21,6 +21,12 @@ namespace eval EventStor {
 		conn eval {INSERT into events VALUES(null,:start_date,:end_date,:event_name,:desc_more)}
 		return 1
 	}
+	proc lastrow_added {} {
+		# Returns the rowid of the last row inserted.
+		# Returns -1 if db not open.
+		if {!$v::is_open} { return -1 }
+		return [conn eval {SELECT last_insert_rowid()}]
+	}
 	proc update_row {rowid start_date end_date event_name desc_more} {
 		# Update row in event. Returns 0 if database isn't open.
 		if {!$v::is_open} { return 0 }
@@ -79,13 +85,50 @@ namespace eval EventStor {
 		return $rs
 	}
 	proc get_base_rows {{ws {}} {os {}}} {
-		# Yields single row at a time from open database.
+		# Returns brief rows.
 		# Returns 0 if not open.
 		# Only basic stuff
 		if {!$v::is_open} { return 0 }
 		puts $ws
 		set rs [list]
 		conn eval "SELECT rowid,date(start_date,'unixepoch','localtime') as date,event_name from events [wheres $ws] [orders $os]" {
+			lappend rs [list $rowid $date $event_name]
+		}
+		return $rs
+	}
+	proc ps_get_basic {} {
+		# Returns brief rows without user input
+		if {!$v::is_open} { return 0 }
+		set rs [list]
+		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date, event_name from events} {
+			lappend rs [list $rowid $date $event_name]
+		}
+		return $rs
+	}
+	proc ps_get_event {name} {
+		# Returns row(s) with exact event_name
+		if {!$v::is_open} { return 0 }
+		set rs [list]
+		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date from events WHERE event_name=:name} {
+			lappend rs [list $rowid $date $name]
+		}
+		return $rs
+	}
+	proc ps_get_more {rowid} {
+		# Returns all cols for row with rowid.
+		if {!$v::is_open} { return 0 }
+		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date1,date(end_date,'unixepoch','localtime') as date2, event_name, desc_more from events WHERE rowid=:rowid} {
+			return [list $rowid $date1 $date2 $event_name $desc_more]
+		}
+	}
+	proc ps_get_date_range {d1 d2} {
+		# Returns all rows with start_date between d1 & d2, strictly ()
+		# Where d1 & d2 are [list year {month {day}}]
+		if {!$v::is_open} { return 0 }
+		set rs [list]
+		set d1s [second_date {*}$d1]
+		set d2s [second_date {*}$d2]
+		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date, event_name from events WHERE start_date>:d1s AND start_date<:d2s} {
 			lappend rs [list $rowid $date $event_name]
 		}
 		return $rs
@@ -128,17 +171,19 @@ namespace eval EventStor {
 	}
 	proc holidays_us {year} {
 		if {!$v::is_open} { return 0 }
-		foreach {mth day name} {12 25 Christmas 7 4 {Independence Day} 10 31 Halloween 2 14 {Valentines Day} 3 17 {St Patrick's Day} 1 1 {New Years Eve} 1 15 {Martin Luther King Jr Day} 11 11 {Veterans Day}} {
-			set date [second_date $year $mth $day]
-			add_row $date [expr {$date+86399}] $name
+		conn transaction {
+			foreach {mth day name} {12 25 Christmas 7 4 {Independence Day} 10 31 Halloween 2 14 {Valentines Day} 3 17 {St Patrick's Day} 1 1 {New Years Eve} 1 15 {Martin Luther King Jr Day} 11 11 {Veterans Day}} {
+				set date [second_date $year $mth $day]
+				add_row $date [expr {$date+86399}] $name
+			}
+			foreach {mth xth day name} {11 3 4 Thanksgiving 5 1 0 {Mothers Day} 6 2 0 {Fathers Day} 9 0 1 {Labor Day} 10 1 1 {Columbus Day}} {
+				set date [second_date $year $mth [xth_dow $mth $year $day $xth]]
+				add_row $date [expr {$date+86399}] $name
+			}
+			set date [expr {[second_date $year 6 [xth_dow 6 $year 1 0]]-604800}]
+			# I find first Monday of the month after and go back 7 days.
+			add_row $date [expr {$date+86399}] {Memorial Day}
 		}
-		foreach {mth xth day name} {11 3 4 Thanksgiving 5 1 0 {Mothers Day} 6 2 0 {Fathers Day} 9 0 1 {Labor Day} 10 1 1 {Columbus Day}} {
-			set date [second_date $year $mth [xth_dow $mth $year $day $xth]]
-			add_row $date [expr {$date+86399}] $name
-		}
-		set date [expr {[second_date 2017 6 [xth_dow 6 2017 1 0]]-604800}]
-		# I find first Monday of the month after and go back 7 days.
-		add_row $date [expr {$date+86399}] {Memorial Day}
 		return 1
 	}
 	proc test {} {
@@ -180,9 +225,18 @@ namespace eval EventStor {
 
 		puts {Getting rows with start_date in Sept-Dec 2017}
 		foreach r [get_base_rows [list start_date >= [second_date 2017 9] start_date < [second_date 2018]] {start_date}] { puts [join $r ,] }
+		puts {AGAIN!!}
+		foreach r [ps_get_date_range [list 2017 8 31] [list 2018 1]] { puts [join $r ,] }
 
 		puts {Getting 2017}
 		foreach r [get_a_cal 2017] { puts [join $r ,] }
+		holidays_us 2018
+		puts {All events with name 'Memorial Day'}
+		foreach r [ps_get_event {Memorial Day}] { puts [join $r ,] }
+		set i [lastrow_added]
+		puts $i
+		puts [ps_get_more $i]
+		puts [get_base_rows]
 		puts {Closing DB}
 		if {![close_db]} {
 			puts {close_db failed}
