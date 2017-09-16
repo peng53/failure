@@ -53,9 +53,8 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 	}
 	pack [Cal::Cal .calwin.cal $m $y $square_size $text_offset $day_font $hh]
 	pack [button .calwin.b1 -text {Search M/Y}] -side left
-	pack [button .calwin.b2 -text {Search WHE}] -side left
-	pack [button .calwin.b3 -text {Properties Date}] -side left
-	pack [button .calwin.b4 -text Hide] -side left
+	pack [button .calwin.b2 -text {Properties Date}] -side left
+	pack [button .calwin.b3 -text Hide] -side left
 	
 }
 proc add_all_events {w} {
@@ -142,33 +141,20 @@ proc get_range_i {A B} {
 	return $o
 }
 
-proc search_ops {} {
+proc search_by_date {} {
 	puts [get_range_i 1 12]
 	puts [.search.options.date.yr.e get]
 	puts [.search.options.date.yr.e2 get]
-	set wh [list]
-	set or [dict create]
-	foreach o [.search.got.lb get 0 end] {
-		switch [llength $o] {
-			4 {
-				if {[string length [lindex $o 3]]>0} {
-					lappend wh {*}[lrange $o 1 3]
-				}
-			}
-			2 {
-				dict append or [lindex $o 1]
-			}
-		}
-	}
-	puts [dict keys $or]
-	puts $wh
+}
+proc search_by_name {} {
+	puts [.search.options.name.e get]
 }
 proc clear_ents {} {
 	global cb
 	for {set i 1} {$i<13} {incr i} {
 		set cb($i) 0
 	}
-	foreach w {date.yr.e date.yr.e2 wh.e} {
+	foreach w {date.yr.e date.yr.e2} {
 		.search.options.$w delete 0 end
 	}
 }
@@ -185,36 +171,28 @@ proc main2 {} {
 	.men add command -label Calender -command "new_cal_win $square_size $text_offset $day_font $hh $m $y"
 	.men add command -label Quit -command exit
 	pack [labelframe .search -text Search -font 16] -fill x
-	pack [frame .search.options] -side left
-	pack [frame .search.options.date] -anchor w
-	pack [labelframe .search.options.date.mths -text Months] -side left
+	pack [frame .search.options] -side left -expand 1 -fill x
+	pack [frame .search.options.date] -anchor w  -expand 1 -fill x
+	pack [labelframe .search.options.date.mths -text Months] -side left -expand 1 -fill x
 	global cb
 	for {set i 1} {$i<13} {incr i} {
 		pack [checkbutton .search.options.date.mths.cb_$i -variable cb($i) -text $i -width 2 -indicatoron 0] -side left
 	}
+	pack [labelframe .search.options.date.dy -text Day] -side left
+	pack [entry .search.options.date.dy.e -width 3] -side left
+	pack [label .search.options.date.dy.l -text :] -side left
+	pack [entry .search.options.date.dy.e2 -width 3] -side left
 	pack [labelframe .search.options.date.yr -text Year] -side left
 	pack [entry .search.options.date.yr.e -width 5] -side left
 	pack [label .search.options.date.yr.l2 -text - -font 10] -side left
 	pack [entry .search.options.date.yr.e2 -width 5] -side left
-	pack [labelframe .search.options.wh -text Where] -anchor w
-	pack [ttk::combobox .search.options.wh.cb -state readonly -values {start_date event_name}] -side left
-	pack [ttk::combobox .search.options.wh.cb2 -state readonly -values {< <= = >= >} -width 4] -side left
-	pack [entry .search.options.wh.e] -side left
-	pack [button .search.options.wh.add -text Add -command {.search.got.lb insert end [list WHERE [.search.options.wh.cb get] [.search.options.wh.cb2 get] [.search.options.wh.e get]]}] -side left
-	pack [labelframe .search.options.or -text Order] -anchor w
-	pack [ttk::combobox .search.options.or.cb -state readonly -values {start_date event_name}] -side left
-	foreach w {or.cb wh.cb wh.cb2} {
-		.search.options.$w current 0
-	}
-	pack [button .search.options.or.add -text Add -command {.search.got.lb insert end [list ORDER [.search.options.or.cb get]]}] -side left
-	pack [labelframe .search.got -text Options] -side left -expand 1 -fill x
-	pack [listbox .search.got.lb -height 7 -yscrollcommand {.search.got.sb set} -selectmode multiple] -side left -expand 1 -fill x
-	pack [scrollbar .search.got.sb -command {.search.got.lb yview}] -side left -fill y
-	pack [frame .search.b] -side left
-	pack [button .search.b.ok -width 9 -text Search -command search_ops]
-	pack [button .search.b.del -width 9 -text Delete -command {.search.got.lb delete active}]
-	pack [button .search.b.cl_ev -width 9 -text {Clear Entries} -command {clear_ents}]
-	pack [button .search.b.cl_en -width 9 -text {Clear Options} -command {.search.got.lb delete 0 end}]
+	pack [labelframe .search.options.name -text {Event Name}] -side left -expand 1 -fill x
+	pack [entry .search.options.name.e] -expand 1 -fill x
+
+	pack [frame .search.b]
+	pack [button .search.b.ok -width 9 -text {Search date} -command search_by_date]
+	pack [button .search.b.ok2 -width 9 -text {Search name} -command search_by_name]
+	pack [button .search.b.cl_ev -width 9 -text Reset -command {clear_ents}]
 
 	pack [labelframe .evets -text Events -font 16] -expand 1 -fill both
 	pack [ttk::treeview .evets.evs -columns {Day Event} -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
