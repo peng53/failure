@@ -36,6 +36,7 @@ namespace eval Cal {
 		}
 	}
 	proc set_mth_yr {m y} {
+		# Sets the current month & year if valid
 		if {$m<1 || $m>12 | $y<1 || $y>9999} { return }
 		set v::MTH $m
 		set v::YR $y
@@ -49,9 +50,9 @@ namespace eval Cal {
 		set v::dfont $dfont
 		set v::P $parent
 		frame $parent
-		pack [frame $parent.mth]
+		pack [frame $parent.mth] -expand 1 -fill x
 		pack [button $parent.mth.prv -text < -command Cal::prev_mth] -side left
-		pack [label $parent.mth.mthl] -side left
+		pack [label $parent.mth.mthl] -side left -expand 1 -fill x
 		pack [button $parent.mth.nxt -text > -command Cal::next_mth] -side left
 		pack [canvas $parent.can -width [expr 7*$v::SQS] -height [expr $hh+6*$v::SQS]]
 		bind $parent.can <ButtonPress-1> {
@@ -107,6 +108,7 @@ namespace eval Cal {
 			Cal::setSel [expr {$r+1}] $c
 		}
 		proc $v::P.get_selected {} {
+			# Gets currently selected date span.
 			if {$v::selB!=0} { return [list {*}[lrange [split $v::selA] 0 2] {*}[lrange [split $v::selB] 0 2]] }
 			if {$v::selA!=0} { return [lrange [split $v::selA] 0 2] }
 		}
@@ -205,9 +207,12 @@ namespace eval Cal {
 		}
 	}
 	proc month_range {} {
+		# Get current month day year span shown on calendar.
 		return [list $v::MTH 1 $v::YR $v::MTH [mth_day_ct $v::MTH $v::YR] $v::YR]
 	}
 	proc shown_dates {} {
+		# Draws selection rectangles in the selected range
+		# for the current month.
 		$v::P.can delete -tags sel
 		if {$v::selA==0} { return }
 		lassign $v::selA ma da ya ra ca
@@ -237,6 +242,7 @@ namespace eval Cal {
 		}
 	}
 	proc clearSel {} {
+		# Clears the selection, both visually and variable wise.
 		set v::selA [set v::selB 0]
 		shown_dates
 	}

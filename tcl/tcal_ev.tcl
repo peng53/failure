@@ -42,7 +42,7 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 	# Creates a calendar window.
 	toplevel .calwin
 	wm transient .calwin .
-	set size [expr {$square_size*7+12}]
+	set size [expr {$square_size*7+48}]
 	wm maxsize .calwin $size $size
 	wm title .calwin Calender
 	bind .calwin <Control-Key-q> {
@@ -54,6 +54,22 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 		}
 	}
 	pack [Cal::Cal .calwin.cal $m $y $square_size $text_offset $day_font $hh]
+	pack [frame .calwin.set]
+	pack [label .calwin.set.mthl -text Month] -side left
+	pack [ttk::combobox .calwin.set.mth -values {{1 January} {2 Febuary} {3 March} {4 April} {5 May} {6 June} {7 July} {8 August} {9 September} {10 October} {11 November} {12 December}} -state readonly] -side left
+	.calwin.set.mth current 0
+	proc set_my {} {
+		lassign [split [.calwin.set.mth get]] n N
+		if {[string length [set y [.calwin.set.yre get]]]==0} {
+			set y $Cal::v::YR
+		}
+		Cal::set_mth_yr $n $y
+		Cal::cal_day
+
+	}
+	pack [label .calwin.set.yrl -text Year] -side left
+	pack [entry .calwin.set.yre -width 6] -side left
+	pack [button .calwin.set.set -text Set -command set_my] -side left
 	pack [button .calwin.b1 -text {Search M/Y} -command {search_by_cal .evets.evs} ] -side left
 	pack [button .calwin.b2 -text {Properties Date}] -side left
 	pack [button .calwin.b3 -text Hide] -side left
@@ -161,20 +177,25 @@ proc search_by_cal {w} {
 	# Get date(-range) on calendar and
 	# get all events in that range
 	set D [Cal::.calwin.cal.get_selected]
-	puts $D
 	switch [llength $D] {
 		0 {
-			return
+			set m $Cal::v::MTH
+			set y $Cal::v::YR
+			set D1 [list $y $m 0]
+			set D2 [list $y $m [Cal::mth_day_ct $m $y]]
 		}
 		3 {
 			lassign $D m d y
-			set rs [EventStor::ps_get_date_range [list $y $m $d] [list $y $m $d]]
+			set D1 [list $y $m $d]
+			set D2 $D1
 		}
 		6 {
 			lassign $D m d y m2 d2 y2
-			set rs [EventStor::ps_get_date_range [list $y $m $d] [list $y2 $m2 $d2]]
+			set D1 [list $y $m $d]
+			set D2 [list $y2 $m2 $d2]
 		}
 	}
+	set rs [EventStor::ps_get_date_range $D1 $D2]
 	$w delete [$w children {}]
 	insert_rows $w $rs
 	
