@@ -54,7 +54,7 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 		}
 	}
 	pack [Cal::Cal .calwin.cal $m $y $square_size $text_offset $day_font $hh]
-	pack [button .calwin.b1 -text {Search M/Y}] -side left
+	pack [button .calwin.b1 -text {Search M/Y} -command {search_by_cal .evets.evs} ] -side left
 	pack [button .calwin.b2 -text {Properties Date}] -side left
 	pack [button .calwin.b3 -text Hide] -side left
 }
@@ -108,57 +108,44 @@ proc get_range_i {A B} {
 	}
 	return $o
 }
+proc insert_rows {w rs} {
+	# Inserts of rows in rs to widget w.
+	# The root children are the years followed by months
+	set cy 0
+	foreach r $rs {
+		lassign [split [lindex $r 1] -] y m d
+		if {$cy!=$y} {
+			set cy $y
+			set cyi [$w insert {} end -text $cy -open 1]
+			set cm 0
+		}
+		if {$cm!=$m} {
+			set cm $m
+			set cmi [$w insert $cyi end -text $cm]
+		}
+		$w insert $cmi end -values [list $d [lindex $r 2]]
+	}
+}
 proc all_events {w} {
 	# Get all events from open database and
 	# calls for them to be added to treeview
 	set rs [EventStor::ps_get_basic]
 	insert_rows $w $rs
 }
-proc insert_rows {w rs} {
-	# Inserts of rows in rs to widget w.
-	# The root children are the years followed by months
-	set cy 0
-	set cm 0
-	set cyi {}
-	set cmi {}
-	foreach r $rs {
-		lassign [split [lindex $r 1] -] y m d
-		if {$cy==$y} {
-			if {$cm==$m} {
-				$w insert $cmi end -values [list $d [lindex $r 2]]
-			} else {
-				set cm $m
-				set cmi [$w insert $cyi end -text $cm]
-				$w insert $cmi end -values [list $d [lindex $r 2]]
-			}
-		} else {
-				set cy $y
-				set cyi [$w insert {} end -text $cy -open 1]
-				set cm $m
-				set cmi [$w insert $cyi end -text $cm]
-				$w insert $cmi end -values [list $d [lindex $r 2]]
-		}
-	}
-}
 proc search_by_date {w} {
 	# Gather options for searching by date and
 	# executes search.
-	set y [.search.date.yr.e get]
-	if {[string length $y]==0} {
+	if {[string length [set y [.search.date.yr.e get]]]==0} {
 		tk_messageBox -type ok -icon error -message {A year is required!}
 		return
 	}
-	set mths [get_range_i 1 12]
-	if {[llength $mths]==0} {
-		tk_messageBox -type ok -icon error -message {A month is required!}
-		return
+	if {[llength [set mths [get_range_i 1 12]]]==0} {
+		set mths [list [list 1 12]]
 	}
 	$w delete [$w children {}]
 	set rs [list]
-	set d [.search.date.dy.e get]
-	if {[string length $d]==0} { set d 1}
-	set y2 [.search.date.yr.e2 get]
-	if {[string length $y2]==0} { set y2 $y }
+	if {[string length [set d [.search.date.dy.e get]]]==0} { set d 1}
+	if {[string length [set y2 [.search.date.yr.e2 get]]]==0} { set y2 $y }
 	foreach mm $mths {
 		if {[llength $mm]==1} {
 			set m2 [set m [lindex $mm 0]]
@@ -170,7 +157,32 @@ proc search_by_date {w} {
 	}
 	insert_rows $w $rs
 }
+proc search_by_cal {w} {
+	# Get date(-range) on calendar and
+	# get all events in that range
+	set D [Cal::.calwin.cal.get_selected]
+	puts $D
+	switch [llength $D] {
+		0 {
+			return
+		}
+		3 {
+			lassign $D m d y
+			set rs [EventStor::ps_get_date_range [list $y $m $d] [list $y $m $d]]
+		}
+		6 {
+			lassign $D m d y m2 d2 y2
+			set rs [EventStor::ps_get_date_range [list $y $m $d] [list $y2 $m2 $d2]]
+		}
+	}
+	$w delete [$w children {}]
+	insert_rows $w $rs
+	
+}
 proc search_by_name {w} {
+	# Get name field and execute search by name.
+	# If it starts with the 'name', it is included.
+	# Case does not matter
 	set s [string tolower [.search.name.e get]]
 	if {[string length $s]==0} {
 		tk_messageBox -type ok -icon error -message {Event name is required!}
@@ -183,9 +195,7 @@ proc search_by_name {w} {
 proc reset_ents {} {
 	# Resets entries and checkbuttons
 	global cb
-	for {set i 1} {$i<13} {incr i} {
-		set cb($i) 0
-	}
+	array set cb [list 1 0 2 0 3 0 4 0 5 0 6 0 7 0 8 0 9 0 10 0 11 0 12 0]
 	foreach w {date.yr.e date.yr.e2 date.dy.e date.dy.e2 name.e } {
 		.search.$w delete 0 end
 	}

@@ -73,7 +73,7 @@ namespace eval Cal {
 			Cal::next_mth
 		}
 		bind $v::P.can <Control-Key-Up> {
-			Cal::set_mth_yr $Cal::v::MTH [expr {$Cal::v::YR+1}]
+			Cal::set_mth_yr $Cal::v::MTH [expr {$Cal::v::YR-1}]
 			Cal::cal_day
 		}
 		bind $v::P.can <Control-Key-Down> {
@@ -107,8 +107,8 @@ namespace eval Cal {
 			Cal::setSel [expr {$r+1}] $c
 		}
 		proc $v::P.get_selected {} {
-			if {$v::selB!=0} { return [list $v::selA $v::selB] }
-			if {$v::selA!=0} { return $v::selA }
+			if {$v::selB!=0} { return [list {*}[lrange [split $v::selA] 0 2] {*}[lrange [split $v::selB] 0 2]] }
+			if {$v::selA!=0} { return [lrange [split $v::selA] 0 2] }
 		}
 		cal_base
 		cal_day
@@ -220,7 +220,8 @@ namespace eval Cal {
 			lassign $v::selB mb db yb rb cb
 			if {$mb<$v::MTH || $yb<$v::YR || $ma>$v::MTH || $ya>$v::YR} { return }
 			if {$ma<$v::MTH || $ya<$v::YR} {
-				set da [set ra 1]
+				set ra 0
+				set da 1
 				set ca [dowMY $v::MTH $v::YR]
 			}
 			if {$mb>$v::MTH || $yb>$v::YR} { set db [mth_day_ct $v::MTH $v::YR] }
