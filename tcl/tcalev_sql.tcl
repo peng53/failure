@@ -6,7 +6,6 @@ namespace eval EventStor {
 		variable is_open 0
 		variable col_names [list end_date event_name desc_more rowid start_date {strftime('%Y',start_date)} {strftime('%m',start_date)}]
 		variable where_operators [list < <= = >= >]
-		variable 
 	}
 	proc open_db {file_name} {
 		# Open file_name as sqlite3 database. Returns 1/0 for success/fail.
@@ -101,7 +100,7 @@ namespace eval EventStor {
 		if {!$v::is_open} { return 0 }
 		set rs [list]
 		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date, event_name from events ORDER by start_date} {
-			lappend rs [list $rowid $date $event_name]
+			lappend rs [list $date $event_name $rowid]
 		}
 		return $rs
 	}
@@ -110,16 +109,19 @@ namespace eval EventStor {
 		if {!$v::is_open} { return 0 }
 		set rs [list]
 		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date,event_name from events WHERE lower(event_name) LIKE :name ORDER by start_date} {
-			lappend rs [list $rowid $date $event_name]
+			lappend rs [list $date $event_name $rowid]
 		}
 		return $rs
 	}
 	proc ps_get_more {rowid} {
 		# Returns all cols for row with rowid.
 		if {!$v::is_open} { return 0 }
-		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date1,date(end_date,'unixepoch','localtime') as date2, event_name, desc_more from events WHERE rowid=:rowid ORDER by start_date} {
-			return [list $rowid $date1 $date2 $event_name $desc_more]
+		#puts [ps_get_basic]
+		set rs [list]
+		conn eval {SELECT date(start_date,'unixepoch','localtime') as date1, date(end_date,'unixepoch','localtime') as date2, event_name, desc_more from events WHERE rowid=:rowid} {
+			lappend rs [list $date1 $date2 $event_name $desc_more]
 		}
+		return $rs
 	}
 	proc ps_get_date_range {d1 d2} {
 		# Returns all rows with start_date between d1 & d2 including endpts
@@ -129,7 +131,7 @@ namespace eval EventStor {
 		set d1s [second_date {*}$d1]
 		set d2s [second_date {*}$d2]
 		conn eval {SELECT rowid,date(start_date,'unixepoch','localtime') as date, event_name from events WHERE start_date>=:d1s AND start_date<=:d2s ORDER by start_date} {
-			lappend rs [list $rowid $date $event_name]
+			lappend rs [list $date $event_name $rowid]
 		}
 		return $rs
 	}

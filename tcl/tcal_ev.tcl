@@ -3,33 +3,58 @@ package require Tk
 source "tcal.tcl"
 source "tcalev_sql.tcl"
 
+namespace eval Evv {
+	variable cROWID -1
+}
 bind . <Control-Key-q> {
 	exit
 }
 proc new_props_win {} {
 	# Create a properties window
 	toplevel .props
-	wm transient .props .
-	wm geometry .props 350x350
+	#wm transient .props .
+	wm geometry .props 350x350-8-32
 	wm title .props Properties
 	bind .props <Control-Key-q> {
 		exit
 	}
 	pack [label .props.l1 -text {Entry Properties} -font 16]
-	pack [label .props.l2 -text {Start Date}] -anchor w
-	pack [entry .props.da -font 10] -fill x
-	pack [label .props.l3 -text {End Date}] -anchor w
-	pack [entry .props.db -font 10] -fill x
+	foreach {w n} {da {Start Date} db {End Date}} {
+		pack [label .props.l$w -text "$n (M/D/Y)"] -anchor w
+		pack [frame .props.$w] -fill x
+		pack [ttk::spinbox .props.$w.m -from 1 -to 12 -font 10 -width 6] -side left -fill x -expand 1
+		pack [ttk::spinbox .props.$w.d -from 1 -to 31 -font 10 -width 5] -side left -fill x -expand 1
+		pack [ttk::spinbox .props.$w.y -from 1000 -to 9999 -font 10] -side left -fill x -expand 1
+	}
 	pack [label .props.l4 -text {Event}] -anchor w
 	pack [entry .props.ev -font 10] -fill x
 	pack [label .props.l5 -text {More}] -anchor w
-	pack [text .props.mr -font 10 -height 7] -fill x
-	pack [frame .props.bt]
+	pack [text .props.mr -font 10 -height 1] -fill both -expand 1
+	pack [frame .props.bt] -side bottom
 	pack [button .props.bt.save -text Save -width 6] -side left
-	pack [button .props.bt.rev -text Revert -width 6] -side left
+	pack [button .props.bt.rev -text Revert -command fill_props -width 6] -side left
 	pack [button .props.bt.del -text Delete -width 6] -side left
 	pack [button .props.bt.ext -text Exit -command {destroy .props} -width 6] -side left
 	return .props
+}
+proc fill_props {} {
+	# Fill properties window fields with event details
+	if {$Evv::cROWID!=-1} {
+		foreach r [EventStor::ps_get_more $Evv::cROWID] {
+			lassign $r d1 d2 n more
+			foreach {w D} [list da $d1 db $d2] {
+				lassign [split $D -] y m d
+				.props.$w.m set $m
+				.props.$w.d set $d
+				.props.$w.y set $y
+			}
+			.props.ev delete 0 end
+			.props.ev insert 0 $n
+			.props.mr delete 1.0 end
+			.props.mr insert 1.0 $more
+		}
+	}
+	#puts bye
 }
 proc check_open {w} {
 	# Checks whether window w is created yet.
@@ -72,7 +97,7 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 	pack [button .calwin.set.set -text Set -command set_my] -side left
 	pack [button .calwin.b1 -text {Search M/Y} -command {search_by_cal .evets.evs} ] -side left
 	pack [button .calwin.b2 -text {Properties Date}] -side left
-	pack [button .calwin.b3 -text Hide] -side left
+	pack [button .calwin.b3 -text Hide -command {destroy .calwin}] -side left
 }
 proc get_range_ac {A B {L {}}} {
 	# Runs through checkbutton array to spans of 'trues'.
@@ -85,14 +110,9 @@ proc get_range_ac {A B {L {}}} {
 	# Loop version coming soon.
 	if {$A>$B} { return $L }
 	global cb
-	set a 0
-	for {set i $A} {$i<=$B} {incr i} {
-		if {$cb($i)==1} {
-			set a $i
-			break
-		}
-	}
-	if {$a==0} { return $L }
+	set a $A
+	while {$a<=$B && !$cb($a)} { incr a }
+	if {$a>$B} { return $L }
 	for {set b [expr {$a+1}]} {$b<=$B} {incr b} {
 		if {$cb($b)==0} {
 			if {$b==[expr {$a+1}]} {
@@ -129,17 +149,19 @@ proc insert_rows {w rs} {
 	# The root children are the years followed by months
 	set cy 0
 	foreach r $rs {
-		lassign [split [lindex $r 1] -] y m d
+		# r is DATE NAME ROWID
+		lassign $r D name rowid
+		lassign [split $D -] y m d
 		if {$cy!=$y} {
 			set cy $y
-			set cyi [$w insert {} end -text $cy -open 1]
+			set cyi [$w insert {} end -id y$y -text $cy -open 1]
 			set cm 0
 		}
 		if {$cm!=$m} {
 			set cm $m
-			set cmi [$w insert $cyi end -text $cm]
+			set cmi [$w insert $cyi end -id y$y$m  -text $cm]
 		}
-		$w insert $cmi end -values [list $d [lindex $r 2]]
+		$w insert $cmi end -id $rowid -values [list $d $name]
 	}
 }
 proc all_events {w} {
@@ -242,6 +264,7 @@ proc main2 {} {
 	.men.db add cascade -label {Auto..} -menu .men.db.aut
 	.men.db.aut add command -label {US Holidays}
 	.men add command -label Calender -command "new_cal_win $square_size $text_offset $day_font $hh $m $y"
+	.men add command -label Properties -command {new_props_win}
 	.men add cascade -label Search -menu .men.search
 	.men.search add command -label All -command {all_events .evets.evs}
 	.men.search add separator
@@ -269,7 +292,25 @@ proc main2 {} {
 	pack [entry .search.name.e] -expand 1 -fill x
 
 	pack [labelframe .evets -text Events -font 16] -expand 1 -fill both
-	pack [ttk::treeview .evets.evs -columns {Day Event} -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
+	pack [ttk::treeview .evets.evs -columns {Day Event} -selectmode browse -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
+	bind .evets.evs <Button-1> {
+		if {[string index [set r [.evets.evs identify row %x %y]] 0]==y} {
+			set Evv::cROWID -1
+		} else {
+			set Evv::cROWID $r
+			if {![check_open .props]} { new_props_win }
+			fill_props
+		}
+	}
+	bind .evets.evs <Key-Return> {
+		if {[string index [set r [.evets.evs selection]] 0]==y} {
+			set Evv::cROWID -1
+		} else {
+			set Evv::cROWID $r
+			if {![check_open .props]} { new_props_win }
+			fill_props
+		}
+	}
 	pack [scrollbar .evets.sb -command {.evets.evs yview}] -side left -fill y
 	.evets.evs column #0 -width 100 -minwidth 100 -stretch 0
 	.evets.evs heading #1 -text Day
@@ -280,7 +321,7 @@ proc main2 {} {
 	EventStor::holidays_us 2016
 	EventStor::holidays_us 2017
 	EventStor::holidays_us 2018
-	#all_events .evets.evs
+	#set Evv::cROWID 24
 }
 
 main2
