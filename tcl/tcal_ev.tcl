@@ -22,18 +22,18 @@ proc new_props_win {} {
 	foreach {w n} {da {Start Date} db {End Date}} {
 		pack [label .props.l$w -text "$n (M/D/Y)"] -anchor w
 		pack [frame .props.$w] -fill x
-		pack [ttk::spinbox .props.$w.m -from 1 -to 12 -font 10 -width 6] -side left -fill x -expand 1
-		pack [ttk::spinbox .props.$w.d -from 1 -to 31 -font 10 -width 5] -side left -fill x -expand 1
-		pack [ttk::spinbox .props.$w.y -from 1000 -to 9999 -font 10] -side left -fill x -expand 1
+		pack [ttk::spinbox .props.$w.m -from 1 -to 12 -font 10 -wrap 1 -width 6] -side left -fill x -expand 1
+		pack [ttk::spinbox .props.$w.d -from 1 -to 31 -font 10 -wrap 1 -width 5] -side left -fill x -expand 1
+		pack [ttk::spinbox .props.$w.y -from 1000 -to 9999 -wrap 1 -font 10] -side left -fill x -expand 1
 	}
 	pack [label .props.l4 -text {Event}] -anchor w
 	pack [entry .props.ev -font 10] -fill x
 	pack [label .props.l5 -text {More}] -anchor w
 	pack [text .props.mr -font 10 -height 1] -fill both -expand 1
 	pack [frame .props.bt] -side bottom
-	pack [button .props.bt.save -text Save -width 6] -side left
+	pack [button .props.bt.save -text Save -command save_props -width 6] -side left
 	pack [button .props.bt.rev -text Revert -command fill_props -width 6] -side left
-	pack [button .props.bt.del -text Delete -width 6] -side left
+	pack [button .props.bt.del -text Delete -command delete_props -width 6] -side left
 	pack [button .props.bt.ext -text Exit -command {destroy .props} -width 6] -side left
 	return .props
 }
@@ -55,6 +55,34 @@ proc fill_props {} {
 		}
 	}
 	#puts bye
+}
+proc delete_props {} {
+	# Deletes entry from events database. Does not update treeview
+	# but advises user to refresh
+	if {$Evv::cROWID!=-1} {
+		EventStor::delete_row $Evv::cROWID
+		set $Evv::cROWID -1
+		tk_messageBox -type ok -icon info -message "Event Deleted\nPlease refresh."
+	}
+}
+proc save_props {} {
+	# Saves entry but creating if not made and updating elsewise.
+	set d1 [EventStor::second_date [.props.da.y get] [.props.da.m get] [.props.da.d get]]
+	set d2 [EventStor::second_date [.props.db.y get] [.props.db.m get] [.props.db.d get]]
+	set n [.props.ev get]
+	set dm [string trim [.props.mr get 1.0 7.0]]
+	#puts $d1
+	#puts $d2
+	#puts $n
+	#puts $dm
+	if {$Evv::cROWID==-1} {
+		EventStor::add_row $d1 $d2 $n $dm
+		set $Evv::cROWID [EventStor::lastrow_added]
+		tk_messageBox -type ok -icon info -message "Event Added\nPlease refresh."
+	} else {
+		EventStor::update_row $Evv::cROWID $d1 $d2 $n $dm
+		tk_messageBox -type ok -icon info -message {Event Updated}
+	}
 }
 proc check_open {w} {
 	# Checks whether window w is created yet.
@@ -168,6 +196,7 @@ proc all_events {w} {
 	# Get all events from open database and
 	# calls for them to be added to treeview
 	set rs [EventStor::ps_get_basic]
+	$w delete [$w children {}]
 	insert_rows $w $rs
 }
 proc search_by_date {w} {
