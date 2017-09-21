@@ -11,20 +11,21 @@ bind . <Control-Key-q> {
 }
 proc new_props_win {} {
 	# Create a properties window
+	if {[check_open .props]} { return }
 	toplevel .props
 	#wm transient .props .
-	wm geometry .props 350x350-8-32
+	wm geometry .props 400x350-8-32
 	wm title .props Properties
 	bind .props <Control-Key-q> {
 		exit
 	}
 	pack [label .props.l1 -text {Entry Properties} -font 16]
 	foreach {w n} {da {Start Date} db {End Date}} {
-		pack [label .props.l$w -text "$n (M/D/Y)"] -anchor w
+		pack [label .props.l$w -text "$n (M/D/Y HH:MM)"] -anchor w
 		pack [frame .props.$w] -fill x
-		pack [ttk::spinbox .props.$w.m -from 1 -to 12 -font 10 -wrap 1 -width 6] -side left -fill x -expand 1
-		pack [ttk::spinbox .props.$w.d -from 1 -to 31 -font 10 -wrap 1 -width 5] -side left -fill x -expand 1
-		pack [ttk::spinbox .props.$w.y -from 1000 -to 9999 -wrap 1 -font 10] -side left -fill x -expand 1
+		foreach {o f t l} {m 1 12 2 d 1 31 2 y 1000 9999 4 h 0 23 2 mm 0 59 2} {
+			pack [ttk::spinbox .props.$w.$o -from $f -to $t -font 10 -wrap 1 -width $l -format %0$l.0f] -side left -fill x -expand 1
+		}
 	}
 	pack [label .props.l4 -text {Event}] -anchor w
 	pack [entry .props.ev -font 10] -fill x
@@ -32,6 +33,7 @@ proc new_props_win {} {
 	pack [text .props.mr -font 10 -height 1] -fill both -expand 1
 	pack [frame .props.bt] -side bottom
 	pack [button .props.bt.save -text Save -command save_props -width 6] -side left
+	pack [button .props.bt.new -text New -command new_props -width 6] -side left
 	pack [button .props.bt.rev -text Revert -command fill_props -width 6] -side left
 	pack [button .props.bt.del -text Delete -command delete_props -width 6] -side left
 	pack [button .props.bt.ext -text Exit -command {destroy .props} -width 6] -side left
@@ -43,10 +45,14 @@ proc fill_props {} {
 		foreach r [EventStor::ps_get_more $Evv::cROWID] {
 			lassign $r d1 d2 n more
 			foreach {w D} [list da $d1 db $d2] {
-				lassign [split $D -] y m d
+				lassign [split $D] ymd hmm
+				lassign [split $ymd -] y m d
+				lassign [split $hmm :] h mm
 				.props.$w.m set $m
 				.props.$w.d set $d
 				.props.$w.y set $y
+				.props.$w.h set $h
+				.props.$w.mm set $mm
 			}
 			.props.ev delete 0 end
 			.props.ev insert 0 $n
@@ -67,8 +73,8 @@ proc delete_props {} {
 }
 proc save_props {} {
 	# Saves entry but creating if not made and updating elsewise.
-	set d1 [EventStor::second_date [.props.da.y get] [.props.da.m get] [.props.da.d get]]
-	set d2 [EventStor::second_date [.props.db.y get] [.props.db.m get] [.props.db.d get]]
+	set d1 [EventStor::second_date [.props.da.y get] [.props.da.m get] [.props.da.d get] [.props.da.h get] [.props.da.mm get]]
+	set d2 [EventStor::second_date [.props.db.y get] [.props.db.m get] [.props.db.d get] [.props.db.h get] [.props.db.mm get]]
 	set n [.props.ev get]
 	set dm [string trim [.props.mr get 1.0 7.0]]
 	#puts $d1
@@ -77,12 +83,18 @@ proc save_props {} {
 	#puts $dm
 	if {$Evv::cROWID==-1} {
 		EventStor::add_row $d1 $d2 $n $dm
-		set $Evv::cROWID [EventStor::lastrow_added]
+		set Evv::cROWID [EventStor::lastrow_added]
 		tk_messageBox -type ok -icon info -message "Event Added\nPlease refresh."
 	} else {
 		EventStor::update_row $Evv::cROWID $d1 $d2 $n $dm
 		tk_messageBox -type ok -icon info -message {Event Updated}
 	}
+}
+proc new_props {} {
+	# Set current event to 'new', meaning save will create
+	# a new event
+	set Evv::cROWID -1
+	tk_messageBox -type ok -icon info -message "Remember to save this new event!\n(and refresh)."
 }
 proc check_open {w} {
 	# Checks whether window w is created yet.
@@ -93,6 +105,7 @@ proc check_open {w} {
 }
 proc new_cal_win {square_size text_offset day_font hh m y} {
 	# Creates a calendar window.
+	if {[check_open .calwin]} { return }
 	toplevel .calwin
 	wm transient .calwin .
 	set size [expr {$square_size*7+48}]
@@ -124,8 +137,35 @@ proc new_cal_win {square_size text_offset day_font hh m y} {
 	pack [entry .calwin.set.yre -width 6] -side left
 	pack [button .calwin.set.set -text Set -command set_my] -side left
 	pack [button .calwin.b1 -text {Search M/Y} -command {search_by_cal .evets.evs} ] -side left
-	pack [button .calwin.b2 -text {Properties Date}] -side left
+	pack [button .calwin.b2 -text {Properties Date} -command props_cal_date] -side left
 	pack [button .calwin.b3 -text Hide -command {destroy .calwin}] -side left
+}
+proc props_cal_date {} {
+	# Get date selected in calendar and put it
+	# in the properties window
+	set D [Cal::.calwin.cal.get_selected]
+	switch [llength $D] {
+		0 {
+			set m2 [set m $Cal::v::MTH]
+			set y2 [set y $Cal::v::YR]
+			set d 1
+			set d2 [Cal::mth_day_ct $m $y]
+		}
+		3 {
+			lassign $D m d y
+			lassign $D m2 d2 y2
+		}
+		6 {
+			lassign $D m d y m2 d2 y2
+		}
+	}
+	new_props_win
+	.props.da.y set $y
+	.props.da.m set $m
+	.props.da.d set $d
+	.props.db.y set $y2
+	.props.db.m set $m2
+	.props.db.d set $d2
 }
 proc get_range_ac {A B {L {}}} {
 	# Runs through checkbutton array to spans of 'trues'.
@@ -232,7 +272,7 @@ proc search_by_cal {w} {
 		0 {
 			set m $Cal::v::MTH
 			set y $Cal::v::YR
-			set D1 [list $y $m 0]
+			set D1 [list $y $m 1]
 			set D2 [list $y $m [Cal::mth_day_ct $m $y]]
 		}
 		3 {

@@ -65,9 +65,9 @@ namespace eval EventStor {
 			return "ORDER BY [join $os ,]"
 		}
 	}
-	proc second_date {year {mth 1} {day 1}} {
+	proc second_date {year {mth 1} {day 1} {hr 0} {mins 0}} {
 		# Returns seconds since unix epoch. (shortcut)
-		return [clock scan [format %02d/%02d/%04d $mth $day $year] -format %D]
+		return [clock scan [format %02d/%02d/%04d-%02d:%02d $mth $day $year $hr $mins] -format %D-%H:%M]
 	}
 	proc exp_date {op year {mth 0}} {
 		# Returns where-value-list for a year (and month)
@@ -118,7 +118,7 @@ namespace eval EventStor {
 		if {!$v::is_open} { return 0 }
 		#puts [ps_get_basic]
 		set rs [list]
-		conn eval {SELECT date(start_date,'unixepoch','localtime') as date1, date(end_date,'unixepoch','localtime') as date2, event_name, desc_more from events WHERE rowid=:rowid} {
+		conn eval {SELECT datetime(start_date,'unixepoch','localtime') as date1, datetime(end_date,'unixepoch','localtime') as date2, event_name, desc_more from events WHERE rowid=:rowid} {
 			lappend rs [list $date1 $date2 $event_name $desc_more]
 		}
 		return $rs
