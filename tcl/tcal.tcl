@@ -41,20 +41,30 @@ namespace eval Cal {
 		set v::MTH $m
 		set v::YR $y
 	}
-	proc Cal {parent m y sqs toff dfont hh} {
-		# Calls/sets init procs and vars for Cal
-		set_mth_yr $m $y
+	proc CalVars {mth yr sqs toff dfont hh} {
+		# Sets vars for Cal
+		set_mth_yr $mth $yr
 		set v::SQS $sqs
 		set v::tOff $toff
 		set v::hh $hh
 		set v::dfont $dfont
+	#	set v::P $parent
+	}
+	proc Cal {parent} {
+		#m y sqs toff dfont hh 
+		# Calls/sets init procs and vars for Cal
+		#set_mth_yr $m $y
+		#set v::SQS $sqs
+		#set v::tOff $toff
+		#set v::hh $hh
+		#set v::dfont $dfont
 		set v::P $parent
 		frame $parent
 		pack [frame $parent.mth] -expand 1 -fill x
 		pack [button $parent.mth.prv -text < -command Cal::prev_mth] -side left
 		pack [label $parent.mth.mthl] -side left -expand 1 -fill x
 		pack [button $parent.mth.nxt -text > -command Cal::next_mth] -side left
-		pack [canvas $parent.can -width [expr 7*$v::SQS] -height [expr $hh+6*$v::SQS]]
+		pack [canvas $parent.can -width [expr 7*$v::SQS] -height [expr $v::hh+6*$v::SQS]]
 		bind $parent.can <ButtonPress-1> {
 			# Selects a rect (a day) on the canvas (calender).
 			focus $Cal::v::P.can
@@ -304,7 +314,9 @@ proc main {} {
 	# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
 	set f .cal
-	Cal::Cal $f $m $y $square_size $text_offset $day_font $hh
+	Cal::CalVars $m $y $square_size $text_offset $day_font $hh
+	Cal::Cal $f
+	#$m $y $square_size $text_offset $day_font $hh
 	pack $f
 	pack [entry .mydate]
 	bind $f.can <Key-Return> {

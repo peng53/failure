@@ -34,11 +34,15 @@ proc new_props_win {} {
 	# Create a properties window
 	if {[check_open .props]} { return }
 	toplevel .props
-	#wm transient .props .
-	wm geometry .props 400x350-8-32
+	wm geometry .props 400x350
 	wm title .props Properties
 	bind .props <Control-Key-q> {
 		exit
+	}
+	wm protocol .props WM_DELETE_WINDOW {
+		if {[tk_messageBox -message {Close properties?} -type yesno] eq "yes"} {
+			destroy .props
+		}
 	}
 	pack [label .props.l1 -text {Entry Properties} -font 16]
 	foreach {w n} {da {Start Date} db {End Date}} {
@@ -93,15 +97,11 @@ proc delete_props {} {
 	}
 }
 proc save_props {} {
-	# Saves entry but creating if not made and updating elsewise.
+	# Saves entry by creating if not made and updating elsewise.
 	set d1 [EventStor::second_date [.props.da.y get] [.props.da.m get] [.props.da.d get] [.props.da.h get] [.props.da.mm get]]
 	set d2 [EventStor::second_date [.props.db.y get] [.props.db.m get] [.props.db.d get] [.props.db.h get] [.props.db.mm get]]
 	set n [.props.ev get]
 	set dm [string trim [.props.mr get 1.0 7.0]]
-	#puts $d1
-	#puts $d2
-	#puts $n
-	#puts $dm
 	if {$Evv::cROWID==-1} {
 		EventStor::add_row $d1 $d2 $n $dm
 		set Evv::cROWID [EventStor::lastrow_added]
@@ -124,23 +124,17 @@ proc check_open {w} {
 	}
 	return 0
 }
-proc new_cal_win {square_size text_offset day_font hh m y} {
+proc new_cal_win {} {
 	# Creates a calendar window.
 	if {[check_open .calwin]} { return }
 	toplevel .calwin
-	wm transient .calwin .
-	set size [expr {$square_size*7+48}]
-	wm maxsize .calwin $size $size
-	wm title .calwin Calender
+	set size [expr {$Cal::v::SQS*7+48}]
+	#wm maxsize .calwin $size $size
+	#wm title .calwin Calender
 	bind .calwin <Control-Key-q> {
-		exit
+		destroy .calwin
 	}
-	wm protocol .calwin WM_DELETE_WINDOW {
-		if {[tk_messageBox -message "Quit?" -type yesno] eq "yes"} {
-			wm forget .calwin
-		}
-	}
-	pack [Cal::Cal .calwin.cal $m $y $square_size $text_offset $day_font $hh]
+	pack [Cal::Cal .calwin.cal]
 	pack [frame .calwin.set]
 	pack [label .calwin.set.mthl -text Month] -side left
 	pack [ttk::combobox .calwin.set.mth -values {{1 January} {2 Febuary} {3 March} {4 April} {5 May} {6 June} {7 July} {8 August} {9 September} {10 October} {11 November} {12 December}} -state readonly] -side left
@@ -364,12 +358,13 @@ proc close_file {} {
 }
 proc main2 {} {
 	wm title . Events
-	set square_size 64
-	set text_offset 12
-	set day_font 11
-	set hh 20
+	#set square_size 64
+	#set text_offset 12
+	#set day_font 11
+	#set hh 20
 	# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
+	Cal::CalVars $m $y 64 12 11 20
 	menu .men
 	menu .men.db
 	menu .men.db.aut
@@ -384,8 +379,8 @@ proc main2 {} {
 	.men.db add separator
 	.men.db add cascade -label {Auto..} -menu .men.db.aut
 	.men.db.aut add command -label {US Holidays} -command "prompt_number {US Holidays} {For which year?} 1000 3000 EventStor::holidays_us"
-	.men add command -label Calender -command "new_cal_win $square_size $text_offset $day_font $hh $m $y"
-	.men add command -label Properties -command {new_props_win}
+	.men add command -label Calender -command new_cal_win
+	.men add command -label Properties -command new_props_win
 	.men add cascade -label Search -menu .men.search
 	.men.search add command -label All -command {all_events .evets.evs}
 	.men.search add separator
