@@ -9,6 +9,27 @@ namespace eval Evv {
 bind . <Control-Key-q> {
 	exit
 }
+proc prompt_number {t d m M c} {
+	# Creates a prompt with tITLE and dESCRIPTION that
+	# with success call cOMMAND with a value between m and M
+	toplevel .promptn
+	wm title .promptn $t
+	wm resizable .promptn 0 0
+	pack [label .promptn.l -text $d -font 12]
+	pack [entry .promptn.e]
+	proc prompt_number_vlad {m M c} {
+		set s [.promptn.e get]
+		if {$m<$s && $s<$M} {
+			$c $s
+			destroy .promptn
+		} else {
+			tk_messageBox -type ok -icon info -message {Invalid value}
+		}
+	}
+	pack [button .promptn.b_ok -command "prompt_number_vlad $m $M $c" -text Ok] -side left
+	pack [button .promptn.b_cl -command {destroy .promptn} -text Cancel] -side left
+}
+
 proc new_props_win {} {
 	# Create a properties window
 	if {[check_open .props]} { return }
@@ -42,8 +63,9 @@ proc new_props_win {} {
 proc fill_props {} {
 	# Fill properties window fields with event details
 	if {$Evv::cROWID!=-1} {
-		foreach r [EventStor::ps_get_more $Evv::cROWID] {
-			lassign $r d1 d2 n more
+		#foreach r [EventStor::ps_get_more $Evv::cROWID] {
+			lassign [lindex [EventStor::ps_get_more $Evv::cROWID] 0] d1 d2 n more
+			#lassign $r d1 d2 n more
 			foreach {w D} [list da $d1 db $d2] {
 				lassign [split $D] ymd hmm
 				lassign [split $ymd -] y m d
@@ -58,9 +80,8 @@ proc fill_props {} {
 			.props.ev insert 0 $n
 			.props.mr delete 1.0 end
 			.props.mr insert 1.0 $more
-		}
+		#}
 	}
-	#puts bye
 }
 proc delete_props {} {
 	# Deletes entry from events database. Does not update treeview
@@ -312,6 +333,35 @@ proc reset_ents {} {
 		.search.$w delete 0 end
 	}
 }
+proc load_file {} {
+	# Selects a file of events to load.
+	# Barebones ATM
+	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Database file} .db}} -title {Load database..}]
+	if {[string length $s]>0} {
+		#EventStor::close_db
+		EventStor::open_instead $s
+		tk_messageBox -type ok -icon info -message {Refresh to see any changes.}
+	}
+}
+proc save_as_file {} {
+	# Save the current events (via normal search) to
+	# a file.
+	set s [tk_getSaveFile -defaultextension .db -filetypes {{{Database file} .db}} -title {Save database}]
+	if {[string length $s]>0} {
+		EventStor::copy_to $s
+		EventStor::open_instead $s
+	}
+}
+proc save_file {} {
+	# Commits changes to file
+	#EventStor::save_changes
+	# does not work ATM: use save as and overwrite
+}
+proc close_file {} {
+	# Closes open file without commiting.
+	EventStor::close_db
+	EventStor::build_db :memory:
+}
 proc main2 {} {
 	wm title . Events
 	set square_size 64
@@ -326,12 +376,14 @@ proc main2 {} {
 	menu .men.search
 	. configure -menu .men
 	.men add cascade -label Database -menu .men.db
-	.men.db add command -label {New file}
-	.men.db add command -label {Load file}
-	.men.db add command -label {Close file}
+	.men.db add command -label {New file} -command close_file
+	.men.db add command -label {Load file} -command load_file
+	.men.db add command -label {Save As file} -command save_as_file
+	.men.db add command -label {Close file} -command close_file
+	.men.db add command -label {Save changes} -command save_file
 	.men.db add separator
 	.men.db add cascade -label {Auto..} -menu .men.db.aut
-	.men.db.aut add command -label {US Holidays}
+	.men.db.aut add command -label {US Holidays} -command "prompt_number {US Holidays} {For which year?} 1000 3000 EventStor::holidays_us"
 	.men add command -label Calender -command "new_cal_win $square_size $text_offset $day_font $hh $m $y"
 	.men add command -label Properties -command {new_props_win}
 	.men add cascade -label Search -menu .men.search
@@ -387,9 +439,9 @@ proc main2 {} {
 	.evets.evs heading #2 -text Event
 	#new_props_win
 	EventStor::build_db :memory:
-	EventStor::holidays_us 2016
-	EventStor::holidays_us 2017
-	EventStor::holidays_us 2018
+	#EventStor::holidays_us 2016
+	#EventStor::holidays_us 2017
+	#EventStor::holidays_us 2018
 	#set Evv::cROWID 24
 }
 

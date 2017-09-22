@@ -14,6 +14,23 @@ namespace eval EventStor {
 		sqlite3 conn $file_name
 		return 1
 	}
+	proc open_instead {file_name} {
+		# Replace current db with file_name.
+		set v::is_open 1
+		conn restore $file_name
+	}
+	proc copy_to {file_name} {
+		# Copies current db to a new file
+		if {!$v::is_open} { return 0 }
+		conn backup $file_name
+		return 1
+	}
+	proc save_changes {} {
+		# Saves to changes to db
+		if {!$v::is_open} { return 0 }
+		conn eval {commit}
+		return 1
+	}
 	proc add_row {start_date end_date event_name {desc_more {}}} {
 		# Add row to event. Returns 0 if database isn't open.
 		if {!$v::is_open} { return 0 }
