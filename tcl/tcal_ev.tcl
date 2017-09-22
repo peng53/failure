@@ -44,6 +44,9 @@ proc new_props_win {} {
 			destroy .props
 		}
 	}
+	Props
+}
+proc Props {} {
 	pack [label .props.l1 -text {Entry Properties} -font 16]
 	foreach {w n} {da {Start Date} db {End Date}} {
 		pack [label .props.l$w -text "$n (M/D/Y HH:MM)"] -anchor w
@@ -53,15 +56,15 @@ proc new_props_win {} {
 		}
 	}
 	pack [label .props.l4 -text {Event}] -anchor w
-	pack [entry .props.ev -font 10] -fill x
+	pack [entry .props.ev -font 10 -width 10] -fill x
 	pack [label .props.l5 -text {More}] -anchor w
-	pack [text .props.mr -font 10 -height 1] -fill both -expand 1
+	pack [text .props.mr -font 10 -height 2 -width 10] -fill both -expand 1
 	pack [frame .props.bt] -side bottom
-	pack [button .props.bt.save -text Save -command save_props -width 6] -side left
-	pack [button .props.bt.new -text New -command new_props -width 6] -side left
-	pack [button .props.bt.rev -text Revert -command fill_props -width 6] -side left
-	pack [button .props.bt.del -text Delete -command delete_props -width 6] -side left
-	pack [button .props.bt.ext -text Exit -command {destroy .props} -width 6] -side left
+	pack [button .props.bt.save -text Save -command save_props] -side left
+	pack [button .props.bt.new -text New -command new_props] -side left
+	pack [button .props.bt.rev -text Revert -command fill_props] -side left
+	pack [button .props.bt.del -text Delete -command delete_props] -side left
+	pack [button .props.bt.ext -text Hide -command {destroy .props}] -side left
 	return .props
 }
 proc fill_props {} {
@@ -129,15 +132,36 @@ proc new_cal_win {} {
 	if {[check_open .calwin]} { return }
 	toplevel .calwin
 	set size [expr {$Cal::v::SQS*7+48}]
-	#wm maxsize .calwin $size $size
-	#wm title .calwin Calender
+	wm maxsize .calwin $size $size
+	wm title .calwin Calender
 	bind .calwin <Control-Key-q> {
 		destroy .calwin
 	}
+	Cals
+}
+proc wid {type name cmd {options {}}} {
+	if {[check_open $name]} {
+		return
+	}
+	lassign $options T
+	switch $type {
+		win {
+			toplevel $name
+			wm title $name $T
+			#wm maxsize $x $y
+		}
+		fra {
+			pack [labelframe $name -text $T] -expand 1 -fill both -side left
+		}
+	}
+	$cmd
+}
+proc Cals {} {
+	# Creates a calendar widget.
 	pack [Cal::Cal .calwin.cal]
 	pack [frame .calwin.set]
 	pack [label .calwin.set.mthl -text Month] -side left
-	pack [ttk::combobox .calwin.set.mth -values {{1 January} {2 Febuary} {3 March} {4 April} {5 May} {6 June} {7 July} {8 August} {9 September} {10 October} {11 November} {12 December}} -state readonly] -side left
+	pack [ttk::combobox .calwin.set.mth -values {{1 JAN} {2 FEB} {3 MAR} {4 APR} {5 MAY} {6 JUN} {7 JUL} {8 AUG} {9 SEP} {10 OCT} {11 NOV} {12 DEC}} -state readonly -width 6] -side left
 	.calwin.set.mth current 0
 	proc set_my {} {
 		lassign [split [.calwin.set.mth get]] n N
@@ -146,7 +170,6 @@ proc new_cal_win {} {
 		}
 		Cal::set_mth_yr $n $y
 		Cal::cal_day
-
 	}
 	pack [label .calwin.set.yrl -text Year] -side left
 	pack [entry .calwin.set.yre -width 6] -side left
@@ -358,13 +381,9 @@ proc close_file {} {
 }
 proc main2 {} {
 	wm title . Events
-	#set square_size 64
-	#set text_offset 12
-	#set day_font 11
-	#set hh 20
-	# Init Cal with the current month and year.
+# Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
-	Cal::CalVars $m $y 64 12 11 20
+	Cal::CalVars $m $y 32 8 {Arial 10} 16
 	menu .men
 	menu .men.db
 	menu .men.db.aut
@@ -379,8 +398,8 @@ proc main2 {} {
 	.men.db add separator
 	.men.db add cascade -label {Auto..} -menu .men.db.aut
 	.men.db.aut add command -label {US Holidays} -command "prompt_number {US Holidays} {For which year?} 1000 3000 EventStor::holidays_us"
-	.men add command -label Calender -command new_cal_win
-	.men add command -label Properties -command new_props_win
+	.men add command -label Calender -command {wid fra .calwin Cals {Calendar}}
+	.men add command -label Properties -command {wid fra .props Props {Properties}}
 	.men add cascade -label Search -menu .men.search
 	.men.search add command -label All -command {all_events .evets.evs}
 	.men.search add separator
@@ -432,12 +451,7 @@ proc main2 {} {
 	.evets.evs heading #1 -text Day
 	.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
 	.evets.evs heading #2 -text Event
-	#new_props_win
 	EventStor::build_db :memory:
-	#EventStor::holidays_us 2016
-	#EventStor::holidays_us 2017
-	#EventStor::holidays_us 2018
-	#set Evv::cROWID 24
 }
 
 main2
