@@ -60,44 +60,37 @@ proc Props {} {
 	pack [label .props.l5 -text {More}] -anchor w
 	pack [text .props.mr -font 10 -height 2 -width 10] -fill both -expand 1
 	pack [frame .props.bt] -side bottom
-	pack [button .props.bt.save -text Save -command save_props] -side left
-	pack [button .props.bt.new -text New -command new_props] -side left
-	pack [button .props.bt.rev -text Revert -command fill_props] -side left
-	pack [button .props.bt.del -text Delete -command delete_props] -side left
-	pack [button .props.bt.ext -text Hide -command {destroy .props}] -side left
+	foreach {b n c} {save Save save_props new New new_props rev Revert fill_props del Delete delete_props hide Hide {destroy .props}} {
+		pack [button .props.bt.$b -text $n -command $c] -side left
+	}
 	return .props
 }
 proc fill_props {} {
 	# Fill properties window fields with event details
-	if {$Evv::cROWID!=-1} {
-		#foreach r [EventStor::ps_get_more $Evv::cROWID] {
-			lassign [lindex [EventStor::ps_get_more $Evv::cROWID] 0] d1 d2 n more
-			#lassign $r d1 d2 n more
-			foreach {w D} [list da $d1 db $d2] {
-				lassign [split $D] ymd hmm
-				lassign [split $ymd -] y m d
-				lassign [split $hmm :] h mm
-				.props.$w.m set $m
-				.props.$w.d set $d
-				.props.$w.y set $y
-				.props.$w.h set $h
-				.props.$w.mm set $mm
-			}
-			.props.ev delete 0 end
-			.props.ev insert 0 $n
-			.props.mr delete 1.0 end
-			.props.mr insert 1.0 $more
-		#}
+	if {$Evv::cROWID==-1} { return }
+	lassign [EventStor::ps_get_more $Evv::cROWID] d1 d2 n more
+	foreach {w D} [list da $d1 db $d2] {
+		lassign [split $D] ymd hmm
+		lassign [split $ymd -] y m d
+		lassign [split $hmm :] h mm
+		.props.$w.m set $m
+		.props.$w.d set $d
+		.props.$w.y set $y
+		.props.$w.h set $h
+		.props.$w.mm set $mm
 	}
+	.props.ev delete 0 end
+	.props.ev insert 0 $n
+	.props.mr delete 1.0 end
+	.props.mr insert 1.0 $more
 }
 proc delete_props {} {
 	# Deletes entry from events database. Does not update treeview
 	# but advises user to refresh
-	if {$Evv::cROWID!=-1} {
-		EventStor::delete_row $Evv::cROWID
-		set $Evv::cROWID -1
-		tk_messageBox -type ok -icon info -message "Event Deleted\nPlease refresh."
-	}
+	if {$Evv::cROWID==-1} { return }
+	EventStor::delete_row $Evv::cROWID
+	set $Evv::cROWID -1
+	tk_messageBox -type ok -icon info -message "Event Deleted\nPlease refresh."
 }
 proc save_props {} {
 	# Saves entry by creating if not made and updating elsewise.
@@ -115,8 +108,7 @@ proc save_props {} {
 	}
 }
 proc new_props {} {
-	# Set current event to 'new', meaning save will create
-	# a new event
+	# Set current event to 'new', meaning save will create a new event
 	set Evv::cROWID -1
 	tk_messageBox -type ok -icon info -message "Remember to save this new event!\n(and refresh)."
 }
@@ -140,9 +132,7 @@ proc new_cal_win {} {
 	Cals
 }
 proc wid {type name cmd {options {}}} {
-	if {[check_open $name]} {
-		return
-	}
+	if {[check_open $name]} { return }
 	lassign $options T
 	switch $type {
 		win {
@@ -164,7 +154,7 @@ proc Cals {} {
 	pack [ttk::combobox .calwin.set.mth -values {{1 JAN} {2 FEB} {3 MAR} {4 APR} {5 MAY} {6 JUN} {7 JUL} {8 AUG} {9 SEP} {10 OCT} {11 NOV} {12 DEC}} -state readonly -width 6] -side left
 	.calwin.set.mth current 0
 	proc set_my {} {
-		lassign [split [.calwin.set.mth get]] n N
+		lassign [split [.calwin.set.mth get]] n
 		if {[string length [set y [.calwin.set.yre get]]]==0} {
 			set y $Cal::v::YR
 		}
@@ -205,31 +195,6 @@ proc props_cal_date {} {
 	.props.db.m set $m2
 	.props.db.d set $d2
 }
-proc get_range_ac {A B {L {}}} {
-	# Runs through checkbutton array to spans of 'trues'.
-	# Returns List of ranges.
-	# E.g {{1 2} 4} would mean 1 to 2 and just 4 are checked.
-	# {1 3 5 7} would mean just 1, 3, 5, 7.
-	# {1 12} would mean 1 to 12.
-	# This algo uses recursive acumulator; since TCL does not
-	# have tail call opt, it shouldn't be used for large B-A.
-	# Loop version coming soon.
-	if {$A>$B} { return $L }
-	global cb
-	set a $A
-	while {$a<=$B && !$cb($a)} { incr a }
-	if {$a>$B} { return $L }
-	for {set b [expr {$a+1}]} {$b<=$B} {incr b} {
-		if {$cb($b)==0} {
-			if {$b==[expr {$a+1}]} {
-				return [get_range_ac [expr {$b+1}] $B [list {*}$L $a]]
-			} else {
-				return [get_range_ac [expr {$b+1}] $B [list {*}$L [list $a [expr $b-1]]]]
-			}
-		}
-	}
-	return [list {*}$L [list $a $B]]
-}
 proc get_range_i {A B} {
 	# Gets spans of checked months from checkbutton array
 	global cb
@@ -241,11 +206,8 @@ proc get_range_i {A B} {
 			incr $I
 			while {$I<=$B && $cb($I)} { incr I }
 			incr I -1
-			if {$a==$I} {
-				lappend o [list $a]
-			} else {
-				lappend o [list $a $I]
-			}
+			if {$a==$I} { lappend o [list $a]
+			} else { lappend o [list $a $I] }
 		}
 	}
 	return $o
@@ -273,9 +235,8 @@ proc insert_rows {w rs} {
 proc all_events {w} {
 	# Get all events from open database and
 	# calls for them to be added to treeview
-	set rs [EventStor::ps_get_basic]
 	$w delete [$w children {}]
-	insert_rows $w $rs
+	insert_rows $w [EventStor::ps_get_basic]
 }
 proc search_by_date {w} {
 	# Gather options for searching by date and
@@ -284,9 +245,7 @@ proc search_by_date {w} {
 		tk_messageBox -type ok -icon error -message {A year is required!}
 		return
 	}
-	if {[llength [set mths [get_range_i 1 12]]]==0} {
-		set mths [list [list 1 12]]
-	}
+	if {[llength [set mths [get_range_i 1 12]]]==0} { set mths [list [list 1 12]] }
 	$w delete [$w children {}]
 	set rs [list]
 	if {[string length [set d [.search.date.dy.e get]]]==0} { set d 1}
@@ -383,18 +342,16 @@ proc main2 {} {
 	wm title . Events
 # Init Cal with the current month and year.
 	lassign [clock format [clock seconds] -format {%N %Y}] m y
-	Cal::CalVars $m $y 32 8 {Arial 10} 16
+	Cal::CalVars $m $y 32 0.5 0.5 {Arial 10} 16
 	menu .men
 	menu .men.db
 	menu .men.db.aut
 	menu .men.search
 	. configure -menu .men
 	.men add cascade -label Database -menu .men.db
-	.men.db add command -label {New file} -command close_file
-	.men.db add command -label {Load file} -command load_file
-	.men.db add command -label {Save As file} -command save_as_file
-	.men.db add command -label {Close file} -command close_file
-	.men.db add command -label {Save changes} -command save_file
+	foreach {l c} {{New file} close_file Load load_file {Save as} save_as_file {Close} close_file Save save_file} {
+		.men.db add command -label $l -command $c
+	}
 	.men.db add separator
 	.men.db add cascade -label {Auto..} -menu .men.db.aut
 	.men.db.aut add command -label {US Holidays} -command "prompt_number {US Holidays} {For which year?} 1000 3000 EventStor::holidays_us"
@@ -452,6 +409,9 @@ proc main2 {} {
 	.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
 	.evets.evs heading #2 -text Event
 	EventStor::build_db :memory:
+	#for {set i 0} {$i<150} {incr i} {
+	#	EventStor::holidays_us [expr {2000+$i}]
+	#}
 }
 
 main2

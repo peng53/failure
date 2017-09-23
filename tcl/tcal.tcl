@@ -7,7 +7,7 @@ namespace eval Cal {
 		variable MTH_NAME [list NULL January Febuary March April May June July August September October November December]
 		variable MTH 1 YR 2000
 		variable selA 0 selB 0
-		variable SQS 26 tOff 13 hh 14 dfont {Arial 10}
+		variable SQS 26 tOffy 0.5 tOffx 0.5 hh 14 dfont {Arial 10}
 		variable P
 	}
 	proc dowMY {m y} {
@@ -41,11 +41,12 @@ namespace eval Cal {
 		set v::MTH $m
 		set v::YR $y
 	}
-	proc CalVars {mth yr sqs toff dfont hh} {
+	proc CalVars {mth yr sqs toffy toffx dfont hh} {
 		# Sets vars for Cal
 		set_mth_yr $mth $yr
 		set v::SQS $sqs
-		set v::tOff $toff
+		set v::tOffy $toffy
+		set v::tOffx $toffx
 		set v::hh $hh
 		set v::dfont $dfont
 	#	set v::P $parent
@@ -195,8 +196,8 @@ namespace eval Cal {
 		$v::P.can delete -tag days
 		$v::P.mth.mthl configure -text "[lindex $v::MTH_NAME $v::MTH] $v::YR"
 		set f [dowMY $v::MTH $v::YR]
-		set x [expr {1+$f*$v::SQS+$v::tOff}]
-		set y [expr {$v::hh+$v::tOff+1}]
+		set x [expr {1+$f*$v::SQS+int($v::tOffx*$v::SQS)}]
+		set y [expr {$v::hh+int($v::tOffy*$v::SQS)+1}]
 		# Current month's days
 		set l [mth_day_ct $v::MTH $v::YR]
 		for {set d 1} {$d<=$l} {incr d} {
@@ -207,7 +208,7 @@ namespace eval Cal {
 			}
 			$v::P.can create text $x $y -text $d -font $v::dfont -fill #062270 -tag "$T days text"
 			if {$f==6} {
-				set x [expr {$v::tOff+1}]
+				set x [expr {int($v::tOffx*$v::SQS)+1}]
 				set f 0
 				incr y $v::SQS
 			} else {
@@ -289,7 +290,7 @@ namespace eval Cal {
 		if {$v::selA==0} { return [setSel $r $c] }
 		if {$v::selB==0 || [dateC $m $d $y {*}[lrange $v::selB 0 2]]==1} {
 			set v::selB [list $m $d $y $r $c]
-		} else { 
+		} else {
 			set v::selA [list $m $d $y $r $c]
 		}
 		if {[dateC {*}[lrange $v::selA 0 2] {*}[lrange $v::selB 0 2]]==1} {
@@ -303,32 +304,30 @@ namespace eval Cal {
 		return [list [expr {int(($y-$v::hh)/$v::SQS)}] [expr {int($x/$v::SQS)}]]
 	}
 }
-proc main {} {
-	bind . <Control-Key-q> {
-		exit
-	}
-	set square_size 32
-	set text_offset 8
-	set day_font {Arial 10}
-	set hh 16
-	# Init Cal with the current month and year.
-	lassign [clock format [clock seconds] -format {%N %Y}] m y
-	set f .cal
-	Cal::CalVars $m $y $square_size $text_offset $day_font $hh
-	Cal::Cal $f
-	#$m $y $square_size $text_offset $day_font $hh
-	pack $f
-	pack [entry .mydate]
-	bind $f.can <Key-Return> {
-		focus .mydate
-	}
-	proc put_mydate {f} {
-		.mydate delete 0 end
-		.mydate insert 0 [Cal::$f.get_selected]
-	}
-	pack [button .goo -text Gooo -command "put_mydate $f"] -side left
-	pack [button .bquit -text Quit -command exit] -side right
-}
 if {[string match *tcal.tcl $argv0]} {
+	proc main {} {
+		bind . <Control-Key-q> {
+			exit
+		}
+		set square_size 48
+		set text_offset_y 0.2
+		set text_offset_x 0.8
+		set day_font {Arial 10}
+		set hh 16
+		# Init Cal with the current month and year.
+		lassign [clock format [clock seconds] -format {%N %Y}] m y
+		Cal::CalVars $m $y $square_size $text_offset_y $text_offset_x $day_font $hh
+		pack [Cal::Cal .cal]
+		pack [entry .mydate]
+		bind .cal.can <Key-Return> {
+			focus .mydate
+		}
+		proc put_mydate {f} {
+			.mydate delete 0 end
+			.mydate insert 0 [Cal::.cal.get_selected]
+		}
+		pack [button .goo -text Gooo -command "put_mydate .cal"] -side left
+		pack [button .bquit -text Quit -command exit] -side right
+	}
 	main
 }

@@ -133,12 +133,10 @@ namespace eval EventStor {
 	proc ps_get_more {rowid} {
 		# Returns all cols for row with rowid.
 		if {!$v::is_open} { return 0 }
-		#puts [ps_get_basic]
-		set rs [list]
 		conn eval {SELECT datetime(start_date,'unixepoch','localtime') as date1, datetime(end_date,'unixepoch','localtime') as date2, event_name, desc_more from events WHERE rowid=:rowid} {
-			lappend rs [list $date1 $date2 $event_name $desc_more]
+			return [list $date1 $date2 $event_name $desc_more]
 		}
-		return $rs
+		return -1
 	}
 	proc ps_get_date_range {d1 d2} {
 		# Returns all rows with start_date between d1 & d2 including endpts
@@ -187,6 +185,19 @@ namespace eval EventStor {
 		# Use: xth_dow 9 2017 1 3-1
 		set f [clock format [clock scan $mth/01/$year -format %D] -format %w]
 		return [expr {$d-$f+7*$xth+($f>$d ? 8:1)}]
+	}
+	proc event_days {s1 s2} {
+		# Returns all days between unixepoch s1 s2 with events
+		if {!$v::is_open} { return 0 }
+		set rs [list]
+		conn eval {SELECT distinct date(start_date,'unixepoch') as D from events WHERE start_date>=:s1 AND start_date<=:s2} {
+			append $D
+		}
+		return $rs
+	}
+	proc event_day {mth d d2 year} {
+		# Returns all days in mth/year with events
+		return [event_days [second_date $year $mth $d] [second_date $year $mth $d2]
 	}
 	proc holidays_us {year} {
 		# Adds US holidays for year.
