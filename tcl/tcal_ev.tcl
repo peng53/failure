@@ -4,7 +4,7 @@ source "tcal.tcl"
 source "tcalev_sql.tcl"
 
 namespace eval Evv {
-	variable cROWID -1
+	variable cROWID -1 props win calwin win
 }
 bind . <Control-Key-q> {
 	exit
@@ -15,7 +15,7 @@ proc prompt_number {t d m M c} {
 	toplevel .promptn
 	wm title .promptn $t
 	wm resizable .promptn 0 0
-	pack [label .promptn.l -text $d -font 12]
+	pack [label .promptn.l -text $d -font bold]
 	pack [entry .promptn.e]
 	proc prompt_number_vlad {m M c} {
 		set s [.promptn.e get]
@@ -29,36 +29,18 @@ proc prompt_number {t d m M c} {
 	pack [button .promptn.b_ok -command "prompt_number_vlad $m $M $c" -text Ok] -side left
 	pack [button .promptn.b_cl -command {destroy .promptn} -text Cancel] -side left
 }
-
-proc new_props_win {} {
-	# Create a properties window
-	if {[check_open .props]} { return }
-	toplevel .props
-	wm geometry .props 400x350
-	wm title .props Properties
-	bind .props <Control-Key-q> {
-		exit
-	}
-	wm protocol .props WM_DELETE_WINDOW {
-		if {[tk_messageBox -message {Close properties?} -type yesno] eq "yes"} {
-			destroy .props
-		}
-	}
-	Props
-}
 proc Props {} {
-	pack [label .props.l1 -text {Entry Properties} -font 16]
 	foreach {w n} {da {Start Date} db {End Date}} {
 		pack [label .props.l$w -text "$n (M/D/Y HH:MM)"] -anchor w
 		pack [frame .props.$w] -fill x
 		foreach {o f t l} {m 1 12 2 d 1 31 2 y 1000 9999 4 h 0 23 2 mm 0 59 2} {
-			pack [ttk::spinbox .props.$w.$o -from $f -to $t -font 10 -wrap 1 -width $l -format %0$l.0f] -side left -fill x -expand 1
+			pack [ttk::spinbox .props.$w.$o -from $f -to $t -wrap 1 -width $l -format %0$l.0f] -side left -fill x -expand 1
 		}
 	}
-	pack [label .props.l4 -text {Event}] -anchor w
-	pack [entry .props.ev -font 10 -width 10] -fill x
-	pack [label .props.l5 -text {More}] -anchor w
-	pack [text .props.mr -font 10 -height 2 -width 10] -fill both -expand 1
+	pack [label .props.l4 -text Event] -anchor w
+	pack [entry .props.ev -width 10] -fill x
+	pack [label .props.l5 -text More] -anchor w
+	pack [text .props.mr -height 2 -width 10] -fill both -expand 1
 	pack [frame .props.bt] -side bottom
 	foreach {b n c} {save Save save_props new New new_props rev Revert fill_props del Delete delete_props hide Hide {destroy .props}} {
 		pack [button .props.bt.$b -text $n -command $c] -side left
@@ -90,7 +72,7 @@ proc delete_props {} {
 	if {$Evv::cROWID==-1} { return }
 	EventStor::delete_row $Evv::cROWID
 	set $Evv::cROWID -1
-	tk_messageBox -type ok -icon info -message "Event Deleted\nPlease refresh."
+	tk_messageBox -type ok -icon info -message {Event Deleted}
 }
 proc save_props {} {
 	# Saves entry by creating if not made and updating elsewise.
@@ -112,36 +94,19 @@ proc new_props {} {
 	set Evv::cROWID -1
 	tk_messageBox -type ok -icon info -message "Remember to save this new event!\n(and refresh)."
 }
-proc check_open {w} {
-	# Checks whether window w is created yet.
-	if {$w in [winfo children .]} {
-		return 1
-	}
-	return 0
-}
-proc new_cal_win {} {
-	# Creates a calendar window.
-	if {[check_open .calwin]} { return }
-	toplevel .calwin
-	set size [expr {$Cal::v::SQS*7+48}]
-	wm maxsize .calwin $size $size
-	wm title .calwin Calender
-	bind .calwin <Control-Key-q> {
-		destroy .calwin
-	}
-	Cals
-}
 proc wid {type name cmd {options {}}} {
-	if {[check_open $name]} { return }
+	# Creates widget of type and then use cmd
+	if {$name in [winfo children .]} {
+		return
+	}
 	lassign $options T
 	switch $type {
 		win {
 			toplevel $name
 			wm title $name $T
-			#wm maxsize $x $y
 		}
 		fra {
-			pack [labelframe $name -text $T] -expand 1 -fill both -side left
+			pack [labelframe $name -text $T -font bold] -expand 1 -fill both -side left
 		}
 	}
 	$cmd
@@ -158,13 +123,13 @@ proc Cals {} {
 		if {[string length [set y [.calwin.set.yre get]]]==0} {
 			set y $Cal::v::YR
 		}
-		Cal::set_mth_yr $n $y
+		Cal::mthyr set $n $y
 		Cal::cal_day
 	}
 	pack [label .calwin.set.yrl -text Year] -side left
 	pack [entry .calwin.set.yre -width 6] -side left
 	pack [button .calwin.set.set -text Set -command set_my] -side left
-	pack [button .calwin.b1 -text {Search M/Y} -command {search_by_cal .evets.evs} ] -side left
+	pack [button .calwin.b1 -text {Search M/Y} -command search_by_cal] -side left
 	pack [button .calwin.b2 -text {Properties Date} -command props_cal_date] -side left
 	pack [button .calwin.b3 -text Hide -command {destroy .calwin}] -side left
 }
@@ -177,7 +142,7 @@ proc props_cal_date {} {
 			set m2 [set m $Cal::v::MTH]
 			set y2 [set y $Cal::v::YR]
 			set d 1
-			set d2 [Cal::mth_day_ct $m $y]
+			set d2 [Cal::mthyr ct $m $y]
 		}
 		3 {
 			lassign $D m d y
@@ -187,7 +152,7 @@ proc props_cal_date {} {
 			lassign $D m d y m2 d2 y2
 		}
 	}
-	new_props_win
+	wid $Evv::props .props Props Properties
 	.props.da.y set $y
 	.props.da.m set $m
 	.props.da.d set $d
@@ -212,7 +177,7 @@ proc get_range_i {A B} {
 	}
 	return $o
 }
-proc insert_rows {w rs} {
+proc insert_rows {rs} {
 	# Inserts of rows in rs to widget w.
 	# The root children are the years followed by months
 	set cy 0
@@ -222,23 +187,23 @@ proc insert_rows {w rs} {
 		lassign [split $D -] y m d
 		if {$cy!=$y} {
 			set cy $y
-			set cyi [$w insert {} end -id y$y -text $cy -open 1]
+			set cyi [.evets.evs insert {} end -id y$y -text $cy -open 1]
 			set cm 0
 		}
 		if {$cm!=$m} {
 			set cm $m
-			set cmi [$w insert $cyi end -id y$y$m  -text $cm]
+			set cmi [.evets.evs insert $cyi end -id y$y$m  -text $cm]
 		}
-		$w insert $cmi end -id $rowid -values [list $d $name]
+		.evets.evs insert $cmi end -id $rowid -values [list $d $name]
 	}
 }
-proc all_events {w} {
+proc all_events {} {
 	# Get all events from open database and
 	# calls for them to be added to treeview
-	$w delete [$w children {}]
-	insert_rows $w [EventStor::ps_get_basic]
+	.evets.evs delete [.evets.evs children {}]
+	insert_rows [EventStor::ps_get_basic]
 }
-proc search_by_date {w} {
+proc search_by_date {} {
 	# Gather options for searching by date and
 	# executes search.
 	if {[string length [set y [.search.date.yr.e get]]]==0} {
@@ -246,7 +211,7 @@ proc search_by_date {w} {
 		return
 	}
 	if {[llength [set mths [get_range_i 1 12]]]==0} { set mths [list [list 1 12]] }
-	$w delete [$w children {}]
+	.evets.evs delete [.evets.evs children {}]
 	set rs [list]
 	if {[string length [set d [.search.date.dy.e get]]]==0} { set d 1}
 	if {[string length [set y2 [.search.date.yr.e2 get]]]==0} { set y2 $y }
@@ -256,12 +221,12 @@ proc search_by_date {w} {
 		} else {
 			lassign $mm m m2
 		}
-		set d2 [Cal::mth_day_ct $m2 $y2]
+		set d2 [Cal::mthyr ct $m2 $y2]
 		lappend rs {*}[EventStor::ps_get_date_range [list $y $m $d] [list $y2 $m2 $d2]]
 	}
-	insert_rows $w $rs
+	insert_rows $rs
 }
-proc search_by_cal {w} {
+proc search_by_cal {} {
 	# Get date(-range) on calendar and
 	# get all events in that range
 	set D [Cal::.calwin.cal.get_selected]
@@ -270,12 +235,11 @@ proc search_by_cal {w} {
 			set m $Cal::v::MTH
 			set y $Cal::v::YR
 			set D1 [list $y $m 1]
-			set D2 [list $y $m [Cal::mth_day_ct $m $y]]
+			set D2 [list $y $m [Cal::mthyr ct $m $y]]
 		}
 		3 {
 			lassign $D m d y
-			set D1 [list $y $m $d]
-			set D2 $D1
+			set D2 [set D1 [list $y $m $d]]
 		}
 		6 {
 			lassign $D m d y m2 d2 y2
@@ -284,11 +248,11 @@ proc search_by_cal {w} {
 		}
 	}
 	set rs [EventStor::ps_get_date_range $D1 $D2]
-	$w delete [$w children {}]
-	insert_rows $w $rs
+	.evets.evs delete [.evets.evs children {}]
+	insert_rows $rs
 	
 }
-proc search_by_name {w} {
+proc search_by_name {} {
 	# Get name field and execute search by name.
 	# If it starts with the 'name', it is included.
 	# Case does not matter
@@ -297,9 +261,9 @@ proc search_by_name {w} {
 		tk_messageBox -type ok -icon error -message {Event name is required!}
 		return
 	}
-	$w delete [$w children {}]
+	.evets.evs delete [.evets.evs children {}]
 	set rs [EventStor::ps_get_event $s%]
-	insert_rows $w $rs
+	insert_rows $rs
 }
 proc reset_ents {} {
 	# Resets entries and checkbuttons
@@ -338,80 +302,75 @@ proc close_file {} {
 	EventStor::close_db
 	EventStor::build_db :memory:
 }
-proc main2 {} {
-	wm title . Events
+
+wm title . Events
 # Init Cal with the current month and year.
-	lassign [clock format [clock seconds] -format {%N %Y}] m y
-	Cal::CalVars $m $y 32 0.5 0.5 {Arial 10} 16
-	menu .men
-	menu .men.db
-	menu .men.db.aut
-	menu .men.search
-	. configure -menu .men
-	.men add cascade -label Database -menu .men.db
-	foreach {l c} {{New file} close_file Load load_file {Save as} save_as_file {Close} close_file Save save_file} {
-		.men.db add command -label $l -command $c
-	}
-	.men.db add separator
-	.men.db add cascade -label {Auto..} -menu .men.db.aut
-	.men.db.aut add command -label {US Holidays} -command "prompt_number {US Holidays} {For which year?} 1000 3000 EventStor::holidays_us"
-	.men add command -label Calender -command {wid fra .calwin Cals {Calendar}}
-	.men add command -label Properties -command {wid fra .props Props {Properties}}
-	.men add cascade -label Search -menu .men.search
-	.men.search add command -label All -command {all_events .evets.evs}
-	.men.search add separator
-	.men.search add command -label {by date} -command {search_by_date .evets.evs}
-	.men.search add command -label {by name} -command {search_by_name .evets.evs}
-	.men.search add separator
-	.men.search add command -label Reset -command reset_ents
-	.men add command -label Quit -command exit
-	pack [labelframe .search -text Search -font 16] -fill x
-	pack [frame .search.date] -anchor w  -expand 1 -fill x
-	pack [labelframe .search.date.mths -text Months] -side left -expand 1 -fill x
-	global cb
-	for {set i 1} {$i<13} {incr i} {
-		pack [checkbutton .search.date.mths.cb_$i -variable cb($i) -text $i -width 2 -indicatoron 0] -side left
-	}
-	pack [labelframe .search.date.dy -text Day] -side left
-	pack [entry .search.date.dy.e -width 3] -side left
-	pack [label .search.date.dy.l -text :] -side left
-	pack [entry .search.date.dy.e2 -width 3] -side left
-	pack [labelframe .search.date.yr -text Year] -side left
-	pack [entry .search.date.yr.e -width 5] -side left
-	pack [label .search.date.yr.l2 -text - -font 10] -side left
-	pack [entry .search.date.yr.e2 -width 5] -side left
-	pack [labelframe .search.name -text {Event Name}] -side left -expand 1 -fill x
-	pack [entry .search.name.e] -expand 1 -fill x
-
-	pack [labelframe .evets -text Events -font 16] -expand 1 -fill both
-	pack [ttk::treeview .evets.evs -columns {Day Event} -selectmode browse -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
-	bind .evets.evs <Button-1> {
-		if {[string index [set r [.evets.evs identify row %x %y]] 0]==y} {
-			set Evv::cROWID -1
-		} else {
-			set Evv::cROWID $r
-			if {![check_open .props]} { new_props_win }
-			fill_props
-		}
-	}
-	bind .evets.evs <Key-Return> {
-		if {[string index [set r [.evets.evs selection]] 0]==y} {
-			set Evv::cROWID -1
-		} else {
-			set Evv::cROWID $r
-			if {![check_open .props]} { new_props_win }
-			fill_props
-		}
-	}
-	pack [scrollbar .evets.sb -command {.evets.evs yview}] -side left -fill y
-	.evets.evs column #0 -width 100 -minwidth 100 -stretch 0
-	.evets.evs heading #1 -text Day
-	.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
-	.evets.evs heading #2 -text Event
-	EventStor::build_db :memory:
-	#for {set i 0} {$i<150} {incr i} {
-	#	EventStor::holidays_us [expr {2000+$i}]
-	#}
+lassign [clock format [clock seconds] -format {%N %Y}] m y
+Cal::CalVars $m $y 32 0.5 0.5 {Arial 10} 16
+menu .men
+menu .men.db
+menu .men.db.aut
+menu .men.search
+. configure -menu .men
+.men add cascade -label Database -menu .men.db
+foreach {l c} {New close_file Load load_file {Save as} save_as_file {Close} close_file Save save_file} { .men.db add command -label $l -command $c }
+.men.db add separator
+.men.db add cascade -label {Auto..} -menu .men.db.aut
+.men.db.aut add command -label {US Holidays} -command {prompt_number {US Holidays} {For which year?} 1000 3000 EventStor::holidays_us}
+.men add command -label Calender -command {wid $Evv::calwin .calwin Cals {Calendar}}
+.men add command -label Properties -command {wid $Evv::props .props Props {Properties}}
+.men add cascade -label Search -menu .men.search
+.men.search add command -label All -command all_events
+.men.search add separator
+.men.search add command -label {by date} -command search_by_date
+.men.search add command -label {by name} -command search_by_name
+.men.search add separator
+.men.search add command -label Reset -command reset_ents
+.men add command -label Quit -command exit
+pack [labelframe .search -text Search -font bold] -fill x
+pack [frame .search.date] -anchor w  -expand 1 -fill x
+pack [labelframe .search.date.mths -text Months] -side left -expand 1 -fill x
+global cb
+for {set i 1} {$i<13} {incr i} {
+	pack [checkbutton .search.date.mths.cb_$i -variable cb($i) -text $i -width 2 -indicatoron 0] -side left
 }
+pack [labelframe .search.date.dy -text Day] -side left
+pack [entry .search.date.dy.e -width 3] -side left
+pack [label .search.date.dy.l -text :] -side left
+pack [entry .search.date.dy.e2 -width 3] -side left
+pack [labelframe .search.date.yr -text Year] -side left
+pack [entry .search.date.yr.e -width 5] -side left
+pack [label .search.date.yr.l2 -text -] -side left
+pack [entry .search.date.yr.e2 -width 5] -side left
+pack [labelframe .search.name -text {Event Name}] -side left -expand 1 -fill x
+pack [entry .search.name.e] -expand 1 -fill x
 
-main2
+pack [labelframe .evets -text Events -font bold] -expand 1 -fill both
+pack [ttk::treeview .evets.evs -columns {Day Event} -selectmode browse -yscrollcommand {.evets.sb set}] -expand 1 -fill both -side left
+bind .evets.evs <Button-1> {
+	if {[string index [set r [.evets.evs identify row %x %y]] 0]==y} {
+		set Evv::cROWID -1
+	} else {
+		set Evv::cROWID $r
+		wid $Evv::props .props Props Properties
+		fill_props
+	}
+}
+bind .evets.evs <Key-Return> {
+	if {[string index [set r [.evets.evs selection]] 0]==y} {
+		set Evv::cROWID -1
+	} else {
+		set Evv::cROWID $r
+		wid $Evv::props .props Props Properties
+		fill_props
+	}
+}
+pack [scrollbar .evets.sb -command {.evets.evs yview}] -side left -fill y
+.evets.evs column #0 -width 100 -minwidth 100 -stretch 0
+.evets.evs heading #1 -text Day
+.evets.evs column #1 -width 40 -minwidth 40 -stretch 0
+.evets.evs heading #2 -text Event
+EventStor::build_db :memory:
+#for {set i 0} {$i<150} {incr i} {
+#	EventStor::holidays_us [expr {2000+$i}]
+#}
