@@ -219,6 +219,7 @@ namespace eval Cal {
 		# Draws selection rectangles in the selected range
 		# for the current month.
 		$v::P.can delete -tags sel
+		$v::P.can delete -tags mark
 		if {$v::selA==0} { return }
 		lassign $v::selA ma da ya ra ca
 		if {$v::selB==0} {
@@ -244,6 +245,30 @@ namespace eval Cal {
 				} else { incr ca }
 			}
 			$v::P.can raise text sel
+		}
+	}
+	proc mark_days {days sym ox oy col} {
+		# Marks days on the current month with sym
+		$v::P.can delete -tags mark
+		set f [mthyr 1st $v::MTH $v::YR]
+		set x [expr {1+$f*$v::SQS+int($ox*$v::SQS)}]
+		set y [expr {$v::hh+int($oy*$v::SQS)+1}]
+		set n 1
+		foreach d $days {
+			while {$n<$d} {
+				if {$f==6} {
+					set x [expr {int($ox*$v::SQS)+1}]
+					set f 0
+					incr y $v::SQS
+				} else {
+					incr f
+					incr x $v::SQS
+				}
+				incr n
+			}
+			if {$n==$d || "0$n"==$d} {
+				$v::P.can create text $x $y -text $sym -font $v::dfont -fill $col -tag mark
+			}
 		}
 	}
 	proc clearSel {} {

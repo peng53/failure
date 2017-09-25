@@ -190,14 +190,14 @@ namespace eval EventStor {
 		# Returns all days between unixepoch s1 s2 with events
 		if {!$v::is_open} { return 0 }
 		set rs [list]
-		conn eval {SELECT distinct date(start_date,'unixepoch') as D from events WHERE start_date>=:s1 AND start_date<=:s2} {
-			append $D
+		conn eval {SELECT distinct strftime('%d',start_date,'unixepoch') as D from events WHERE start_date>=:s1 AND start_date<=:s2} {
+			lappend rs $D
 		}
 		return $rs
 	}
 	proc event_day {mth d d2 year} {
 		# Returns all days in mth/year with events
-		return [event_days [second_date $year $mth $d] [second_date $year $mth $d2]
+		return [event_days [second_date $year $mth $d] [second_date $year $mth $d2]]
 	}
 	proc holidays_us {year} {
 		# Adds US holidays for year.

@@ -29,6 +29,22 @@ proc prompt_number {t d m M c} {
 	pack [button .promptn.b_ok -command "prompt_number_vlad $m $M $c" -text Ok] -side left
 	pack [button .promptn.b_cl -command {destroy .promptn} -text Cancel] -side left
 }
+proc wid {type name cmd title} {
+	# Creates widget of type and then use cmd
+	if {$name in [winfo children .]} {
+		return
+	}
+	switch $type {
+		win {
+			toplevel $name
+			wm title $name $title
+		}
+		fra {
+			pack [labelframe $name -text $title -font bold] -expand 1 -fill both -side left
+		}
+	}
+	$cmd
+}
 proc Props {} {
 	foreach {w n} {da {Start Date} db {End Date}} {
 		pack [label .props.l$w -text "$n (M/D/Y HH:MM)"] -anchor w
@@ -76,8 +92,20 @@ proc delete_props {} {
 }
 proc save_props {} {
 	# Saves entry by creating if not made and updating elsewise.
-	set d1 [EventStor::second_date [.props.da.y get] [.props.da.m get] [.props.da.d get] [.props.da.h get] [.props.da.mm get]]
-	set d2 [EventStor::second_date [.props.db.y get] [.props.db.m get] [.props.db.d get] [.props.db.h get] [.props.db.mm get]]
+	set d1 [list]
+	set d2 [list]
+	foreach {w l} {da d1 db d2} {
+		foreach {e MIN MAX} {y 1000 9999 m 1 12 d 1 31 h 0 23 mm 0 59} {
+			set v [.props.$w.$e get]
+			if {![string is integer $v] || $v<$MIN || $v>$MAX} {
+				tk_messageBox -type ok -icon error -message "Bad input. Please correct. ($w.$e)"
+				return
+			}
+			lappend $l $v
+		}
+	}
+	set d1 [EventStor::second_date {*}$d1]
+	set d2 [EventStor::second_date {*}$d2]
 	set n [.props.ev get]
 	set dm [string trim [.props.mr get 1.0 7.0]]
 	if {$Evv::cROWID==-1} {
@@ -93,23 +121,6 @@ proc new_props {} {
 	# Set current event to 'new', meaning save will create a new event
 	set Evv::cROWID -1
 	tk_messageBox -type ok -icon info -message "Remember to save this new event!\n(and refresh)."
-}
-proc wid {type name cmd {options {}}} {
-	# Creates widget of type and then use cmd
-	if {$name in [winfo children .]} {
-		return
-	}
-	lassign $options T
-	switch $type {
-		win {
-			toplevel $name
-			wm title $name $T
-		}
-		fra {
-			pack [labelframe $name -text $T -font bold] -expand 1 -fill both -side left
-		}
-	}
-	$cmd
 }
 proc Cals {} {
 	# Creates a calendar widget.
@@ -129,9 +140,17 @@ proc Cals {} {
 	pack [label .calwin.set.yrl -text Year] -side left
 	pack [entry .calwin.set.yre -width 6] -side left
 	pack [button .calwin.set.set -text Set -command set_my] -side left
-	pack [button .calwin.b1 -text {Search M/Y} -command search_by_cal] -side left
-	pack [button .calwin.b2 -text {Properties Date} -command props_cal_date] -side left
-	pack [button .calwin.b3 -text Hide -command {destroy .calwin}] -side left
+	pack [frame .calwin.b]
+	pack [button .calwin.b.1 -text {Search M/Y} -command search_by_cal] -side left
+	pack [button .calwin.b.2 -text {Properties Date} -command props_cal_date] -side left
+	pack [button .calwin.b.3 -text {Mark events} -command pre_mark] -side left
+	pack [button .calwin.b.4 -text Hide -command {destroy .calwin}] -side left
+}
+proc pre_mark {} {
+	# Marks events 
+	lassign [Cal::month_range] m Z y Z d2
+	set rs [EventStor::event_day $m 1 $d2 $y]
+	Cal::mark_days $rs * 0.75 0.75 black
 }
 proc props_cal_date {} {
 	# Get date selected in calendar and put it
