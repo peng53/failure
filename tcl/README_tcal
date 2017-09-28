@@ -1,0 +1,65 @@
+README for tcal.tcl
+
+tcal.tcl (shortened tcal) is a script in TCL that create a
+Calendar widget that made of two buttons, a label, and a
+canvas. The calendar itself is drawn on the canvas, the
+label displays when month and year, and the buttons go back
+or forward a month.
+
+On: Bindings
+There are also key-bindings when the canvas is focused:
+	Control+(Left|Right Arrow) -> previous|next month
+	Control+(Up|Down Arrow) -> previous|next year
+
+	If there is a day selected (see selection):
+		Left|Right Arrow -> move selection to left|right item;
+			going to previous|next month if on the edge.
+		Up|Down -> move selection to upper|lower item
+
+Mouse bindings for the canvas include:
+	Left Button (button 1) -> select a day
+	Right Button (button 2) -> cancels selection(s)
+	Shift + Left Button -> select a day or range-select
+		from prior to current selection.
+
+On: Selection
+Selection is stored until replaced or cleared. Selection is
+retrived by the $C.get_selected procedure. Given:
+	no selection: returns empty string
+	single selection: returns MONTH DAY YEAR
+	range selection: returns MONTH1 DAY1 YEAR1 MONTH1 DAY2 YEAR2
+
+Selections via Shift+Left Button work as follows:
+	none selected: selects day
+	single selected: expands selection range with prior selection.
+	range selected depends:
+		if new day is greater: expand future days
+		if new day is lesser: shrink or expand left boundary
+
+While only current month days are shown, it possible to make selections
+spanning months, even years, by using Shift+Left Button.
+
+On: Appearance/Init procedure
+Aspects of the of calendar visuals that can be changed include:
+	day of the week height (dowH)
+	canvas font (font)
+	day square width/height (SQ)
+	positioning of day text (txtX,txtY)
+These can be set via the Cal::CalVars procedure.
+The CalVars proc take the following inputs in order:
+	inital_month inital_year SQ txtX txtY font dowH
+
+dowH and SQ's unit are in pixels
+font is a TCL/TK accepted font string such as {Arial 10} or {bold}
+txtX and txtY is number. It is used as a percent multiplier for positioning
+depending on SQ. E.g. if SQ is 32 and txtX is 0.5, then the day will horizontally
+be in the center, or 16. Note that nothing prevents values outside [0,1].
+inital_month and inital_year set the day the calendar starts on. They are
+1-indexed and range follows usual month/year ranges.
+
+At the moment, tcal's colors are hardcoded and days are
+squares. (may change later on)
+
+On: Standalone
+
+TBD

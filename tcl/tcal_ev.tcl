@@ -206,7 +206,7 @@ proc insert_rows {rs} {
 		lassign [split $D -] y m d
 		if {$cy!=$y} {
 			set cy $y
-			set cyi [.evets.evs insert {} end -id y$y -text $cy -open 1]
+			set cyi [.evets.evs insert {} end -id y$y -text $cy]
 			set cm 0
 		}
 		if {$cm!=$m} {
