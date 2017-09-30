@@ -135,7 +135,7 @@ proc Cals {} {
 			set y $Cal::v::YR
 		}
 		Cal::mthyr set $n $y
-		Cal::cal_day
+		Cal::cal_day .calwin.cal
 	}
 	pack [label .calwin.set.yrl -text Year] -side left
 	pack [entry .calwin.set.yre -width 6] -side left
@@ -148,9 +148,9 @@ proc Cals {} {
 }
 proc pre_mark {} {
 	# Marks events 
-	lassign [Cal::month_range] m Z y Z d2
+	lassign [Cal::month_range .calwin.cal] m Z y Z d2
 	set rs [EventStor::event_day $m 1 $d2 $y]
-	Cal::mark_days $rs * 0.75 0.75 black
+	Cal::mark_days .calwin.cal $rs * 0.75 0.75 black
 }
 proc props_cal_date {} {
 	# Get date selected in calendar and put it
@@ -325,7 +325,7 @@ proc close_file {} {
 wm title . Events
 # Init Cal with the current month and year.
 lassign [clock format [clock seconds] -format {%N %Y}] m y
-Cal::CalVars $m $y 32 0.5 0.5 {Arial 10} 16
+Cal::CalVars $m $y 24 48 0.5 0.5 {Arial 10} 16
 menu .men
 menu .men.db
 menu .men.db.aut
