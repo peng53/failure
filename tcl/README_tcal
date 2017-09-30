@@ -61,5 +61,32 @@ At the moment, tcal's colors are hardcoded and days are
 squares. (may change later on)
 
 On: Standalone
+Standalone use is limited. An entry and two buttons are included.
+By pressing the first button, the selected date(s) is put into the 
+entry. The other button quits.
+
+On: Advanced Use
+tcal can be used (once) in other TCL/TK scripts. To do this, first
+call Cal::CalVars with the needed variables and then call Cal::Cal
+with an available widget name.
+
+Useful procedures include:
+	mthyr set $MTH $YR
+		this sets the current month and year. Be sure to redraw 
+		with cal_day after.
+	cal_day
+		refreshes the calendar days numbers. Note this doesn't
+		effect the base (the DOW header nor the colors)
+	next_mth && prev_mth
+		does as expected
+	month_range
+		returns the current date-range shown
+	mark_days $days $sym $ox $oy $col
+		mark the $days with $sym at offsets $ox,$oy and of
+		color $col. note: this assumes that day correspond with
+		the current month & year.
+
+
+TODO:
 
 TBD
