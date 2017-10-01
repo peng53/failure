@@ -1,0 +1,117 @@
+README for tcalev_sql.tcl
+
+tcalev_sql.tcl (shortened tcalev_sql) is a script with procedures
+meant to access entries in an event database used in tcal_ev.tcl.
+As this is just SQLite  statements, this means it has little 
+outside use beyond tcal_ev.
+
+tcalev_sql works entirely as procedures: not having any interface
+so I'll just explain the procedures and their recommended uses.
+
+Everything is in the EventStor namespace so it be prepended as so.
+tcalev_sql only allows one database open at once so it has an is_open
+boolean to determine what procedures are useable. The returns from
+the procs may hint toward this but YMMV.
+
+On: Procedures
+open_db FILENAME
+	opens a database, does not do any checks at the moment.
+
+close_db FILENAME
+	closes it.
+
+open_instead FILENAME
+	opens a database by 'restoring' over the current one.
+	does not check whether a database is open to begin with.
+
+copy_to FILENAME
+	backup current database to FILENAME using SQLITE's backup.
+	be sure FILENAME is valid filewise & sqlite-wise
+
+save_changes
+	doesn't work at the moment. do not use.
+
+build_db FILENAME
+	builds a database useable in this program.
+
+The next procedures may take variable(s) of form:
+	rowid -> integer
+	start_date -> integer in unixepoch
+	end_date -> integer in unixepoch
+	event_name, name -> string
+	desc_more -> string
+	vs -> a list of strings
+	year, mth, day, hr, mins -> integers with
+		apropriate ranges
+	op -> operand string
+	ws, os -> list of where/order strings
+
+There are more, but those are unique to their own
+procedure.
+
+Procedures:
+
+add_row $start_date $end_date $event_name $desc_more
+	adds a row. desc_more is optional.
+
+lastrow_added
+	returns the rowid of the last row added.
+
+update_row $rowid $start_date $end_date $event_name $desc_more
+	updates row with $rowid. desc_more is not optional here.
+
+delete_row $rowid
+	deletes row with $rowid
+
+wheres $vs
+	given a list of which values have form COL OPPERAND X,
+	return a list of valid values prepended by WHERE.
+
+orders $vs
+	given a list of cols, return a list of valid cols
+	prepended by ORDER BY.
+
+second_date $year $mth $day $hr $mins
+	returns seconds from unixepoch from date. Everything after
+	year is optional
+
+exp_date $op $year $mth
+	for some year and month return a single where startment.
+	basically converts that date to unixepoch and cats it
+	to WHERE start_date $op.
+
+get_all_rows $ws $os
+	just gets all rows. uses wheres and orders with ws and os.
+	see those procs for more insight.
+
+get_base_rows $ws $os
+	same as get_all_rows but only returns rowid,date,and event_name
+
+holidays_us $year
+	just add holiday event of $year to database. you would have to
+	use it to see which events are included. (mostly US)
+
+xth_dow $mth $year $d $xth
+	returns the integer of the day for the $xth $d in $mth $year.
+	for use in holidays_us where a holiday is the '1st monday'
+	or '3rd wedsnesday'. see actual proc for more insight.
+
+get_a_cal $year $mth
+	get all events for a specified month and year.
+
+
+The procedure prepended with "ps_" are less extreme. The use of 
+wheres and orders limited to those hardcoded in the proc but other-
+wise their use and returns are the same.
+
+This includes:
+	ps_get_basic -> get_base_rows
+	ps_get_event -> get_base_rows with WHERE event_name LIKE x
+	ps_get_more -> get_all_rows with WHERE rowid = x
+	ps_get_date_range -> get_base_rows with WHERE x<=start_date<=y
+	event_days -> ps_get_basic WHERE s1<=start_date<=s2, in unixepoch
+	event_day -> call event_days while converting from MM DD D2 YEAR to seconds.
+
+.
+.
+.
