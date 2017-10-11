@@ -1,0 +1,73 @@
+README for tcal_ev.tcl
+
+tcal_ev is a program that can view or edit events. All events are stored in a SQLITE
+database allowing for: start/end date-times, name, and description. tcal_ev is mainly
+a frontend for the features used in tcalev_sql. It also uses tcal for the calendar
+selector. Please see those tools for configuration.
+
+Whilst tcal_ev allows mainly for editing/viewing, an additional funtion is search.
+This allows finding events via starting prefix name or on its date.
+
+The UI components are more-or-less self explanatory, but regardless:
+
+Search:
+A 'date' search is used by filling out the months, day(s), and year(s) portions.
+How it works depends on which fields are filled.
+Examples:
+If year isn't filled out, date search doesn't work.
+A year is required. While searching for events occuring in specific months
+may be useful, it is not implemented (for now).
+
+If no months are selected, the program will assume a month range of January to
+December.
+
+The day(s) and secondary year field behave strangely. If there aren't filled,
+they will take first day of the month, last day of the month, and first year
+field, respectively. (where month is selected in on the boxes)
+
+Month selection may be appropriate to discuss at this point.
+Simply, the program searches with an A-B datespan at a time. Months are seperated
+by adjacency. 1-2-3 would act as one group and 5-6-7 as another. If 4 was selected
+as well, then there would be a single group consisting of 1-2-3-4-5-6-7.
+So in searching with 1-2-3 and 5-6-7, the program searches January to March and
+then May to July; but with 1-2-3-4-5-6-7 it just searches January to July.
+
+(bug: when using a secondary year, last datespan goes from first month of last group
+ to December.)
+
+A 'name' search is used by filling out the name field. That's all.
+The name search functions as a prefix, that is, events starting with with what was
+entered.
+
+These searches can be used by the search menu.
+An additional search by date can be used via the calendar.
+
+Events:
+Shows selection of events populated by search. The search is pretty dumb, it shows all
+matching events: which mean it be may slow with lots of 'em. 
+Items are grouped by year and month hierarchy.
+The items themselves only show the date of month of the start date and the name.
+Clicking on the item shows more detail in the Properties window.
+
+Properties:
+Properties is a sub-window showing the properties of the event.
+It can also be used to create or delete events. (via the new / delete buttons)
+This window show all details on the event. It is possible to pack properties
+as a frame also. (not in default)
+The UI elements has obvious function.
+The date entries set the date in the month day year hour minutes format.
+Attempting to save an event with invalid dates results in an error.
+Deleting an event from this window will delete it from the database, but still
+retains its details in the window.
+New event de-selects the event, allowing save to create a new event entry. This
+retains the previous event's details. 
+Revert will read what last event was selected and get its details from the database.
+
+Calender (calendar?? spelling??):
+Calender uses tcal to make a calender selector. This allows searching by datespan
+selected or entering the datespan selected into the properties window. (via
+Search M/Y, Properties Date respectively)
+It functions just like tcal.tcl with exception of the month/year setter and the
+Mark events button. The Mark event button displays an asterisk on days with events.
+The events used are the same as if one selected 'search all'.
+
