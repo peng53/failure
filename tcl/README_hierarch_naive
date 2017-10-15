@@ -1,0 +1,16 @@
+README for hierarch_naive.tcl
+
+hierarch_naive.tcl is a TCL script for manipulating a SQLITE database
+with hierarchy/tree-like structure. Data is grouped under some parent
+of whose removal will delete the children (grammar?). The data at
+the moment happens to be URLS but it would be useful if I could find
+some way of having another script define the table, while keeping the
+metadata intact (group ids, etc).
+
+This is an naive implementation. That is to say it looks like I'm making
+a tree with two arrays which may lead to performance issue down the line
+for certain procedures. Just getting all children of a root needs several
+SQL statements.
+
+Hopefully I'll make another implementation down the line, but this is just
+the start-up needed to get some ground-work up.
