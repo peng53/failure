@@ -9,6 +9,47 @@ namespace eval Evv {
 bind . <Control-Key-q> {
 	exit
 }
+proc perfs {} {
+	toplevel .perfsw
+	wm title .perfsw Perferances
+	wm resizable .perfsw 0 0
+	pack [labelframe .perfsw.fw -text {Floating Windows}] -side left -expand 1 -fill y
+	pack [checkbutton .perfsw.fw.calwin -text Calendar -variable Evv::calwin -onvalue win -offvalue fra] -anchor w
+	pack [checkbutton .perfsw.fw.props -text Props -variable Evv::props -onvalue win -offvalue fra] -anchor w
+	pack [labelframe .perfsw.cl -text {Calendar Look}] -side left
+
+	pack [labelframe .perfsw.cl.d -text {Day H*W}]
+	pack [ttk::spinbox .perfsw.cl.d.h -from 8 -to 999 -increment 2 -textvariable Cal::v::sy] -side left
+	pack [label .perfsw.cl.d.x -text x] -side left
+	pack [ttk::spinbox .perfsw.cl.d.w -from 8 -to 999 -increment 2 -textvariable Cal::v::SQS] -side left
+	pack [labelframe .perfsw.cl.o -text {Offset Y&X}]
+	pack [ttk::spinbox .perfsw.cl.o.y -from 0 -to 1 -increment 0.05 -textvariable Cal::v::tOffy] -side left
+	pack [label .perfsw.cl.o.a -text &] -side left
+	pack [ttk::spinbox .perfsw.cl.o.x -from 0 -to 1 -increment 0.05 -textvariable Cal::v::tOffx] -side left
+	pack [labelframe .perfsw.cl.f -text Font+Size] -expand 1 -fill x
+	pack [ttk::combobox .perfsw.cl.f.f -values {Arial Tahoma Verdana}] -side left -fill x -expand 1
+	pack [ttk::spinbox .perfsw.cl.f.s -from 8 -to 96] -side left
+	pack [labelframe .perfsw.cl.h -text {Header Height}] -expand 1 -fill x
+	pack [ttk::spinbox .perfsw.cl.h.h -from 8 -to 100 -increment 2 -textvariable Cal::v::hh] -side left -fill x -expand 1
+	fill_perfs
+}
+proc fill_perfs {} {
+	# Populates perfs window with current perfs.
+	#Cal::v::
+	#.perfsw.cl.d.h set $Cal::v::sy
+	#.perfsw.cl.d.w set $Cal::v::SQS
+	#.perfsw.cl.o.y set $Cal::v::tOffy
+	#.perfsw.cl.o.x set $Cal::v::tOffx
+	lassign [split $Cal::v::dfont] f s
+	.perfsw.cl.f.f set $f
+	.perfsw.cl.f.s set $s
+	#.perfsw.cl.h.h set $Cal::v::hh
+	#		variable MTH_NAME [list NULL January Febuary March April May June July August September October November December]
+	#	variable MTH 1 YR 2000
+	#	variable selA 0 selB 0
+	#	variable SQS 26 tOffy 0.5 tOffx 0.5 hh 14 dfont {Arial 10}
+	#	variable sy 26
+}
 proc prompt_number {t d m M c} {
 	# Creates a prompt with tITLE and dESCRIPTION that
 	# with success call cOMMAND with a value between m and M
@@ -390,6 +431,7 @@ pack [scrollbar .evets.sb -command {.evets.evs yview}] -side left -fill y
 .evets.evs column #1 -width 40 -minwidth 40 -stretch 0
 .evets.evs heading #2 -text Event
 EventStor::build_db :memory:
+perfs
 #for {set i 0} {$i<150} {incr i} {
 #	EventStor::holidays_us [expr {2000+$i}]
 #}

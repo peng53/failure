@@ -2,6 +2,16 @@
 package require sqlite3
 
 namespace eval HierarchUrl {
+	# Desired operations and how:
+	# Add URL ok (add_url)
+	# Add Group ok (add_group)
+	# Edit URL (name,url,group)
+	# Edit Group (name)
+	# Delete URL ok (delete_url)
+	# Delete Group (and children URL) ok (delete_group)
+	# Get all URL ok (get_urls)
+	# Get all URL under a group ok? (get_urls_tree)
+
 	proc open_db {db filename} {
 		# Open a database with filename and bind to db
 		sqlite3 $db $filename
