@@ -13,11 +13,12 @@ proc perfs {} {
 	toplevel .perfsw
 	wm title .perfsw Perferances
 	wm resizable .perfsw 0 0
-	pack [labelframe .perfsw.fw -text {Floating Windows}] -side left -expand 1 -fill y
-	pack [checkbutton .perfsw.fw.calwin -text Calendar -variable Evv::calwin -onvalue win -offvalue fra] -anchor w
-	pack [checkbutton .perfsw.fw.props -text Props -variable Evv::props -onvalue win -offvalue fra] -anchor w
-	pack [labelframe .perfsw.cl -text {Calendar Look}] -side left
+	wm transient .perfsw
+	pack [labelframe .perfsw.fw -text {Floating Windows}] -expand 1 -fill x
+	pack [checkbutton .perfsw.fw.calwin -text Calendar -variable Evv::calwin -onvalue win -offvalue fra] -side left
+	pack [checkbutton .perfsw.fw.props -text Props -variable Evv::props -onvalue win -offvalue fra] -side left
 
+	pack [labelframe .perfsw.cl -text {Calendar Look}]
 	pack [labelframe .perfsw.cl.d -text {Day H*W}]
 	pack [ttk::spinbox .perfsw.cl.d.h -from 8 -to 999 -increment 2 -textvariable Cal::v::sy] -side left
 	pack [label .perfsw.cl.d.x -text x] -side left
@@ -31,24 +32,23 @@ proc perfs {} {
 	pack [ttk::spinbox .perfsw.cl.f.s -from 8 -to 96] -side left
 	pack [labelframe .perfsw.cl.h -text {Header Height}] -expand 1 -fill x
 	pack [ttk::spinbox .perfsw.cl.h.h -from 8 -to 100 -increment 2 -textvariable Cal::v::hh] -side left -fill x -expand 1
+	pack [frame .perfsw.b]
+	pack [button .perfsw.b.s -text Save] -side left 
+	pack [button .perfsw.b.r -text Redraw -command perf_r] -side left
+	pack [button .perfsw.b.c -text Close -command {destroy .perfsw}] -side left
 	fill_perfs
 }
 proc fill_perfs {} {
 	# Populates perfs window with current perfs.
-	#Cal::v::
-	#.perfsw.cl.d.h set $Cal::v::sy
-	#.perfsw.cl.d.w set $Cal::v::SQS
-	#.perfsw.cl.o.y set $Cal::v::tOffy
-	#.perfsw.cl.o.x set $Cal::v::tOffx
 	lassign [split $Cal::v::dfont] f s
 	.perfsw.cl.f.f set $f
 	.perfsw.cl.f.s set $s
-	#.perfsw.cl.h.h set $Cal::v::hh
-	#		variable MTH_NAME [list NULL January Febuary March April May June July August September October November December]
-	#	variable MTH 1 YR 2000
-	#	variable selA 0 selB 0
-	#	variable SQS 26 tOffy 0.5 tOffx 0.5 hh 14 dfont {Arial 10}
-	#	variable sy 26
+}
+proc perf_r {} {
+	if {{.calwin} in [winfo children .]} {
+		destroy .calwin
+		wid $Evv::calwin .calwin Cals {Calendar}
+	}
 }
 proc prompt_number {t d m M c} {
 	# Creates a prompt with tITLE and dESCRIPTION that
