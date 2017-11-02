@@ -10,15 +10,20 @@ bind . <Control-Key-q> {
 	exit
 }
 proc perfs {} {
+	if {{.perfsw} in [winfo children .]} { return }
 	toplevel .perfsw
-	wm title .perfsw Perferances
+	wm title .perfsw Preferences
 	wm resizable .perfsw 0 0
 	wm transient .perfsw
-	pack [labelframe .perfsw.fw -text {Floating Windows}] -expand 1 -fill x
-	pack [checkbutton .perfsw.fw.calwin -text Calendar -variable Evv::calwin -onvalue win -offvalue fra] -side left
-	pack [checkbutton .perfsw.fw.props -text Props -variable Evv::props -onvalue win -offvalue fra] -side left
 
-	pack [labelframe .perfsw.cl -text {Calendar Look}]
+	pack [labelframe .perfsw.cc -text {Calendar Colors}] -side right -anchor n
+	foreach {c t} {SELbg {Selection BG} SELbd {Selection BD} DAYs1 {Day SUN/SAT 1} DAYs2 {Day SUN/SAT 2} DAYc1 {Day BG1} DAYc2 {Day BG2} DAYtc {Day Text} HDbg {Header BG} HDbd {Header BD}} {
+		set cc $Cal::v::clr($c)
+		set c3 [invcol $cc]
+		pack [button .perfsw.cc.b$c -text $t -font {Monospace 8} -bg $cc -fg [invcol $cc] -highlightthickness 0 -activebackground $c3 -activeforeground $cc -command "changecolor $c"] -expand 1 -fill x
+	}
+
+	pack [labelframe .perfsw.cl -text {Calendar Look}] -anchor n
 	pack [labelframe .perfsw.cl.d -text {Day H*W}]
 	pack [ttk::spinbox .perfsw.cl.d.h -from 8 -to 999 -increment 2 -textvariable Cal::v::sy] -side left
 	pack [label .perfsw.cl.d.x -text x] -side left
@@ -32,8 +37,13 @@ proc perfs {} {
 	pack [ttk::spinbox .perfsw.cl.f.s -from 8 -to 96] -side left
 	pack [labelframe .perfsw.cl.h -text {Header Height}] -expand 1 -fill x
 	pack [ttk::spinbox .perfsw.cl.h.h -from 8 -to 100 -increment 2 -textvariable Cal::v::hh] -side left -fill x -expand 1
+
+	pack [labelframe .perfsw.fw -text {Floating Windows}] -expand 1 -fill x -anchor n
+	pack [checkbutton .perfsw.fw.calwin -text Calendar -variable Evv::calwin -onvalue win -offvalue fra] -side left
+	pack [checkbutton .perfsw.fw.props -text Props -variable Evv::props -onvalue win -offvalue fra] -side left
+
 	pack [frame .perfsw.b]
-	pack [button .perfsw.b.s -text Save] -side left 
+	pack [button .perfsw.b.s -text Save -command perf_font] -side left 
 	pack [button .perfsw.b.r -text Redraw -command perf_r] -side left
 	pack [button .perfsw.b.c -text Close -command {destroy .perfsw}] -side left
 	fill_perfs
@@ -43,6 +53,21 @@ proc fill_perfs {} {
 	lassign [split $Cal::v::dfont] f s
 	.perfsw.cl.f.f set $f
 	.perfsw.cl.f.s set $s
+}
+proc changecolor {w} {
+	set c [tk_chooseColor -initialcolor [.perfsw.cc.b$w cget -bg]]
+	if {[string length $c]>0} {
+		set Cal::v::clr($w) $c
+		.perfsw.cc.b$w configure -bg $c -fg [invcol $c]
+	}
+}
+proc invcol {hc} {
+	# Inverts hex value in a string?
+	# E.g. f->0, e->1, so and so forth/ vice versa.
+	return [string map {f 0 e 1 d 2 c 3 b 4 a 5 9 6 8 7 7 8 6 9 5 a 4 b 3 c 2 d 1 e 0 f} [string tolower $hc]]
+}
+proc perf_font {} {
+	set Cal::v::dfont "[.perfsw.cl.f.f get] [.perfsw.cl.f.s get]"
 }
 proc perf_r {} {
 	if {{.calwin} in [winfo children .]} {
@@ -386,6 +411,7 @@ foreach {l c} {New close_file Load load_file {Save as} save_as_file {Close} clos
 .men.search add command -label {by name} -command search_by_name
 .men.search add separator
 .men.search add command -label Reset -command reset_ents
+.men add command -label Preferences -command perfs
 .men add command -label Quit -command exit
 pack [labelframe .search -text Search -font bold] -fill x
 pack [frame .search.date] -anchor w  -expand 1 -fill x
@@ -431,7 +457,3 @@ pack [scrollbar .evets.sb -command {.evets.evs yview}] -side left -fill y
 .evets.evs column #1 -width 40 -minwidth 40 -stretch 0
 .evets.evs heading #2 -text Event
 EventStor::build_db :memory:
-perfs
-#for {set i 0} {$i<150} {incr i} {
-#	EventStor::holidays_us [expr {2000+$i}]
-#}

@@ -9,6 +9,13 @@ namespace eval Cal {
 		variable selA 0 selB 0
 		variable SQS 26 tOffy 0.5 tOffx 0.5 hh 14 dfont {Arial 10}
 		variable sy 26
+		variable clr
+		array set clr { 
+			SELbg #76AF2C SELbd #C50080
+			DAYs1 #E266B7 DAYs2 #E238A7
+			DAYc1 #6D89D5 DAYc2 #476DD5 DAYtc #062270
+			HDbg #062270 HDbd #6D89D5 HDtc #6D89D5
+		}
 	}
 	proc is_lpyr {y} {
 		# Returns whether a year is a leap-year.
@@ -41,6 +48,16 @@ namespace eval Cal {
 				set v::MTH $m
 				set v::YR $y
 			}
+		}
+	}
+	proc CalClrs {SELbg SELbd DAYs1 DAYs2 DAYc1 DAYc2 DAYtc HDbg HDbd HDtC} {
+		# Changes the colors
+		variable clr
+		array set clr {
+			SELbg $SELbg SELbd $SELbd
+			DAYs1 $DAYs1 DAYs2 $DAYs2
+			DAYc1 $DAYc1 DAYc2 $DAYc2 DAYtc $DAYtc
+			HDbg $HDbg HDbd $HDbd HDtC
 		}
 	}
 	proc CalVars {mth yr sy sx toffy toffx dfont hh} {
@@ -151,7 +168,7 @@ namespace eval Cal {
 	}
 	proc sel_RC {C r c} {
 		# Draw selection rect at row and column.
-		$C.can create rect [set x [expr {$c*$v::SQS+1}]] [set y [expr {$r*$v::sy+1+$v::hh}]] [incr x $v::SQS] [incr y $v::sy] -fill #76AF2C -outline #C50080 -tags sel
+		$C.can create rect [set x [expr {$c*$v::SQS+1}]] [set y [expr {$r*$v::sy+1+$v::hh}]] [incr x $v::SQS] [incr y $v::sy] -fill $v::clr(SELbg) -outline $v::clr(SELbd) -tags sel
 	}
 	proc cal_base {C} {
 		# Draws base of calender; the day-name header.
@@ -160,11 +177,11 @@ namespace eval Cal {
 		set y [expr {1+$v::hh}]
 		for {set r 0} {$r<6} {incr r} {
 			if {$r%2} {
-				set f #E266B7
-				set f2 #E238A7
+				set f $v::clr(DAYs1)
+				set f2 $v::clr(DAYs2)
 			} else {
-				set f #E238A7
-				set f2 #E266B7
+				set f $v::clr(DAYs2)
+				set f2 $v::clr(DAYs1)
 			}
 			$C.can create rect $x $y [expr {$x+$v::SQS}] [expr {$y+$v::sy}] -fill $f -outline $f2 -tags {bg sun}
 			$C.can create rect $x2 $y [expr {$x2+$v::SQS}] [expr {$y+$v::sy}] -fill $f2 -outline $f -tags {bg sat}
@@ -176,10 +193,10 @@ namespace eval Cal {
 			for {set c 1} {$c<6} {incr c} {
 				if {[expr {($c+$r)%2}]} {
 					set t a
-					set f #6D89D5
+					set f $v::clr(DAYc1)
 				} else {
 					set t b
-					set f #476DD5
+					set f $v::clr(DAYc2)
 				}
 				$C.can create rect $x $y [expr {$x+$v::SQS}] [expr {$y+$v::sy}] -fill $f -outline $f -tags "bg $t"
 				incr x $v::SQS
@@ -187,11 +204,11 @@ namespace eval Cal {
 			incr y $v::sy
 			set x [expr {$v::SQS+1}]
 		}
-		$C.can create rect 1 1 [expr {$v::SQS*7+2}] $v::hh -fill #062270 -outline #6D89D5
+		$C.can create rect 1 1 [expr {$v::SQS*7+2}] $v::hh -fill $v::clr(HDbg) -outline $v::clr(HDbd)
 		set x [expr {$v::SQS/2}]
 		set y [expr {$v::hh/2}]
 		foreach d {SUN MON TUE WED THR FRI SAT} {
-			$C.can create text $x $y -text $d -font $v::dfont -fill #6D89D5
+			$C.can create text $x $y -text $d -font $v::dfont -fill $v::clr(HDtc)
 			incr x $v::SQS
 		}
 	}
@@ -210,7 +227,7 @@ namespace eval Cal {
 			} else {
 				set T even
 			}
-			$C.can create text $x $y -text $d -font $v::dfont -fill #062270 -tag "$T days text"
+			$C.can create text $x $y -text $d -font $v::dfont -fill $v::clr(DAYtc) -tag "$T days text"
 			if {$f==6} {
 				set x [expr {int($v::tOffx*$v::SQS)+1}]
 				set f 0
