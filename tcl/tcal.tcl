@@ -63,12 +63,9 @@ namespace eval Cal {
 	proc CalVars {mth yr sy sx toffy toffx dfont hh} {
 		# Sets vars for Cal
 		mthyr set $mth $yr
-		set v::SQS $sx
-		set v::sy $sy
-		set v::tOffy $toffy
-		set v::tOffx $toffx
-		set v::hh $hh
-		set v::dfont $dfont
+		foreach {x y} [list SQS $sx sy $sy tOffy $toffy tOffx $toffx hh $hh dfont $dfont] {
+			set v::$x $y
+		}
 	}
 	proc Cal {parent} {
 		# Creates Cal widget

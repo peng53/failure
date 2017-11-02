@@ -17,10 +17,9 @@ proc perfs {} {
 	wm transient .perfsw
 
 	pack [labelframe .perfsw.cc -text {Calendar Colors}] -side right -anchor n
-	foreach {c t} {SELbg {Selection BG} SELbd {Selection BD} DAYs1 {Day SUN/SAT 1} DAYs2 {Day SUN/SAT 2} DAYc1 {Day BG1} DAYc2 {Day BG2} DAYtc {Day Text} HDbg {Header BG} HDbd {Header BD}} {
-		set cc $Cal::v::clr($c)
-		set c3 [invcol $cc]
-		pack [button .perfsw.cc.b$c -text $t -font {Monospace 8} -bg $cc -fg [invcol $cc] -highlightthickness 0 -activebackground $c3 -activeforeground $cc -command "changecolor $c"] -expand 1 -fill x
+	foreach {w t} {SELbg {Selection BG} SELbd {Selection BD} DAYs1 {Day SUN/SAT 1} DAYs2 {Day SUN/SAT 2} DAYc1 {Day BG1} DAYc2 {Day BG2} DAYtc {Day Text} HDbg {Header BG} HDbd {Header BD}} {
+		set ci [invcol [set cc $Cal::v::clr($w)]]
+		pack [button .perfsw.cc.b$w -text $t -font {Monospace 8} -bg $cc -fg $ci -activebackground $ci -activeforeground $cc -command "changecolor $w"] -expand 1 -fill x
 	}
 
 	pack [labelframe .perfsw.cl -text {Calendar Look}] -anchor n
@@ -50,11 +49,13 @@ proc perfs {} {
 }
 proc fill_perfs {} {
 	# Populates perfs window with current perfs.
-	lassign [split $Cal::v::dfont] f s
+	.perfsw.cl.f.s set [lassign [split $Cal::v::dfont] f]
 	.perfsw.cl.f.f set $f
-	.perfsw.cl.f.s set $s
 }
 proc changecolor {w} {
+	# Open a color changer for calendar element $w
+	# If a color is chosen, change the associated 
+	# button's bg and fg, and the element itself.
 	set c [tk_chooseColor -initialcolor [.perfsw.cc.b$w cget -bg]]
 	if {[string length $c]>0} {
 		set Cal::v::clr($w) $c
@@ -64,7 +65,8 @@ proc changecolor {w} {
 proc invcol {hc} {
 	# Inverts hex value in a string?
 	# E.g. f->0, e->1, so and so forth/ vice versa.
-	return [string map {f 0 e 1 d 2 c 3 b 4 a 5 9 6 8 7 7 8 6 9 5 a 4 b 3 c 2 d 1 e 0 f} [string tolower $hc]]
+	#puts [string map {f 0 e 1 d 2 c 3 b 4 a 5 9 6 8 7 7 8 6 9 5 a 4 b 3 c 2 d 1 e 0 f} [string tolower $hc]]
+	return [format #%06x [expr {0xffffff-"0x[string trimleft $hc #]"}]]
 }
 proc perf_font {} {
 	set Cal::v::dfont "[.perfsw.cl.f.f get] [.perfsw.cl.f.s get]"
