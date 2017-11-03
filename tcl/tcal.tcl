@@ -201,7 +201,7 @@ namespace eval Cal {
 			incr y $v::sy
 			set x [expr {$v::SQS+1}]
 		}
-		$C.can create rect 1 1 [expr {$v::SQS*7+2}] $v::hh -fill $v::clr(HDbg) -outline $v::clr(HDbd)
+		$C.can create rect 1 1 [expr {$v::SQS*7}] $v::hh -fill $v::clr(HDbg) -outline $v::clr(HDbd)
 		set x [expr {$v::SQS/2}]
 		set y [expr {$v::hh/2}]
 		foreach d {SUN MON TUE WED THR FRI SAT} {

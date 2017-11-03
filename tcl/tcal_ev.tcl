@@ -17,7 +17,7 @@ proc perfs {} {
 	wm transient .perfsw
 
 	pack [labelframe .perfsw.cc -text {Calendar Colors}] -side right -anchor n
-	foreach {w t} {SELbg {Selection BG} SELbd {Selection BD} DAYs1 {Day SUN/SAT 1} DAYs2 {Day SUN/SAT 2} DAYc1 {Day BG1} DAYc2 {Day BG2} DAYtc {Day Text} HDbg {Header BG} HDbd {Header BD}} {
+	foreach {w t} {SELbg {Selection BG} SELbd {Selection BD} DAYs1 {Day SUN/SAT 1} DAYs2 {Day SUN/SAT 2} DAYc1 {Day BG1} DAYc2 {Day BG2} DAYtc {Day Text} HDbg {Header BG} HDbd {Header BD} HDtc {Header Text}} {
 		set ci [invcol [set cc $Cal::v::clr($w)]]
 		pack [button .perfsw.cc.b$w -text $t -font {Monospace 8} -bg $cc -fg $ci -activebackground $ci -activeforeground $cc -command "changecolor $w"] -expand 1 -fill x
 	}
