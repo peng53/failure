@@ -1,16 +1,15 @@
 #!/bin/tclsh8.6
 package require Tk
 namespace eval osnv {
-	variable MAC off
-	variable s {}
-	variable locked 0
+	variable MAC off s {} locked 0 cur_file {}
 }
-bind . <Control-Key-q> {
-	exit
+wm title . \\\\
+menu .men
+. configure -menu .men
+foreach {l c} {New new_text_file Open open_text_file Save save_text_file {Save As} save_as_text_file} {
+	.men add command -label $l -command $c
 }
-bind . <Shift_L> {
-	shift_lock
-}
+
 pack [frame .maintext] -expand 1 -fill both
 pack [frame .maintext.mac_words] -side right -fill y
 pack [listbox .maintext.mac_words.lb -yscrollcommand {.maintext.mac_words.sb set} -width 10] -side left -expand 1 -fill y
@@ -26,10 +25,10 @@ pack [checkbutton .frame_m_bar.lock -indicatoron 0 -text Lock -variable osnv::lo
 pack [button .frame_m_bar.slck -text ShiftL -command shift_lock] -side left
 #pack [button .frame_m_bar.nlck -text NumL] -side left
 pack [button .frame_m_bar.all -text All -command {.maintext.t tag add sel 0.0 end}] -side left
-pack [button .frame_m_bar.text -text Test -command {puts $osnv::MAC}] -side left
+pack [button .frame_m_bar.text -text Test -command {open_text_file}] -side left
 pack [labelframe .frame_kb -text Keyboard] -expand 1 -fill x -side left
 set r 0
-foreach {s} {{1234567890} {qwertyuiop} {asdfghjkl} {zxcvbnm}} {
+foreach {s} {1234567890 qwertyuiop asdfghjkl zxcvbnm} {
 	pack [frame .frame_kb.r$r] -fill x
 	foreach {c} [split $s {}] {
 		pack [button .frame_kb.r$r.b$c -text $c -command "wri_rep $c"] -fill both -expand 1 -side left
@@ -47,7 +46,7 @@ pack [button .frame_kb.r$r.bDelete -text (< -command {pressed Delete}] -side lef
 
 pack [labelframe .frame_sp -text Symbols] -side left -anchor ne
 set r 0
-foreach {s} {{`'/} {[]*} {;-+} {,}} {
+foreach {s} {`'/ []* ;-+ ,} {
 	pack [frame .frame_sp.r$r]
 	foreach {c} [split $s {}] {
 		pack [button .frame_sp.r$r.b$c -text $c -width 1 -command "wri_rep \\$c"] -side left
@@ -62,7 +61,7 @@ proc rep_indices_with {b e c} {
 }
 pack [labelframe .frame_np -text Num] -side left -anchor ne
 set r 0
-foreach {s} {{789} {456} {123} {0}} {
+foreach {s} {789 456 123 0} {
 	pack [frame .frame_np.r$r] -fill x
 	foreach {c} [split $s {}] {
 		pack [button .frame_np.r$r.b$c -text $c -command "pressed $c"] -fill both -expand 1 -side left
@@ -138,6 +137,7 @@ proc pressed {c} {
 				Delete { kdelete }
 				Enter { .maintext.t insert insert \n }
 				space { wri_rep { } }
+				1 - 2 - 3 - 4 - 5 - 6 - 7 - 8 - 9 - 0 { wri_rep $c }
 			}
 		}
 		rep {
@@ -209,14 +209,98 @@ proc mac_off {} {
 proc mac_on {} {
 	set osnv::s [.maintext.t index insert]
 }
-bind .maintext.t <Control-Key-q> {
+proc clear_text {} {
+	.maintext.t delete 0.0 end
+}
+proc close_text {} {
+	set osnv::cur_file {}
+	.maintext.t edit modified 0
+	wm title . \\\\
+}
+proc new_text_file {} {
+	if {[.maintext.t edit modified]} {
+		switch [tk_messageBox -message {Modified body, save?} -type yesnocancel -icon question] {
+			yes {
+				if {[save_text_file]==1} {
+					tk_messageBox -message {File was NOT saved} -type ok -icon error
+					return
+				}
+			}
+			cancel { return }
+		}
+	}
+	clear_text
+	close_text
+}
+proc save_as_text_file {} {
+	set osnv::cur_file {}
+	save_text_file
+}
+proc save_text_file {} {
+	if {$osnv::cur_file=={}} {
+		set s [tk_getSaveFile]
+		if {$s=={}} {
+			return 1
+		}
+		set osnv::cur_file $s
+	}
+	set fid [open $osnv::cur_file w]
+	puts -nonewline $fid [.maintext.t get 0.0 end]
+	close $fid
+	wm title . $osnv::cur_file
+	.maintext.t edit modified 0
+	return 0
+}
+proc open_text_file {} {
+	if {[.maintext.t edit modified]} {
+		switch [tk_messageBox -message {Modified body, save?} -type yesnocancel -icon question] {
+			yes {
+				if {[save_text_file]==1} {
+					tk_messageBox -message {File was NOT saved} -type ok -icon error
+					return
+				}
+			}
+			cancel { return }
+		}
+	}
+	set s [tk_getOpenFile]
+	if {$s!={}} {
+		clear_text
+		set osnv::cur_file $s
+		set fp [open $s r]
+		set file_data [read $fp]
+		.maintext.t insert 0.0 $file_data
+		.maintext.t edit modified 0
+		wm title . $osnv::cur_file
+		close $fp
+	}
+}
+bind . <Control-Key-q> {
 	exit
 }
-bind .maintext.t <Delete> {
+bind . <KeyPress-Shift_L> {
+	shift_lock
+}
+bind .maintext.t <KeyPress-Delete> {
 	pressed Delete
 }
-bind .maintext.t <space> {
+bind .maintext.t <KeyPress-space> {
 	if {$osnv::MAC=={reg}} {
 		pressed space
 	}
+}
+bind .maintext.mac_words.lb <KeyPress-Return> {
+	.maintext.t insert insert [.maintext.mac_words.lb get active]
+}
+bind .maintext.mac_words.lb <Button-3> {
+	.maintext.mac_words.lb delete [.maintext.mac_words.lb nearest %y]
+}
+bind . <Control-Key-o> {
+	open_text_file
+}
+bind . <Control-Key-s> {
+	save_text_file
+}
+bind . <Control-Key-n> {
+	new_text_file
 }
