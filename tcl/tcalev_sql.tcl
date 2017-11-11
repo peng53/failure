@@ -167,7 +167,7 @@ namespace eval EventStor {
 		if {[file exists $file_name]} { return -1 }
 		sqlite3 conn $file_name
 		conn transaction {
-			conn eval {CREATE TABLE events(rowid integer primary key autoincrement, start_date integer, end_date integer, event_name string, desc_more string)}
+			conn eval {CREATE TABLE events(rowid integer primary key autoincrement, start_date integer, end_date integer, event_name text, desc_more text)}
 		}
 		return 1
 	}
