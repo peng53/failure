@@ -1,6 +1,4 @@
-#include <sqlite3.h>
 #include <string>
-#include <iostream>
 
 using std::string;
 class Record {
