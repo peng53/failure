@@ -12,7 +12,6 @@ int main(){
 	refresh();
 	getch();
 	endwin();
-	printf("%d\n",r);
 	if (r==0){
 		t.qfix();
 		t.print();

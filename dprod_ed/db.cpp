@@ -3,8 +3,8 @@
 #include "db.h"
 
 void TRecord::print(){
-	printf("UID : %s\nCODE: %s\nDATE:\n  START: %02d/%02d/%04d - %02d:%02d\n  END  : %02d/%02d/%04d - %02d:%02d\n",
-		uid,code,date[0],date[1],date[2],date[3],date[4],date[5],date[6],date[7],date[8],date[9]);
+	printf("UID : %s\nCODE: %s\nDATE:\n  START: %02d/%02d/%04d - %02d:%02d\n  END  : %02d/%02d/%04d - %02d:%02d\nDESC:\n %s\n %s\n %s",
+		uid,code,date[0],date[1],date[2],date[3],date[4],date[5],date[6],date[7],date[8],date[9],desc,desc+25,desc+50);
 }
 void TRecord::qfix(){
 	for (int i=0;i<2;++i){

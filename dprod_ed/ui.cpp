@@ -18,7 +18,7 @@ int valid_num(char *s,size_t l,unsigned int &n){
 	n = atoi(s);
 	return 0;
 }
-int valid_str(char *s,size_t l,size_t &n){
+int valid_str(char *s){
 	/**
 	Checks if string has length and counts length.
 	Return codes:
@@ -26,17 +26,17 @@ int valid_str(char *s,size_t l,size_t &n){
 	1: no/bad input
 	2: special input
 	*/
-	if (s[0]=='\n' && s[1]=='\0'){ return 1; }
+	if (s[0]=='\0' || s[0]=='\n' && s[1]=='\0'){ return 1; }
 	if (s[0]=='\\'){ return 2; }
-	char *e = strchr(s,'\n');
-	n = (e==NULL) ? l : (size_t)(e-s);
+	//~ char *e = strchr(s,'\n');
+	//~ n = (e==NULL) ? l : (size_t)(e-s);
 	return 0;
 }
-bool valid_wrap(WINDOW *W,unsigned short Y,unsigned short X,char *s,size_t &s_l,size_t M){
+bool valid_wrap(WINDOW *W,unsigned short Y,unsigned short X,char *s,size_t M){
 	int r = 1;
 	while (r==1){
 		mvwgetnstr(W,Y,X,s,M);
-		r = valid_str(s,M,s_l);
+		r = valid_str(s);
 	}
 	return r==0;
 }
@@ -88,8 +88,8 @@ int build_a_record(unsigned short Y,unsigned short X,TRecord &TT){
 	record_creation_win(a_record);
 	wattron(a_record,A_REVERSE);
 	if (
-		!valid_wrap(a_record,3,6,TT.uid,TT.uid_l,10) ||
-		!valid_wrap(a_record,3,23,TT.code,TT.code_l,5) ||
+		!valid_wrap(a_record,3,6,TT.uid,10) ||
+		!valid_wrap(a_record,3,23,TT.code,5) ||
 		!valid_wrap(a_record,7,3,TT.desc,2,TT.date[0]) || ///< d1mth
 		!valid_wrap(a_record,7,6,TT.desc,2,TT.date[1]) || ///< d1d
 		!valid_wrap(a_record,7,9,TT.desc,4,TT.date[2]) || ///< d1yr
@@ -101,9 +101,21 @@ int build_a_record(unsigned short Y,unsigned short X,TRecord &TT){
 		!valid_wrap(a_record,11,14,TT.desc,2,TT.date[8]) || ///< d2hr
 		!valid_wrap(a_record,11,17,TT.desc,2,TT.date[9]) ///< d2min
 	){ return 1; }
-	//~ mvwgetnstr(a_record,14,3,desc,25); ///< desc-l1
-	//~ mvwgetnstr(a_record,15,3,desc,25); ///< desc-l2
-	//~ mvwgetnstr(a_record,16,3,desc,25); ///< desc-l3
+	mvwgetnstr(a_record,14,3,TT.desc,25); ///< desc-l1
+	int r = valid_str(TT.desc);
+	if (r==2){ return 1; }
+	if (r!=1){
+		TT.desc[25] = '\0';
+		mvwgetnstr(a_record,15,3,TT.desc+25,25); ///< desc-l2
+		r = valid_str(TT.desc+25);
+		if (r==2){ return 1; }
+		if (r!=1){
+			TT.desc[50] = '\0';
+			mvwgetnstr(a_record,16,3,TT.desc+50,25); ///< desc-l3
+			r = valid_str(TT.desc+50);
+			if (r==2){ return 1; }
+		}
+	}
 	wattroff(a_record,A_REVERSE);
 	delwin(a_record);
 	return 0;

@@ -5,12 +5,9 @@ using std::string;
 
 struct TRecord {
 	char uid[11] = "\0";
-	size_t uid_l;
 	char code[6] = "\0";
-	size_t code_l;
 	unsigned int date[10];
-	char desc[76] = "\0";
-	size_t desc_l;
+	char desc[76] = {'\0'};
 	void print();
 	void qfix();
 };
