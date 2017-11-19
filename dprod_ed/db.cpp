@@ -27,17 +27,26 @@ time_t to_time_t(unsigned *d){
 }
 
 struct Record {
-	string uid,code,desc;
+	string uid;
+	string code;
+	string desc;
 	time_t ds, de;
 	void out();
 	void append_desc(char *s);
+	Record(){
+		uid.reserve(10);
+		code.reserve(5);
+	}
 };
 
 ostream& operator<<(ostream& OUT,Record& R){
-	struct tm* d = gmtime(&R.ds);
 	OUT << R.uid << '\n';
 	OUT << R.code << '\n';
-	OUT <<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(4)<< d->tm_year+1900<<" - "<< setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
+	setfill('0');
+	struct tm* d = gmtime(&R.ds);
+	OUT<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
+	d = gmtime(&R.de);
+	OUT<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
 	OUT << R.desc << '\n';
 	return OUT;
 }
@@ -65,7 +74,7 @@ void ins_table(sqlite3 *db, Record &t){
 	sqlite3_stmt* s;
 	sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&s,0);
 	sqlite3_bind_text(s,1,t.uid.c_str(),-1,SQLITE_TRANSIENT);
-	sqlite3_bind_text(s,4,"PLACEHOLDER",-1,SQLITE_TRANSIENT);
+	sqlite3_bind_text(s,4,t.code.c_str(),-1,SQLITE_TRANSIENT);
 	sqlite3_bind_text(s,5,t.desc.c_str(),-1,SQLITE_TRANSIENT);
 	sqlite3_bind_int(s,2,t.ds);
 	sqlite3_bind_int(s,3,t.de);

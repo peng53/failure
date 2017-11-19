@@ -31,5 +31,6 @@ int main(){
 	refresh();
 	getch();
 	endwin();
+	cout << t << '\n';
 	return 0;
 }

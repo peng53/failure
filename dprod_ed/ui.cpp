@@ -4,6 +4,7 @@
 #include "ui.h"
 #include <cstdlib>
 #include <ncurses.h>
+#include <algorithm>
 
 int valid_str(char *s){
 	/**
@@ -25,14 +26,14 @@ bool valid_wrap(WINDOW *W,unsigned short Y,unsigned short X,char *s,size_t M){
 	}
 	return r==0;
 }
-bool valid_wrap(WINDOW *W,unsigned short Y,unsigned short X,char* s,size_t M,unsigned int &n){
+bool valid_wrap(WINDOW *W,unsigned short Y,unsigned short X,char* s,size_t M,unsigned &n){
 	int r = 1;
 	char *end;
 	while (r==1){
 		mvwgetnstr(W,Y,X,s,M);
-		if (s[0]=='\\'){ r=1; }
-		n = (unsigned int)strtoul(s,&end,10);
-		if (!*end){ r=0; }
+		if (s[0]=='\\'){ return 0; }
+		n = (unsigned)strtoul(s,&end,10);
+		if (!*end){ return 1; }
 	}
 	return r==0;
 }
@@ -74,11 +75,13 @@ int build_a_record(unsigned short Y,unsigned short X,Record &T){
 	WINDOW* a_record = newwin(20,31,Y,X);
 	record_creation_win(a_record);
 	wattron(a_record,A_REVERSE);
-	char uid[11] = "\0";
-	char code[6] = "\0";
-	char s[4];
-	unsigned int date[10];
-	if (!valid_wrap(a_record,3,6,uid,10) ||
+	//char uid[12] = "\0";
+	//string uid_s;
+	char code[7] = "\0";
+	char s[6] = "\0";
+	unsigned date[10];
+	//if (!valid_wrap(a_record,3,6,uid,10) ||
+	if (!valid_wrap(a_record,3,6,&T.uid[0],10) ||
 		!valid_wrap(a_record,3,23,code,5) ||
 		!valid_wrap(a_record,7,3,s,2,date[0]) ||
 		!valid_wrap(a_record,7,6,s,2,date[1]) ||
@@ -91,8 +94,9 @@ int build_a_record(unsigned short Y,unsigned short X,Record &T){
 		!valid_wrap(a_record,11,14,s,2,date[8]) ||
 		!valid_wrap(a_record,11,17,s,2,date[9])
 	){ return 1; }
-	T.uid = string(uid,10);
-	T.code = string(code,5);
+	//T.uid = string(uid,11);
+	//T.uid = uid_s;
+	T.code = string(code,6);
 	T.ds = to_time_t(date);
 	T.de = to_time_t(date+5);
 	char desc[26] = "\0";
@@ -129,19 +133,15 @@ int getAfileName(char *s){
 }
 int show_results(sqlite3_stmt* s){
 	struct tm *t;
-	time_t d;
-	for (int n = 1; sqlite3_step(s)==100 && n<25; ++n){
-		mvprintw(n,0,"%02d %-10s",n,sqlite3_column_text(s,0));
+	time_t d,d2;
+	unsigned ml = std::min(25,LINES-1);
+	for (unsigned n = 0; sqlite3_step(s)==100 && n<ml; ++n){
+		mvprintw(n,0,"%02d %-10s %-5s",n,sqlite3_column_text(s,0),sqlite3_column_text(s,3));
 		d = sqlite3_column_int(s,1);
+		d2 = difftime(sqlite3_column_int(s,2),d);
 		t = gmtime(&d);
-		mvprintw(n,14,"%02d/%02d/%04d %02d:%02d",t->tm_mon+1,t->tm_mday,t->tm_year+1900,t->tm_hour,t->tm_min);
-		d = sqlite3_column_int(s,2);
-		t = gmtime(&d);
-		mvprintw(n,31,"%02d/%02d/%04d %02d:%02d",t->tm_mon+1,t->tm_mday,t->tm_year+1900,t->tm_hour,t->tm_min);
-		mvprintw(n,46,"%-5d",sqlite3_column_int(s,3));
+		mvprintw(n,21,"%02d/%02d/%02d %02d:%02d %1.2fhrs",t->tm_mon+1,t->tm_mday,(t->tm_year)% 100,t->tm_hour,t->tm_min,(float)d2/3600);
 	}
-	mvvline(0,13,ACS_VLINE,LINES-1);
-	mvvline(0,30,ACS_VLINE,LINES-1);
 	return 0;
 }
 
