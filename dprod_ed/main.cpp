@@ -4,6 +4,14 @@
 #include <cstdio>
 
 int main(){
+	//~ Record t;
+	//~ initscr();
+	//~ start_color();
+	//~ cbreak();
+	//~ noecho();
+	//~ make_rec_win(t);
+	//~ endwin();
+	//~ cout << t << '\n';
 	initscr();
 	start_color();
 	init_pair(1,COLOR_WHITE,COLOR_BLACK);
@@ -20,7 +28,10 @@ int main(){
 		def_table(db);
 	}
 	Record t;
-	build_a_record(0,COLS-31,t);
+	cbreak();
+	noecho();
+	make_rec_win(t);
+	//~ build_a_record(0,COLS-31,t);
 	erase();
 	ins_table(db,t);
 	sqlite3_stmt* stmt;
@@ -32,6 +43,5 @@ int main(){
 	getch();
 	endwin();
 	cout << t << '\n';
-	cout << t.uid << t.code <<'\n';
 	return 0;
 }

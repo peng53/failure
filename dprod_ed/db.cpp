@@ -25,27 +25,36 @@ time_t to_time_t(unsigned *d){
 	u->tm_sec = 0;
 	return mktime(u);
 }
-
+size_t trimWS(char *s,size_t m){
+	for (size_t i=m-1;i>=0;--i){
+		if (s[i]!=' ') return ++i;
+	}
+	return m;
+}
 struct Record {
 	string uid;
 	string code;
 	string desc;
 	time_t ds, de;
+	int rnum;
 	void out();
 	void append_desc(char *s);
 	Record(){
 		uid.reserve(10);
 		code.reserve(5);
 	}
+	//Record(char* cUID,size_t lUID,char* cCODE,size_t lCODE,time_t tSTART,time_t tEND,char* cDESC,size_t lDESC): uid(cUID,lUID), code(cCODE,lCODE), desc(cDESC,lDESC), ds(tSTART), de(tEND){ }
+	Record(char* cUID,size_t lUID,char* cCODE,size_t lCODE,time_t tSTART,time_t tEND,char* cDESC,size_t lDESC): uid(cUID,trimWS(cUID,lUID)), code(cCODE,trimWS(cCODE,lCODE)), desc(cDESC,trimWS(cDESC,lDESC)), ds(tSTART), de(tEND){ }
+	Record(char* cUID,char* cCODE,time_t tSTART,time_t tEND,char* cDESC): uid(cUID,trimWS(cUID,10)), code(cCODE,trimWS(cCODE,5)), desc(cDESC,trimWS(cDESC,70)), ds(tSTART), de(tEND){ }
 };
 
 ostream& operator<<(ostream& OUT,Record& R){
-	OUT << R.uid << '\n' << R.code << '\n';
+	OUT << '\"' << R.uid <<'\"' << '\n' <<'\"' << R.code <<'\"' << '\n';
 	struct tm* d = gmtime(&R.ds);
 	OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
 	d = gmtime(&R.de);
 	OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
-	OUT << R.desc << '\n';
+	OUT <<'\"' << R.desc <<'\"' << '\n';
 	return OUT;
 }
 void Record::append_desc(char *s){
