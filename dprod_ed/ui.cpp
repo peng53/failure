@@ -50,9 +50,9 @@ void record_creation_win(WINDOW* W){
 	mvwhline(W,3,23,ACS_BLOCK,5);
 	mvwhline(W,7,3,ACS_BLOCK,16);
 	mvwhline(W,11,3,ACS_BLOCK,16);
-	mvwhline(W,14,3,ACS_BLOCK,25);
-	mvwhline(W,15,3,ACS_BLOCK,25);
-	mvwhline(W,16,3,ACS_BLOCK,25);
+	for (unsigned l=LINES-2;l>13;--l){
+		mvwhline(W,l,3,ACS_BLOCK,25);
+	}
 	wattroff(W,COLOR_PAIR(1));
 	/// labels above the fields
 	mvwprintw(W,3,2,"UID");
@@ -72,50 +72,70 @@ void record_creation_win(WINDOW* W){
 	wrefresh(W);
 }
 int build_a_record(unsigned short Y,unsigned short X,Record &T){
-	WINDOW* a_record = newwin(20,31,Y,X);
+	WINDOW* a_record = newwin(LINES-1,31,Y,X);
 	record_creation_win(a_record);
 	wattron(a_record,A_REVERSE);
-	//char uid[12] = "\0";
-	//string uid_s;
-	char code[7] = "\0";
-	char s[6] = "\0";
+	char desc[26] = "\0";
 	unsigned date[10];
-	//if (!valid_wrap(a_record,3,6,uid,10) ||
 	if (!valid_wrap(a_record,3,6,&T.uid[0],10) ||
-		!valid_wrap(a_record,3,23,code,5) ||
-		!valid_wrap(a_record,7,3,s,2,date[0]) ||
-		!valid_wrap(a_record,7,6,s,2,date[1]) ||
-		!valid_wrap(a_record,7,9,s,4,date[2]) ||
-		!valid_wrap(a_record,7,14,s,2,date[3]) ||
-		!valid_wrap(a_record,7,17,s,2,date[4]) ||
-		!valid_wrap(a_record,11,3,s,2,date[5]) ||
-		!valid_wrap(a_record,11,6,s,2,date[6]) ||
-		!valid_wrap(a_record,11,9,s,4,date[7]) ||
-		!valid_wrap(a_record,11,14,s,2,date[8]) ||
-		!valid_wrap(a_record,11,17,s,2,date[9])
+		!valid_wrap(a_record,3,23,&T.code[0],5) ||
+		!valid_wrap(a_record,7,3,desc,2,date[0]) ||
+		!valid_wrap(a_record,7,6,desc,2,date[1]) ||
+		!valid_wrap(a_record,7,9,desc,4,date[2]) ||
+		!valid_wrap(a_record,7,14,desc,2,date[3]) ||
+		!valid_wrap(a_record,7,17,desc,2,date[4]) ||
+		!valid_wrap(a_record,11,3,desc,2,date[5]) ||
+		!valid_wrap(a_record,11,6,desc,2,date[6]) ||
+		!valid_wrap(a_record,11,9,desc,4,date[7]) ||
+		!valid_wrap(a_record,11,14,desc,2,date[8]) ||
+		!valid_wrap(a_record,11,17,desc,2,date[9])
 	){ return 1; }
-	//T.uid = string(uid,11);
-	//T.uid = uid_s;
-	T.code = string(code,6);
 	T.ds = to_time_t(date);
 	T.de = to_time_t(date+5);
-	char desc[26] = "\0";
 	mvwgetnstr(a_record,14,3,desc,25); ///< desc-l1
-	int r = valid_str(desc);
-	if (r==2){ return 1; }
-	if (r!=1){
-		T.desc = string(desc,25);
-		mvwgetnstr(a_record,15,3,desc,25); ///< desc-l2
-		r = valid_str(desc);
-		if (r==2){ return 1; }
-		if (r!=1){
-			T.append_desc(desc);
-			mvwgetnstr(a_record,16,3,desc,25); ///< desc-l3
-			r = valid_str(desc);
-			if (r==2){ return 1; }
-			if (r!=1){ T.append_desc(desc); }
-		}
+
+	//~ int r = valid_str(desc);
+	//~ if (r==2){ return 1; }
+	//~ if (r!=1){
+		//~ T.desc = string(desc,25);
+		//~ mvwgetnstr(a_record,15,3,desc,25); ///< desc-l2
+		//~ r = valid_str(desc);
+		//~ if (r==2){ return 1; }
+		//~ if (r!=1){
+			//~ T.append_desc(desc);
+			//~ mvwgetnstr(a_record,16,3,desc,25); ///< desc-l3
+			//~ r = valid_str(desc);
+			//~ if (r==2){ return 1; }
+			//~ if (r!=1){ T.append_desc(desc); }
+		//~ }
+	//~ }
+
+	//for (int r = valid_str(desc), l = 15; r==0; r = valid_str(desc)){
+	for (unsigned l = 15;valid_str(desc)==0;++l){
+		T.append_desc(desc);
+		desc[0]='\0';
+		mvwgetnstr(a_record,l,3,desc,25);
 	}
+
+	//~ switch (valid_str(desc)){
+		//~ case 0:
+			//~ T.desc = string(desc,25);
+			//~ mvwgetnstr(a_record,15,3,desc,25); ///< desc-l2
+			//~ switch (valid_str(desc)){
+				//~ case 0:
+					//~ T.append_desc(desc);
+					//~ mvwgetnstr(a_record,16,3,desc,25); ///< desc-l3
+					//~ switch (valid_str(desc)){
+						//~ case 0: T.append_desc(desc); break;
+						//~ case 1: break;
+						//~ case 2: return 1; break;
+					//~ }
+				//~ case 1: break;
+				//~ case 2: return 1; break;
+			//~ }
+		//~ case 1: break;
+		//~ case 2: return 1; break;
+	//~ }
 	wattroff(a_record,A_REVERSE);
 	wclear(a_record);
 	delwin(a_record);

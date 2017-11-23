@@ -40,13 +40,11 @@ struct Record {
 };
 
 ostream& operator<<(ostream& OUT,Record& R){
-	OUT << R.uid << '\n';
-	OUT << R.code << '\n';
-	setfill('0');
+	OUT << R.uid << '\n' << R.code << '\n';
 	struct tm* d = gmtime(&R.ds);
-	OUT<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
+	OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
 	d = gmtime(&R.de);
-	OUT<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
+	OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
 	OUT << R.desc << '\n';
 	return OUT;
 }

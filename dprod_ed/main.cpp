@@ -32,5 +32,6 @@ int main(){
 	getch();
 	endwin();
 	cout << t << '\n';
+	cout << t.uid << t.code <<'\n';
 	return 0;
 }
