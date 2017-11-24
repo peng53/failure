@@ -1,17 +1,12 @@
 #include <ncurses.h>
 #include <sqlite3.h>
-#include "ui.cpp"
-#include <cstdio>
+#include <iostream>
+#include "db.h"
+#include "ui.h"
+
+using std::cout;
 
 int main(){
-	//~ Record t;
-	//~ initscr();
-	//~ start_color();
-	//~ cbreak();
-	//~ noecho();
-	//~ make_rec_win(t);
-	//~ endwin();
-	//~ cout << t << '\n';
 	initscr();
 	start_color();
 	init_pair(1,COLOR_WHITE,COLOR_BLACK);
@@ -27,21 +22,25 @@ int main(){
 		open_nwdb(&db,s);
 		def_table(db);
 	}
-	Record t;
-	cbreak();
-	noecho();
-	make_rec_win(t);
-	//~ build_a_record(0,COLS-31,t);
+	int rnum = prompt_rnum();
+	if (rnum!=-1){
+		Record t(db,rnum);
+		if (t.rnum!=-1){
+			cbreak();
+			noecho();
+			r = make_rec_win(0,COLS-31,t);
+		}
+	}
 	erase();
-	ins_table(db,t);
-	sqlite3_stmt* stmt;
-	sqlite3_prepare_v2(db,"SELECT * FROM records",-1,&stmt,0);
-	show_results(stmt);
-	sqlite3_finalize(stmt);
+	//~ if (r==0){
+		//~ ins_table(db,t);
+	//~ }
+	//~ sqlite3_stmt* stmt;
+	//~ sqlite3_prepare_v2(db,"SELECT * FROM records",-1,&stmt,0);
+	//~ show_results(stmt);
+	//~ sqlite3_finalize(stmt);
 	sqlite3_close(db);
 	refresh();
-	getch();
 	endwin();
-	cout << t << '\n';
 	return 0;
 }

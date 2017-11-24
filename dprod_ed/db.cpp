@@ -1,18 +1,9 @@
-#ifndef D_DB
-#define D_DB
 #include "db.h"
-#include <sqlite3.h>
-#include <iostream>
 #include <iomanip>
 #include <ctime>
-#include <ostream>
-#include <string>
 
-using std::ostream;
-using std::cout;
 using std::setw;
 using std::setfill;
-using std::string;
 
 time_t to_time_t(unsigned *d){
 	time_t t = time(NULL);
@@ -31,22 +22,20 @@ size_t trimWS(char *s,size_t m){
 	}
 	return m;
 }
-struct Record {
-	string uid;
-	string code;
-	string desc;
-	time_t ds, de;
-	int rnum;
-	void out();
-	void append_desc(char *s);
-	Record(){
-		uid.reserve(10);
-		code.reserve(5);
+
+Record::Record(sqlite3* db,int n){
+	sqlite3_stmt* s;
+	sqlite3_prepare_v2(db,"SELECT uid,start_time,end_time,code,desc FROM records WHERE rowid==?1",-1,&s,0);
+	sqlite3_bind_int(s,1,n);
+	if (sqlite3_step(s)!=SQLITE_DONE){
+		uid = string(reinterpret_cast<const char*>(sqlite3_column_text(s,0)),10);
+		code = string(reinterpret_cast<const char*>(sqlite3_column_text(s,3)),5);
+		desc = string(reinterpret_cast<const char*>(sqlite3_column_text(s,4)),70);
+		ds = sqlite3_column_int(s,1);
+		de = sqlite3_column_int(s,2);
+		rnum = n;
 	}
-	//Record(char* cUID,size_t lUID,char* cCODE,size_t lCODE,time_t tSTART,time_t tEND,char* cDESC,size_t lDESC): uid(cUID,lUID), code(cCODE,lCODE), desc(cDESC,lDESC), ds(tSTART), de(tEND){ }
-	Record(char* cUID,size_t lUID,char* cCODE,size_t lCODE,time_t tSTART,time_t tEND,char* cDESC,size_t lDESC): uid(cUID,trimWS(cUID,lUID)), code(cCODE,trimWS(cCODE,lCODE)), desc(cDESC,trimWS(cDESC,lDESC)), ds(tSTART), de(tEND){ }
-	Record(char* cUID,char* cCODE,time_t tSTART,time_t tEND,char* cDESC): uid(cUID,trimWS(cUID,10)), code(cCODE,trimWS(cCODE,5)), desc(cDESC,trimWS(cDESC,70)), ds(tSTART), de(tEND){ }
-};
+}
 
 ostream& operator<<(ostream& OUT,Record& R){
 	OUT << '\"' << R.uid <<'\"' << '\n' <<'\"' << R.code <<'\"' << '\n';
@@ -56,10 +45,6 @@ ostream& operator<<(ostream& OUT,Record& R){
 	OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
 	OUT <<'\"' << R.desc <<'\"' << '\n';
 	return OUT;
-}
-void Record::append_desc(char *s){
-	desc += '`';
-	desc += s;
 }
 
 int open_exdb(sqlite3** db,char *s){
@@ -73,8 +58,6 @@ int open_nwdb(sqlite3** db,char *s){
 	return 1;
 }
 void def_table(sqlite3 *db){
-	//~ sqlite3_stmt* s;
-	//~ sqlite3_prepare_v2(db,"CREATE TABLE records(uid TEXT,start_time INTEGER,end_time INTEGER,code TEXT,desc TEXT)",-1,&s,0);
 	sqlite3_exec(db,"CREATE TABLE records(uid TEXT,start_time INTEGER,end_time INTEGER,code TEXT,desc TEXT)",NULL,NULL,NULL);
 }
 void ins_table(sqlite3 *db, Record &t){
@@ -88,6 +71,3 @@ void ins_table(sqlite3 *db, Record &t){
 	sqlite3_step(s);
 	sqlite3_finalize(s);
 }
-
-
-#endif

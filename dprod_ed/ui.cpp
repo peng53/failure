@@ -1,17 +1,7 @@
-#ifndef D_UI
-#define D_UI
-#include "db.cpp"
 #include "ui.h"
 #include <cstdlib>
-#include <ncurses.h>
-#include <form.h>
-#include <algorithm>
+#include <cstdio>
 
-//~ time_t field_time_t(FIELD* f){
-	//~ unsigned d[5] = {0,0,0,0,0};
-	//~ for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f+i,0)); }
-	//~ return (d[0]==0 || d[1]==0) ? to_time_t(d) : time(NULL);
-//~ }
 time_t get_start_time(FIELD* f[15]){
 	unsigned d[5] = {0,0,0,0,0};
 	for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+2],0)); }
@@ -53,6 +43,35 @@ void prepare_fields(FIELD *field[15]){
 	set_field_type(field[11],TYPE_INTEGER,2,0,59);
 	field_opts_off(field[13],O_AUTOSKIP); //dummy
 }
+void populate_fields(FIELD *field[15],Record &t){
+	if (t.rnum==-1){ return; }
+	set_field_buffer(field[0],0,t.uid.c_str());
+	set_field_buffer(field[1],0,t.code.c_str());
+	struct tm* u = gmtime(&t.ds);
+	char n[6];
+	snprintf(n,3,"%02d",(u->tm_mon)+1);
+	set_field_buffer(field[2],0,n);
+	snprintf(n,3,"%02d",u->tm_mday);
+	set_field_buffer(field[3],0,n);
+	snprintf(n,5,"%04d",u->tm_year+1900);
+	set_field_buffer(field[4],0,n);
+	snprintf(n,3,"%02d",u->tm_hour);
+	set_field_buffer(field[5],0,n);
+	snprintf(n,3,"%02d",u->tm_min);
+	set_field_buffer(field[6],0,n);
+	u = gmtime(&t.de);
+	snprintf(n,3,"%02d",(u->tm_mon)+1);
+	set_field_buffer(field[7],0,n);
+	snprintf(n,3,"%02d",u->tm_mday);
+	set_field_buffer(field[8],0,n);
+	snprintf(n,5,"%04d",u->tm_year+1900);
+	set_field_buffer(field[9],0,n);
+	snprintf(n,3,"%02d",u->tm_hour);
+	set_field_buffer(field[10],0,n);
+	snprintf(n,3,"%02d",u->tm_min);
+	set_field_buffer(field[11],0,n);
+	set_field_buffer(field[12],0,t.desc.c_str());
+}
 void clean_up_rec_form(FORM *form,FIELD *field[15]){
 	free_form(form);
 	for (unsigned i=0;i<14;++i){ free_field(field[i]); }
@@ -78,79 +97,62 @@ void dress_rec_win(WINDOW* W,int rnum){
 	wmove(W,3,6);
 	wrefresh(W);
 }
-int make_rec_win(Record &t){
+int prompt_rnum(){
+	char s[10] = "~";
+	int r = 1;
+	while (r==1){
+		mvprintw(LINES-1,0,"RNUM:");
+		mvgetnstr(LINES-1,5,s,10);
+		if (s[0]!='~') return atoi(s);
+		if (s[0]!='\\') return -2;
+	}
+	return -1;
+}
+int make_rec_win(unsigned Y,unsigned X,Record &t){
 	int ch;
+	int r = -1;
 	FIELD *field[15];
 	prepare_fields(field);
+	if (t.rnum!=-1) populate_fields(field,t);
 	FORM *frec = new_form(field);
-	WINDOW *wrec = newwin(20,30,0,0);
+	WINDOW *wrec = newwin(20,30,Y,X);
 	keypad(wrec,TRUE);
 	set_form_win(frec,wrec);
 	set_form_sub(frec,derwin(wrec,20,30,2,2));
 	post_form(frec);
-	dress_rec_win(wrec,-1);
-    while((ch = wgetch(wrec)) != KEY_F(1)){
+	dress_rec_win(wrec,t.rnum);
+    while(r==-1){
+		ch = wgetch(wrec);
 		switch(ch) {
 			case 27: // ESC key
 				switch (wgetch(wrec)){
-					case 27:
-						unpost_form(frec);
-						clean_up_rec_form(frec,field);
-						delwin(wrec);
-						return 1;
-						break;
-					case 10:
-						unpost_form(frec);
-						clean_up_rec_form(frec,field);
-						delwin(wrec);
-						return 1;
-						break;
+					case 27: r = 1; break;
+					case 10: r = 0; break;
 				}
 				break;
-			case '\\':
-				unpost_form(frec);
-				clean_up_rec_form(frec,field);
-				delwin(wrec);
-				return 1;
-				break;
-			case KEY_LEFT:
-				form_driver(frec,REQ_LEFT_CHAR);
-				break;
-			case KEY_RIGHT:
-				form_driver(frec,REQ_RIGHT_CHAR);
-				break;
-			case KEY_BACKSPACE:
-				form_driver(frec,REQ_LEFT_CHAR);
-				form_driver(frec,REQ_DEL_CHAR);
-				break;
+			case '\\': r = 1; break;
+			case KEY_LEFT: form_driver(frec,REQ_LEFT_CHAR); break;
+			case KEY_RIGHT: form_driver(frec,REQ_RIGHT_CHAR); break;
+			case KEY_BACKSPACE: form_driver(frec,REQ_LEFT_CHAR); form_driver(frec,REQ_DEL_CHAR); break;
 			case '\t':
 			case 10: // ENTER KEY
-			case KEY_DOWN:
-				form_driver(frec, REQ_NEXT_FIELD);
-				form_driver(frec, REQ_END_LINE);
-				break;
-			case KEY_UP:
-				form_driver(frec, REQ_PREV_FIELD);
-				form_driver(frec, REQ_END_LINE);
-				break;
-			default:
-				form_driver(frec, ch);
-				break;
+			case KEY_DOWN: form_driver(frec, REQ_NEXT_FIELD); form_driver(frec, REQ_END_LINE); break;
+			case KEY_UP: form_driver(frec, REQ_PREV_FIELD); form_driver(frec, REQ_END_LINE); break;
+			default: form_driver(frec, ch); break;
 		}
 	}
-	form_driver(frec, REQ_NEXT_FIELD);
-	form_driver(frec, REQ_PREV_FIELD);
-	//~ t.uid = string(field_buffer(field[0],0),trimWS(field_buffer(field[0],0),10));
-	//~ t.code = string(field_buffer(field[1],0),trimWS(field_buffer(field[1],0),5));
-	//~ t.desc = string(field_buffer(field[12],0),trimWS(field_buffer(field[12],0),70));
-	//~ t.ds = get_start_time(field);
-	//~ t.de = get_end_time(field);
-	//t = Record(field_buffer(field[0],0),10,field_buffer(field[1],0),5,get_start_time(field),get_end_time(field),field_buffer(field[12],0),70);
-	t = Record(field_buffer(field[0],0),field_buffer(field[1],0),get_start_time(field),get_end_time(field),field_buffer(field[12],0));
+	switch (r){
+		case 0: // user exits gracefully
+			form_driver(frec, REQ_NEXT_FIELD); form_driver(frec, REQ_PREV_FIELD);
+			t = Record(field_buffer(field[0],0),field_buffer(field[1],0),get_start_time(field),get_end_time(field),field_buffer(field[12],0));
+			break;
+		case 1: // user wants escape
+			break;
+	}
 	unpost_form(frec);
 	clean_up_rec_form(frec,field);
 	delwin(wrec);
-	return 0;
+	return r;
 }
 
 int valid_str(char *s){
@@ -163,91 +165,6 @@ int valid_str(char *s){
 	*/
 	if (s[0]=='\0' || s[0]=='\n' && s[1]=='\0'){ return 1; }
 	if (s[0]=='\\'){ return 2; }
-	return 0;
-}
-bool valid_wrap(WINDOW *W,unsigned short Y,unsigned short X,char *s,size_t M){
-	int r = 1;
-	while (r==1){
-		mvwgetnstr(W,Y,X,s,M);
-		r = valid_str(s);
-	}
-	return r==0;
-}
-bool valid_wrap(WINDOW *W,unsigned short Y,unsigned short X,char* s,size_t M,unsigned &n){
-	int r = 1;
-	char *end;
-	while (r==1){
-		mvwgetnstr(W,Y,X,s,M);
-		if (s[0]=='\\'){ return 0; }
-		n = (unsigned)strtoul(s,&end,10);
-		if (!*end){ return 1; }
-	}
-	return r==0;
-}
-void record_creation_win(WINDOW* W){
-	/**
-	Prints parts of the record creation window.
-	*/
-	wattron(W,A_BOLD);
-	mvwprintw(W,1,2,"Record Creation");
-	wattroff(W,A_BOLD);
-	/// the fields
-	wattron(W,COLOR_PAIR(1));
-	mvwhline(W,3,6,ACS_BLOCK,10);
-	mvwhline(W,3,23,ACS_BLOCK,5);
-	mvwhline(W,7,3,ACS_BLOCK,16);
-	mvwhline(W,11,3,ACS_BLOCK,16);
-	for (unsigned l=LINES-2;l>13;--l){
-		mvwhline(W,l,3,ACS_BLOCK,25);
-	}
-	wattroff(W,COLOR_PAIR(1));
-	/// labels above the fields
-	mvwprintw(W,3,2,"UID");
-	mvwprintw(W,3,18,"Code");
-	mvwprintw(W,5,2,"Start Date\n   MM/DD/YYYY hh:mm");
-	mvwprintw(W,9,2,"End Date\n   MM/DD/YYYY hh:mm");
-	mvwprintw(W,13,2,"Description");
-	mvwaddch(W,7,5,'/');
-	mvwaddch(W,7,8,'/');
-	mvwaddch(W,7,13,' ');
-	mvwaddch(W,7,16,':');
-	mvwaddch(W,11,5,'/');
-	mvwaddch(W,11,8,'/');
-	mvwaddch(W,11,13,' ');
-	mvwaddch(W,11,16,':');
-	box(W,0,0);
-	wrefresh(W);
-}
-int build_a_record(unsigned short Y,unsigned short X,Record &T){
-	WINDOW* a_record = newwin(LINES-1,31,Y,X);
-	record_creation_win(a_record);
-	wattron(a_record,A_REVERSE);
-	char desc[26] = "\0";
-	unsigned date[10];
-	if (!valid_wrap(a_record,3,6,&T.uid[0],10) ||
-		!valid_wrap(a_record,3,23,&T.code[0],5) ||
-		!valid_wrap(a_record,7,3,desc,2,date[0]) ||
-		!valid_wrap(a_record,7,6,desc,2,date[1]) ||
-		!valid_wrap(a_record,7,9,desc,4,date[2]) ||
-		!valid_wrap(a_record,7,14,desc,2,date[3]) ||
-		!valid_wrap(a_record,7,17,desc,2,date[4]) ||
-		!valid_wrap(a_record,11,3,desc,2,date[5]) ||
-		!valid_wrap(a_record,11,6,desc,2,date[6]) ||
-		!valid_wrap(a_record,11,9,desc,4,date[7]) ||
-		!valid_wrap(a_record,11,14,desc,2,date[8]) ||
-		!valid_wrap(a_record,11,17,desc,2,date[9])
-	){ return 1; }
-	T.ds = to_time_t(date);
-	T.de = to_time_t(date+5);
-	mvwgetnstr(a_record,14,3,desc,25); ///< desc-l1
-	for (unsigned l = 15;valid_str(desc)==0;++l){
-		T.append_desc(desc);
-		desc[0]='\0';
-		mvwgetnstr(a_record,l,3,desc,25);
-	}
-	wattroff(a_record,A_REVERSE);
-	wclear(a_record);
-	delwin(a_record);
 	return 0;
 }
 int getAfileName(char *s){
@@ -273,5 +190,3 @@ int show_results(sqlite3_stmt* s){
 	}
 	return 0;
 }
-
-#endif
