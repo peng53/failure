@@ -10,6 +10,11 @@ bind . <Control-Key-q> {
 	exit
 }
 proc perfs {} {
+	# Creates a preference window with controls for:
+	# calendar colors, dimensions, and fonts
+	# and whether the calendar / properties is a floating
+	# window or a frame. Font is the only setting that
+	# requires saving manually.
 	if {{.perfsw} in [winfo children .]} { return }
 	toplevel .perfsw
 	wm title .perfsw Preferences
@@ -34,6 +39,8 @@ proc perfs {} {
 	pack [labelframe .perfsw.cl.f -text Font+Size] -expand 1 -fill x
 	pack [ttk::combobox .perfsw.cl.f.f -values {Arial Tahoma Verdana}] -side left -fill x -expand 1
 	pack [ttk::spinbox .perfsw.cl.f.s -from 8 -to 96] -side left
+	.perfsw.cl.f.s set [lassign [split $Cal::v::dfont] f]
+	.perfsw.cl.f.f set $f
 	pack [labelframe .perfsw.cl.h -text {Header Height}] -expand 1 -fill x
 	pack [ttk::spinbox .perfsw.cl.h.h -from 8 -to 100 -increment 2 -textvariable Cal::v::hh] -side left -fill x -expand 1
 
@@ -42,19 +49,13 @@ proc perfs {} {
 	pack [checkbutton .perfsw.fw.props -text Props -variable Evv::props -onvalue win -offvalue fra] -side left
 
 	pack [frame .perfsw.b]
-	pack [button .perfsw.b.s -text Save -command perf_font] -side left 
+	pack [button .perfsw.b.s -text Save -command {set Cal::v::dfont "[.perfsw.cl.f.f get] [.perfsw.cl.f.s get]"}] -side left
 	pack [button .perfsw.b.r -text Redraw -command perf_r] -side left
 	pack [button .perfsw.b.c -text Close -command {destroy .perfsw}] -side left
-	fill_perfs
-}
-proc fill_perfs {} {
-	# Populates perfs window with current perfs.
-	.perfsw.cl.f.s set [lassign [split $Cal::v::dfont] f]
-	.perfsw.cl.f.f set $f
 }
 proc changecolor {w} {
 	# Open a color changer for calendar element $w
-	# If a color is chosen, change the associated 
+	# If a color is chosen, change the associated
 	# button's bg and fg, and the element itself.
 	set c [tk_chooseColor -initialcolor [.perfsw.cc.b$w cget -bg]]
 	if {[string length $c]>0} {
@@ -68,10 +69,9 @@ proc invcol {hc} {
 	#puts [string map {f 0 e 1 d 2 c 3 b 4 a 5 9 6 8 7 7 8 6 9 5 a 4 b 3 c 2 d 1 e 0 f} [string tolower $hc]]
 	return [format #%06x [expr {0xffffff-"0x[string trimleft $hc #]"}]]
 }
-proc perf_font {} {
-	set Cal::v::dfont "[.perfsw.cl.f.f get] [.perfsw.cl.f.s get]"
-}
 proc perf_r {} {
+	# Redraws the calendar if it is open so that
+	# it may have the new settings,
 	if {{.calwin} in [winfo children .]} {
 		destroy .calwin
 		wid $Evv::calwin .calwin Cals {Calendar}
@@ -114,6 +114,7 @@ proc wid {type name cmd title} {
 	$cmd
 }
 proc Props {} {
+	# Creates the widgets in the properties window
 	foreach {w n} {da {Start Date} db {End Date}} {
 		pack [label .props.l$w -text "$n (M/D/Y HH:MM)"] -anchor w
 		pack [frame .props.$w] -fill x
@@ -215,7 +216,8 @@ proc Cals {} {
 	pack [button .calwin.b.4 -text Hide -command {destroy .calwin}] -side left
 }
 proc pre_mark {} {
-	# Marks events 
+	# Marks events with a character.
+	# Default character is a black * with position of 3/4 (0.75)
 	lassign [Cal::month_range .calwin.cal] m Z y Z d2
 	set rs [EventStor::event_day $m 1 $d2 $y]
 	Cal::mark_days .calwin.cal $rs * 0.75 0.75 black
@@ -337,7 +339,7 @@ proc search_by_cal {} {
 	set rs [EventStor::ps_get_date_range $D1 $D2]
 	.evets.evs delete [.evets.evs children {}]
 	insert_rows $rs
-	
+
 }
 proc search_by_name {} {
 	# Get name field and execute search by name.

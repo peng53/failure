@@ -6,6 +6,12 @@ using std::setw;
 using std::setfill;
 
 time_t to_time_t(unsigned *d){
+	/**
+	 * Changes an array of unsigned ints to a time_t
+	 * Where d is {month,day,year,hour,min}
+	 * Any time_t returned will be in UTC time and
+	 * have 0 seconds.
+	 */
 	time_t t = time(NULL);
 	struct tm* u = gmtime(&t);
 	u->tm_mon = d[0]-1;
@@ -17,6 +23,11 @@ time_t to_time_t(unsigned *d){
 	return mktime(u);
 }
 size_t trimWS(char *s,size_t m){
+	/**
+	 * Doesn't actually trim anything.
+	 * Just finds ending indice that cuts off
+	 * trailing spaces.
+	 */
 	for (size_t i=m-1;i>=0;--i){
 		if (s[i]!=' ') return ++i;
 	}
@@ -24,6 +35,11 @@ size_t trimWS(char *s,size_t m){
 }
 
 Record::Record(sqlite3* db,int n){
+	/**
+	 * Constructor for Record based on row
+	 * in sqlite3 database with rowid n.
+	 * If rowid n DNE then Record is is invalid.
+	 */
 	sqlite3_stmt* s;
 	sqlite3_prepare_v2(db,"SELECT uid,start_time,end_time,code,desc FROM records WHERE rowid==?1",-1,&s,0);
 	sqlite3_bind_int(s,1,n);
@@ -34,10 +50,15 @@ Record::Record(sqlite3* db,int n){
 		ds = sqlite3_column_int(s,1);
 		de = sqlite3_column_int(s,2);
 		rnum = n;
+	} else {
+		rnum = -1;
 	}
 }
 
 ostream& operator<<(ostream& OUT,Record& R){
+	/**
+	 * Overload of << operator for Record's members. Main use is debugging.
+	 */
 	OUT << '\"' << R.uid <<'\"' << '\n' <<'\"' << R.code <<'\"' << '\n';
 	struct tm* d = gmtime(&R.ds);
 	OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
@@ -48,19 +69,37 @@ ostream& operator<<(ostream& OUT,Record& R){
 }
 
 int open_exdb(sqlite3** db,char *s){
+	/**
+	 * Tries open an existing database with filename s
+	 * On failure return 1
+	 * ATM does not check whether database matches intended schema.
+	 */
 	int r = sqlite3_open_v2(s,db,SQLITE_OPEN_READWRITE,NULL);
 	if (r==0) return 0;
 	return 1;
 }
 int open_nwdb(sqlite3** db,char *s){
+	/**
+	 * Tries open a new database with filename s (if it exists, this should fail)
+	 * On failure return 1
+	 * ATM does not check whether database matches intended schema.
+	 */
 	int r = sqlite3_open_v2(s,db,SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,NULL);
 	if (r==0) return 0;
 	return 1;
 }
 void def_table(sqlite3 *db){
+	/**
+	 * Creates table in db with intended schema.
+	 */
 	sqlite3_exec(db,"CREATE TABLE records(uid TEXT,start_time INTEGER,end_time INTEGER,code TEXT,desc TEXT)",NULL,NULL,NULL);
 }
 void ins_table(sqlite3 *db, Record &t){
+	/**
+	 * Inserts a Record into a sqlite3 database.
+	 * May change to a Record member function later on
+	 * void Record::func(sqlite3 *db);
+	 */
 	sqlite3_stmt* s;
 	sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&s,0);
 	sqlite3_bind_text(s,1,t.uid.c_str(),-1,SQLITE_TRANSIENT);

@@ -29,6 +29,7 @@ pack [button .frame_m_bar.text -text Test -command {open_text_file}] -side left
 pack [labelframe .frame_kb -text Keyboard] -expand 1 -fill x -side left
 set r 0
 foreach {s} {1234567890 qwertyuiop asdfghjkl zxcvbnm} {
+	# Create lower alpha and numerical buttons
 	pack [frame .frame_kb.r$r] -fill x
 	foreach {c} [split $s {}] {
 		pack [button .frame_kb.r$r.b$c -text $c -command "wri_rep $c"] -fill both -expand 1 -side left
@@ -38,6 +39,7 @@ foreach {s} {1234567890 qwertyuiop asdfghjkl zxcvbnm} {
 pack [frame .frame_kb.r$r] -fill x
 pack [button .frame_kb.r$r.bBackspace -text >) -command kbackspace] -side left
 foreach {l c} {==> \\t Space space LF Enter} {
+	# Create buttons with special functions.
 	pack [button .frame_kb.r$r.b$l -text $l -command "pressed $c"] -side left
 }
 pack configure .frame_kb.r$r.bSpace -fill x -expand 1
@@ -47,6 +49,7 @@ pack [button .frame_kb.r$r.bDelete -text (< -command {pressed Delete}] -side lef
 pack [labelframe .frame_sp -text Symbols] -side left -anchor ne
 set r 0
 foreach {s} {`'/ []* ;-+ ,} {
+	# Create symbol buttons
 	pack [frame .frame_sp.r$r]
 	foreach {c} [split $s {}] {
 		pack [button .frame_sp.r$r.b$c -text $c -width 1 -command "wri_rep \\$c"] -side left
@@ -55,13 +58,16 @@ foreach {s} {`'/ []* ;-+ ,} {
 }
 pack [button .frame_sp.r3.bPeriod -text . -width 1 -command {wri_rep .}] -side left
 pack [button .frame_sp.r3.bBackslash -text \\ -width 1 -command {wri_rep \\}] -side left
-proc rep_indices_with {b e c} {
+proc rep_indices_with {b e s} {
+	# Delete text at and between indices b & e
+	# Then insert string s at index b.
 	.maintext.t delete $b $e
-	.maintext.t insert $b $c
+	.maintext.t insert $b $s
 }
 pack [labelframe .frame_np -text Num] -side left -anchor ne
 set r 0
 foreach {s} {789 456 123 0} {
+	# Create the number pad.
 	pack [frame .frame_np.r$r] -fill x
 	foreach {c} [split $s {}] {
 		pack [button .frame_np.r$r.b$c -text $c -command "pressed $c"] -fill both -expand 1 -side left
@@ -73,21 +79,27 @@ pack [frame .frame_np.r4] -fill x
 pack [button .frame_np.r4.bEnter -text = -command {pressed Enter}] -fill both -expand 1 -side left
 
 proc have_selection {} {
+	# Returns whether if any text is selected.
 	return [expr [string length [.maintext.t tag ranges sel]]>0]
 }
 proc alternate {s} {
+	# Replaces characters with their 'shifted alternative'
+	# Mainly: lower->upper; number->symbol; symbol->symbol
+	# and vice-versa.
 	return [string map {
 		! 1 @ 2 # 3 $ 4 % 5 ^ 6 & 7 * 8 ( 9 ) 0
 		1 ! 2 @ 3 # 4 $ 5 % 6 ^ 7 & 8 * 9 ( 0 )
-		a A b B c C d D e E f F g G h H i I j J k K l L m M 
+		a A b B c C d D e E f F g G h H i I j J k K l L m M
 		n N o O p P q Q r R s S t T u U v V w W x X y Y z Z
-		A a B b C c D d E e F f G g H h I i J j K k L l M m 
+		A a B b C c D d E e F f G g H h I i J j K k L l M m
 		N n O o P p Q q R r S s T t U u V v W w X x Y y Z z
 		- _ = + [ \{ ] \} ; : ' \" , < . > / ? ` ~ \\ |
 		_ - + = \{ [ \} ] : ; \" ' < , > . ? / ~ ` | \\
 	} $s]
 }
 proc shift_last {} {
+	# Use alternate function (see above) on text that is
+	# either selected or left of the insertion cursor.
 	lassign [.maintext.t tag ranges sel] b e
 	if {[string length $b]!=0} {
 		rep_indices_with $b $e [alternate [.maintext.t get $b $e]]
@@ -100,6 +112,9 @@ proc shift_last {} {
 	}
 }
 proc shift_lock {} {
+	# Swaps output & text labels of buttons that have an
+	# alternate. E.g 'a' button becomes an 'A' button.
+	# Affects alpha-numerical and symbols.
 	for {set i 0} {$i<4} {incr i} {
 		foreach {p} {kb sp} {
 			foreach {c} [winfo children .frame_$p.r$i] {
@@ -110,6 +125,7 @@ proc shift_lock {} {
 	}
 }
 proc kbackspace {} {
+	# Delete either selection or character left of insertion cursor.
 	if {[have_selection]} {
 		.maintext.t delete sel.first sel.last
 	} else {
@@ -117,6 +133,7 @@ proc kbackspace {} {
 	}
 }
 proc kdelete {} {
+	# Delete either selection or character right of insertion cursor.
 	if {[have_selection]} {
 		.maintext.t delete sel.first sel.last
 	} else {
@@ -124,15 +141,20 @@ proc kdelete {} {
 	}
 }
 proc wri_rep {c} {
+	# Delete any selection and then insert 'c' at insertion cursor.
 	if {[have_selection]} {
 		.maintext.t delete sel.first sel.last
-	} 
+	}
 	.maintext.t insert insert $c
 }
 proc pressed {c} {
+	# A handler for buttons with special function that may be
+	# affected by the macro function.
+	# See individual comments below.
 	set o $osnv::MAC
 	switch $o {
 		off {
+			# Does as expected. Insert number/line-break or delete
 			switch $c {
 				Delete { kdelete }
 				Enter { .maintext.t insert insert \n }
@@ -141,6 +163,9 @@ proc pressed {c} {
 			}
 		}
 		rep {
+			# Line-break is normal.
+			# Delete set macro to off if not locked.
+			# Number fulfills the repetition.
 			switch $c {
 				Enter { .maintext.t insert insert \n }
 				Delete {
@@ -168,6 +193,9 @@ proc pressed {c} {
 			}
 		}
 		reg {
+			# Space add selection/character right of cursor to register
+			# Enter inserts selected register text to the insertion cursor
+			# Delete sets macro to off if not locked.
 			switch $c {
 				space {
 					if [have_selection] {
@@ -203,21 +231,28 @@ proc pressed {c} {
 	}
 }
 proc mac_off {} {
+	# Sets macro to off.
 	.frame_m_bar.off select
 	set osnv::s {}
 }
 proc mac_on {} {
+	# What happens when a macro is turned on.
+	# ATM gets this current cursor positon.
 	set osnv::s [.maintext.t index insert]
 }
 proc clear_text {} {
+	# Deletes all the text.
 	.maintext.t delete 0.0 end
 }
 proc close_text {} {
+	# Closes the current file.
 	set osnv::cur_file {}
 	.maintext.t edit modified 0
 	wm title . \\\\
 }
 proc new_text_file {} {
+	# Checks whether a file is open and unsaved, prompt for save if so.
+	# And then closes and clears the text.
 	if {[.maintext.t edit modified]} {
 		switch [tk_messageBox -message {Modified body, save?} -type yesnocancel -icon question] {
 			yes {
@@ -233,10 +268,14 @@ proc new_text_file {} {
 	close_text
 }
 proc save_as_text_file {} {
+	# Saves the current text as a new file.
 	set osnv::cur_file {}
 	save_text_file
 }
 proc save_text_file {} {
+	# Saves the current text to file.
+	# If no filename was stored (e.g if new file or save as)
+	# then prompt user for save path.
 	if {$osnv::cur_file=={}} {
 		set s [tk_getSaveFile]
 		if {$s=={}} {
@@ -252,6 +291,8 @@ proc save_text_file {} {
 	return 0
 }
 proc open_text_file {} {
+	# Checks there is unsaved text, prompting user to save if so,
+	# and then prompts for a text file to open.
 	if {[.maintext.t edit modified]} {
 		switch [tk_messageBox -message {Modified body, save?} -type yesnocancel -icon question] {
 			yes {

@@ -13,6 +13,10 @@ time_t get_end_time(FIELD* f[15]){
 	return (d[0]==0 || d[1]==0) ? to_time_t(d) : time(NULL);
 }
 void prepare_fields(FIELD *field[15]){
+	/**
+	 * Prepare the fields for use by:
+	 * allocating them and setting their various properties
+	 */
 	field[0] = new_field(1,10,3,6,0,0); //uid
 	field[1] = new_field(1,5,3,23,0,0); //code
 	field[2] = new_field(1,2,7,3,0,0); //d1mth
@@ -44,6 +48,11 @@ void prepare_fields(FIELD *field[15]){
 	field_opts_off(field[13],O_AUTOSKIP); //dummy
 }
 void populate_fields(FIELD *field[15],Record &t){
+	/**
+	 * Given a non-null Record object, populates fields.
+	 * Only checks whether the Record number is not -1.
+	 * Which relies on null constructor.
+	 */
 	if (t.rnum==-1){ return; }
 	set_field_buffer(field[0],0,t.uid.c_str());
 	set_field_buffer(field[1],0,t.code.c_str());
@@ -73,10 +82,18 @@ void populate_fields(FIELD *field[15],Record &t){
 	set_field_buffer(field[12],0,t.desc.c_str());
 }
 void clean_up_rec_form(FORM *form,FIELD *field[15]){
+	/**
+	 * Cleans up the record form by freeing the form and
+	 * the fields associated.
+	 */
 	free_form(form);
 	for (unsigned i=0;i<14;++i){ free_field(field[i]); }
 }
 void dress_rec_win(WINDOW* W,int rnum){
+	/**
+	 * Prints the text associated with the Record creation/editor
+	 * window/form.
+	 */
 	wattron(W,A_BOLD);
 	mvwprintw(W,1,1,"Record #");
 	wattroff(W,A_BOLD);
@@ -98,7 +115,12 @@ void dress_rec_win(WINDOW* W,int rnum){
 	wrefresh(W);
 }
 int prompt_rnum(){
-	char s[10] = "~";
+	/**
+	 * Prompts user for a row number of max-len 9.
+	 * If user does not enter '\', output is
+	 * guaranteed to be atleast 0. (based on atoi)
+	 */
+	char s[11] = "~";
 	int r = 1;
 	while (r==1){
 		mvprintw(LINES-1,0,"RNUM:");
@@ -109,6 +131,14 @@ int prompt_rnum(){
 	return -1;
 }
 int make_rec_win(unsigned Y,unsigned X,Record &t){
+	/**
+	 * Creates a record window at Y,X position with Record t.
+	 * If t is non-null, its properties are shown to be edited.
+	 * Else, user may fill the fields with their own properties.
+	 * ATM does not check whether the date-fields have input.
+	 * See get_start_time & get_end_time for their default values.
+	 * See loop for inputs.
+	 */
 	int ch;
 	int r = -1;
 	FIELD *field[15];
@@ -124,7 +154,11 @@ int make_rec_win(unsigned Y,unsigned X,Record &t){
     while(r==-1){
 		ch = wgetch(wrec);
 		switch(ch) {
-			case 27: // ESC key
+			//< Arrow keys are usual for text-input. Where Up/Down function like shift-tab/tab.
+			//< Backspace/Enter/Tab functions as one would except
+			case 27:
+			//< ESC key
+			//< Followed by ESC or ENTER determines whether return is graceful or not.
 				switch (wgetch(wrec)){
 					case 27: r = 1; break;
 					case 10: r = 0; break;
@@ -134,15 +168,16 @@ int make_rec_win(unsigned Y,unsigned X,Record &t){
 			case KEY_LEFT: form_driver(frec,REQ_LEFT_CHAR); break;
 			case KEY_RIGHT: form_driver(frec,REQ_RIGHT_CHAR); break;
 			case KEY_BACKSPACE: form_driver(frec,REQ_LEFT_CHAR); form_driver(frec,REQ_DEL_CHAR); break;
-			case '\t':
-			case 10: // ENTER KEY
+			case '\t': //< Tab
+			case 10: //< ENTER KEY
 			case KEY_DOWN: form_driver(frec, REQ_NEXT_FIELD); form_driver(frec, REQ_END_LINE); break;
 			case KEY_UP: form_driver(frec, REQ_PREV_FIELD); form_driver(frec, REQ_END_LINE); break;
 			default: form_driver(frec, ch); break;
 		}
 	}
 	switch (r){
-		case 0: // user exits gracefully
+		case 0:
+		//< user exits gracefully so data is written to Record.
 			form_driver(frec, REQ_NEXT_FIELD); form_driver(frec, REQ_PREV_FIELD);
 			t = Record(field_buffer(field[0],0),field_buffer(field[1],0),get_start_time(field),get_end_time(field),field_buffer(field[12],0));
 			break;
@@ -168,6 +203,10 @@ int valid_str(char *s){
 	return 0;
 }
 int getAfileName(char *s){
+	/**
+	 * Prompts user for a filename.
+	 * ATM this file is not checked by ui and relies on db.
+	 */
 	int r = 1;
 	while (r==1){
 		mvprintw(LINES-1,0,"FILE:");
@@ -178,6 +217,15 @@ int getAfileName(char *s){
 	return 0;
 }
 int show_results(sqlite3_stmt* s){
+	/**
+	 * Show the results of a sqlite3 statement on the mainscreen (stdscr)
+	 * Shows upto 25,terminal line count, or rowcount. Whichever is lesser.
+	 * The format currently is PRINTNUMBER UID CODE START_TIME DURATION
+	 * Where duration is end_time-start_time.
+	 * Which means ATM that the statement cannot be arbitary but must
+	 * have uid,start_time,end_time,code at indices 0 to 3.
+	 * Bound to change.
+	 */
 	struct tm *t;
 	time_t d,d2;
 	unsigned ml = std::min(25,LINES-1);
