@@ -2,94 +2,58 @@
 #include <cstdlib>
 #include <cstdio>
 
-time_t get_start_time(FIELD* f[15]){
-	unsigned d[5] = {0,0,0,0,0};
-	for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+2],0)); }
-	return (d[0]==0 || d[1]==0) ? to_time_t(d) : time(NULL);
+void mvprintw(unsigned Y,unsigned X,Record &t){
+	struct tm* d = gmtime(&t.ds);
+	mvprintw(Y,X,"\"%s\"",t.uid.c_str());
+	mvprintw(Y+1,X,"\"%s\"",t.code.c_str());
+	mvprintw(Y+2,X,"%02d/%02d/%02d : %02d:%02d",d->tm_mon+1,d->tm_mday,(d->tm_year)%100,d->tm_hour,d->tm_min);
+	d = gmtime(&t.de);
+	mvprintw(Y+3,X,"%02d/%02d/%02d : %02d:%02d",d->tm_mon+1,d->tm_mday,(d->tm_year)%100,d->tm_hour,d->tm_min);
+	mvprintw(Y+4,X,"\"%s\"",t.desc.c_str());
 }
-time_t get_end_time(FIELD* f[15]){
-	unsigned d[5] = {0,0,0,0,0};
-	for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+7],0)); }
-	return (d[0]==0 || d[1]==0) ? to_time_t(d) : time(NULL);
-}
-void prepare_fields(FIELD *field[15]){
+
+nRecord::nRecord(){
 	/**
 	 * Prepare the fields for use by:
 	 * allocating them and setting their various properties
 	 */
-	field[0] = new_field(1,10,3,6,0,0); //uid
-	field[1] = new_field(1,5,3,23,0,0); //code
-	field[2] = new_field(1,2,7,3,0,0); //d1mth
-	field[3] = new_field(1,2,7,6,0,0); //d1d
-	field[4] = new_field(1,4,7,9,0,0); //d1yr
-	field[5] = new_field(1,2,7,14,0,0); //d1hr
-	field[6] = new_field(1,2,7,17,0,0); //d1min
-	field[7] = new_field(1,2,11,3,0,0); //d2mth
-	field[8] = new_field(1,2,11,6,0,0); //d2d
-	field[9] = new_field(1,4,11,9,0,0); //d2yr
-	field[10] = new_field(1,2,11,14,0,0); //d2hr
-	field[11] = new_field(1,2,11,17,0,0); //d2min
-	field[12] = new_field(3,26,14,2,0,0); //desc
-	field[13] = new_field(1,1,1,1,0,0); //dummy
-	field[14] = 0;
-	for (unsigned i=0;i<13;++i){ set_field_back(field[i],A_REVERSE); }
-	set_field_type(field[0],TYPE_ALNUM,1);
-	set_field_type(field[1],TYPE_ALNUM,1);
-	set_field_type(field[2],TYPE_INTEGER,2,1,12);
-	set_field_type(field[3],TYPE_INTEGER,2,1,31);
-	set_field_type(field[4],TYPE_INTEGER,4,1,9999);
-	set_field_type(field[5],TYPE_INTEGER,2,0,23);
-	set_field_type(field[6],TYPE_INTEGER,2,0,59);
-	set_field_type(field[7],TYPE_INTEGER,2,1,12);
-	set_field_type(field[8],TYPE_INTEGER,2,1,31);
-	set_field_type(field[9],TYPE_INTEGER,4,1,9999);
-	set_field_type(field[10],TYPE_INTEGER,2,0,23);
-	set_field_type(field[11],TYPE_INTEGER,2,0,59);
-	field_opts_off(field[13],O_AUTOSKIP); //dummy
+	f[0] = new_field(1,10,3,6,0,0); //uid
+	f[1] = new_field(1,5,3,23,0,0); //code
+	f[2] = new_field(1,2,7,3,0,0); //d1mth
+	f[3] = new_field(1,2,7,6,0,0); //d1d
+	f[4] = new_field(1,4,7,9,0,0); //d1yr
+	f[5] = new_field(1,2,7,14,0,0); //d1hr
+	f[6] = new_field(1,2,7,17,0,0); //d1min
+	f[7] = new_field(1,2,11,3,0,0); //d2mth
+	f[8] = new_field(1,2,11,6,0,0); //d2d
+	f[9] = new_field(1,4,11,9,0,0); //d2yr
+	f[10] = new_field(1,2,11,14,0,0); //d2hr
+	f[11] = new_field(1,2,11,17,0,0); //d2min
+	f[12] = new_field(3,26,14,2,0,0); //desc
+	f[13] = new_field(1,1,1,1,0,0); //dummy
+	f[14] = 0;
+	for (unsigned i=0;i<13;++i){ set_field_back(f[i],A_REVERSE); }
+	set_field_type(f[0],TYPE_ALNUM,1);
+	set_field_type(f[1],TYPE_ALNUM,1);
+	set_field_type(f[2],TYPE_INTEGER,2,1,12);
+	set_field_type(f[3],TYPE_INTEGER,2,1,31);
+	set_field_type(f[4],TYPE_INTEGER,4,1,9999);
+	set_field_type(f[5],TYPE_INTEGER,2,0,23);
+	set_field_type(f[6],TYPE_INTEGER,2,0,59);
+	set_field_type(f[7],TYPE_INTEGER,2,1,12);
+	set_field_type(f[8],TYPE_INTEGER,2,1,31);
+	set_field_type(f[9],TYPE_INTEGER,4,1,9999);
+	set_field_type(f[10],TYPE_INTEGER,2,0,23);
+	set_field_type(f[11],TYPE_INTEGER,2,0,59);
+	field_opts_off(f[13],O_AUTOSKIP); //dummy
+	F = new_form(f);
 }
-void populate_fields(FIELD *field[15],Record &t){
-	/**
-	 * Given a non-null Record object, populates fields.
-	 * Only checks whether the Record number is not -1.
-	 * Which relies on null constructor.
-	 */
-	if (t.rnum==-1){ return; }
-	set_field_buffer(field[0],0,t.uid.c_str());
-	set_field_buffer(field[1],0,t.code.c_str());
-	struct tm* u = gmtime(&t.ds);
-	char n[6];
-	snprintf(n,3,"%02d",(u->tm_mon)+1);
-	set_field_buffer(field[2],0,n);
-	snprintf(n,3,"%02d",u->tm_mday);
-	set_field_buffer(field[3],0,n);
-	snprintf(n,5,"%04d",u->tm_year+1900);
-	set_field_buffer(field[4],0,n);
-	snprintf(n,3,"%02d",u->tm_hour);
-	set_field_buffer(field[5],0,n);
-	snprintf(n,3,"%02d",u->tm_min);
-	set_field_buffer(field[6],0,n);
-	u = gmtime(&t.de);
-	snprintf(n,3,"%02d",(u->tm_mon)+1);
-	set_field_buffer(field[7],0,n);
-	snprintf(n,3,"%02d",u->tm_mday);
-	set_field_buffer(field[8],0,n);
-	snprintf(n,5,"%04d",u->tm_year+1900);
-	set_field_buffer(field[9],0,n);
-	snprintf(n,3,"%02d",u->tm_hour);
-	set_field_buffer(field[10],0,n);
-	snprintf(n,3,"%02d",u->tm_min);
-	set_field_buffer(field[11],0,n);
-	set_field_buffer(field[12],0,t.desc.c_str());
+nRecord::~nRecord(){
+	free_form(F);
+	for (unsigned i=0;i<14;++i){ free_field(f[i]); }
 }
-void clean_up_rec_form(FORM *form,FIELD *field[15]){
-	/**
-	 * Cleans up the record form by freeing the form and
-	 * the fields associated.
-	 */
-	free_form(form);
-	for (unsigned i=0;i<14;++i){ free_field(field[i]); }
-}
-void dress_rec_win(WINDOW* W,int rnum){
+
+void nRecord::dress_rec_win(WINDOW* W,int rnum){
 	/**
 	 * Prints the text associated with the Record creation/editor
 	 * window/form.
@@ -97,7 +61,7 @@ void dress_rec_win(WINDOW* W,int rnum){
 	wattron(W,A_BOLD);
 	mvwprintw(W,1,1,"Record #");
 	wattroff(W,A_BOLD);
-	if (rnum==-1){ mvwprintw(W,1,10,"NEW"); }
+	if (rnum==-1){ mvwprintw(W,1,10,"NEW"); } //< OR UNSAVED
 	else { mvwprintw(W,1,10,"%d",rnum); }
 	mvwprintw(W,3,2,"UID");
 	mvwprintw(W,3,18,"Code");
@@ -114,6 +78,125 @@ void dress_rec_win(WINDOW* W,int rnum){
 	wmove(W,3,6);
 	wrefresh(W);
 }
+time_t nRecord::get_start_time(){
+	unsigned d[5] = {0,0,0,0,0};
+	for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+2],0)); }
+	return (d[0]==0 || d[1]==0) ? time(NULL) : to_time_t(d);
+}
+time_t nRecord::get_end_time(){
+	unsigned d[5] = {0,0,0,0,0};
+	for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+7],0)); }
+	return (d[0]==0 || d[1]==0) ?  time(NULL) : to_time_t(d);
+}
+WINDOW* nRecord::mk_win(unsigned Y,unsigned X,int rnum){
+	WINDOW *wrec = newwin(20,30,Y,X);
+	set_form_win(F,wrec);
+	set_form_sub(F,derwin(wrec,20,30,2,2));
+	post_form(F);
+	dress_rec_win(wrec,rnum);
+	noecho();
+	cbreak();
+	keypad(wrec,TRUE);
+	return wrec;
+}
+void nRecord::un_mk_win(WINDOW *wrec){
+	unpost_form(F);
+	delwin(wrec);
+	echo();
+}
+int nRecord::driver(WINDOW *wrec){
+	int ch = wgetch(wrec);
+	switch(ch) {
+		//< Arrow keys are usual for text-input. Where Up/Down function like shift-tab/tab.
+		//< Backspace/Enter/Tab functions as one would except
+		case 27:
+		//< ESC key
+		//< Followed by ESC or ENTER determines whether return is graceful or not.
+			switch (wgetch(wrec)){
+				case 27: return 1; break;
+				case 10: return 0; break;
+			}
+			break;
+		case '\\': return 1; break;
+		case KEY_LEFT: form_driver(F,REQ_LEFT_CHAR); break;
+		case KEY_RIGHT: form_driver(F,REQ_RIGHT_CHAR); break;
+		case KEY_BACKSPACE: form_driver(F,REQ_LEFT_CHAR); form_driver(F,REQ_DEL_CHAR); break;
+		case '\t': /* TAB */ case 10: /* ENTER */ case KEY_DOWN:
+			form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_END_LINE); break;
+		case KEY_UP: form_driver(F, REQ_PREV_FIELD); form_driver(F, REQ_END_LINE); break;
+		default: form_driver(F, ch); break;
+	}
+	return -1;
+}
+Record nRecord::record_edit(unsigned Y,unsigned X,int &r){
+	/**
+	 * Creates a record window at Y,X position with Record t.
+	 * If t is non-null, its properties are shown to be edited.
+	 * Else, user may fill the fields with their own properties.
+	 * ATM does not check whether the date-fields have input.
+	 * See get_start_time & get_end_time for their default values.
+	 * See loop for inputs.
+	 * See record_edit with Record & argument for editing an existing one.
+	 */
+	WINDOW *wrec = mk_win(Y,X,-1);
+	while (driver(wrec)==-1) continue;
+	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
+	un_mk_win(wrec);
+	return Record(field_buffer(f[0],0),field_buffer(f[1],0),get_start_time(),get_end_time(),field_buffer(f[12],0));
+}
+void nRecord::populate(Record &t){
+	/**
+	 * Given a non-null Record object, populates fields.
+	 * Only checks whether the Record number is not -1. --> disabled as a Record can have a -1 rnum (not in db)
+	 * Which relies on null constructor.
+	 */
+	//if (t.rnum==-1){ return; }
+	set_field_buffer(f[0],0,t.uid.c_str());
+	set_field_buffer(f[1],0,t.code.c_str());
+	struct tm* u = gmtime(&t.ds);
+	char n[6];
+	snprintf(n,3,"%02d",(u->tm_mon)+1);
+	set_field_buffer(f[2],0,n);
+	snprintf(n,3,"%02d",u->tm_mday);
+	set_field_buffer(f[3],0,n);
+	snprintf(n,5,"%04d",u->tm_year+1900);
+	set_field_buffer(f[4],0,n);
+	snprintf(n,3,"%02d",u->tm_hour);
+	set_field_buffer(f[5],0,n);
+	snprintf(n,3,"%02d",u->tm_min);
+	set_field_buffer(f[6],0,n);
+	u = gmtime(&t.de);
+	snprintf(n,3,"%02d",(u->tm_mon)+1);
+	set_field_buffer(f[7],0,n);
+	snprintf(n,3,"%02d",u->tm_mday);
+	set_field_buffer(f[8],0,n);
+	snprintf(n,5,"%04d",u->tm_year+1900);
+	set_field_buffer(f[9],0,n);
+	snprintf(n,3,"%02d",u->tm_hour);
+	set_field_buffer(f[10],0,n);
+	snprintf(n,3,"%02d",u->tm_min);
+	set_field_buffer(f[11],0,n);
+	set_field_buffer(f[12],0,t.desc.c_str());
+}
+int nRecord::record_edit(unsigned Y,unsigned X,Record &R){
+	/**
+	 * See record_edit with Record & argument for creating a new one.
+	 */
+	int r = -1;
+	populate(R);
+	WINDOW *wrec = mk_win(Y,X,R.rnum);
+	while (r==-1){ r = driver(wrec); }
+	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
+	un_mk_win(wrec);
+	if (r==0){
+		R.uid = string(field_buffer(f[0],0),trimWS(field_buffer(f[0],0),10));
+		R.code = string(field_buffer(f[1],0),trimWS(field_buffer(f[1],0),5));
+		R.desc = string(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),12));
+		R.ds = get_start_time();
+		R.de = get_end_time();
+	}
+	return r;
+}
 int prompt_rnum(){
 	/**
 	 * Prompts user for a row number of max-len 9.
@@ -129,65 +212,6 @@ int prompt_rnum(){
 		if (s[0]!='\\') return -2;
 	}
 	return -1;
-}
-int make_rec_win(unsigned Y,unsigned X,Record &t){
-	/**
-	 * Creates a record window at Y,X position with Record t.
-	 * If t is non-null, its properties are shown to be edited.
-	 * Else, user may fill the fields with their own properties.
-	 * ATM does not check whether the date-fields have input.
-	 * See get_start_time & get_end_time for their default values.
-	 * See loop for inputs.
-	 */
-	int ch;
-	int r = -1;
-	FIELD *field[15];
-	prepare_fields(field);
-	if (t.rnum!=-1) populate_fields(field,t);
-	FORM *frec = new_form(field);
-	WINDOW *wrec = newwin(20,30,Y,X);
-	keypad(wrec,TRUE);
-	set_form_win(frec,wrec);
-	set_form_sub(frec,derwin(wrec,20,30,2,2));
-	post_form(frec);
-	dress_rec_win(wrec,t.rnum);
-    while(r==-1){
-		ch = wgetch(wrec);
-		switch(ch) {
-			//< Arrow keys are usual for text-input. Where Up/Down function like shift-tab/tab.
-			//< Backspace/Enter/Tab functions as one would except
-			case 27:
-			//< ESC key
-			//< Followed by ESC or ENTER determines whether return is graceful or not.
-				switch (wgetch(wrec)){
-					case 27: r = 1; break;
-					case 10: r = 0; break;
-				}
-				break;
-			case '\\': r = 1; break;
-			case KEY_LEFT: form_driver(frec,REQ_LEFT_CHAR); break;
-			case KEY_RIGHT: form_driver(frec,REQ_RIGHT_CHAR); break;
-			case KEY_BACKSPACE: form_driver(frec,REQ_LEFT_CHAR); form_driver(frec,REQ_DEL_CHAR); break;
-			case '\t': //< Tab
-			case 10: //< ENTER KEY
-			case KEY_DOWN: form_driver(frec, REQ_NEXT_FIELD); form_driver(frec, REQ_END_LINE); break;
-			case KEY_UP: form_driver(frec, REQ_PREV_FIELD); form_driver(frec, REQ_END_LINE); break;
-			default: form_driver(frec, ch); break;
-		}
-	}
-	switch (r){
-		case 0:
-		//< user exits gracefully so data is written to Record.
-			form_driver(frec, REQ_NEXT_FIELD); form_driver(frec, REQ_PREV_FIELD);
-			t = Record(field_buffer(field[0],0),field_buffer(field[1],0),get_start_time(field),get_end_time(field),field_buffer(field[12],0));
-			break;
-		case 1: // user wants escape
-			break;
-	}
-	unpost_form(frec);
-	clean_up_rec_form(frec,field);
-	delwin(wrec);
-	return r;
 }
 
 int valid_str(char *s){
