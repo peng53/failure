@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 
-void mvprintw(unsigned Y,unsigned X,Record &t){
+void mvprintw(unsigned Y,unsigned X,const Record &t){
 	struct tm* d = gmtime(&t.ds);
 	mvprintw(Y,X,"\"%s\"",t.uid.c_str());
 	mvprintw(Y+1,X,"\"%s\"",t.code.c_str());
@@ -12,11 +12,12 @@ void mvprintw(unsigned Y,unsigned X,Record &t){
 	mvprintw(Y+4,X,"\"%s\"",t.desc.c_str());
 }
 
-nRecord::nRecord(){
+nRecord::nRecord(): rnum(-1){
 	/**
 	 * Prepare the fields for use by:
 	 * allocating them and setting their various properties
 	 */
+	//rnum = -1;
 	f[0] = new_field(1,10,3,6,0,0); //uid
 	f[1] = new_field(1,5,3,23,0,0); //code
 	f[2] = new_field(1,2,7,3,0,0); //d1mth
@@ -53,7 +54,7 @@ nRecord::~nRecord(){
 	for (unsigned i=0;i<14;++i){ free_field(f[i]); }
 }
 
-void nRecord::dress_rec_win(WINDOW* W,int rnum){
+void nRecord::dress_rec_win(WINDOW* W){
 	/**
 	 * Prints the text associated with the Record creation/editor
 	 * window/form.
@@ -88,18 +89,18 @@ time_t nRecord::get_end_time(){
 	for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+7],0)); }
 	return (d[0]==0 || d[1]==0) ?  time(NULL) : to_time_t(d);
 }
-WINDOW* nRecord::mk_win(unsigned Y,unsigned X,int rnum){
+WINDOW* nRecord::view(unsigned Y,unsigned X){
 	WINDOW *wrec = newwin(20,30,Y,X);
 	set_form_win(F,wrec);
 	set_form_sub(F,derwin(wrec,20,30,2,2));
 	post_form(F);
-	dress_rec_win(wrec,rnum);
+	dress_rec_win(wrec);
 	noecho();
 	cbreak();
 	keypad(wrec,TRUE);
 	return wrec;
 }
-void nRecord::un_mk_win(WINDOW *wrec){
+void nRecord::un_view(WINDOW *wrec){
 	unpost_form(F);
 	delwin(wrec);
 	echo();
@@ -128,7 +129,8 @@ int nRecord::driver(WINDOW *wrec){
 	}
 	return -1;
 }
-Record nRecord::record_edit(unsigned Y,unsigned X,int &r){
+
+int nRecord::edit(unsigned Y,unsigned X){
 	/**
 	 * Creates a record window at Y,X position with Record t.
 	 * If t is non-null, its properties are shown to be edited.
@@ -136,15 +138,27 @@ Record nRecord::record_edit(unsigned Y,unsigned X,int &r){
 	 * ATM does not check whether the date-fields have input.
 	 * See get_start_time & get_end_time for their default values.
 	 * See loop for inputs.
-	 * See record_edit with Record & argument for editing an existing one.
 	 */
-	WINDOW *wrec = mk_win(Y,X,-1);
-	while (driver(wrec)==-1) continue;
+	WINDOW *wrec = view(Y,X);
+	int r = -1;
+	while (r==-1) r = driver(wrec);
 	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
-	un_mk_win(wrec);
+	un_view(wrec);
+	return r;
+}
+Record nRecord::exportr(){
+	/**
+	 * Returns a new Record variable from field data.
+	 */
 	return Record(field_buffer(f[0],0),field_buffer(f[1],0),get_start_time(),get_end_time(),field_buffer(f[12],0));
 }
-void nRecord::populate(Record &t){
+void nRecord::depopulate(){
+	/**
+	 * Empties the fields. (spaces)
+	 */
+	for (unsigned i=0;i<14;++i) {set_field_buffer(f[i],0," "); }
+}
+void nRecord::populate(const Record &t){
 	/**
 	 * Given a non-null Record object, populates fields.
 	 * Only checks whether the Record number is not -1. --> disabled as a Record can have a -1 rnum (not in db)
@@ -177,26 +191,123 @@ void nRecord::populate(Record &t){
 	snprintf(n,3,"%02d",u->tm_min);
 	set_field_buffer(f[11],0,n);
 	set_field_buffer(f[12],0,t.desc.c_str());
+	rnum = t.rnum;
 }
-int nRecord::record_edit(unsigned Y,unsigned X,Record &R){
+int nRecord::exportr(Record &R){
 	/**
-	 * See record_edit with Record & argument for creating a new one.
+	 * Assigns field values to an existing record.
 	 */
-	int r = -1;
-	populate(R);
-	WINDOW *wrec = mk_win(Y,X,R.rnum);
-	while (r==-1){ r = driver(wrec); }
-	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
-	un_mk_win(wrec);
-	if (r==0){
-		R.uid = string(field_buffer(f[0],0),trimWS(field_buffer(f[0],0),10));
-		R.code = string(field_buffer(f[1],0),trimWS(field_buffer(f[1],0),5));
-		R.desc = string(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),12));
-		R.ds = get_start_time();
-		R.de = get_end_time();
-	}
-	return r;
+	R.uid = string(field_buffer(f[0],0),trimWS(field_buffer(f[0],0),10));
+	R.code = string(field_buffer(f[1],0),trimWS(field_buffer(f[1],0),5));
+	R.desc = string(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),12));
+	R.ds = get_start_time();
+	R.de = get_end_time();
+	return rnum;
 }
+
+mainMenu::mainMenu(){
+	op[0] = new_item("(L)oad Database","Load a database for editing.");
+	op[1] = new_item("(N)ew Database","Create a new database for editing.");
+	op[2] = new_item("E(x)it Program","Exit the program.");
+	op[3] = new_item(" -","Database commands");
+	op[4] = new_item("(I)nsert Record","Insert a new record.");
+	op[5] = new_item("(V)iew Record","View a record.");
+	op[6] = new_item("(E)dit Record","Edit a record.");
+	op[7] = new_item("(D)elete Record","Delete a record.");
+	op[8] = new_item("(C)lose Database","Close a database without saving.");
+	op[9] = new_item("(S)ave Database","Save changes to database.");
+	op[10] = 0;
+	more_ops(0);
+	M = new_menu(op);
+	menu_opts_off(M,O_NONCYCLIC);
+	set_menu_back(M,COLOR_PAIR(1));
+	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
+	set_menu_grey(M,A_DIM);
+	//keys['L']=keys['l']=0;
+	//keys['N']=keys['n']=1;
+	//keys['X']=keys['x']=2;
+	//keys['I']=keys['i']=4;
+	//keys['V']=keys['v']=5;
+	//keys['E']=keys['e']=6;
+	//keys['D']=keys['d']=7;
+	//keys['C']=keys['c']=8;
+	//keys['S']=keys['s']=9;
+	char A[] = "LNXIIVEDCS"; // I is mapped twice to skip index 3.
+	for (unsigned i=0;i<10;++i) keys[A[i]]=keys[A[i]+32]=i;
+}
+int mainMenu::has_op(char ch){
+	std::map<char,int>::const_iterator it = keys.find(ch);
+	if (it==keys.end()) return -1;
+	return it->second;
+}
+int mainMenu::has_op_sc(char ch){
+	int i;
+	switch (ch){
+		case 'L': case 'l': i=0; break;
+		case 'N': case 'n': i=1; break;
+		case 'X': case 'x': i=2; break;
+		case 'I': case 'i': i=4; break;
+		case 'V': case 'v': i=5; break;
+		case 'E': case 'e': i=6; break;
+		case 'D': case 'd': i=7; break;
+		case 'C': case 'c': i=8; break;
+		case 'S': case 's': i=9; break;
+		default: return -1; break;
+	}
+	return (item_opts(op[i]) & O_SELECTABLE) ? i : -1;
+}
+
+
+void mainMenu::more_ops(bool i){
+	int o = O_SELECTABLE & i;
+	for (unsigned i=3;i<10;++i){
+		set_item_opts(op[i],o);
+	}
+}
+mainMenu::~mainMenu(){
+	for (unsigned i=0;i<10;++i){
+		free_item(op[i]);
+	}
+	free_menu(M);
+}
+int mainMenu::run(){
+	noecho();
+	cbreak();
+	keypad(stdscr,TRUE);
+	post_menu(M);
+	set_current_item(M,op[0]);
+	int ch;
+	int r = 1;
+	int c;
+	while (r==1){
+		ch = getch();
+		switch (ch){
+			case KEY_DOWN:
+				if (item_opts(op[item_index(current_item(M))+1]) & O_SELECTABLE){
+					menu_driver(M,REQ_DOWN_ITEM);
+				}
+				break;
+			case KEY_UP:
+				if (item_index(current_item(M))>0 && item_opts(op[item_index(current_item(M))-1]) & O_SELECTABLE){
+					menu_driver(M,REQ_UP_ITEM);
+				}
+				break;
+			case 10: //< ENTER
+				c = item_index(current_item(M));
+				if (c!=3){ r = 0; }
+				break;
+			default:
+				c = has_op_sc(ch);
+				if (c!=-1){ r = 0; }
+				//if (c!=-1 && c!=3 && (item_opts(op[c]) & O_SELECTABLE)){ r = 0; }
+				break;
+		}
+	}
+	unpost_menu(M);
+	echo();
+	return c;
+}
+
 int prompt_rnum(){
 	/**
 	 * Prompts user for a row number of max-len 9.

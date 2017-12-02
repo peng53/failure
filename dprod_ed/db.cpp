@@ -5,7 +5,7 @@
 using std::setw;
 using std::setfill;
 
-time_t to_time_t(unsigned *d){
+time_t to_time_t(const unsigned *d){
 	/**
 	 * Changes an array of unsigned ints to a time_t
 	 * Where d is {month,day,year,hour,min}
@@ -22,7 +22,7 @@ time_t to_time_t(unsigned *d){
 	u->tm_sec = 0;
 	return mktime(u);
 }
-size_t trimWS(char *s,size_t m){
+size_t trimWS(const char *s,size_t m){
 	/**
 	 * Doesn't actually trim anything.
 	 * Just finds ending indice that cuts off
@@ -33,6 +33,12 @@ size_t trimWS(char *s,size_t m){
 	}
 	return m;
 }
+Record::Record(): rnum(-1){
+	uid.reserve(10);
+	code.reserve(5);
+}
+Record::Record(char* cUID,size_t lUID,char* cCODE,size_t lCODE,time_t tSTART,time_t tEND,char* cDESC,size_t lDESC): uid(cUID,trimWS(cUID,lUID)), code(cCODE,trimWS(cCODE,lCODE)), desc(cDESC,trimWS(cDESC,lDESC)), ds(tSTART), de(tEND), rnum(-1){ }
+Record::Record(char* cUID,char* cCODE,time_t tSTART,time_t tEND,char* cDESC): uid(cUID,trimWS(cUID,10)), code(cCODE,trimWS(cCODE,5)), desc(cDESC,trimWS(cDESC,70)), ds(tSTART), de(tEND), rnum(-1){}
 
 Record::Record(sqlite3* db,int n){
 	/**
@@ -55,7 +61,7 @@ Record::Record(sqlite3* db,int n){
 	}
 }
 
-ostream& operator<<(ostream& OUT,Record& R){
+ostream& operator<<(ostream& OUT,const Record& R){
 	/**
 	 * Overload of << operator for Record's members. Main use is debugging.
 	 */
@@ -94,7 +100,7 @@ void def_table(sqlite3 *db){
 	 */
 	sqlite3_exec(db,"CREATE TABLE records(uid TEXT,start_time INTEGER,end_time INTEGER,code TEXT,desc TEXT)",NULL,NULL,NULL);
 }
-void ins_table(sqlite3 *db, Record &t){
+void ins_table(sqlite3 *db,const Record &t){
 	/**
 	 * Inserts a Record into a sqlite3 database.
 	 * May change to a Record member function later on
