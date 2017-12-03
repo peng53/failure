@@ -3,7 +3,7 @@
 #include <ncurses.h>
 #include <form.h>
 #include <menu.h>
-#include <map>
+#include <vector>
 #include "db.h"
 
 struct nRecord {
@@ -26,14 +26,11 @@ struct nRecord {
 };
 
 struct mainMenu {
-	ITEM *op[11];
+	ITEM *op[4];
 	MENU *M;
-	std::map<char,int> keys;
 	mainMenu();
 	~mainMenu();
-	void more_ops(bool i);
 	int run();
-	int has_op(char);
 	int has_op_sc(char ch);
 
 };
@@ -42,5 +39,8 @@ int prompt_rnum();
 int valid_str(char *s);
 int getAfileName(char *s);
 int show_results(sqlite3_stmt* s);
+
+int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db);
+int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &ids,unsigned y);
 
 #endif

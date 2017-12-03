@@ -18,13 +18,31 @@ struct Record {
 	Record();
 	Record(char* cUID,size_t lUID,char* cCODE,size_t lCODE,time_t tSTART,time_t tEND,char* cDESC,size_t lDESC);
 	Record(char* cUID,char* cCODE,time_t tSTART,time_t tEND,char* cDESC);
+	Record(sqlite3_stmt* s);
 	Record(sqlite3* db,int n);
 };
 
 ostream& operator<<(ostream& OUT,const Record& R);
+
+struct SQLi {
+	sqlite3* db;
+	sqlite3_stmt* vpg;
+	sqlite3_stmt* ins;
+	sqlite3_stmt* del;
+	sqlite3_stmt* getr;
+	sqlite3_stmt* upd;
+	SQLi(sqlite3* _db);
+	~SQLi();
+	int endbeg();
+	int def_table();
+	int ins_table(const Record &t);
+	int del_row(const unsigned rnum);
+	int upd_row(const Record &t);
+	Record get_row(const unsigned rnum);
+	int get_row(const unsigned rnum,Record &R);
+};
 int open_exdb(sqlite3** db,char *s);
 int open_nwdb(sqlite3** db,char *s);
 void def_table(sqlite3 *db);
 void ins_table(sqlite3 *db,const Record &t);
-
 #endif

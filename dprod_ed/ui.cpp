@@ -3,13 +3,14 @@
 #include <cstdio>
 
 void mvprintw(unsigned Y,unsigned X,const Record &t){
-	struct tm* d = gmtime(&t.ds);
+	struct tm* d = localtime(&t.ds);
 	mvprintw(Y,X,"\"%s\"",t.uid.c_str());
 	mvprintw(Y+1,X,"\"%s\"",t.code.c_str());
 	mvprintw(Y+2,X,"%02d/%02d/%02d : %02d:%02d",d->tm_mon+1,d->tm_mday,(d->tm_year)%100,d->tm_hour,d->tm_min);
-	d = gmtime(&t.de);
+	d = localtime(&t.de);
 	mvprintw(Y+3,X,"%02d/%02d/%02d : %02d:%02d",d->tm_mon+1,d->tm_mday,(d->tm_year)%100,d->tm_hour,d->tm_min);
 	mvprintw(Y+4,X,"\"%s\"",t.desc.c_str());
+	refresh();
 }
 
 nRecord::nRecord(): rnum(-1){
@@ -17,7 +18,6 @@ nRecord::nRecord(): rnum(-1){
 	 * Prepare the fields for use by:
 	 * allocating them and setting their various properties
 	 */
-	//rnum = -1;
 	f[0] = new_field(1,10,3,6,0,0); //uid
 	f[1] = new_field(1,5,3,23,0,0); //code
 	f[2] = new_field(1,2,7,3,0,0); //d1mth
@@ -102,6 +102,7 @@ WINDOW* nRecord::view(unsigned Y,unsigned X){
 }
 void nRecord::un_view(WINDOW *wrec){
 	unpost_form(F);
+	wclear(wrec);
 	delwin(wrec);
 	echo();
 }
@@ -144,6 +145,7 @@ int nRecord::edit(unsigned Y,unsigned X){
 	while (r==-1) r = driver(wrec);
 	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
 	un_view(wrec);
+	noecho();
 	return r;
 }
 Record nRecord::exportr(){
@@ -167,7 +169,7 @@ void nRecord::populate(const Record &t){
 	//if (t.rnum==-1){ return; }
 	set_field_buffer(f[0],0,t.uid.c_str());
 	set_field_buffer(f[1],0,t.code.c_str());
-	struct tm* u = gmtime(&t.ds);
+	struct tm* u = localtime(&t.ds);
 	char n[6];
 	snprintf(n,3,"%02d",(u->tm_mon)+1);
 	set_field_buffer(f[2],0,n);
@@ -179,7 +181,7 @@ void nRecord::populate(const Record &t){
 	set_field_buffer(f[5],0,n);
 	snprintf(n,3,"%02d",u->tm_min);
 	set_field_buffer(f[6],0,n);
-	u = gmtime(&t.de);
+	u = localtime(&t.de);
 	snprintf(n,3,"%02d",(u->tm_mon)+1);
 	set_field_buffer(f[7],0,n);
 	snprintf(n,3,"%02d",u->tm_mday);
@@ -209,36 +211,13 @@ mainMenu::mainMenu(){
 	op[0] = new_item("(L)oad Database","Load a database for editing.");
 	op[1] = new_item("(N)ew Database","Create a new database for editing.");
 	op[2] = new_item("E(x)it Program","Exit the program.");
-	op[3] = new_item(" -","Database commands");
-	op[4] = new_item("(I)nsert Record","Insert a new record.");
-	op[5] = new_item("(V)iew Record","View a record.");
-	op[6] = new_item("(E)dit Record","Edit a record.");
-	op[7] = new_item("(D)elete Record","Delete a record.");
-	op[8] = new_item("(C)lose Database","Close a database without saving.");
-	op[9] = new_item("(S)ave Database","Save changes to database.");
-	op[10] = 0;
-	more_ops(0);
+	op[3] = 0;
 	M = new_menu(op);
 	menu_opts_off(M,O_NONCYCLIC);
 	set_menu_back(M,COLOR_PAIR(1));
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
 	set_menu_grey(M,A_DIM);
-	//keys['L']=keys['l']=0;
-	//keys['N']=keys['n']=1;
-	//keys['X']=keys['x']=2;
-	//keys['I']=keys['i']=4;
-	//keys['V']=keys['v']=5;
-	//keys['E']=keys['e']=6;
-	//keys['D']=keys['d']=7;
-	//keys['C']=keys['c']=8;
-	//keys['S']=keys['s']=9;
-	char A[] = "LNXIIVEDCS"; // I is mapped twice to skip index 3.
-	for (unsigned i=0;i<10;++i) keys[A[i]]=keys[A[i]+32]=i;
-}
-int mainMenu::has_op(char ch){
-	std::map<char,int>::const_iterator it = keys.find(ch);
-	if (it==keys.end()) return -1;
-	return it->second;
+
 }
 int mainMenu::has_op_sc(char ch){
 	int i;
@@ -246,26 +225,12 @@ int mainMenu::has_op_sc(char ch){
 		case 'L': case 'l': i=0; break;
 		case 'N': case 'n': i=1; break;
 		case 'X': case 'x': i=2; break;
-		case 'I': case 'i': i=4; break;
-		case 'V': case 'v': i=5; break;
-		case 'E': case 'e': i=6; break;
-		case 'D': case 'd': i=7; break;
-		case 'C': case 'c': i=8; break;
-		case 'S': case 's': i=9; break;
 		default: return -1; break;
 	}
 	return (item_opts(op[i]) & O_SELECTABLE) ? i : -1;
 }
-
-
-void mainMenu::more_ops(bool i){
-	int o = O_SELECTABLE & i;
-	for (unsigned i=3;i<10;++i){
-		set_item_opts(op[i],o);
-	}
-}
 mainMenu::~mainMenu(){
-	for (unsigned i=0;i<10;++i){
+	for (unsigned i=0;i<3;++i){
 		free_item(op[i]);
 	}
 	free_menu(M);
@@ -299,7 +264,6 @@ int mainMenu::run(){
 			default:
 				c = has_op_sc(ch);
 				if (c!=-1){ r = 0; }
-				//if (c!=-1 && c!=3 && (item_opts(op[c]) & O_SELECTABLE)){ r = 0; }
 				break;
 		}
 	}
@@ -351,6 +315,113 @@ int getAfileName(char *s){
 	}
 	return 0;
 }
+
+int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &ids,unsigned y){
+	wclear(w);
+	sqlite3_reset(s);
+	sqlite3_bind_int(s,1,l);
+	sqlite3_bind_int(s,2,l*pg);
+	struct tm *t;
+	time_t d,d2;
+	unsigned n = 0;
+	//for (unsigned c=pg*l+1;sqlite3_step(s)==SQLITE_ROW && n<l;c++){
+		//ids[n++] = sqlite3_column_int(s,0);
+		//mvwprintw(w,n,1,"%3d %-10s %-5s",c,sqlite3_column_text(s,1),sqlite3_column_text(s,2));
+		//d = sqlite3_column_int(s,3);
+		//d2 = difftime(sqlite3_column_int(s,4),d);
+		//t = localtime(&d);
+		//mvwprintw(w,n,22,"%02d/%02d/%02d %02d:%02d % 4.2f",t->tm_mon+1,t->tm_mday,(t->tm_year)% 100,t->tm_hour,t->tm_min,(float)d2/3600);
+	//}
+
+	for (n=0;sqlite3_step(s)==SQLITE_ROW && n<l;){
+		d = sqlite3_column_int(s,3);
+		d2 = difftime(sqlite3_column_int(s,4),d);
+		t = localtime(&d);
+		ids[n] = sqlite3_column_int(s,0);
+		mvwprintw(w,++n,1,"%3d %-10s %-5s %02d/%02d/%02d %02d:%02d % 4.2f",ids[n],
+			sqlite3_column_text(s,1),
+			sqlite3_column_text(s,2),
+			t->tm_mon+1,
+			t->tm_mday,
+			(t->tm_year)% 100,
+			t->tm_hour,
+			t->tm_min,
+			(float)d2/3600
+		);
+	}
+
+
+	while (n<l) ids[n++] = -1;
+	box(w,0,0);
+	wmove(w,y,1);
+	wrefresh(w);
+}
+
+int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
+	std::vector<int> ids(l,-1);
+	WINDOW* w=newwin(l,50,Y,X);
+	unsigned pg=0;
+	int r = -1;
+	int ch;
+	unsigned y = 1;
+	nRecord editor;
+	Record rec;
+	noecho();
+	bool need_refresh = 1;
+	while (r==-1){
+		if (need_refresh){ need_refresh = 0; resultsf(w,l-2,db.vpg,pg,ids,y); }
+		ch = getch();
+		switch (ch){
+			case KEY_DOWN:
+				if (y==l-2) break;
+				wmove(w,++y,X+1);
+				wrefresh(w);
+				break;
+			case KEY_UP:
+				if (y==Y+1) break;
+				wmove(w,--y,X+1);
+				wrefresh(w);
+				break;
+			case 'c':
+				r = 0; break;
+			case 's':
+				db.endbeg(); break;
+			case 'i':
+				editor.depopulate();
+				if (editor.edit(0,COLS-31)==0){
+					editor.exportr(rec);
+					db.ins_table(rec);
+					need_refresh=1;
+				}
+				noecho();
+				break;
+			case 'e':
+				if (ids[y-1]==-1) break;
+				editor.depopulate();
+				//db.get_row(ids[y-1],rec);
+				rec = db.get_row(ids[y-1]);
+				editor.populate(rec);
+				if (editor.edit(0,COLS-31)==0){
+					editor.exportr(rec);
+					db.upd_row(rec);
+					need_refresh=1;
+				}
+				break;
+
+			case 'd':
+				if (ids[y-1]==-1) break;
+				db.del_row(ids[y-1]);
+				need_refresh=1;
+				break;
+
+			case 'r': need_refresh=1; break;
+		}
+	}
+
+	delwin(w);
+	return 0;
+}
+
 int show_results(sqlite3_stmt* s){
 	/**
 	 * Show the results of a sqlite3 statement on the mainscreen (stdscr)
@@ -364,11 +435,11 @@ int show_results(sqlite3_stmt* s){
 	struct tm *t;
 	time_t d,d2;
 	unsigned ml = std::min(25,LINES-1);
-	for (unsigned n = 0; sqlite3_step(s)==100 && n<ml; ++n){
-		mvprintw(n,0,"%02d %-10s %-5s",n,sqlite3_column_text(s,0),sqlite3_column_text(s,3));
+	for (unsigned n = 1; sqlite3_step(s)==100 && n<ml; ++n){
+		mvprintw(n,0,"%2d %-10s %-5s",n,sqlite3_column_text(s,0),sqlite3_column_text(s,3));
 		d = sqlite3_column_int(s,1);
 		d2 = difftime(sqlite3_column_int(s,2),d);
-		t = gmtime(&d);
+		t = localtime(&d);
 		mvprintw(n,21,"%02d/%02d/%02d %02d:%02d %1.2fhrs",t->tm_mon+1,t->tm_mday,(t->tm_year)% 100,t->tm_hour,t->tm_min,(float)d2/3600);
 	}
 	return 0;
