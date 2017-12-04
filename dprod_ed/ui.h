@@ -22,7 +22,7 @@ struct nRecord {
 	void populate(const Record &R);
 	void depopulate();
 	Record exportr();
-	int exportr(Record &R);
+	Record& exportr(Record &R);
 };
 
 struct mainMenu {

@@ -91,11 +91,12 @@ time_t nRecord::get_end_time(){
 }
 WINDOW* nRecord::view(unsigned Y,unsigned X){
 	WINDOW *wrec = newwin(20,30,Y,X);
+	wattron(wrec,COLOR_PAIR(4));
 	set_form_win(F,wrec);
 	set_form_sub(F,derwin(wrec,20,30,2,2));
 	post_form(F);
 	dress_rec_win(wrec);
-	noecho();
+	wattroff(wrec,COLOR_PAIR(4));
 	cbreak();
 	keypad(wrec,TRUE);
 	return wrec;
@@ -104,7 +105,6 @@ void nRecord::un_view(WINDOW *wrec){
 	unpost_form(F);
 	wclear(wrec);
 	delwin(wrec);
-	echo();
 }
 int nRecord::driver(WINDOW *wrec){
 	int ch = wgetch(wrec);
@@ -145,7 +145,6 @@ int nRecord::edit(unsigned Y,unsigned X){
 	while (r==-1) r = driver(wrec);
 	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
 	un_view(wrec);
-	noecho();
 	return r;
 }
 Record nRecord::exportr(){
@@ -195,7 +194,7 @@ void nRecord::populate(const Record &t){
 	set_field_buffer(f[12],0,t.desc.c_str());
 	rnum = t.rnum;
 }
-int nRecord::exportr(Record &R){
+Record& nRecord::exportr(Record &R){
 	/**
 	 * Assigns field values to an existing record.
 	 */
@@ -204,7 +203,7 @@ int nRecord::exportr(Record &R){
 	R.desc = string(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),12));
 	R.ds = get_start_time();
 	R.de = get_end_time();
-	return rnum;
+	return R;
 }
 
 mainMenu::mainMenu(){
@@ -213,11 +212,9 @@ mainMenu::mainMenu(){
 	op[2] = new_item("E(x)it Program","Exit the program.");
 	op[3] = 0;
 	M = new_menu(op);
-	menu_opts_off(M,O_NONCYCLIC);
 	set_menu_back(M,COLOR_PAIR(1));
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
 	set_menu_grey(M,A_DIM);
-
 }
 int mainMenu::has_op_sc(char ch){
 	int i;
@@ -236,7 +233,6 @@ mainMenu::~mainMenu(){
 	free_menu(M);
 }
 int mainMenu::run(){
-	noecho();
 	cbreak();
 	keypad(stdscr,TRUE);
 	post_menu(M);
@@ -268,7 +264,6 @@ int mainMenu::run(){
 		}
 	}
 	unpost_menu(M);
-	echo();
 	return c;
 }
 
@@ -306,6 +301,7 @@ int getAfileName(char *s){
 	 * Prompts user for a filename.
 	 * ATM this file is not checked by ui and relies on db.
 	 */
+	echo();
 	int r = 1;
 	while (r==1){
 		mvprintw(LINES-1,0,"FILE:");
@@ -313,6 +309,7 @@ int getAfileName(char *s){
 		r = valid_str(s);
 		if (r==2){ return 2; }
 	}
+	noecho();
 	return 0;
 }
 
@@ -323,22 +320,16 @@ int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &
 	sqlite3_bind_int(s,2,l*pg);
 	struct tm *t;
 	time_t d,d2;
-	unsigned n = 0;
-	//for (unsigned c=pg*l+1;sqlite3_step(s)==SQLITE_ROW && n<l;c++){
-		//ids[n++] = sqlite3_column_int(s,0);
-		//mvwprintw(w,n,1,"%3d %-10s %-5s",c,sqlite3_column_text(s,1),sqlite3_column_text(s,2));
-		//d = sqlite3_column_int(s,3);
-		//d2 = difftime(sqlite3_column_int(s,4),d);
-		//t = localtime(&d);
-		//mvwprintw(w,n,22,"%02d/%02d/%02d %02d:%02d % 4.2f",t->tm_mon+1,t->tm_mday,(t->tm_year)% 100,t->tm_hour,t->tm_min,(float)d2/3600);
-	//}
-
-	for (n=0;sqlite3_step(s)==SQLITE_ROW && n<l;){
+	unsigned n=0;
+	wattron(w,COLOR_PAIR(3));
+	//for (n=0;sqlite3_step(s)==SQLITE_ROW && n<l;){
+	while (sqlite3_step(s)==SQLITE_ROW && n<l){
 		d = sqlite3_column_int(s,3);
 		d2 = difftime(sqlite3_column_int(s,4),d);
 		t = localtime(&d);
 		ids[n] = sqlite3_column_int(s,0);
-		mvwprintw(w,++n,1,"%3d %-10s %-5s %02d/%02d/%02d %02d:%02d % 4.2f",ids[n],
+		mvwprintw(w,++n,1,"%4d   %-10s  %-5s  %02d/%02d/%02d %02d:%02d % 4.2f",
+			ids[n],
 			sqlite3_column_text(s,1),
 			sqlite3_column_text(s,2),
 			t->tm_mon+1,
@@ -349,10 +340,10 @@ int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &
 			(float)d2/3600
 		);
 	}
-
-
-	while (n<l) ids[n++] = -1;
+	fill(ids.begin()+n+1,ids.end(),-1);
+	//while (n<l) ids[n++] = -1;
 	box(w,0,0);
+	wattroff(w,COLOR_PAIR(3));
 	wmove(w,y,1);
 	wrefresh(w);
 }
@@ -365,20 +356,37 @@ int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 	int ch;
 	unsigned y = 1;
 	nRecord editor;
+	WINDOW * viewer;
 	Record rec;
-	noecho();
 	bool need_refresh = 1;
 	while (r==-1){
 		if (need_refresh){ need_refresh = 0; resultsf(w,l-2,db.vpg,pg,ids,y); }
 		ch = getch();
 		switch (ch){
+			case KEY_PPAGE:
+				if (pg==0) break;
+				need_refresh = 1;
+				--pg;
+				break;
+			case KEY_NPAGE:
+				if (ids[0]==-1) break;
+				need_refresh = 1;
+				++pg;
+				break;
+			case KEY_HOME:
+				need_refresh = 1;
+				pg = 0;
+				break;
+			case KEY_END:
+				// go to bottom of rows, possibly get max pg count with sql: count(rowid)/l
+				break;
 			case KEY_DOWN:
 				if (y==l-2) break;
 				wmove(w,++y,X+1);
 				wrefresh(w);
 				break;
 			case KEY_UP:
-				if (y==Y+1) break;
+				if (y==1) break;
 				wmove(w,--y,X+1);
 				wrefresh(w);
 				break;
@@ -386,24 +394,31 @@ int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 				r = 0; break;
 			case 's':
 				db.endbeg(); break;
+			case KEY_RIGHT:
+			case 'v':
+				if (ids[y-1]==-1) break;
+				editor.depopulate();
+				editor.populate(db.get_row(ids[y-1],rec));
+				viewer = editor.view(0,51);
+				getch();
+				editor.un_view(viewer);
+				break;
 			case 'i':
 				editor.depopulate();
-				if (editor.edit(0,COLS-31)==0){
-					editor.exportr(rec);
-					db.ins_table(rec);
+				if (editor.edit(0,51)==0){
+					db.ins_row(editor.exportr(rec));
 					need_refresh=1;
 				}
-				noecho();
 				break;
+			case 10: // ENTER
 			case 'e':
 				if (ids[y-1]==-1) break;
 				editor.depopulate();
 				//db.get_row(ids[y-1],rec);
-				rec = db.get_row(ids[y-1]);
-				editor.populate(rec);
-				if (editor.edit(0,COLS-31)==0){
-					editor.exportr(rec);
-					db.upd_row(rec);
+				//rec = db.get_row(ids[y-1]);
+				editor.populate(db.get_row(ids[y-1],rec));
+				if (editor.edit(0,51)==0){
+					db.upd_row(editor.exportr(rec));
 					need_refresh=1;
 				}
 				break;
