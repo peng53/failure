@@ -1,9 +1,5 @@
 #include "db.h"
-//#include <iomanip>
 #include <ctime>
-
-//using std::setw;
-//using std::setfill;
 
 time_t to_time_t(const unsigned *d){
 	/**
@@ -38,8 +34,14 @@ Record::Record(): rnum(-1){
 	code.reserve(5);
 	code.reserve(70);
 }
-//Record::Record(char* cUID,size_t lUID,char* cCODE,size_t lCODE,time_t tSTART,time_t tEND,char* cDESC,size_t lDESC): uid(cUID,trimWS(cUID,lUID)), code(cCODE,trimWS(cCODE,lCODE)), desc(cDESC,trimWS(cDESC,lDESC)), ds(tSTART), de(tEND), rnum(-1){ }
-Record::Record(char* cUID,char* cCODE,time_t tSTART,time_t tEND,char* cDESC): uid(cUID,trimWS(cUID,10)), code(cCODE,trimWS(cCODE,5)), desc(cDESC,trimWS(cDESC,70)), ds(tSTART), de(tEND), rnum(-1){}
+Record::Record(char* cUID,char* cCODE,time_t tSTART,time_t tEND,char* cDESC):
+	uid(cUID,trimWS(cUID,10)),
+	code(cCODE,trimWS(cCODE,5)),
+	desc(cDESC,trimWS(cDESC,70)),
+	ds(tSTART),
+	de(tEND),
+	rnum(-1){
+}
 Record::Record(sqlite3_stmt* s):
 	rnum(sqlite3_column_int(s,0)),
 	uid(reinterpret_cast<const char*>(sqlite3_column_text(s,1)),10),
@@ -48,39 +50,6 @@ Record::Record(sqlite3_stmt* s):
 	de(sqlite3_column_int(s,4)),
 	desc(reinterpret_cast<const char*>(sqlite3_column_text(s,5)),70){
 }
-//Record::Record(sqlite3* db,int n){
-	///**
-	 //* Constructor for Record based on row
-	 //* in sqlite3 database with rowid n.
-	 //* If rowid n DNE then Record is is invalid.
-	 //*/
-	//sqlite3_stmt* s;
-	//sqlite3_prepare_v2(db,"SELECT uid,start_time,end_time,code,desc FROM records WHERE rowid==?1",-1,&s,0);
-	//sqlite3_bind_int(s,1,n);
-	//if (sqlite3_step(s)!=SQLITE_DONE){
-		//uid = string(reinterpret_cast<const char*>(sqlite3_column_text(s,0)),10);
-		//code = string(reinterpret_cast<const char*>(sqlite3_column_text(s,3)),5);
-		//desc = string(reinterpret_cast<const char*>(sqlite3_column_text(s,4)),70);
-		//ds = sqlite3_column_int(s,1);
-		//de = sqlite3_column_int(s,2);
-		//rnum = n;
-	//} else {
-		//rnum = -1;
-	//}
-//}
-
-//ostream& operator<<(ostream& OUT,const Record& R){
-	///**
-	 //* Overload of << operator for Record's members. Main use is debugging.
-	 //*/
-	//OUT << '\"' << R.uid <<'\"' << '\n' <<'\"' << R.code <<'\"' << '\n';
-	//struct tm* d = localtime(&R.ds);
-	//OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
-	//d = localtime(&R.de);
-	//OUT<<setfill('0')<<setw(2)<<d->tm_mon+1<<'/'<<setw(2)<<d->tm_mday<<'/'<<setw(2)<<(d->tm_year)%100<<" - "<<setw(2)<<d->tm_hour<<':'<<setw(2)<<d->tm_min<<'\n';
-	//OUT <<'\"' << R.desc <<'\"' << '\n';
-	//return OUT;
-//}
 
 int open_exdb(sqlite3** db,char *s){
 	/**
@@ -102,32 +71,10 @@ int open_nwdb(sqlite3** db,char *s){
 	if (r==0) return 0;
 	return 1;
 }
-//void def_table(sqlite3 *db){
-	///**
-	 //* Creates table in db with intended schema.
-	 //*/
-	//sqlite3_exec(db,"CREATE TABLE records(uid TEXT,start_time INTEGER,end_time INTEGER,code TEXT,desc TEXT)",NULL,NULL,NULL);
-//}
-//void ins_table(sqlite3 *db,const Record &t){
-	///**
-	 //* Inserts a Record into a sqlite3 database.
-	 //* May change to a Record member function later on
-	 //* void Record::func(sqlite3 *db);
-	 //*/
-	//sqlite3_stmt* s;
-	//sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&s,0);
-	//sqlite3_bind_text(s,1,t.uid.c_str(),-1,SQLITE_TRANSIENT);
-	//sqlite3_bind_text(s,4,t.code.c_str(),-1,SQLITE_TRANSIENT);
-	//sqlite3_bind_text(s,5,t.desc.c_str(),-1,SQLITE_TRANSIENT);
-	//sqlite3_bind_int(s,2,t.ds);
-	//sqlite3_bind_int(s,3,t.de);
-	//sqlite3_step(s);
-	//sqlite3_finalize(s);
-//}
 
 SQLi::SQLi(sqlite3* _db): db(_db){
 	//< Where _db is confirmed to be valid
-	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time FROM records LIMIT ?1 OFFSET ?2",-1,&vpg,0);
+	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1 ORDER BY rowid LIMIT ?2",-1,&vpg,0);
 	sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&ins,0);
 	sqlite3_prepare_v2(db,"DELETE FROM records WHERE rowid=?1 LIMIT 1",-1,&del,0);
 	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time,desc FROM records WHERE rowid=?1 LIMIT 1",-1,&getr,0);
@@ -159,12 +106,6 @@ void SQLi::bind_all(sqlite3_stmt* s,const Record &t){
 }
 int SQLi::ins_row(const Record &t){
 	bind_all(ins,t);
-	//sqlite3_reset(ins);
-	//sqlite3_bind_text(ins,1,t.uid.c_str(),-1,SQLITE_TRANSIENT);
-	//sqlite3_bind_int(ins,2,t.ds);
-	//sqlite3_bind_int(ins,3,t.de);
-	//sqlite3_bind_text(ins,4,t.code.c_str(),-1,SQLITE_TRANSIENT);
-	//sqlite3_bind_text(ins,5,t.desc.c_str(),-1,SQLITE_TRANSIENT);
 	return sqlite3_step(ins);
 }
 int SQLi::upd_row(const Record &t){

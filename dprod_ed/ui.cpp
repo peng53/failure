@@ -2,17 +2,6 @@
 #include <cstdlib>
 #include <cstdio>
 
-void mvprintw(unsigned Y,unsigned X,const Record &t){
-	struct tm* d = localtime(&t.ds);
-	mvprintw(Y,X,"\"%s\"",t.uid.c_str());
-	mvprintw(Y+1,X,"\"%s\"",t.code.c_str());
-	mvprintw(Y+2,X,"%02d/%02d/%02d : %02d:%02d",d->tm_mon+1,d->tm_mday,(d->tm_year)%100,d->tm_hour,d->tm_min);
-	d = localtime(&t.de);
-	mvprintw(Y+3,X,"%02d/%02d/%02d : %02d:%02d",d->tm_mon+1,d->tm_mday,(d->tm_year)%100,d->tm_hour,d->tm_min);
-	mvprintw(Y+4,X,"\"%s\"",t.desc.c_str());
-	refresh();
-}
-
 nRecord::nRecord(): rnum(-1){
 	/**
 	 * Prepare the fields for use by:
@@ -63,7 +52,7 @@ void nRecord::dress_rec_win(WINDOW* W){
 	mvwprintw(W,1,1,"Record #");
 	wattroff(W,A_BOLD);
 	if (rnum==-1){ mvwprintw(W,1,10,"NEW"); } //< OR UNSAVED
-	else { mvwprintw(W,1,10,"%d",rnum); }
+	else { mvwprintw(W,1,10,"%u",rnum); }
 	mvwprintw(W,3,2,"UID");
 	mvwprintw(W,3,18,"Code");
 	mvwprintw(W,5,2,"Start Date\n   MM/DD/YYYY hh:mm");
@@ -103,7 +92,8 @@ WINDOW* nRecord::view(unsigned Y,unsigned X){
 }
 void nRecord::un_view(WINDOW *wrec){
 	unpost_form(F);
-	wclear(wrec);
+	werase(wrec);
+	wrefresh(wrec);
 	delwin(wrec);
 }
 int nRecord::driver(WINDOW *wrec){
@@ -170,26 +160,26 @@ void nRecord::populate(const Record &t){
 	set_field_buffer(f[1],0,t.code.c_str());
 	struct tm* u = localtime(&t.ds);
 	char n[6];
-	snprintf(n,3,"%02d",(u->tm_mon)+1);
+	snprintf(n,3,"%02u",(u->tm_mon)+1);
 	set_field_buffer(f[2],0,n);
-	snprintf(n,3,"%02d",u->tm_mday);
+	snprintf(n,3,"%02u",u->tm_mday);
 	set_field_buffer(f[3],0,n);
-	snprintf(n,5,"%04d",u->tm_year+1900);
+	snprintf(n,5,"%04u",u->tm_year+1900);
 	set_field_buffer(f[4],0,n);
-	snprintf(n,3,"%02d",u->tm_hour);
+	snprintf(n,3,"%02u",u->tm_hour);
 	set_field_buffer(f[5],0,n);
-	snprintf(n,3,"%02d",u->tm_min);
+	snprintf(n,3,"%02u",u->tm_min);
 	set_field_buffer(f[6],0,n);
 	u = localtime(&t.de);
-	snprintf(n,3,"%02d",(u->tm_mon)+1);
+	snprintf(n,3,"%02u",(u->tm_mon)+1);
 	set_field_buffer(f[7],0,n);
-	snprintf(n,3,"%02d",u->tm_mday);
+	snprintf(n,3,"%02u",u->tm_mday);
 	set_field_buffer(f[8],0,n);
-	snprintf(n,5,"%04d",u->tm_year+1900);
+	snprintf(n,5,"%04u",u->tm_year+1900);
 	set_field_buffer(f[9],0,n);
-	snprintf(n,3,"%02d",u->tm_hour);
+	snprintf(n,3,"%02u",u->tm_hour);
 	set_field_buffer(f[10],0,n);
-	snprintf(n,3,"%02d",u->tm_min);
+	snprintf(n,3,"%02u",u->tm_min);
 	set_field_buffer(f[11],0,n);
 	set_field_buffer(f[12],0,t.desc.c_str());
 	rnum = t.rnum;
@@ -198,9 +188,10 @@ Record& nRecord::exportr(Record &R){
 	/**
 	 * Assigns field values to an existing record.
 	 */
+	//R = Record(field_buffer(f[0],0),field_buffer(f[1],0),get_start_time(),get_end_time(),field_buffer(f[12],0));
 	R.uid = string(field_buffer(f[0],0),trimWS(field_buffer(f[0],0),10));
 	R.code = string(field_buffer(f[1],0),trimWS(field_buffer(f[1],0),5));
-	R.desc = string(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),12));
+	R.desc = string(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),70));
 	R.ds = get_start_time();
 	R.de = get_end_time();
 	return R;
@@ -214,18 +205,17 @@ mainMenu::mainMenu(){
 	M = new_menu(op);
 	set_menu_back(M,COLOR_PAIR(1));
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
-	set_menu_grey(M,A_DIM);
 }
-int mainMenu::has_op_sc(char ch){
-	int i;
-	switch (ch){
-		case 'L': case 'l': i=0; break;
-		case 'N': case 'n': i=1; break;
-		case 'X': case 'x': i=2; break;
-		default: return -1; break;
-	}
-	return (item_opts(op[i]) & O_SELECTABLE) ? i : -1;
-}
+//int mainMenu::has_op_sc(char ch){
+	//int i;
+	//switch (ch){
+		//case 'L': case 'l': i=0; break;
+		//case 'N': case 'n': i=1; break;
+		//case 'X': case 'x': i=2; break;
+		//default: return -1; break;
+	//}
+	//return i;
+//}
 mainMenu::~mainMenu(){
 	for (unsigned i=0;i<3;++i){
 		free_item(op[i]);
@@ -236,52 +226,19 @@ int mainMenu::run(){
 	cbreak();
 	keypad(stdscr,TRUE);
 	post_menu(M);
-	set_current_item(M,op[0]);
-	int ch;
-	int r = 1;
-	int c;
-	while (r==1){
-		ch = getch();
-		switch (ch){
-			case KEY_DOWN:
-				if (item_opts(op[item_index(current_item(M))+1]) & O_SELECTABLE){
-					menu_driver(M,REQ_DOWN_ITEM);
-				}
-				break;
-			case KEY_UP:
-				if (item_index(current_item(M))>0 && item_opts(op[item_index(current_item(M))-1]) & O_SELECTABLE){
-					menu_driver(M,REQ_UP_ITEM);
-				}
-				break;
-			case 10: //< ENTER
-				c = item_index(current_item(M));
-				if (c!=3){ r = 0; }
-				break;
-			default:
-				c = has_op_sc(ch);
-				if (c!=-1){ r = 0; }
-				break;
+	int c = -1;
+	while (c==-1){
+		switch (getch()){
+			case 'L': case 'l': c = 0; break;
+			case 'N': case 'n': c = 1; break;
+			case 'X': case 'x': c = 2; break;
+			case KEY_DOWN: menu_driver(M,REQ_DOWN_ITEM); break;
+			case KEY_UP: menu_driver(M,REQ_UP_ITEM); break;
+			case 10: c = item_index(current_item(M));break;
 		}
 	}
 	unpost_menu(M);
 	return c;
-}
-
-int prompt_rnum(){
-	/**
-	 * Prompts user for a row number of max-len 9.
-	 * If user does not enter '\', output is
-	 * guaranteed to be atleast 0. (based on atoi)
-	 */
-	char s[11] = "~";
-	int r = 1;
-	while (r==1){
-		mvprintw(LINES-1,0,"RNUM:");
-		mvgetnstr(LINES-1,5,s,10);
-		if (s[0]!='~') return atoi(s);
-		if (s[0]!='\\') return -2;
-	}
-	return -1;
 }
 
 int valid_str(char *s){
@@ -313,11 +270,11 @@ int getAfileName(char *s){
 	return 0;
 }
 
-int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &ids,unsigned y){
-	wclear(w);
+unsigned resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,std::vector<unsigned> &ids,unsigned y,unsigned r){
+	//wclear(w);
 	sqlite3_reset(s);
-	sqlite3_bind_int(s,1,l);
-	sqlite3_bind_int(s,2,l*pg);
+	sqlite3_bind_int(s,1,r);
+	sqlite3_bind_int(s,2,l);
 	struct tm *t;
 	time_t d,d2;
 	unsigned n=0;
@@ -328,7 +285,7 @@ int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &
 		d2 = difftime(sqlite3_column_int(s,4),d);
 		t = localtime(&d);
 		ids[n] = sqlite3_column_int(s,0);
-		mvwprintw(w,++n,1,"%4d   %-10s  %-5s  %02d/%02d/%02d %02d:%02d % 4.2f",
+		mvwprintw(w,++n,1,"%05X  %-10s  %-5s  %02u/%02u/%02u %02u:%02u % -4.2f",
 			ids[n],
 			sqlite3_column_text(s,1),
 			sqlite3_column_text(s,2),
@@ -340,122 +297,105 @@ int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &
 			(float)d2/3600
 		);
 	}
-	fill(ids.begin()+n+1,ids.end(),-1);
-	//while (n<l) ids[n++] = -1;
-	box(w,0,0);
+
+	unsigned r2 = ids[n-1];
+	if (n<l){
+		fill(ids.begin()+n+1,ids.end(),0);
+		while (n<l){ mvwhline(w,++n,1,' ',52); }
+	}
+	mvwvline(w,1,6,ACS_VLINE,l);
 	wattroff(w,COLOR_PAIR(3));
-	wmove(w,y,1);
+	wmove(w,y,0);
 	wrefresh(w);
+	return r2;
 }
 
 int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
-	std::vector<int> ids(l,-1);
-	WINDOW* w=newwin(l,50,Y,X);
-	unsigned pg=0;
-	int r = -1;
-	int ch;
+	WINDOW* w=newwin(l,51,Y,X);
 	unsigned y = 1;
 	nRecord editor;
 	WINDOW * viewer;
 	Record rec;
 	bool need_refresh = 1;
+	std::vector<unsigned> ids(l-2,0);
+	std::vector<unsigned> pgs {0};
+	size_t pg = 0;
+	mvwprintw(w,0,1,"ROWID  %-10s  %-5s  MM/DD/YY hh:mm HRS","USER","CODE");
+	mvwprintw(w,l-1,1,"NEW EDIT VIEW COPY DELETE SAVE CLOSE REFRESH");
+	wrefresh(w);
+	//int ch;
+	int r = -1;
 	while (r==-1){
-		if (need_refresh){ need_refresh = 0; resultsf(w,l-2,db.vpg,pg,ids,y); }
-		ch = getch();
-		switch (ch){
+		if (need_refresh){
+			need_refresh = 0;
+			if (pgs.size()==pg+1){
+				pgs.push_back(resultsf(w,l-2,db.vpg,ids,y,pgs[pg]));
+			} else {
+				pgs[pg+1] = resultsf(w,l-2,db.vpg,ids,y,pgs[pg]);
+			}
+		}
+		//ch = getch();
+		//switch (ch){
+		switch (getch()){
 			case KEY_PPAGE:
-				if (pg==0) break;
-				need_refresh = 1;
-				--pg;
+				if (pg>0){
+					need_refresh=1; --pg;
+				}
 				break;
 			case KEY_NPAGE:
-				if (ids[0]==-1) break;
-				need_refresh = 1;
-				++pg;
+				if (ids.back()!=0){
+					need_refresh=1; ++pg;
+				}
 				break;
 			case KEY_HOME:
-				need_refresh = 1;
-				pg = 0;
-				break;
-			case KEY_END:
-				// go to bottom of rows, possibly get max pg count with sql: count(rowid)/l
+				need_refresh=1; pg=0;
 				break;
 			case KEY_DOWN:
 				if (y==l-2) break;
-				wmove(w,++y,X+1);
+				wmove(w,++y,0);
 				wrefresh(w);
 				break;
 			case KEY_UP:
 				if (y==1) break;
-				wmove(w,--y,X+1);
+				wmove(w,--y,0);
 				wrefresh(w);
 				break;
-			case 'c':
-				r = 0; break;
-			case 's':
-				db.endbeg(); break;
 			case KEY_RIGHT:
 			case 'v':
-				if (ids[y-1]==-1) break;
+				if (ids[y-1]==0) break;
 				editor.depopulate();
 				editor.populate(db.get_row(ids[y-1],rec));
-				viewer = editor.view(0,51);
+				viewer = editor.view(0,52);
 				getch();
 				editor.un_view(viewer);
 				break;
 			case 'i':
 				editor.depopulate();
-				if (editor.edit(0,51)==0){
+				if (editor.edit(0,52)==0){
 					db.ins_row(editor.exportr(rec));
 					need_refresh=1;
 				}
 				break;
 			case 10: // ENTER
 			case 'e':
-				if (ids[y-1]==-1) break;
+				if (ids[y-1]==0) break;
 				editor.depopulate();
-				//db.get_row(ids[y-1],rec);
-				//rec = db.get_row(ids[y-1]);
 				editor.populate(db.get_row(ids[y-1],rec));
-				if (editor.edit(0,51)==0){
+				if (editor.edit(0,52)==0){
 					db.upd_row(editor.exportr(rec));
 					need_refresh=1;
 				}
 				break;
-
 			case 'd':
-				if (ids[y-1]==-1) break;
+				if (ids[y-1]==0) break;
 				db.del_row(ids[y-1]);
 				need_refresh=1;
 				break;
-
-			case 'r': need_refresh=1; break;
+			case 'c': r=0; break;
+			case 's': db.endbeg(); break;
+			case 'r': need_refresh=1;pg=0; break;
 		}
 	}
-
 	delwin(w);
-	return 0;
-}
-
-int show_results(sqlite3_stmt* s){
-	/**
-	 * Show the results of a sqlite3 statement on the mainscreen (stdscr)
-	 * Shows upto 25,terminal line count, or rowcount. Whichever is lesser.
-	 * The format currently is PRINTNUMBER UID CODE START_TIME DURATION
-	 * Where duration is end_time-start_time.
-	 * Which means ATM that the statement cannot be arbitary but must
-	 * have uid,start_time,end_time,code at indices 0 to 3.
-	 * Bound to change.
-	 */
-	struct tm *t;
-	time_t d,d2;
-	unsigned ml = std::min(25,LINES-1);
-	for (unsigned n = 1; sqlite3_step(s)==100 && n<ml; ++n){
-		mvprintw(n,0,"%2d %-10s %-5s",n,sqlite3_column_text(s,0),sqlite3_column_text(s,3));
-		d = sqlite3_column_int(s,1);
-		d2 = difftime(sqlite3_column_int(s,2),d);
-		t = localtime(&d);
-		mvprintw(n,21,"%02d/%02d/%02d %02d:%02d %1.2fhrs",t->tm_mon+1,t->tm_mday,(t->tm_year)% 100,t->tm_hour,t->tm_min,(float)d2/3600);
-	}
 	return 0;
 }

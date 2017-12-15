@@ -24,23 +24,16 @@ struct nRecord {
 	Record exportr();
 	Record& exportr(Record &R);
 };
-
 struct mainMenu {
 	ITEM *op[4];
 	MENU *M;
 	mainMenu();
 	~mainMenu();
 	int run();
-	int has_op_sc(char ch);
-
+	//int has_op_sc(char ch);
 };
-void mvprintw(unsigned Y,unsigned X,const Record &t);
-int prompt_rnum();
-int valid_str(char *s);
-int getAfileName(char *s);
-int show_results(sqlite3_stmt* s);
 
+int getAfileName(char *s);
 int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db);
-int resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,unsigned pg,std::vector<int> &ids,unsigned y);
 
 #endif
