@@ -21,10 +21,9 @@ struct Record {
 struct SQLi {
 	sqlite3* db;
 	sqlite3_stmt *vpg,*ins,*del,*getr,*upd;
-	SQLi(sqlite3* _db,bool mknew);
+	SQLi(sqlite3* _db);
 	~SQLi();
 	int endbeg();
-	int def_table();
 	void bind_all(sqlite3_stmt* s,const Record &t);
 	int ins_row(const Record &t);
 	int del_row(const unsigned rnum);

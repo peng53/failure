@@ -58,10 +58,19 @@ int open_sqdb(sqlite3** db,char *s,bool mknew){
 	 * If mknew is true, then creates a new file (no overwrite)
 	 * Otherwise, open an existing file (will not create new file)
 	 */
-	return sqlite3_open_v2(s,db,(mknew) ? SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,NULL : SQLITE_OPEN_READWRITE,NULL);
+	int r = sqlite3_open_v2(s,db,((mknew) ? (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) : SQLITE_OPEN_READWRITE),NULL);
+	if (r==0){
+		if (mknew){
+			r = sqlite3_exec(*db,"CREATE TABLE records(uid TEXT,start_time INTEGER,end_time INTEGER,code TEXT,desc TEXT)",NULL,NULL,NULL);
+		} else {
+			r = sqlite3_exec(*db,"BEGIN TRANSACTION;INSERT INTO records (uid,start_time,end_time,code,desc) VALUES('u',0,9,'c','d')",NULL,NULL,NULL);
+			sqlite3_exec(*db,"ROLLBACK",NULL,NULL,NULL);
+		}
+	}
+	return r;
 }
 
-SQLi::SQLi(sqlite3* _db,bool mknew): db(_db){
+SQLi::SQLi(sqlite3* _db): db(_db){
 	//< Where _db is confirmed to be valid
 	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1 ORDER BY rowid LIMIT ?2",-1,&vpg,0);
 	sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&ins,0);
@@ -69,7 +78,6 @@ SQLi::SQLi(sqlite3* _db,bool mknew): db(_db){
 	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time,desc FROM records WHERE rowid=?1 LIMIT 1",-1,&getr,0);
 	sqlite3_prepare_v2(db,"UPDATE records SET uid=?1, start_time=?2, end_time=?3, code=?4, desc=?5 WHERE rowid=?6",-1,&upd,0);
 	sqlite3_exec(db,"BEGIN TRANSACTION;",NULL,NULL,NULL);
-	if (mknew) def_table();
 }
 SQLi::~SQLi(){
 	sqlite3_finalize(vpg);
@@ -81,9 +89,6 @@ SQLi::~SQLi(){
 }
 int SQLi::endbeg(){
 	return sqlite3_exec(db,"END TRANSACTION;BEGIN TRANSACTION;",NULL,NULL,NULL);
-}
-int SQLi::def_table(){
-	return sqlite3_exec(db,"CREATE TABLE records(uid TEXT,start_time INTEGER,end_time INTEGER,code TEXT,desc TEXT)",NULL,NULL,NULL);
 }
 
 void SQLi::bind_all(sqlite3_stmt* s,const Record &t){
