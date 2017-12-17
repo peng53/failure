@@ -22,22 +22,15 @@ int main(){
 	sqlite3* db;
 	while (l!=2){
 		l = mm.run();
-		switch (l){
-			case 0:
-				if (getAfileName(s)==0 && open_exdb(&db,s)==0){
-					SQLi mydb(db);
-					database_mnip(0,0,LINES-1,mydb);
-					erase();
-				}
-				break;
-			case 1:
-				if (getAfileName(s)==0 && open_nwdb(&db,s)==0){
-					SQLi mydb(db);
-					mydb.def_table();
-					database_mnip(0,0,LINES-1,mydb);
-					erase();
-				}
-				break;
+		if (l!=2){
+			//< Where l==0 is existing, 1 is new.
+			if (getAfileName(s)==0 && open_sqdb(&db,s,l)==0){
+				SQLi mydb(db,l);
+				database_mnip(0,0,LINES-1,mydb);
+				erase();
+			} else {
+				printw((l==0) ? "Error: File doesn't exists?" : "Error: File already exists?");
+			}
 		}
 	}
 	endwin();

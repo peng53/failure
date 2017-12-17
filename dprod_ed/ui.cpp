@@ -206,16 +206,6 @@ mainMenu::mainMenu(){
 	set_menu_back(M,COLOR_PAIR(1));
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
 }
-//int mainMenu::has_op_sc(char ch){
-	//int i;
-	//switch (ch){
-		//case 'L': case 'l': i=0; break;
-		//case 'N': case 'n': i=1; break;
-		//case 'X': case 'x': i=2; break;
-		//default: return -1; break;
-	//}
-	//return i;
-//}
 mainMenu::~mainMenu(){
 	for (unsigned i=0;i<3;++i){
 		free_item(op[i]);
@@ -264,14 +254,12 @@ int getAfileName(char *s){
 		mvprintw(LINES-1,0,"FILE:");
 		mvgetnstr(LINES-1,5,s,99);
 		r = valid_str(s);
-		if (r==2){ return 2; }
 	}
 	noecho();
-	return 0;
+	return r;
 }
 
 unsigned resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,std::vector<unsigned> &ids,unsigned y,unsigned r){
-	//wclear(w);
 	sqlite3_reset(s);
 	sqlite3_bind_int(s,1,r);
 	sqlite3_bind_int(s,2,l);
@@ -279,7 +267,6 @@ unsigned resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,std::vector<unsigned> &id
 	time_t d,d2;
 	unsigned n=0;
 	wattron(w,COLOR_PAIR(3));
-	//for (n=0;sqlite3_step(s)==SQLITE_ROW && n<l;){
 	while (sqlite3_step(s)==SQLITE_ROW && n<l){
 		d = sqlite3_column_int(s,3);
 		d2 = difftime(sqlite3_column_int(s,4),d);
@@ -297,7 +284,6 @@ unsigned resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,std::vector<unsigned> &id
 			(float)d2/3600
 		);
 	}
-
 	unsigned r2 = ids[n-1];
 	if (n<l){
 		fill(ids.begin()+n+1,ids.end(),0);
@@ -310,7 +296,7 @@ unsigned resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,std::vector<unsigned> &id
 	return r2;
 }
 
-int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
+void database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 	WINDOW* w=newwin(l,51,Y,X);
 	unsigned y = 1;
 	nRecord editor;
@@ -323,7 +309,6 @@ int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 	mvwprintw(w,0,1,"ROWID  %-10s  %-5s  MM/DD/YY hh:mm HRS","USER","CODE");
 	mvwprintw(w,l-1,1,"NEW EDIT VIEW COPY DELETE SAVE CLOSE REFRESH");
 	wrefresh(w);
-	//int ch;
 	int r = -1;
 	while (r==-1){
 		if (need_refresh){
@@ -334,8 +319,6 @@ int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 				pgs[pg+1] = resultsf(w,l-2,db.vpg,ids,y,pgs[pg]);
 			}
 		}
-		//ch = getch();
-		//switch (ch){
 		switch (getch()){
 			case KEY_PPAGE:
 				if (pg>0){
@@ -397,5 +380,4 @@ int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 		}
 	}
 	delwin(w);
-	return 0;
 }

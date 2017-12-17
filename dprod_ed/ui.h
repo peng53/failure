@@ -30,10 +30,9 @@ struct mainMenu {
 	mainMenu();
 	~mainMenu();
 	int run();
-	//int has_op_sc(char ch);
 };
 
 int getAfileName(char *s);
-int database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db);
+void database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db);
 
 #endif

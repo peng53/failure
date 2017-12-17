@@ -51,28 +51,17 @@ Record::Record(sqlite3_stmt* s):
 	desc(reinterpret_cast<const char*>(sqlite3_column_text(s,5)),70){
 }
 
-int open_exdb(sqlite3** db,char *s){
+
+int open_sqdb(sqlite3** db,char *s,bool mknew){
 	/**
-	 * Tries open an existing database with filename s
-	 * On failure return 1
-	 * ATM does not check whether database matches intended schema.
+	 * Opens a database with filename s.
+	 * If mknew is true, then creates a new file (no overwrite)
+	 * Otherwise, open an existing file (will not create new file)
 	 */
-	int r = sqlite3_open_v2(s,db,SQLITE_OPEN_READWRITE,NULL);
-	if (r==0) return 0;
-	return 1;
-}
-int open_nwdb(sqlite3** db,char *s){
-	/**
-	 * Tries open a new database with filename s (if it exists, this should fail)
-	 * On failure return 1
-	 * ATM does not check whether database matches intended schema.
-	 */
-	int r = sqlite3_open_v2(s,db,SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,NULL);
-	if (r==0) return 0;
-	return 1;
+	return sqlite3_open_v2(s,db,(mknew) ? SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,NULL : SQLITE_OPEN_READWRITE,NULL);
 }
 
-SQLi::SQLi(sqlite3* _db): db(_db){
+SQLi::SQLi(sqlite3* _db,bool mknew): db(_db){
 	//< Where _db is confirmed to be valid
 	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1 ORDER BY rowid LIMIT ?2",-1,&vpg,0);
 	sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&ins,0);
@@ -80,6 +69,7 @@ SQLi::SQLi(sqlite3* _db): db(_db){
 	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time,desc FROM records WHERE rowid=?1 LIMIT 1",-1,&getr,0);
 	sqlite3_prepare_v2(db,"UPDATE records SET uid=?1, start_time=?2, end_time=?3, code=?4, desc=?5 WHERE rowid=?6",-1,&upd,0);
 	sqlite3_exec(db,"BEGIN TRANSACTION;",NULL,NULL,NULL);
+	if (mknew) def_table();
 }
 SQLi::~SQLi(){
 	sqlite3_finalize(vpg);

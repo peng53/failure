@@ -21,7 +21,7 @@ struct Record {
 struct SQLi {
 	sqlite3* db;
 	sqlite3_stmt *vpg,*ins,*del,*getr,*upd;
-	SQLi(sqlite3* _db);
+	SQLi(sqlite3* _db,bool mknew);
 	~SQLi();
 	int endbeg();
 	int def_table();
@@ -32,6 +32,5 @@ struct SQLi {
 	Record get_row(const unsigned rnum);
 	Record& get_row(const unsigned rnum,Record &R);
 };
-int open_exdb(sqlite3** db,char *s);
-int open_nwdb(sqlite3** db,char *s);
+int open_sqdb(sqlite3** db,char *s,bool mknew);
 #endif
