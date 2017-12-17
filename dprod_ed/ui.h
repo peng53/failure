@@ -6,33 +6,37 @@
 #include <vector>
 #include "db.h"
 
-struct nRecord {
-	FORM* F;
-	FIELD* f[15];
-	int rnum;
-	nRecord();
-	~nRecord();
-	void dress_rec_win(WINDOW* W);
-	time_t get_start_time();
-	time_t get_end_time();
-	WINDOW* view(unsigned Y,unsigned X);
-	void un_view(WINDOW *wrec);
-	int edit(unsigned Y,unsigned X);
-	int driver(WINDOW *wrec);
-	void populate(const Record &R);
-	void depopulate();
-	Record exportr();
-	Record& exportr(Record &R);
+class nRecord {
+	private:
+		FORM* F;
+		FIELD* f[15];
+		int rnum;
+		void dress_rec_win(WINDOW* W);
+		time_t get_start_time();
+		time_t get_end_time();
+		int driver(WINDOW *wrec);
+	public:
+		nRecord();
+		~nRecord();
+		WINDOW* view(const unsigned Y,const unsigned X);
+		void un_view(WINDOW *wrec);
+		int edit(const unsigned Y,const unsigned X);
+		void populate(const Record &R);
+		void depopulate();
+		Record exportr();
+		Record& exportr(Record &R);
 };
-struct mainMenu {
-	ITEM *op[4];
-	MENU *M;
-	mainMenu();
-	~mainMenu();
-	int run();
+class mainMenu {
+	private:
+		ITEM *op[4];
+		MENU *M;
+	public:
+		mainMenu();
+		~mainMenu();
+		int run();
 };
 
 int getAfileName(char *s);
-void database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db);
+void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db);
 
 #endif

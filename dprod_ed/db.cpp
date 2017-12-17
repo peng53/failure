@@ -18,7 +18,7 @@ time_t to_time_t(const unsigned *d){
 	u->tm_sec = 0;
 	return mktime(u);
 }
-size_t trimWS(const char *s,size_t m){
+size_t trimWS(const char* const s,const size_t m){
 	/**
 	 * Doesn't actually trim anything.
 	 * Just finds ending indice that cuts off
@@ -34,7 +34,7 @@ Record::Record(): rnum(-1){
 	code.reserve(5);
 	code.reserve(70);
 }
-Record::Record(char* cUID,char* cCODE,time_t tSTART,time_t tEND,char* cDESC):
+Record::Record(const char* const cUID,const char* const cCODE,const time_t tSTART,const time_t tEND,const char* const cDESC):
 	uid(cUID,trimWS(cUID,10)),
 	code(cCODE,trimWS(cCODE,5)),
 	desc(cDESC,trimWS(cDESC,70)),
@@ -51,12 +51,12 @@ Record::Record(sqlite3_stmt* s):
 	desc(reinterpret_cast<const char*>(sqlite3_column_text(s,5)),70){
 }
 
-
-int open_sqdb(sqlite3** db,char *s,bool mknew){
+int open_sqdb(sqlite3** db,char *s,const bool mknew){
 	/**
 	 * Opens a database with filename s.
 	 * If mknew is true, then creates a new file (no overwrite)
 	 * Otherwise, open an existing file (will not create new file)
+	 * Checks by inserting row. (and rolling-back)
 	 */
 	int r = sqlite3_open_v2(s,db,((mknew) ? (SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE) : SQLITE_OPEN_READWRITE),NULL);
 	if (r==0){
@@ -90,15 +90,21 @@ SQLi::~SQLi(){
 int SQLi::endbeg(){
 	return sqlite3_exec(db,"END TRANSACTION;BEGIN TRANSACTION;",NULL,NULL,NULL);
 }
-
 void SQLi::bind_all(sqlite3_stmt* s,const Record &t){
-	sqlite3_reset(s);
-	sqlite3_bind_text(s,1,t.uid.c_str(),-1,SQLITE_TRANSIENT);
+	sqlite3_reset(s); //SQLITE_TRANSIENT
+	sqlite3_bind_text(s,1,t.uid.c_str(),-1,SQLITE_STATIC);
 	sqlite3_bind_int(s,2,t.ds);
 	sqlite3_bind_int(s,3,t.de);
-	sqlite3_bind_text(s,4,t.code.c_str(),-1,SQLITE_TRANSIENT);
-	sqlite3_bind_text(s,5,t.desc.c_str(),-1,SQLITE_TRANSIENT);
+	sqlite3_bind_text(s,4,t.code.c_str(),-1,SQLITE_STATIC);
+	sqlite3_bind_text(s,5,t.desc.c_str(),-1,SQLITE_STATIC);
 }
+int SQLi::chg_row(const Record &t,const bool mknew){
+	sqlite3_stmt* s = (mknew) ? ins : upd;
+	bind_all(s,t);
+	if (!mknew) sqlite3_bind_int(s,6,t.rnum);
+	return sqlite3_step(s);
+}
+/**
 int SQLi::ins_row(const Record &t){
 	bind_all(ins,t);
 	return sqlite3_step(ins);
@@ -108,6 +114,7 @@ int SQLi::upd_row(const Record &t){
 	sqlite3_bind_int(upd,6,t.rnum);
 	return sqlite3_step(upd);
 }
+*/
 int SQLi::del_row(const unsigned rnum){
 	sqlite3_reset(del);
 	sqlite3_bind_int(del,1,rnum);
@@ -124,10 +131,10 @@ Record& SQLi::get_row(const unsigned rnum,Record &R){
 	sqlite3_bind_int(getr,1,rnum);
 	sqlite3_step(getr);
 	R.rnum = rnum;
-	R.uid = string(reinterpret_cast<const char*>(sqlite3_column_text(getr,1)),10);
-	R.code = string(reinterpret_cast<const char*>(sqlite3_column_text(getr,2)),5);
+	R.uid.assign(reinterpret_cast<const char*>(sqlite3_column_text(getr,1)),10);
+	R.code.assign(reinterpret_cast<const char*>(sqlite3_column_text(getr,2)),5);
 	R.ds = sqlite3_column_int(getr,3);
 	R.de = sqlite3_column_int(getr,4);
-	R.desc = string(reinterpret_cast<const char*>(sqlite3_column_text(getr,5)),70);
+	R.desc.assign(reinterpret_cast<const char*>(sqlite3_column_text(getr,5)),70);
 	return R;
 }

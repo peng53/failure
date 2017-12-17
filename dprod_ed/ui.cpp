@@ -78,7 +78,7 @@ time_t nRecord::get_end_time(){
 	for (unsigned i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+7],0)); }
 	return (d[0]==0 || d[1]==0) ?  time(NULL) : to_time_t(d);
 }
-WINDOW* nRecord::view(unsigned Y,unsigned X){
+WINDOW* nRecord::view(const unsigned Y,const unsigned X){
 	WINDOW *wrec = newwin(20,30,Y,X);
 	wattron(wrec,COLOR_PAIR(4));
 	set_form_win(F,wrec);
@@ -121,7 +121,7 @@ int nRecord::driver(WINDOW *wrec){
 	return -1;
 }
 
-int nRecord::edit(unsigned Y,unsigned X){
+int nRecord::edit(const unsigned Y,const unsigned X){
 	/**
 	 * Creates a record window at Y,X position with Record t.
 	 * If t is non-null, its properties are shown to be edited.
@@ -188,10 +188,9 @@ Record& nRecord::exportr(Record &R){
 	/**
 	 * Assigns field values to an existing record.
 	 */
-	//R = Record(field_buffer(f[0],0),field_buffer(f[1],0),get_start_time(),get_end_time(),field_buffer(f[12],0));
-	R.uid = string(field_buffer(f[0],0),trimWS(field_buffer(f[0],0),10));
-	R.code = string(field_buffer(f[1],0),trimWS(field_buffer(f[1],0),5));
-	R.desc = string(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),70));
+	R.uid.assign(field_buffer(f[0],0),trimWS(field_buffer(f[0],0),10));
+	R.code.assign(field_buffer(f[1],0),trimWS(field_buffer(f[1],0),5));
+	R.desc.assign(field_buffer(f[12],0),trimWS(field_buffer(f[12],0),70));
 	R.ds = get_start_time();
 	R.de = get_end_time();
 	return R;
@@ -231,7 +230,7 @@ int mainMenu::run(){
 	return c;
 }
 
-int valid_str(char *s){
+int valid_str(const char* const s){
 	/**
 	Checks if string has length and counts length.
 	Return codes:
@@ -259,7 +258,7 @@ int getAfileName(char *s){
 	return r;
 }
 
-unsigned resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,std::vector<unsigned> &ids,unsigned y,unsigned r){
+unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<unsigned> &ids,const unsigned y,const unsigned r){
 	sqlite3_reset(s);
 	sqlite3_bind_int(s,1,r);
 	sqlite3_bind_int(s,2,l);
@@ -296,7 +295,7 @@ unsigned resultsf(WINDOW* w,unsigned l,sqlite3_stmt* s,std::vector<unsigned> &id
 	return r2;
 }
 
-void database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
+void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 	WINDOW* w=newwin(l,51,Y,X);
 	unsigned y = 1;
 	nRecord editor;
@@ -331,31 +330,34 @@ void database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 				}
 				break;
 			case KEY_HOME:
-				need_refresh=1; pg=0;
+				if (pg!=0){
+					need_refresh=1; pg=0;
+				}
 				break;
 			case KEY_DOWN:
-				if (y==l-2) break;
-				wmove(w,++y,0);
-				wrefresh(w);
+				if (y<l-2){
+					wmove(w,++y,0); wrefresh(w);
+				}
 				break;
 			case KEY_UP:
-				if (y==1) break;
-				wmove(w,--y,0);
-				wrefresh(w);
+				if (y>1){
+					wmove(w,--y,0); wrefresh(w);
+				}
 				break;
 			case KEY_RIGHT:
 			case 'v':
-				if (ids[y-1]==0) break;
-				editor.depopulate();
-				editor.populate(db.get_row(ids[y-1],rec));
-				viewer = editor.view(0,52);
-				getch();
-				editor.un_view(viewer);
+				if (ids[y-1]!=0){
+					editor.depopulate();
+					editor.populate(db.get_row(ids[y-1],rec));
+					viewer = editor.view(0,52);
+					getch();
+					editor.un_view(viewer);
+				}
 				break;
 			case 'i':
 				editor.depopulate();
 				if (editor.edit(0,52)==0){
-					db.ins_row(editor.exportr(rec));
+					db.chg_row(editor.exportr(rec),1);
 					need_refresh=1;
 				}
 				break;
@@ -365,7 +367,7 @@ void database_mnip(unsigned Y,unsigned X,unsigned l,SQLi &db){
 				editor.depopulate();
 				editor.populate(db.get_row(ids[y-1],rec));
 				if (editor.edit(0,52)==0){
-					db.upd_row(editor.exportr(rec));
+					db.chg_row(editor.exportr(rec),0);
 					need_refresh=1;
 				}
 				break;
