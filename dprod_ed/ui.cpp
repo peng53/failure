@@ -131,8 +131,9 @@ int nRecord::edit(const unsigned Y,const unsigned X){
 	 * See loop for inputs.
 	 */
 	WINDOW *wrec = view(Y,X);
-	int r = -1;
-	while (r==-1) r = driver(wrec);
+	int r;
+	do { r = driver(wrec); } while (r==-1);
+	//while (r==-1) r = driver(wrec);
 	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
 	un_view(wrec);
 	return r;
@@ -216,7 +217,7 @@ int mainMenu::run(){
 	keypad(stdscr,TRUE);
 	post_menu(M);
 	int c = -1;
-	while (c==-1){
+	do {
 		switch (getch()){
 			case 'L': case 'l': c = 0; break;
 			case 'N': case 'n': c = 1; break;
@@ -225,7 +226,7 @@ int mainMenu::run(){
 			case KEY_UP: menu_driver(M,REQ_UP_ITEM); break;
 			case 10: c = item_index(current_item(M));break;
 		}
-	}
+	} while (c==-1);
 	unpost_menu(M);
 	return c;
 }
@@ -248,12 +249,12 @@ int getAfileName(char *s){
 	 * ATM this file is not checked by ui and relies on db.
 	 */
 	echo();
-	int r = 1;
-	while (r==1){
+	int r;
+	do {
 		mvprintw(LINES-1,0,"FILE:");
 		mvgetnstr(LINES-1,5,s,99);
 		r = valid_str(s);
-	}
+	} while (r==1);
 	noecho();
 	return r;
 }
@@ -309,7 +310,7 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 	mvwprintw(w,l-1,1,"NEW EDIT VIEW COPY DELETE SAVE CLOSE REFRESH");
 	wrefresh(w);
 	int r = -1;
-	while (r==-1){
+	do {
 		if (need_refresh){
 			need_refresh = 0;
 			if (pgs.size()==pg+1){
@@ -380,6 +381,24 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 			case 's': db.endbeg(); break;
 			case 'r': need_refresh=1;pg=0; break;
 		}
-	}
+	} while (r==-1);
 	delwin(w);
+}
+
+int prep_cus(SQLi &db){
+	string e;
+	e+=" AND uid=?1";
+
+	e+=" AND code=?2";
+
+	e+=" AND start_time<?3";
+	e+=" AND start_time=?3";
+	e+=" AND start_time>?3";
+
+	e+=" AND end_time<?4";
+	e+=" AND end_time=?4";
+	e+=" AND end_time>?4";
+
+
+	db.set_cus(e);
 }

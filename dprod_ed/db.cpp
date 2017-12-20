@@ -85,7 +85,16 @@ SQLi::~SQLi(){
 	sqlite3_finalize(del);
 	sqlite3_finalize(getr);
 	sqlite3_finalize(upd);
+	sqlite3_finalize(cus);
 	sqlite3_close(db);
+}
+int SQLi::set_cus(const string& e){
+	sqlite3_finalize(cus);
+	string s;
+	s.reserve(72+e.size());
+	s.assign("SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1");
+	s.append(e);
+	return sqlite3_prepare_v2(db,s.c_str(),-1,&cus,0);
 }
 int SQLi::endbeg(){
 	return sqlite3_exec(db,"END TRANSACTION;BEGIN TRANSACTION;",NULL,NULL,NULL);

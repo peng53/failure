@@ -24,11 +24,12 @@ class SQLi {
 		sqlite3_stmt *ins,*del,*getr,*upd;
 		void bind_all(sqlite3_stmt* s,const Record &t);
 	public:
-		sqlite3_stmt *vpg;
+		sqlite3_stmt *vpg,*cus;
 		SQLi(sqlite3* _db);
 		~SQLi();
 		int endbeg();
 		int chg_row(const Record &t,const bool mknew);
+		int set_cus(const string& e);
 		//int ins_row(const Record &t);
 		//int upd_row(const Record &t);
 		int del_row(const unsigned rnum);

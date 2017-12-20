@@ -21,9 +21,9 @@ int main(){
 	init_pair(6,COLOR_BLUE,COLOR_BLACK); //
 	mainMenu mm;
 	char s[100];
-	int l=-1;
+	int l;
 	sqlite3* db;
-	while (l!=2){
+	do {
 		l = mm.run();
 		if (l!=2){
 			//< Where l==0 is existing, 1 is new.
@@ -36,7 +36,7 @@ int main(){
 				printw((l==0) ? "doesn't exists / fit schema?" : "already exists / cannot be created?");
 			}
 		}
-	}
+	} while (l!=2);
 	endwin();
 	return 0;
 }
