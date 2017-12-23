@@ -1,32 +1,17 @@
-//#include <stdio.h>
 #include <stdlib.h> // for rand in nrand()
 #include <string.h> // for memset in mine_field()
 #include <stdbool.h>
 #include <math.h> // for sqrt in main()
 #include <time.h> // for time in nrand()
-#include <ncurses.h>
+#include <curses.h>
 
-int* shuffle(int* A,size_t s){
-	srand(time(NULL));
-	size_t j;
-	int t;
-	//short j,t;
-	for (size_t i=s-1; i>0; --i){
-		j = rand()%i;
-		t = A[j];
-		A[j] = A[i];
-		A[i] = t;
-	}
-	return A;
-}
-int* nrange(int n){
-	int* A = (int*)malloc(n*sizeof(int));
-	if (!A) return 0;
-	while (--n>=0){
-		A[n] = n;
-	}
-	return A;
-}
+static unsigned H = 9;
+static unsigned W = 9;
+static unsigned mines = 9;
+static unsigned Yoff = 1;
+static unsigned Xoff = 1;
+static char* adj = NULL;
+
 int* nrand(size_t s){
 	/**
 	 * Given s, return a shuffled dynamically allocated int-array
@@ -39,6 +24,7 @@ int* nrand(size_t s){
 		A[t] = t;
 	}
 	srand(time(NULL));
+	--s;
 	for (size_t j;s>0;--s){ //< Shuffling
 		j = rand()%s;
 		t = A[j];
@@ -48,141 +34,146 @@ int* nrand(size_t s){
 	return A;
 }
 
-//short* mine_field(int H,int W,int mines){
-char* mine_field(unsigned H,unsigned W,unsigned mines){
-	/**
-	 * Given Height, Width, and mines: creates a dynamically
-	 * allocated array whose values are the # of mines near it.
-	 * A mine is labeled as '*'
-	*/
-	int* nmines = nrand(H*W); //< Get mine positions.
-	if (!nmines) return 0; //< Malloc fail of nmines.
-	char* adjm = (char*)malloc(H*W*sizeof(char));
-	memset(adjm,'0',H*W);
+void mine_field(int safe){
+	int* nmines = nrand(H*W);
+	if (!nmines) return;
+	memset(adj,0,H*W);
 	//< Create empty array (0 mines)
-	if (!adjm){  //< Malloc fail.
-		free(nmines);
-		return 0;
-	}
 	bool tw,te;
-	for (int n;mines>0;--mines){
+	int n;
+	for (int* m_ptr=nmines;m_ptr!=nmines+mines;++m_ptr){
 		//< Place mines are update neighbor's nearby count.
-		n = nmines[mines];
-		adjm[n] = '*'; // A mine at index n.
+		n = *m_ptr;
+		if (n==safe){ n = nmines[H*W-1]; }
+		adj[n] = 9; // A mine at index n.
 		tw = (n%W)!=0; // Is n NOT on the left edge?
 		te = (n%W)!=W-1; // Is n NOT on the right edge?
-		if (tw && adjm[n-1]!='*') adjm[n-1]++; // If n's left neighbor is not a mine, increase left's count.
-		if (te && adjm[n+1]!='*') adjm[n+1]++; // If n's right neighbor is not a mine, increase right's count.
+		if (tw && adj[n-1]!=9) adj[n-1]++; // If n's left neighbor is not a mine, increase left's count.
+		if (te && adj[n+1]!=9) adj[n+1]++; // If n's right neighbor is not a mine, increase right's count.
 		if (n>W){ // has upper neighbors.
-			if (adjm[n-W]!='*') adjm[n-W]++; // exact north
-			if (tw && adjm[n-W-1]!='*') adjm[n-W-1]++; // northwest neighbor
-			if (te && adjm[n-W+1]!='*') adjm[n-W+1]++; // northeast ...
+			if (adj[n-W]!=9) adj[n-W]++; // exact north
+			if (tw && adj[n-W-1]!=9) adj[n-W-1]++; // northwest neighbor
+			if (te && adj[n-W+1]!=9) adj[n-W+1]++; // northeast ...
 		}
 		if (n<(W*(H-1))){ // has lower neighbors.
-			if (adjm[n+W]!='*') ++adjm[n+W]; // exact south
-			if (tw && adjm[n+W-1]!='*') ++adjm[n+W-1]; // southwest
-			if (te && adjm[n+W+1]!='*') ++adjm[n+W+1]; // southeast
+			if (adj[n+W]!=9) ++adj[n+W]; // exact south
+			if (tw && adj[n+W-1]!=9) ++adj[n+W-1]; // southwest
+			if (te && adj[n+W+1]!=9) ++adj[n+W+1]; // southeast
 		}
 	}
 	free(nmines); // Served its purpose.
-	return adjm;
 }
 
-void playerview(unsigned Yoff,unsigned Xoff,char* adj, bool* rv,unsigned W,size_t s){
-	attron(COLOR_PAIR(1));
-	attron(A_BOLD);
-	unsigned col=0;
-	int clr;
-	for (size_t i=0;i<s;++i){
-		if (col==W){
-			++Yoff;
-			col = 0;
-		}
+void put_t(unsigned Y,unsigned X,int c){
+	int clr = (c-'0')/2+1;
+	if (c=='9') c = '*';
+	else if (c=='0') c = ACS_CKBOARD;
+	mvaddch(Y+Yoff,X+Xoff,c|COLOR_PAIR(clr));
+}
 
-		if (rv[i]){
-			if (adj[i]!='0'){
-				switch (adj[i]){
-					case '*':
-					case '8':
-						clr = 9;
-						break;
-					case '7':
-					case '6':
-					case '5':
-						clr = 8;
-						break;
-
-					case '4':
-					case '3':
-						clr = 7;
-						break;
-					case '2':
-					case '1':
-						clr = 6;
-						break;
-				}
-				mvaddch(Yoff,Xoff+col,adj[i]|COLOR_PAIR(clr));
-			}
-		}
-		++col;
+int rfil2(unsigned Y,unsigned X,int left){
+	if (left<1) return left;
+	char* c = &adj[Y*W+X];
+	if ((*c)>9) return left;
+	(*c) += 48;
+	put_t(Y,X,*c);
+	if (*c=='9') return -1;
+	--left;
+	if (*c!='0') return left;
+	if (X>0) left = rfil2(Y,X-1,left);
+	if (X+1<W) left = rfil2(Y,X+1,left);
+	if (Y>0){
+		left = rfil2(Y-1,X,left);
+		if (X>0) left = rfil2(Y-1,X-1,left);
+		if (X+1<W) left = rfil2(Y-1,X+1,left);
 	}
-	attroff(A_BOLD);
-	attroff(COLOR_PAIR(1));
+	if (Y+1<H){
+		left = rfil2(Y+1,X,left);
+		if (X>0) left = rfil2(Y+1,X-1,left);
+		if (X+1<W) left = rfil2(Y+1,X+1,left);
+	}
+	return left;
+}
+int picked2(unsigned Y,unsigned X,int left){
+	return rfil2(Y-Yoff,X-Xoff,left);
 }
 
-int picked(unsigned Xcoord,unsigned Ycoord);
+int get_yx(unsigned* yx){
+	while (1){
+		move(yx[0],yx[1]);
+		refresh();
+		switch (getch()){
+			case KEY_RIGHT:
+				if ((yx[1])+1-Xoff<W) ++yx[1];
+				break;
+			case KEY_LEFT:
+				if ((yx[1])>Xoff) --yx[1];
+				break;
+			case KEY_DOWN:
+				if ((yx[0])+1-Yoff<H) ++yx[0];
+				break;
+			case KEY_UP:
+				if ((yx[0])>Yoff) --yx[0];
+				break;
+			case 10: return 1; break;
+			case 'q': return -2; break;
+		}
+	}
+	return 0;
+}
+int first_pick(){
+	unsigned yx[2] = {Yoff,Xoff};
+	if (get_yx(yx)==1){
+		return (yx[0])*W+(yx[1]);
+	}
+	return -1;
+}
+int arrow_hand(int left){
+	unsigned yx[2] = {Yoff,Xoff};
+	int r;
+	while (left>0){
+		r = get_yx(yx);
+		if (r==-2) return -2;
+		if (r==1) left = picked2(yx[0],yx[1],left);
+	}
+	return left;
+}
+
+void wdriver(){
+	int left;
+	int n;
+	while (1){
+		for (left=0;left<H;++left){ mvhline(left+Yoff,Xoff,ACS_CKBOARD,W); }
+		n = first_pick();
+		if (n==-1) return;
+		mine_field(n-(Yoff*W)-Xoff);
+		left = arrow_hand(picked2(n/W,n%W,H*W-mines));
+		if (left==-2) return;
+		if (left==0){ mvprintw(Yoff,Xoff,"You've won!"); }
+		else { mvprintw(Yoff,Xoff,"You've found a mine."); }
+		mvprintw(Yoff+1,Xoff+1,"Play again? Y/N");
+		if (getch()=='n') return;
+	}
+}
 
 int main(int argc,char** argv){
-	unsigned H = (argc<2) ? 9 : atoi(argv[1]);
-	unsigned W = (argc<3) ? H : atoi(argv[2]);
-	unsigned mines = (argc<4) ? (unsigned)sqrt(H*W) : atoi(argv[3]);
-	char* adj = mine_field(H,W,mines);
-	if (!adj){ // Failure in malloc.
-		return 1;
-	}
-	bool* known = (bool*)calloc(H*W,sizeof(bool));
-
-	if (!known){ // Failed to allocate known.
-		free(adj);
-		return 1;
-	}
-	for (size_t i=0;i<H*W;++i){
-		known[i] = 1;
-	}
+	H = (argc<2) ? 9 : atoi(argv[1]);
+	W = (argc<3) ? H : atoi(argv[2]);
+	mines = (argc<4) ? (unsigned)sqrt(H*W) : atoi(argv[3]);
+	adj = (char*)malloc(H*W*sizeof(char));
+	if (adj==NULL){ return 1; }
 	initscr();
 	start_color();
-	init_pair(1,COLOR_WHITE,COLOR_BLACK);
+	init_pair(1,COLOR_CYAN,COLOR_BLACK);
 	init_pair(2,COLOR_WHITE,COLOR_BLACK);
-	init_pair(6,COLOR_WHITE,COLOR_BLACK);
-	init_pair(7,COLOR_YELLOW,COLOR_BLACK);
-	init_pair(8,COLOR_RED,COLOR_BLACK);
-	init_pair(9,COLOR_MAGENTA,COLOR_BLACK);
-	//bkgd(COLOR_PAIR(1));
-	/*
-	unsigned row=0;
-	unsigned col=0;
-	for (size_t i=0;i<H*W;++i){
-		addch(adj[i]);
-		col++;
-		if (col==W){
-			col=0;
-			++row;
-			move(row,0);
-		}
-	}*/
-	/*
-	attron(COLOR_PAIR(2));
-	mvvline(0,0,' ',H+2);
-	mvvline(0,W+1,' ',H+2);
-	mvhline(0,1,' ',W);
-	mvhline(H+1,1,' ',W);
-	attroff(COLOR_PAIR(2));
-	*/
-	playerview(1,1,adj,known,W,W*H);
-	refresh();
-	getch();
+	init_pair(3,COLOR_YELLOW,COLOR_BLACK);
+	init_pair(4,COLOR_RED,COLOR_BLACK);
+	init_pair(5,COLOR_MAGENTA,COLOR_BLACK);
+	cbreak();
+	noecho();
+	keypad(stdscr,1);
+	wdriver();
 	endwin();
-	free(known);
 	free(adj);
 	return 0;
 }
