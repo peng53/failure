@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #define N_MINES 20
-#define N_WIDTH 10
+#define N_WIDTH 9
 #define N_CELLS 100
 #define T_CELLS short
 
