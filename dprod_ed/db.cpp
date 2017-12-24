@@ -85,9 +85,10 @@ SQLi::~SQLi(){
 	sqlite3_finalize(del);
 	sqlite3_finalize(getr);
 	sqlite3_finalize(upd);
-	sqlite3_finalize(cus);
+	//sqlite3_finalize(cus);
 	sqlite3_close(db);
 }
+/*
 int SQLi::set_cus(const string& e){
 	sqlite3_finalize(cus);
 	string s;
@@ -96,6 +97,7 @@ int SQLi::set_cus(const string& e){
 	s.append(e);
 	return sqlite3_prepare_v2(db,s.c_str(),-1,&cus,0);
 }
+*/
 int SQLi::endbeg(){
 	return sqlite3_exec(db,"END TRANSACTION;BEGIN TRANSACTION;",NULL,NULL,NULL);
 }

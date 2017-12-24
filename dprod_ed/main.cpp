@@ -36,6 +36,7 @@ int main(){
 				printw((l==0) ? "doesn't exists / fit schema?" : "already exists / cannot be created?");
 			}
 		}
+
 	} while (l!=2);
 	endwin();
 	return 0;

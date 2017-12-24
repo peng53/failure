@@ -1,6 +1,6 @@
 #include "ui.h"
-#include <cstdlib>
-#include <cstdio>
+//#include <cstdlib>
+//#include <cstdio>
 
 nRecord::nRecord(): rnum(-1){
 	/**
@@ -231,7 +231,7 @@ int mainMenu::run(){
 	return c;
 }
 
-int valid_str(const char* const s){
+static int valid_str(const char* const s){
 	/**
 	Checks if string has length and counts length.
 	Return codes:
@@ -259,7 +259,7 @@ int getAfileName(char *s){
 	return r;
 }
 
-unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<unsigned> &ids,const unsigned y,const unsigned r){
+static unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<unsigned> &ids,const unsigned y,const unsigned r){
 	sqlite3_reset(s);
 	sqlite3_bind_int(s,1,r);
 	sqlite3_bind_int(s,2,l);
@@ -400,5 +400,5 @@ int prep_cus(SQLi &db){
 	e+=" AND end_time>?4";
 
 
-	db.set_cus(e);
+	//db.set_cus(e);
 }
