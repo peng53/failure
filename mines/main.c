@@ -8,8 +8,8 @@
 static unsigned H = 9;
 static unsigned W = 9;
 static unsigned mines = 9;
-static unsigned Yoff = 1;
-static unsigned Xoff = 1;
+static unsigned Yoff = 0;
+static unsigned Xoff = 0;
 static char* adj = NULL;
 static int* nmines = NULL;
 
@@ -51,10 +51,12 @@ void mine_field(int safe){
 	//< Create empty array (0 mines)
 	bool tw,te;
 	int n;
+	move(0,0); //db
 	for (int* m_ptr=nmines;m_ptr!=nmines+mines;++m_ptr){
 		//< Place mines are update neighbor's nearby count.
 		n = *m_ptr;
 		if (n==safe){ n = nmines[H*W-1]; }
+		printw("%3d",n); //db
 		adj[n] = 9; // A mine at index n.
 		tw = (n%W)!=0; // Is n NOT on the left edge?
 		te = (n%W)!=W-1; // Is n NOT on the right edge?
@@ -80,49 +82,55 @@ void put_t(unsigned Y,unsigned X,int c){
 	mvaddch(Y+Yoff,X+Xoff,c|COLOR_PAIR(clr));
 }
 
-int rfil2(unsigned Y,unsigned X,int left){
+int rfil(unsigned Y,unsigned X,int left){
 	if (left<1) return left;
 	char* c = &adj[Y*W+X];
-	if ((*c)>9) return left;
+	if ((*c)>=9) return left;
 	(*c) += 48;
 	put_t(Y,X,*c);
 	if (*c=='9') return -1;
 	--left;
 	if (*c!='0') return left;
-	if (X>0) left = rfil2(Y,X-1,left);
-	if (X+1<W) left = rfil2(Y,X+1,left);
+	if (X>0) left = rfil(Y,X-1,left);
+	if (X+1<W) left = rfil(Y,X+1,left);
 	if (Y>0){
-		left = rfil2(Y-1,X,left);
-		if (X>0) left = rfil2(Y-1,X-1,left);
-		if (X+1<W) left = rfil2(Y-1,X+1,left);
+		left = rfil(Y-1,X,left);
+		if (X>0) left = rfil(Y-1,X-1,left);
+		if (X+1<W) left = rfil(Y-1,X+1,left);
 	}
 	if (Y+1<H){
-		left = rfil2(Y+1,X,left);
-		if (X>0) left = rfil2(Y+1,X-1,left);
-		if (X+1<W) left = rfil2(Y+1,X+1,left);
+		left = rfil(Y+1,X,left);
+		if (X>0) left = rfil(Y+1,X-1,left);
+		if (X+1<W) left = rfil(Y+1,X+1,left);
 	}
 	return left;
 }
-int picked2(unsigned Y,unsigned X,int left){
-	return rfil2(Y-Yoff,X-Xoff,left);
+
+int picked(unsigned yx[2],int left){
+	// Reveals adjacent non-mine tiles. (rfil)
+	if (adj[(yx[0]*W)+yx[1]]==9){
+		put_t(yx[0],yx[1],'9');
+		return -1;
+	}
+	return rfil(yx[0],yx[1],left);
 }
 
-int get_yx(unsigned* yx){
+int get_yx(unsigned yx[2]){
 	while (1){
-		move(yx[0],yx[1]);
+		move(yx[0]+Yoff,yx[1]+Xoff);
 		refresh();
 		switch (getch()){
 			case KEY_RIGHT:
-				if ((yx[1])+1-Xoff<W) ++yx[1];
+				if (yx[1]+1<W) ++yx[1];
 				break;
 			case KEY_LEFT:
-				if ((yx[1])>Xoff) --yx[1];
+				if (yx[1]>0) --yx[1];
 				break;
 			case KEY_DOWN:
-				if ((yx[0])+1-Yoff<H) ++yx[0];
+				if (yx[0]+1<H) ++yx[0];
 				break;
 			case KEY_UP:
-				if ((yx[0])>Yoff) --yx[0];
+				if (yx[0]>0) --yx[0];
 				break;
 			case 10: return 1; break;
 			case 'q': return -2; break;
@@ -130,36 +138,36 @@ int get_yx(unsigned* yx){
 	}
 	return 0;
 }
-int first_pick(){
-	unsigned yx[2] = {Yoff,Xoff};
+int first_pick(unsigned yx[2]){
 	if (get_yx(yx)==1){
-		return (yx[0])*W+(yx[1]);
+		return 1;
 	}
 	return -1;
 }
-int arrow_hand(int left){
-	unsigned yx[2] = {Yoff,Xoff};
+int arrow_hand(unsigned yx[2],int left){
 	int r;
 	while (left>0){
 		r = get_yx(yx);
 		if (r==-2) return -2;
-		if (r==1) left = picked2(yx[0],yx[1],left);
+		if (r==1) left = picked(yx,left);
 	}
 	return left;
 }
 
 void wdriver(){
 	int left;
+	unsigned yx[2] = {0,0};
 	while (1){
 		for (left=0;left<H;++left){ mvhline(left+Yoff,Xoff,ACS_CKBOARD,W); }
-		left = first_pick();
+		left = first_pick(yx);
 		if (left==-1) return;
-		mine_field(left-(Yoff*W)-Xoff);
-		left = arrow_hand(picked2(left/W,left%W,H*W-mines));
+		mvprintw(1,0,"%10d",(yx[0])*W+yx[1]);
+		mine_field((yx[0])*W+yx[1]);
+		left = arrow_hand(yx,picked(yx,H*W-mines));
 		if (left==-2) return;
-		if (left==0){ mvprintw(Yoff,Xoff,"You've won!"); }
-		else { mvprintw(Yoff,Xoff,"You've found a mine."); }
-		mvprintw(Yoff+1,Xoff+1,"Play again? Y/N");
+		if (left==0){ mvprintw(H/2,0,"You've won!"); }
+		else { mvprintw(H/2,0,"You've found a mine."); }
+		mvprintw(H/2+1,0,"Play again? Y/N");
 		if (getch()=='n') return;
 	}
 }
@@ -178,6 +186,8 @@ int main(int argc,char** argv){
 	for (size_t i=0;i<H*W;++i){ nmines[i] = i; }
 	initscr();
 	start_color();
+	Yoff = (LINES-H)/2;
+	Xoff = (COLS-W)/2;
 	init_pair(1,COLOR_CYAN,COLOR_BLACK);
 	init_pair(2,COLOR_WHITE,COLOR_BLACK);
 	init_pair(3,COLOR_YELLOW,COLOR_BLACK);
