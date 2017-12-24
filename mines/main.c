@@ -11,6 +11,7 @@ static unsigned mines = 9;
 static unsigned Yoff = 1;
 static unsigned Xoff = 1;
 static char* adj = NULL;
+static int* nmines = NULL;
 
 int* nrand(size_t s){
 	/**
@@ -33,11 +34,20 @@ int* nrand(size_t s){
 	}
 	return A;
 }
+void shuffleR(){
+	srand(time(NULL));
+	int t;
+	for (size_t i=H*W-1,j; i>0; --i){
+		j = rand()%i;
+		t = nmines[j];
+		nmines[j] = nmines[i];
+		nmines[i] = t;
+	}
+}
 
 void mine_field(int safe){
-	int* nmines = nrand(H*W);
-	if (!nmines) return;
 	memset(adj,0,H*W);
+	shuffleR();
 	//< Create empty array (0 mines)
 	bool tw,te;
 	int n;
@@ -61,7 +71,6 @@ void mine_field(int safe){
 			if (te && adj[n+W+1]!=9) ++adj[n+W+1]; // southeast
 		}
 	}
-	free(nmines); // Served its purpose.
 }
 
 void put_t(unsigned Y,unsigned X,int c){
@@ -141,13 +150,12 @@ int arrow_hand(int left){
 
 void wdriver(){
 	int left;
-	int n;
 	while (1){
 		for (left=0;left<H;++left){ mvhline(left+Yoff,Xoff,ACS_CKBOARD,W); }
-		n = first_pick();
-		if (n==-1) return;
-		mine_field(n-(Yoff*W)-Xoff);
-		left = arrow_hand(picked2(n/W,n%W,H*W-mines));
+		left = first_pick();
+		if (left==-1) return;
+		mine_field(left-(Yoff*W)-Xoff);
+		left = arrow_hand(picked2(left/W,left%W,H*W-mines));
 		if (left==-2) return;
 		if (left==0){ mvprintw(Yoff,Xoff,"You've won!"); }
 		else { mvprintw(Yoff,Xoff,"You've found a mine."); }
@@ -162,6 +170,12 @@ int main(int argc,char** argv){
 	mines = (argc<4) ? (unsigned)sqrt(H*W) : atoi(argv[3]);
 	adj = (char*)malloc(H*W*sizeof(char));
 	if (adj==NULL){ return 1; }
+	nmines = (int*)malloc(H*W*sizeof(int));
+	if (nmines==NULL){
+		free(adj);
+		return 1;
+	}
+	for (size_t i=0;i<H*W;++i){ nmines[i] = i; }
 	initscr();
 	start_color();
 	init_pair(1,COLOR_CYAN,COLOR_BLACK);
@@ -175,5 +189,6 @@ int main(int argc,char** argv){
 	wdriver();
 	endwin();
 	free(adj);
+	free(nmines);
 	return 0;
 }
