@@ -88,9 +88,10 @@ int rfil(unsigned Y,unsigned X,int left){
 	if ((*c)>=9) return left;
 	(*c) += 48;
 	put_t(Y,X,*c);
-	if (*c=='9') return -1;
+	//if (*c=='9') return -1;
 	--left;
-	if (*c!='0') return left;
+	if (left<1) return left;
+	if ((*c)!='0') return left;
 	if (X>0) left = rfil(Y,X-1,left);
 	if (X+1<W) left = rfil(Y,X+1,left);
 	if (Y>0){
@@ -106,6 +107,41 @@ int rfil(unsigned Y,unsigned X,int left){
 	return left;
 }
 
+int rfil0(unsigned Y,unsigned X,int left){
+	if (left<1) return left;
+	char* c = &adj[Y*W+X];
+	if ((*c)!=0) return left;
+	(*c) += 48;
+	put_t(Y,X,'0');
+	--left;
+	if (left<1) return left;
+	if (X>0) left = rfil0(Y,X-1,left);
+	if (X+1<W) left = rfil0(Y,X+1,left);
+	if (Y>0){
+		left = rfil0(Y-1,X,left);
+		if (X>0) left = rfil0(Y-1,X-1,left);
+		if (X+1<W) left = rfil0(Y-1,X+1,left);
+	}
+	if (Y+1<H){
+		left = rfil0(Y+1,X,left);
+		if (X>0) left = rfil0(Y+1,X-1,left);
+		if (X+1<W) left = rfil0(Y+1,X+1,left);
+	}
+	return left;
+}
+
+int picked0(unsigned yx[2],int left){
+	char* c = &adj[(yx[0]*W)+yx[1]];
+	if ((*c)>9) return left; // Already revealed
+	if ((*c)!=0){
+		(*c) += 48;
+		put_t(yx[0],yx[1],(*c));
+		if ((*c)=='9'){ return -1; }
+		return --left;
+	}
+	return rfil0(yx[0],yx[1],left);
+}
+
 int picked(unsigned yx[2],int left){
 	// Reveals adjacent non-mine tiles. (rfil)
 	if (adj[(yx[0]*W)+yx[1]]==9){
@@ -116,10 +152,22 @@ int picked(unsigned yx[2],int left){
 }
 
 int get_yx(unsigned yx[2]){
-	while (1){
+	MEVENT ev;
+	int R = 0;
+	while (R==0){
+		mvprintw(4,0,"%05d",yx[0]*W+yx[1]);
 		move(yx[0]+Yoff,yx[1]+Xoff);
 		refresh();
 		switch (getch()){
+			case KEY_MOUSE:
+				if (getmouse(&ev)==OK){
+					if (ev.y>=Yoff && ev.y-Yoff<H && ev.x>=Xoff && ev.x-Xoff<W){
+						yx[0] = ev.y-Yoff;
+						yx[1] = ev.x-Xoff;
+						R = 1;
+					}
+				}
+				break;
 			case KEY_RIGHT:
 				if (yx[1]+1<W) ++yx[1];
 				break;
@@ -132,23 +180,17 @@ int get_yx(unsigned yx[2]){
 			case KEY_UP:
 				if (yx[0]>0) --yx[0];
 				break;
-			case 10: return 1; break;
-			case 'q': return -2; break;
+			case 10: R = 1; break;
+			case 'q': R = 2; break;
 		}
 	}
-	return 0;
-}
-int first_pick(unsigned yx[2]){
-	if (get_yx(yx)==1){
-		return 1;
-	}
-	return -1;
+	return R;
 }
 int arrow_hand(unsigned yx[2],int left){
 	int r;
 	while (left>0){
 		r = get_yx(yx);
-		if (r==-2) return -2;
+		if (r==2) return -2;
 		if (r==1) left = picked(yx,left);
 	}
 	return left;
@@ -158,17 +200,26 @@ void wdriver(){
 	int left;
 	unsigned yx[2] = {0,0};
 	while (1){
+		init_pair(1,COLOR_CYAN,COLOR_BLACK);
 		for (left=0;left<H;++left){ mvhline(left+Yoff,Xoff,ACS_CKBOARD,W); }
-		left = first_pick(yx);
-		if (left==-1) return;
-		mvprintw(1,0,"%10d",(yx[0])*W+yx[1]);
+		if (get_yx(yx)!=1) break; // Bad input first pick?
+		//mvprintw(1,0,"%10d",(yx[0])*W+yx[1]);
 		mine_field((yx[0])*W+yx[1]);
 		left = arrow_hand(yx,picked(yx,H*W-mines));
-		if (left==-2) return;
-		if (left==0){ mvprintw(H/2,0,"You've won!"); }
-		else { mvprintw(H/2,0,"You've found a mine."); }
+		//left = arrow_hand(yx,picked0(yx,H*W-mines));
+		if (left==-2) break; // User quits.
+		attron(A_STANDOUT);
+		mvprintw(H/2,0,"You've ");
+		if (left==0){
+			printw("won.");
+			init_pair(1,COLOR_GREEN,COLOR_BLACK);
+		} else {
+			printw("found a mine.");
+			init_pair(1,COLOR_RED,COLOR_BLACK);
+		}
 		mvprintw(H/2+1,0,"Play again? Y/N");
-		if (getch()=='n') return;
+		attroff(A_STANDOUT);
+		if (getch()=='n') break; // End game.
 	}
 }
 
@@ -196,6 +247,7 @@ int main(int argc,char** argv){
 	cbreak();
 	noecho();
 	keypad(stdscr,1);
+	mousemask(BUTTON1_PRESSED,NULL);
 	wdriver();
 	endwin();
 	free(adj);
