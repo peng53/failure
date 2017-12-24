@@ -1,8 +1,13 @@
-FLAGS=-pedantic -std=c99
+CC=gcc
+CFLAGS=-pedantic -std=c99 -Wall
 
 build: main.o
-	gcc $(FLAGS) main.o -o mines -lm -lncurses
-main.o: main.c
-	gcc $(FLAGS) -c main.c
+	$(CC) $(CFLAGS) main.o -o mines -lm -lncurses
+buildpd: main.o
+	g++ main.o -o mines -lm -lcurses -D UPDCURSES
+onlynzero: main.o
+	$(CC) $(CFLAGS) -c main.c -D ONLYNZERO
+default main.o: main.c
+	$(CC) $(CFLAGS) -c main.c
 clean:
 	rm -I *.o mines

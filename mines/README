@@ -1,0 +1,78 @@
+README for 'mines.c'
+---------------------------------------------------------------------
+
+mines.c is implementation of minesweeper in C using ncurses as an
+interface. To play, run it in a terminal/command prompt. To play a
+different minefield, put the height & width as additional arguments.
+The last argument is the number of mines. Please ensure your window is
+big enough.
+
+---------------------------------------------------------------------
+Building
+
+Please use the Makefile's build option.
+On Ubuntu, I needed ncurses in addition to gcc. (gcc)
+On Windows, I used pdcurses with mingw. (g++)
+
+---------------------------------------------------------------------
+Advanced / Modifying 'mines.c'
+
+All functions are more-or-less specialized but one may alter/reuse
+the code by making changes. In this section I will explain what a
+function does.
+
+---------------------------------------------------------------------
+Variables
+
+These variables are static and many functions reference them.
+
+H       ==> height. either set by user or default. The height of the
+            minefield.
+
+W       ==> width. similar to height.
+
+mines   ==> number of unsafe tiles on the minefield. similar to
+            height & width in setting.
+
+Yoff    ==> Y-offset. Its the # of lines from the top of window to
+            the minefield. Automatically set so the minefield is
+            centered.
+
+Xoff    ==> X-offset. See Yoff.
+
+adj     ==> The minefield stored in array. During a game, a value in
+            adj is between 0 to 9 if it is hidden and '0' to '9' else.
+            Where '0' is 48 (ascii number).
+
+nmines  ==> An array of numbers from 0 to |s|-1. Is shuffled before
+            use.
+
+---------------------------------------------------------------------
+Functions
+
+shuffleR   ==> Shuffles nmines. Lookup Fisher-Yates for details.
+
+mine_field ==> Places the mines on the minefield. Does so by clearing
+               adj and seting mine positions from nmines and the
+               neighbors.
+
+put_t      ==> Print character at position. Used for tiles. The color
+               is determined by the character.
+
+rfil       ==> Tile revealer. Reveals adjacent mines that are not
+               mines. Works recursively as a Bucket-fill.
+
+picked     ==> Reveals tile at position and calls rfil.
+
+get_yx     ==> Gets a YX position from user via arrow-keys or mouse
+               press.
+
+arrow_hand ==> A game loop for moves.
+
+wdriver    ==> A game loop for games.
+
+main       ==> The main function. Inits variables and interface.
+
+I realize that these are only brief descriptions as it is very simple
+program. Please see the source for any complex parts.
+
