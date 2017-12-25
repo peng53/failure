@@ -1,13 +1,13 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include "b_inc.cpp"
-#include "ste.cpp"
+#include "b_inc.h"
+#include "st.h"
 
 using std::cout;
 using std::string;
 
-int what_flag(const char *s){
+static int what_flag(const char *s){
 	switch (strlen(s)){
 	case 0: return 0;
 	case 2:
@@ -21,7 +21,7 @@ int what_flag(const char *s){
 	}
 	return 9;
 }
-void literal_storer(char** &A,char **A_end,PartedString &P){
+static void literal_storer(char** &A,char **A_end,PartedString &P){
 	for (BInc s;A!=A_end;++A){
 		switch(what_flag(*A)){
 		case 0: break;
@@ -50,7 +50,7 @@ void literal_storer(char** &A,char **A_end,PartedString &P){
 		}
 	}
 }
-unsigned justnumbers(unsigned U[],const unsigned m,const string &t){
+static unsigned justnumbers(unsigned U[],const unsigned m,const string &t){
 	// Given a string, fill array U with up to m unsigned ints
 	// Non-digits are ignored (or treated as delimiter)
 	// while a sequence of digits as a number; unary minus and
@@ -64,14 +64,14 @@ unsigned justnumbers(unsigned U[],const unsigned m,const string &t){
 	}
 	return c;
 }
-void dry_run(PartedString &P){
+static void dry_run(PartedString &P){
 	const unsigned lits = P.lits_size();
 	P << string {'\n'};
 	for (unsigned i=0;i<lits;++i){
 		P << i << lits;
 	}
 }
-void auto_part(const string &t, PartedString &P){
+static void auto_part(const string &t, PartedString &P){
 	if (t.length()==0) return;
 	unsigned U[4];
 	const unsigned lits_s = P.lits_size(), c = justnumbers(U,4,t);
@@ -85,7 +85,7 @@ void auto_part(const string &t, PartedString &P){
 		}
 	}
 }
-void part_storer(char** &A, char** A_end, PartedString &P){
+static void part_storer(char** &A, char** A_end, PartedString &P){
 	for (;A<A_end;++A){
 		auto_part(string {*A},P);
 	}

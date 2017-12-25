@@ -1,8 +1,6 @@
-#ifndef B_INC
-#define B_INC
 #include "b_inc.h"
 
-const char *C[]= {
+static const char *C[]= {
 	"abcdefghijklmnopqrstuvwxyz",
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	"0123456789",
@@ -10,7 +8,7 @@ const char *C[]= {
 	"\"',./:;?\\|",
 	" ()<>[]{}"
 };
-const unsigned C_L[] = {26,26,10,14,11,9};
+static const unsigned C_L[] = {26,26,10,14,11,9};
 
 BInc::BInc(const char* I){
 	unsigned c_len = 0;
@@ -48,4 +46,3 @@ void BInc::add(const char* A){
 	s.reserve(s.length()+a_len);
 	s.insert(s.end(),A,A+a_len);
 }
-#endif

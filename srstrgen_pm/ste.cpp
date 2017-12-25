@@ -1,6 +1,3 @@
-#ifndef MY_ST
-#define MY_ST
-
 #include "ste.h"
 #include <random>
 #include <vector>
@@ -11,10 +8,10 @@ using std::unique_ptr;
 
 // http://stackoverflow.com/questions/24609271/errormake-unique-is-not-a-member-of-std
 template<typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args&&... args) {
+static std::unique_ptr<T> make_unique(Args&&... args) {
 	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
-std::mt19937 RNG(time(0));
+static std::mt19937 RNG(time(0));
 struct Part {
 	virtual void out(ostream& sout) = 0;
 };
@@ -109,4 +106,3 @@ void PartedString::add_part(const unsigned I,const unsigned D,const unsigned R){
 void PartedString::add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W){
 	M->parts.emplace_back(make_unique<RPart>(M->lits[I].get(),L,M->lits[D].get(),W));
 }
-#endif

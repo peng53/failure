@@ -1,3 +1,5 @@
+#ifndef B_INC
+#define B_INC
 #include <string>
 #include <cstring>
 #include <algorithm>
@@ -17,3 +19,4 @@ class BInc {
 		void rem(char* E);
 		void add(const char* A);
 };
+#endif

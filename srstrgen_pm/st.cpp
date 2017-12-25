@@ -1,5 +1,3 @@
-#ifndef MY_ST
-#define MY_ST
 #include "st.h"
 
 ostream& operator<<(ostream& sout,Part& p){
@@ -72,4 +70,4 @@ void PartedString::add_part(const unsigned I,const unsigned D,const unsigned R){
 void PartedString::add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W){
 	parts.emplace_back(make_unique<RPart>(lits[I].get(),L,lits[D].get(),W));
 }
-#endif
+

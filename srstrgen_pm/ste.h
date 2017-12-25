@@ -1,3 +1,5 @@
+#ifndef MY_ST
+#define MY_ST
 #include <ostream>
 #include <string>
 
@@ -21,3 +23,4 @@ class PartedString {
 		void add_part(const unsigned I,const unsigned D,const unsigned R);
 		void add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W);
 };
+#endif
