@@ -8,18 +8,18 @@ static const char *C[]= {
 	"\"',./:;?\\|",
 	" ()<>[]{}"
 };
-static const unsigned C_L[] = {26,26,10,14,11,9};
+static const size_t C_L[] = {26,26,10,14,11,9};
 
 BInc::BInc(const char* I){
-	unsigned c_len = 0;
-	for (unsigned i=0;i<6;++i){
+	size_t c_len = 0;
+	for (size_t i=0;i<6;++i){
 		if (I[i]=='1') c_len += C_L[i];
 	}
 	if (c_len==0){
 		s = " ";
 	} else {
 		s.reserve(c_len);
-		for (unsigned i=0;i<6;++i){
+		for (size_t i=0;i<6;++i){
 			if (I[i]=='1') s.insert(s.end(),C[i],C[i]+C_L[i]);
 		}
 	}
@@ -39,10 +39,10 @@ void BInc::rem(char* E){
 		}
 	}
 	O.insert(O.end(),i,s.cend());
-	s = O;
+	s.assign(O);
 }
 void BInc::add(const char* A){
-	unsigned a_len = strlen(A);
+	size_t a_len = strlen(A);
 	s.reserve(s.length()+a_len);
 	s.insert(s.end(),A,A+a_len);
 }

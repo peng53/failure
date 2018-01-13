@@ -298,51 +298,58 @@ static unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<
 
 void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 	WINDOW* w=newwin(l,51,Y,X);
-	unsigned y = 1;
 	nRecord editor;
 	WINDOW * viewer;
 	Record rec;
-	bool need_refresh = 1;
+	bool refresh_records = 1;
+	bool refresh_yxpos = 1;
+	unsigned y = 1;
 	std::vector<unsigned> ids(l-2,0);
 	std::vector<unsigned> pgs {0};
 	size_t pg = 0;
 	mvwprintw(w,0,1,"ROWID  %-10s  %-5s  MM/DD/YY hh:mm HRS","USER","CODE");
 	mvwprintw(w,l-1,1,"NEW EDIT VIEW COPY DELETE SAVE CLOSE REFRESH");
-	wrefresh(w);
 	int r = -1;
 	do {
-		if (need_refresh){
-			need_refresh = 0;
+		if (refresh_records){
+			refresh_records = 0;
 			if (pgs.size()==pg+1){
 				pgs.push_back(resultsf(w,l-2,db.vpg,ids,y,pgs[pg]));
 			} else {
 				pgs[pg+1] = resultsf(w,l-2,db.vpg,ids,y,pgs[pg]);
 			}
 		}
+		if (refresh_yxpos){
+			refresh_yxpos = 0;
+			wmove(w,y,0);
+			wrefresh(w);
+		}
 		switch (getch()){
 			case KEY_PPAGE:
 				if (pg>0){
-					need_refresh=1; --pg;
+					refresh_records=1; --pg;
 				}
 				break;
 			case KEY_NPAGE:
 				if (ids.back()!=0){
-					need_refresh=1; ++pg;
+					refresh_records=1; ++pg;
 				}
 				break;
 			case KEY_HOME:
 				if (pg!=0){
-					need_refresh=1; pg=0;
+					refresh_records=1; pg=0;
 				}
 				break;
 			case KEY_DOWN:
 				if (y<l-2){
-					wmove(w,++y,0); wrefresh(w);
+					refresh_yxpos=1;
+					++y;
 				}
 				break;
 			case KEY_UP:
 				if (y>1){
-					wmove(w,--y,0); wrefresh(w);
+					refresh_yxpos=1;
+					--y;
 				}
 				break;
 			case KEY_RIGHT:
@@ -359,7 +366,7 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 				editor.depopulate();
 				if (editor.edit(0,52)==0){
 					db.chg_row(editor.exportr(rec),1);
-					need_refresh=1;
+					refresh_records=1;
 				}
 				break;
 			case 10: // ENTER
@@ -369,17 +376,17 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 				editor.populate(db.get_row(ids[y-1],rec));
 				if (editor.edit(0,52)==0){
 					db.chg_row(editor.exportr(rec),0);
-					need_refresh=1;
+					refresh_records=1;
 				}
 				break;
 			case 'd':
 				if (ids[y-1]==0) break;
 				db.del_row(ids[y-1]);
-				need_refresh=1;
+				refresh_records=1;
 				break;
 			case 'c': r=0; break;
 			case 's': db.endbeg(); break;
-			case 'r': need_refresh=1;pg=0; break;
+			case 'r': refresh_records=1;pg=0; break;
 		}
 	} while (r==-1);
 	delwin(w);

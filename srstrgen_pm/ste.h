@@ -16,7 +16,7 @@ class PartedString {
 	public:
 		PartedString();
 		~PartedString();
-		unsigned lits_size();
+		size_t lits_size();
 		void add_part(const string& s);
 		void add_part(const unsigned I);
 		void add_part(const unsigned I,const unsigned L);

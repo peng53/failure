@@ -65,7 +65,7 @@ PartedString::PartedString(){
 PartedString::~PartedString(){
 	delete M;
 }
-unsigned PartedString::lits_size(){
+size_t PartedString::lits_size(){
 	return M->lits.size();
 }
 ostream& operator<<(ostream& sout,PartedString &PS){
