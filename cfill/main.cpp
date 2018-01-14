@@ -11,8 +11,9 @@ int scanlinefill(array<T,N> &B,char col,unsigned rowl){
 	char t = B[0];
 	if (t==col) return 0;
 	unsigned b = 0;
-	while(b<rowl && B[b]==t) ++b; // seek to end of first line
-	--b; // last part is not part of line or not same color
+	//while(b<rowl && B[b]==t) ++b; // seek to end of first line
+	//--b; // last part is not part of line or not same color
+	while (b+1<rowl && B[b+1]==t) ++b; // sek to end of first line.
 	queue<unsigned> q;
 	q.emplace(0);
 	q.emplace(b);
@@ -23,22 +24,12 @@ int scanlinefill(array<T,N> &B,char col,unsigned rowl){
 		q.pop();
 		b = q.front();
 		q.pop();
-		cout << a << ',' << b << ',' << '\n';
+		cout << "Got: " << a << ',' << b << '\n';
 		if (B[a]==col){
 			// got a repeat.
-			cout << " R(" << a << ',' << b;
+			cout << "REPEAT\n";
 			continue; // already done
 		}
-		// expand scanline << if possible.
-		/*
-		for (unsigned lb=(a/rowl)*rowl;lb<a-1 && B[a-1]==t;--a){
-			continue;
-		}
-		// expand scanline >> if possible.
-		for (unsigned rb=((b+rowl)/rowl)*rowl-1;b+1<rb && B[b+1]==t; ++b){
-			continue;
-		}
-		*/
 		tb = bb = -1; // reset scanned top/bottom.
 		while (a<=b){
 			B[a] = col; // change current cell.
@@ -51,7 +42,8 @@ int scanlinefill(array<T,N> &B,char col,unsigned rowl){
 					if (tb!=-1){
 						// there was a break. push contents and start new line.
 						// first expand line >> maxward.
-						for (unsigned rb=((tb+rowl)/rowl)*rowl-1;tb+1<rb && B[tb+1]==t; ++tb){
+						//for (unsigned rb=((tb+rowl)/rowl)*rowl-1;tb+1<rb && B[tb+1]==t; ++tb){
+						for (unsigned rb=((tb+rowl)/rowl)*rowl;tb+1<rb && B[tb+1]==t; ++tb){
 							continue;
 						}
 						// post.
@@ -77,7 +69,8 @@ int scanlinefill(array<T,N> &B,char col,unsigned rowl){
 					if (bb!=-1){
 						// there was a break. push contents and start new line.
 						// first expand line >> maxward.
-						for (unsigned rb=((bb+rowl)/rowl)*rowl-1;bb+1<rb && B[bb+1]==t; ++bb){
+						//for (unsigned rb=((bb+rowl)/rowl)*rowl-1;bb+1<rb && B[bb+1]==t; ++bb){
+						for (unsigned rb=((bb+rowl)/rowl)*rowl;bb+1<rb && B[bb+1]==t; ++bb){
 							continue;
 						}
 						// post.
@@ -97,18 +90,19 @@ int scanlinefill(array<T,N> &B,char col,unsigned rowl){
 			// checked top and bottom at this point.
 			// proceed on current line.
 			a++;
-			// post lines if not already posted.
 		}
+		// post lines if not already posted.
 		if (tb!=-1){
 			// first expand them.
-			for (unsigned rb=((tb+rowl)/rowl)*rowl-1;tb+1<rb && B[tb+1]==t; ++tb){
+			for (unsigned rb=((tb+rowl)/rowl)*rowl;tb+1<rb && B[tb+1]==t; ++tb){
 				continue;
 			}
 			q.emplace(ta);
 			q.emplace(tb);
 		}
 		if (bb!=-1){
-			for (unsigned rb=((bb+rowl)/rowl)*rowl-1;bb+1<rb && B[bb+1]==t; ++bb){
+			//for (unsigned rb=((bb+rowl)/rowl)*rowl-1;bb+1<rb && B[bb+1]==t; ++bb){
+			for (unsigned rb=((bb+rowl)/rowl)*rowl;bb+1<rb && B[bb+1]==t; ++bb){
 				continue;
 			}
 			q.emplace(ba);
