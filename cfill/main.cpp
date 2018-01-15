@@ -66,15 +66,11 @@ ostream& operator<<(ostream& out,FloodBoard<T,N>& f){
 }
 
 template<typename T, size_t N>
-int scanlinefill(array<T,N> &B,char col,unsigned rowl){
-	char t = B[0];
-	if (t==col) return 0;
-	int b = 0;
-	while (b+1<rowl && B[b+1]==t) ++b; // seek to end of first line.
-	queue<int> q;
-	q.emplace(0);
+void rscanline(array<T,N> &B,char col,unsigned rowl,unsigned a,unsigned b){
+	char t = B[a];
+	queue<unsigned> q;
+	q.emplace(a);
 	q.emplace(b);
-	int a;
 	int u1, u2, l1, l2;
 	u2 = l2 = -1;
 	while (!q.empty()){
@@ -83,62 +79,59 @@ int scanlinefill(array<T,N> &B,char col,unsigned rowl){
 		b = q.front();
 		q.pop();
 		if (B[a]==col){
-			// got a repeat.
 			cout << "(REPEAT) ";
-			continue; // already done
+			continue;
 		}
 		cout << "G(" << a << ',' << b << ") ";
-		//while (a<=b){
 		for (;a<=b;++a){
 			B[a] = col;
 			if (a>rowl && B[a-rowl]==t){
-				if (u2==-1){
-					u1 = u2 = a-rowl;
-					for (unsigned lb=u1-u1%rowl;u1-1>=lb && B[u1-1]==t; --u1){ continue; }
-				} else {
-					if (u2+1==a-rowl){
-						u2++;
-					} else {
-						//for (unsigned rb=(u2/rowl)*rowl+rowl-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
-						//for (unsigned rb=(u2/rowl)*rowl+rowl-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
+				if (u2+1==a-rowl){ u2++; }
+				else {
+					if (u2!=-1){
 						q.emplace(u1);
 						q.emplace(u2);
-						u1 = u2 = a-rowl;
-						//cout << u1 << ',' << u2 << '\n';
 					}
+					u1 = u2 = a-rowl;
+					for (unsigned lb=u1-u1%rowl;u1-1>=lb && B[u1-1]==t; --u1){ continue; }
 				}
 			}
 			if (a+rowl<B.size() && B[a+rowl]==t){
-				if (l2==-1){
-					l1 = l2 = a+rowl;
-					for (unsigned lb=l1-l1%rowl;l1-1>=lb && B[l1-1]==t; --l1){ continue; }
-				} else {
-					if (l2+1==a+rowl){
-						l2++;
-					} else {
-						//for (unsigned rb=(l2/rowl)*rowl+rowl-1;l2+1<=rb && B[l2+1]==t; ++l2){ continue; }
-						//cout << l1 << ',' << l2 << '\n';
+				if (l2+1==a+rowl){ l2++; }
+				else {
+					if (l2!=-1){
 						q.emplace(l1);
 						q.emplace(l2);
-						l1 = l2 = a+rowl;
 					}
+					l1 = l2 = a+rowl;
+					for (unsigned lb=l1-l1%rowl;l1-1>=lb && B[l1-1]==t; --l1){ continue; }
 				}
 			}
-			//++a;
 		}
 		if (u2!=-1){
-			for (unsigned rb=(u2/rowl)*rowl+rowl-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
+			//for (unsigned rb=(u2/rowl)*rowl+rowl-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
+			for (unsigned rb=u2+rowl-(u2%rowl)-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
 			q.emplace(u1);
 			q.emplace(u2);
 			u1 = u2 = -1;
 		}
 		if (l2!=-1){
-			for (unsigned rb=(l2/rowl)*rowl+rowl-1;l2+1<=rb && B[l2+1]==t; ++l2){ continue; }
+			//for (unsigned rb=(l2/rowl)*rowl+rowl-1;l2+1<=rb && B[l2+1]==t; ++l2){ continue; }
+			for (unsigned rb=l2+rowl-(l2%rowl)-1;l2+1<=rb && B[l2+1]==t; ++l2){ continue; }
 			q.emplace(l1);
 			q.emplace(l2);
 			l1 = l2 = -1;
 		}
 	}
+}
+
+template<typename T, size_t N>
+int scanlinefill(array<T,N> &B,char col,unsigned rowl){
+	char t = B[0];
+	if (t==col) return 0;
+	unsigned b = 0;
+	while (b+1<rowl && B[b+1]==t) ++b; // seek to end of first line.
+	rscanline(B,col,rowl,0,b);
 	cout << '\n';
 	return 0;
 }
@@ -188,6 +181,11 @@ int main(int argc,char** argv){
 	scanlinefill(f.b,'X',f.rs);
 	cout << f << '\n';
 	f.set_arr(tpats::p3,5);
+	cout << f;
+	scanlinefill(f.b,'x',f.rs);
+	scanlinefill(f.b,'X',f.rs);
+	cout << f << '\n';
+	f.set_arr(tpats::p4,5);
 	cout << f;
 	scanlinefill(f.b,'x',f.rs);
 	scanlinefill(f.b,'X',f.rs);

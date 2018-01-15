@@ -19,6 +19,12 @@ namespace tpats {
 		"oxoxo"
 		"oxoxo"
 		"ooooo";
+	char p4[26] =
+		"ooooo"
+		"oxxxo"
+		"oxxxo"
+		"xxxxo"
+		"ooooo";
 }
 
 #endif
