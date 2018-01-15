@@ -3,10 +3,13 @@
 #include <iostream>
 #include <random>
 #include <queue>
+//#include <cstdlib>
 #include <string>
 #include "testpatterns.cpp"
 
 using namespace std;
+
+static auto rng = default_random_engine {};
 
 template<typename T, size_t N>
 struct FloodBoard {
@@ -14,9 +17,30 @@ struct FloodBoard {
 	unsigned rs;
 	FloodBoard(unsigned width,string& sym):rs(width){
 		b = array<T,N>();
-		bshuf(sym);
+		bshuf_normal(sym);
 	}
-	void bshuf(string& sym){
+	FloodBoard(T* const carr,unsigned width,unsigned height): rs(width){
+		copy(carr,carr+width*height,b.begin());
+	}
+	void set_arr(T* const carr,unsigned height){
+		copy(carr,carr+rs*height,b.begin());
+	}
+	void bshuf_normal(string& sym){
+		//< sym must have atleast 2 characters to be meaningful.
+		normal_distribution<> r{(double)b.size()/sym.length(),sym.length()*0.02};
+		unsigned t;
+		auto it = b.begin();
+		for (unsigned i=1;i<sym.length();++i){
+			t = round(r(rng));
+			fill(it,it+t,sym[i]);
+			it+=t;
+		}
+		if (it<b.end()){
+			fill(it,b.end(),sym.front());
+		}
+		shuffle(b.begin(),b.end(),rng);
+	}
+	void bshuf_perfect(string& sym){
 		unsigned d = b.size()/sym.length();
 		auto it = b.begin();
 		for (char c : sym){
@@ -24,10 +48,6 @@ struct FloodBoard {
 			it+=d;
 		}
 		fill(it,b.end(),sym.back());
-		bshuf();
-	}
-	void bshuf(){
-		auto rng = default_random_engine {};
 		shuffle(b.begin(),b.end(),rng);
 	}
 };
@@ -49,102 +69,77 @@ template<typename T, size_t N>
 int scanlinefill(array<T,N> &B,char col,unsigned rowl){
 	char t = B[0];
 	if (t==col) return 0;
-	unsigned b = 0;
-	//while(b<rowl && B[b]==t) ++b; // seek to end of first line
-	//--b; // last part is not part of line or not same color
+	int b = 0;
 	while (b+1<rowl && B[b+1]==t) ++b; // seek to end of first line.
-	queue<unsigned> q;
+	queue<int> q;
 	q.emplace(0);
 	q.emplace(b);
-	unsigned a;
-	int ta, tb, ba, bb;
-	tb = bb = -1;
+	int a;
+	int u1, u2, l1, l2;
+	u2 = l2 = -1;
 	while (!q.empty()){
 		a = q.front();
 		q.pop();
 		b = q.front();
 		q.pop();
-		cout << "Got: " << a << ',' << b << '\n';
 		if (B[a]==col){
 			// got a repeat.
-			cout << "REPEAT\n";
+			cout << "(REPEAT) ";
 			continue; // already done
 		}
-		//tb = bb = -1; // reset scanned top/bottom.
-		while (a<=b){
-			B[a] = col; // change current cell.
-			// check top. if possible.
-			if (a>=rowl && B[a-rowl]==t){
-				if (tb+1==a-rowl){ // continue top line
-					tb++;
+		cout << "G(" << a << ',' << b << ") ";
+		//while (a<=b){
+		for (;a<=b;++a){
+			B[a] = col;
+			if (a>rowl && B[a-rowl]==t){
+				if (u2==-1){
+					u1 = u2 = a-rowl;
+					for (unsigned lb=u1-u1%rowl;u1-1>=lb && B[u1-1]==t; --u1){ continue; }
 				} else {
-					if (tb!=-1){
-						// previous line ended.
-						//for (int rb=tb+rowl-1-(tb%rowl);tb+1<=rb && B[tb+1]==t; ++tb){
-						//	continue;
-						//}
-						// post.
-						q.emplace(ta);
-						q.emplace(tb);
-					}
-					// start new line and then expand it.
-					ta = tb = a-rowl;
-					for (int lb=ta-(ta%rowl);lb<=ta-1;--ta){
-						continue;
+					if (u2+1==a-rowl){
+						u2++;
+					} else {
+						//for (unsigned rb=(u2/rowl)*rowl+rowl-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
+						//for (unsigned rb=(u2/rowl)*rowl+rowl-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
+						q.emplace(u1);
+						q.emplace(u2);
+						u1 = u2 = a-rowl;
+						//cout << u1 << ',' << u2 << '\n';
 					}
 				}
 			}
-			// now do the same for bottom. if possible.
 			if (a+rowl<B.size() && B[a+rowl]==t){
-				if (bb+1==a+rowl){
-					// expand >>.
-					bb++;
+				if (l2==-1){
+					l1 = l2 = a+rowl;
+					for (unsigned lb=l1-l1%rowl;l1-1>=lb && B[l1-1]==t; --l1){ continue; }
 				} else {
-					if (bb!=-1){
-						// there was a break. push contents and start new line.
-						// first expand line >> maxward.
-						//for (unsigned rb=((bb+rowl)/rowl)*rowl-1;bb+1<rb && B[bb+1]==t; ++bb){
-						//for (int rb=bb+rowl-1-(bb%rowl);bb+1<=rb && B[bb+1]==t; ++bb){
-						//	continue;
-						//}
-						// post.
-						q.emplace(ba);
-						q.emplace(bb);
-						// order is always (a,b).
-					}
-					// start new line.
-					ba = bb = a+rowl;
-					// remember bottom.
-					// expand bottom.
-					for (int lb=ta-(ta%rowl);lb<=ta-1;--ta){
-						continue;
+					if (l2+1==a+rowl){
+						l2++;
+					} else {
+						//for (unsigned rb=(l2/rowl)*rowl+rowl-1;l2+1<=rb && B[l2+1]==t; ++l2){ continue; }
+						//cout << l1 << ',' << l2 << '\n';
+						q.emplace(l1);
+						q.emplace(l2);
+						l1 = l2 = a+rowl;
 					}
 				}
 			}
-			// checked top and bottom at this point.
-			// proceed on current line.
-			a++;
+			//++a;
 		}
-		// post lines if not already posted.
-		if (tb!=-1){
-			// first expand them.
-			for (int rb=tb+rowl-1-(tb%rowl);tb+1<=rb && B[tb+1]==t; ++tb){
-				continue;
-			}
-			q.emplace(ta);
-			q.emplace(tb);
-			tb = -1;
+		if (u2!=-1){
+			for (unsigned rb=(u2/rowl)*rowl+rowl-1;u2+1<=rb && B[u2+1]==t; ++u2){ continue; }
+			q.emplace(u1);
+			q.emplace(u2);
+			u1 = u2 = -1;
 		}
-		if (bb!=-1){
-			//for (unsigned rb=((bb+rowl)/rowl)*rowl-1;bb+1<rb && B[bb+1]==t; ++bb){
-			for (int rb=bb+rowl-1-(bb%rowl);tb+1<=bb && B[bb+1]==t; ++bb){
-				continue;
-			}
-			q.emplace(ba);
-			q.emplace(bb);
-			bb = -1;
+		if (l2!=-1){
+			for (unsigned rb=(l2/rowl)*rowl+rowl-1;l2+1<=rb && B[l2+1]==t; ++l2){ continue; }
+			q.emplace(l1);
+			q.emplace(l2);
+			l1 = l2 = -1;
 		}
 	}
+	cout << '\n';
 	return 0;
 }
 
@@ -181,41 +176,21 @@ int bfill(array<char,100> &B,char col,unsigned rowl){
 	return changed;
 }
 
-array<char,100> gen_board(unsigned colors,unsigned per){
-	array<char,100> board;
-	char c='a';
-	for (unsigned i=0;i<colors;++i){
-		fill(board.begin()+i*per,board.begin()+(i+1)*per,c);
-		c++;
-	}
-	return board;
-}
-
-template<typename T, size_t N>
-void tile_fill(array<T,N> &board,unsigned colors){
-	normal_distribution<> r{(double)board.size()/colors,board.size()*0.02};
-	unsigned count = 0;
-	unsigned i;
-	auto rng = default_random_engine {};
-	colors--;
-	cout << r.min() << '\n';
-	cout << r.max() << '\n';
-	while (colors>0){
-		i = round(r(rng));
-		cout << i << '\n';
-		//fill(board.begin()+count,board.begin()+count+i,'a'+colors);
-		count = i;
-		--colors;
-	}
-}
-
-int main(){
-	string f_col = "abc";
-	FloodBoard<char,100> f(20,f_col);
+int main(int argc,char** argv){
+	FloodBoard<char,25> f(tpats::p1,5,5);
 	cout << f;
-	scanlinefill(f.b,'c',f.rs);
-	scanlinefill(f.b,'a',f.rs);
 	scanlinefill(f.b,'x',f.rs);
+	scanlinefill(f.b,'X',f.rs);
+	cout << f << '\n';
+	f.set_arr(tpats::p2,5);
+	cout << f;
+	scanlinefill(f.b,'x',f.rs);
+	scanlinefill(f.b,'X',f.rs);
+	cout << f << '\n';
+	f.set_arr(tpats::p3,5);
+	cout << f;
+	scanlinefill(f.b,'x',f.rs);
+	scanlinefill(f.b,'X',f.rs);
 	cout << f;
 
 	return 0;

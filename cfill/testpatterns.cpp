@@ -1,15 +1,24 @@
 #ifndef TEST_PATTERNS
 #define TEST_PATTERNS
 namespace tpats {
-	using std::array;
-	array<char,25> p1 = {
-		79,88,88,79,79,
-		79,79,88,79,79,
-		79,79,79,88,79,
-		88,88,79,79,79,
-		79,79,79,88,88
-	};
-	const array<array<char,25>*,1> as = {&p1};
+	char p1[26] =
+		"oxxoo"
+		"ooxoo"
+		"oooxo"
+		"xxooo"
+		"oooxx";
+	char p2[26] =
+		"oooxo"
+		"oooxo"
+		"oooxo"
+		"oooxo"
+		"ooooo";
+	char p3[26] =
+		"oxoxo"
+		"oxoxo"
+		"oxoxo"
+		"oxoxo"
+		"ooooo";
 }
 
 #endif
