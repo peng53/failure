@@ -15,6 +15,7 @@ static auto rng = default_random_engine {};
 void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsigned b){
 	// Recolors scanline a,b to newcol.
 	// The oldcol is derived from the first point of the inital scanline.
+	//
 	queue<unsigned> q;
 	q.emplace(a);
 	q.emplace(b);
@@ -22,6 +23,26 @@ void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsign
 	char oldcol = B[a];
 	u2 = l2 = -1;
 	while (!q.empty()){
+		// The complexity of this loop should be
+		// 3*w*n + r*w.
+		// where w=width, n=# of scanlines, r=repeated scanlines.
+		// A repeat looks like:
+		// xxxxxxx   (line 1)
+		// xxxoxxx   <-- starting scanline. (line3 a & b)
+		// xxxxxxx   (line 2)
+		// xxxxxxx   (line 4)
+		// This while loop will begin coloring line2 before line1
+		// this will add line3b (and line4) to the queue
+		// while coloring line1, line3b will be found (& detected) once again
+		// and added to the queue. When we get to line3b initally, no lines will
+		// be added. The second time line3b will be detected as already done.
+		// the w (in r*w) is for the time used in redetecting the scanline.
+		// Perhaps the scanlines can be hashed by their first point?
+		// This would be trading space for time, but for a FloodTable of cells C
+		// there should be an upper limit on # of scanlines.
+		// Note that n (# of scanlines) is dependent on the height and that
+		// reshaping the FloodTable will decrease w but increase n.
+		// I have not tested for 'balance points' on this.
 		a = q.front();
 		q.pop();
 		b = q.front();
@@ -32,6 +53,10 @@ void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsign
 		}
 		cout << "G(" << a << ',' << b << ") ";
 		for (;a<=b;++a){
+			// The complexity of this loop is b-a+1 which is the current scanline's length
+			// plus length of lines above and below
+			// So max time should be where |current_scanline|==|below|==|above|==width.
+			// Where current scanline is neither the top or bottom one.
 			B[a] = newcol;
 			if (a>width && B[a-width]==oldcol){
 				if (u2+1==a-width){ u2++; }
@@ -78,6 +103,9 @@ int scanlinefill(char* board,unsigned width,unsigned height,char newchar){
 	// max. To make a similar call on some arbitrary (in-bound), use
 	// rscanline with arguments board,width,size,replacement-color,scanline-a,scanline-b
 	// scanline-b should be expanded prior to this call.
+
+	// scanlinefill complexity is based on length of first scanline
+	// plus the call to rscanline.
 	char oldchar = board[0];
 	if (newchar==oldchar) return 0;
 	unsigned b = 0;
