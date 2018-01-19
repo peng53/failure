@@ -1,4 +1,4 @@
-CFLAGS=-pedantic -std=c++11
+CFLAGS=-pedantic -std=c++11 -O2 -march=native
 CC=g++
 
 build: main.o ste.o b_inc.o

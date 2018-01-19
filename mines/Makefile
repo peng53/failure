@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-pedantic -std=c99 -Wall
+CFLAGS=-pedantic -std=c99 -Wall -march=native -O2
 
 build: main.o
 	$(CC) $(CFLAGS) main.o -o mines -lm -lncurses
