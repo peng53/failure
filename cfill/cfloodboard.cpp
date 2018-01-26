@@ -64,6 +64,9 @@ int FloodBoard::fl_fill_sl(char newcol){
 int FloodBoard::fl_fill_q(char newcol){
 	return qfill(M->b,rs,rc,newcol);
 }
+char* FloodBoard::data(){
+	return M->b;
+}
 
 ostream& operator<<(ostream& out,FloodBoard& f){
 	unsigned i=0;

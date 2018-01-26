@@ -52,14 +52,17 @@ void FloodBoard::bshuf_perfect(string& sym){
 	fill(it,M->b.end(),sym.back());
 	shuffle(M->b.begin(),M->b.end(),rng);
 }
-int FloodBoard::fl_fill_sl(char newcol){
+int FloodBoard::fl_fill_sl(char newcol, std::function<void (unsigned,unsigned,int)> snitch){
 	// Calls scanlinefill with newcol.
 	// This by default selects first scanline as
 	// the oldcol.
-	return scanlinefill(M->b.data(),rs,rc,newcol);
+	return scanlinefill(M->b.data(),rs,rc,newcol, snitch);
 }
-int FloodBoard::fl_fill_q(char newcol){
-	return qfill(M->b.data(),rs,rc,newcol);
+int FloodBoard::fl_fill_q(char newcol, std::function<void (unsigned,unsigned,int)> snitch){
+	return qfill(M->b.data(),rs,rc,newcol,snitch);
+}
+char* FloodBoard::data(){
+	return M->b.data();
 }
 
 ostream& operator<<(ostream& out,FloodBoard& f){

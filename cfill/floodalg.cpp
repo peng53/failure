@@ -5,9 +5,11 @@
 #else
 #define DEBUG(x)
 #endif
+#include <iostream>
+#include <functional>
 
 using std::queue;
-void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsigned b){
+void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsigned b,std::function<void (unsigned,unsigned,int)> snitch){
 	// Recolors scanline a,b to newcol.
 	// The oldcol is derived from the first point of the inital scanline.
 	//
@@ -45,6 +47,9 @@ void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsign
 		if (B[a]==newcol){
 			DEBUG("(REPEAT) ");
 			continue;
+		}
+		if (snitch){
+			snitch(a,b,newcol);
 		}
 		DEBUG("G(" << a << ',' << b << ") ");
 		for (;a<=b;++a){
@@ -92,7 +97,7 @@ void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsign
 	DEBUG('\n');
 }
 
-int scanlinefill(char* board,unsigned width,unsigned height,char newchar){
+int scanlinefill(char* board,unsigned width,unsigned height,char newchar,std::function<void (unsigned,unsigned,int)> snitch){
 	// Calls a scanline flood fill on the first scanline of the board.
 	// The function mainly expands the default scanline from 0,0 to its
 	// max. To make a similar call on some arbitrary (in-bound), use
@@ -105,11 +110,11 @@ int scanlinefill(char* board,unsigned width,unsigned height,char newchar){
 	if (newchar==oldchar) return 0;
 	unsigned b = 0;
 	while (b+1<width && board[b+1]==oldchar) ++b; // seek to end of first line.
-	rscanline(board,width,width*height,newchar,0,b);
+	rscanline(board,width,width*height,newchar,0,b,snitch);
 	return 0;
 }
 
-int r_qfill(char* B,unsigned width,size_t bsize,char newcol,unsigned pt){
+int r_qfill(char* B,unsigned width,size_t bsize,char newcol,unsigned pt, std::function<void (unsigned,unsigned,int)> snitch){
 	queue<unsigned> Q;
 	char oldcol = B[pt];
 	if (oldcol==newcol) return 0;
@@ -124,6 +129,10 @@ int r_qfill(char* B,unsigned width,size_t bsize,char newcol,unsigned pt){
 		}
 		while ((e%width)<(width-1) && B[e]==oldcol){
 			e++;
+		}
+		//std::cout << "snitch" << *snitch;
+		if (snitch){
+			snitch(w,e,newcol);
 		}
 		for (;w<=e;++w){
 			B[w]=newcol;
@@ -140,8 +149,8 @@ int r_qfill(char* B,unsigned width,size_t bsize,char newcol,unsigned pt){
 	return changed;
 }
 
-int qfill(char* board,unsigned width,unsigned height,char newcol){
+int qfill(char* board,unsigned width,unsigned height,char newcol, std::function<void (unsigned,unsigned,int)> snitch){
 	// Calls flood fill (with queue) on the top left corner with newcol(er)
 	// To make similar call on arbitrary point (in-bound) replace 0 with that pt.
-	return r_qfill(board,width,width*height,newcol,0);
+	return r_qfill(board,width,width*height,newcol,0,snitch);
 }

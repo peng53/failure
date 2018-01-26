@@ -2,6 +2,7 @@
 #define FLOODBOARD
 #include <string>
 #include <iostream>
+#include <functional>
 using std::string;
 using std::ostream;
 
@@ -19,8 +20,9 @@ struct FloodBoard {
 	void bshuf_normal(const char* const sym,size_t sym_l);
 	void bshuf_perfect(string& sym);
 	void bshuf_perfect(const char* const sym,size_t sym_l);
-	int fl_fill_sl(char newcol);
-	int fl_fill_q(char newcol);
+	int fl_fill_sl(char newcol, std::function<void (unsigned,unsigned,int)> snitch);
+	int fl_fill_q(char newcol, std::function<void (unsigned,unsigned,int)> snitch);
+	char* data();
 };
 ostream& operator<<(ostream& out, FloodBoard& f);
 #endif
