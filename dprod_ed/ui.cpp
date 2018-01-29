@@ -391,8 +391,82 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 	} while (r==-1);
 	delwin(w);
 }
-
+int menu_equality(){
+	ITEM* op[6];
+	MENU* M;
+	op[0] = new_item("[= ] Equal","");
+	op[1] = new_item("[< ] Exclusive Before","");
+	op[2] = new_item("[<=] Inclusive Before","");
+	op[3] = new_item("[> ] Exclusive After","");
+	op[4] = new_item("[>=] Inclusive After","");
+	op[5] = 0;
+	M = new_menu(op);
+	set_menu_back(M,COLOR_PAIR(1));
+	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
+	cbreak();
+	keypad(stdscr,TRUE);
+	post_menu(M);
+	int c = -1;
+	do {
+		switch (getch()){
+			case KEY_DOWN: menu_driver(M,REQ_DOWN_ITEM); break;
+			case KEY_UP: menu_driver(M,REQ_UP_ITEM); break;
+			case 10: c = item_index(current_item(M));break;
+		}
+	} while (c==-1);
+	unpost_menu(M);
+	for (size_t i=0;i<5;++i){
+		free_item(op[i]);
+	}
+	free_menu(M);
+	return c;
+}
 int prep_cus(SQLi &db){
+	FORM* F;
+	FIELD* f[16];
+	f[0] = new_field(1,10,3,6,0,0); //uid
+	f[1] = new_field(1,5,3,23,0,0); //code
+	f[2] = new_field(1,2,5,23,0,0); // start-date eq
+	f[3] = new_field(1,2,7,3,0,0); //d1mth
+	f[4] = new_field(1,2,7,6,0,0); //d1d
+	f[5] = new_field(1,4,7,9,0,0); //d1yr
+	f[6] = new_field(1,2,7,14,0,0); //d1hr
+	f[7] = new_field(1,2,7,17,0,0); //d1min
+	f[8] = new_field(1,2,9,23,0,0); // end-date eq
+	f[9] = new_field(1,2,11,3,0,0); //d2mth
+	f[10] = new_field(1,2,11,6,0,0); //d2d
+	f[11] = new_field(1,4,11,9,0,0); //d2yr
+	f[12] = new_field(1,2,11,14,0,0); //d2hr
+	f[13] = new_field(1,2,11,17,0,0); //d2min
+	f[14] = new_field(1,1,1,1,0,0); //dummy
+	f[15] = 0;
+	const char* eqs[] = {"=","<","<=",">",">="};
+	for (size_t i=0;i<15;++i){ set_field_back(f[i],A_REVERSE); }
+	set_field_type(f[0],TYPE_ALNUM,1);
+	set_field_type(f[1],TYPE_ALNUM,1);
+	set_field_type(f[2],TYPE_ENUM,eqs,0,0);
+	set_field_type(f[3],TYPE_INTEGER,2,1,12);
+	set_field_type(f[4],TYPE_INTEGER,2,1,31);
+	set_field_type(f[5],TYPE_INTEGER,4,1,9999);
+	set_field_type(f[6],TYPE_INTEGER,2,0,23);
+	set_field_type(f[7],TYPE_INTEGER,2,0,59);
+	set_field_type(f[8],TYPE_ENUM,eqs,0,0);
+	set_field_type(f[9],TYPE_INTEGER,2,1,12);
+	set_field_type(f[10],TYPE_INTEGER,2,1,31);
+	set_field_type(f[11],TYPE_INTEGER,4,1,9999);
+	set_field_type(f[12],TYPE_INTEGER,2,0,23);
+	set_field_type(f[13],TYPE_INTEGER,2,0,59);
+	field_opts_off(f[14],O_AUTOSKIP); //dummy
+	F = new_form(f);
+	WINDOW *wrec = newwin(20,30,0,0);
+	wattron(wrec,COLOR_PAIR(4));
+	set_form_win(F,wrec);
+	set_form_sub(F,derwin(wrec,20,30,2,2));
+	post_form(F);
+//	dress_rec_win(wrec);
+	wattroff(wrec,COLOR_PAIR(4));
+	cbreak();
+	keypad(wrec,TRUE);
 	string e;
 	e+=" AND uid=?1";
 
@@ -405,7 +479,11 @@ int prep_cus(SQLi &db){
 	e+=" AND end_time<?4";
 	e+=" AND end_time=?4";
 	e+=" AND end_time>?4";
-
+	for (size_t i=0;i<15;++i){
+		free_field(f[i]);
+	}
+	free_form(F);
+	delwin(wrec);
 
 	//db.set_cus(e);
 }
