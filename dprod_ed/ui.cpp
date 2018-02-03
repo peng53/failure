@@ -17,6 +17,7 @@ int init_viewr(){
 	init_pair(5,COLOR_GREEN,COLOR_BLACK); //
 	init_pair(6,COLOR_BLUE,COLOR_BLACK); //
 	init_pair(7,COLOR_MAGENTA,COLOR_BLACK); // filter
+	FilterForm::init();
 	return 1;
 }
 int nloop(){
@@ -41,6 +42,8 @@ int nloop(){
 	} while (l!=2);
 }
 int cleanup(){
+	FilterForm::init();
+	FilterForm::clean();
 	endwin();
 }
 
@@ -429,19 +432,25 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 			case 'c': r=0; break;
 			case 's': db.endbeg(); break;
 			case 'r': refresh_records=1;pg=0; break;
+			case 'f':
+				FilterForm::show(0,52);
+				FilterForm::loop();
+				FilterForm::hide();
+				break;
 		}
 	} while (r==-1);
 	delwin(w);
 }
 int menu_equality(){
-	ITEM* op[6];
+	ITEM* op[7];
 	MENU* M;
 	op[0] = new_item("[= ] Equal","");
 	op[1] = new_item("[< ] Exclusive Before","");
 	op[2] = new_item("[<=] Inclusive Before","");
 	op[3] = new_item("[> ] Exclusive After","");
 	op[4] = new_item("[>=] Inclusive After","");
-	op[5] = 0;
+	op[5] = new_item("[  ] None","");
+	op[6] = 0;
 	M = new_menu(op);
 	set_menu_back(M,COLOR_PAIR(1));
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
@@ -457,7 +466,7 @@ int menu_equality(){
 		}
 	} while (c==-1);
 	unpost_menu(M);
-	for (size_t i=0;i<5;++i){
+	for (size_t i=0;i<6;++i){
 		free_item(op[i]);
 	}
 	free_menu(M);
@@ -468,6 +477,7 @@ namespace FilterForm {
 	FORM* F;
 	FIELD* f[16];
 	WINDOW* wrec;
+	const char* eqs[] = {"=","<","<=",">",">="," "};
 	void init(){
 		f[0] = new_field(1,10,3,6,0,0); //uid
 		f[1] = new_field(1,5,3,23,0,0); //code
@@ -485,7 +495,6 @@ namespace FilterForm {
 		f[13] = new_field(1,2,11,17,0,0); //d2min
 		f[14] = new_field(1,1,1,1,0,0); //dummy
 		f[15] = 0;
-		const char* eqs[] = {"=","<","<=",">",">="," "};
 		for (size_t i=0;i<15;++i){ set_field_back(f[i],A_REVERSE); }
 		set_field_type(f[0],TYPE_ALNUM,1);
 		set_field_type(f[1],TYPE_ALNUM,1);
@@ -534,8 +543,8 @@ namespace FilterForm {
 		wmove(wrec,3,6);
 		wrefresh(wrec);
 		}
-	void show(){
-		wrec = newwin(14,30,0,0);
+	void show(unsigned Y,unsigned X){
+		wrec = newwin(14,30,Y,X);
 		wattron(wrec,COLOR_PAIR(7));
 		set_form_win(F,wrec);
 		set_form_sub(F,derwin(wrec,14,30,2,2));
@@ -547,6 +556,7 @@ namespace FilterForm {
 	}
 	int driver(){
 		int ch = wgetch(wrec);
+		int cf;
 		switch (ch){
 			//< Arrow keys are usual for text-input. Where Up/Down function like shift-tab/tab.
 			//< Backspace/Enter/Tab functions as one would except
@@ -562,8 +572,15 @@ namespace FilterForm {
 			case KEY_LEFT: form_driver(F,REQ_LEFT_CHAR); break;
 			case KEY_RIGHT: form_driver(F,REQ_RIGHT_CHAR); break;
 			case KEY_BACKSPACE: form_driver(F,REQ_LEFT_CHAR); form_driver(F,REQ_DEL_CHAR); break;
-			case '\t': /* TAB */ case 10: /* ENTER */ case KEY_DOWN:
+			case 10: /* ENTER */
+				cf = field_index(current_field(F));
+				if (cf==2 || cf==8){
+					set_field_buffer(current_field(F),0,eqs[menu_equality()]);
+					wrefresh(wrec);
+				}
+			case '\t': /* TAB */ case KEY_DOWN:
 				form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_END_LINE); break;
+
 			case KEY_UP: form_driver(F, REQ_PREV_FIELD); form_driver(F, REQ_END_LINE); break;
 			default: form_driver(F, ch); break;
 		}

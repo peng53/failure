@@ -45,7 +45,7 @@ namespace FilterForm {
 	void init();
 	void clean();
 	void dress();
-	void show();
+	void show(unsigned Y,unsigned X);
 	int driver();
 	void loop();
 	void hide();
