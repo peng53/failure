@@ -1,6 +1,48 @@
 #include "ui.h"
-//#include <cstdlib>
-//#include <cstdio>
+
+int init_viewr(){
+	initscr();
+	if (LINES<20 || COLS<30){
+		printw("Your terminal window needs to be at least 20x30! Sorry.");
+		getch();
+		endwin();
+		return 0;
+	}
+	noecho();
+	start_color();
+	init_pair(1,COLOR_RED,COLOR_BLACK); //
+	init_pair(2,COLOR_MAGENTA,COLOR_BLACK); // MENU disable
+	init_pair(3,COLOR_CYAN,COLOR_BLACK); // results row
+	init_pair(4,COLOR_YELLOW,COLOR_BLACK); // editor
+	init_pair(5,COLOR_GREEN,COLOR_BLACK); //
+	init_pair(6,COLOR_BLUE,COLOR_BLACK); //
+	init_pair(7,COLOR_MAGENTA,COLOR_BLACK); // filter
+	return 1;
+}
+int nloop(){
+	mainMenu mm;
+	char s[100];
+	int l;
+	sqlite3* db;
+	do {
+		l = mm.run();
+		if (l!=2){
+			//< Where l==0 is existing, 1 is new.
+			if (getAfileName(s)==0 && open_sqdb(&db,s,l)==0){
+				SQLi mydb(db);
+				database_mnip(0,0,LINES-1,mydb);
+				erase();
+			} else {
+				printw("Error: File ");
+				printw((l==0) ? "doesn't exists / fit schema?" : "already exists / cannot be created?");
+			}
+		}
+
+	} while (l!=2);
+}
+int cleanup(){
+	endwin();
+}
 
 nRecord::nRecord(): rnum(-1){
 	/**
@@ -421,52 +463,131 @@ int menu_equality(){
 	free_menu(M);
 	return c;
 }
-int prep_cus(SQLi &db){
+
+namespace FilterForm {
 	FORM* F;
 	FIELD* f[16];
-	f[0] = new_field(1,10,3,6,0,0); //uid
-	f[1] = new_field(1,5,3,23,0,0); //code
-	f[2] = new_field(1,2,5,23,0,0); // start-date eq
-	f[3] = new_field(1,2,7,3,0,0); //d1mth
-	f[4] = new_field(1,2,7,6,0,0); //d1d
-	f[5] = new_field(1,4,7,9,0,0); //d1yr
-	f[6] = new_field(1,2,7,14,0,0); //d1hr
-	f[7] = new_field(1,2,7,17,0,0); //d1min
-	f[8] = new_field(1,2,9,23,0,0); // end-date eq
-	f[9] = new_field(1,2,11,3,0,0); //d2mth
-	f[10] = new_field(1,2,11,6,0,0); //d2d
-	f[11] = new_field(1,4,11,9,0,0); //d2yr
-	f[12] = new_field(1,2,11,14,0,0); //d2hr
-	f[13] = new_field(1,2,11,17,0,0); //d2min
-	f[14] = new_field(1,1,1,1,0,0); //dummy
-	f[15] = 0;
-	const char* eqs[] = {"=","<","<=",">",">="};
-	for (size_t i=0;i<15;++i){ set_field_back(f[i],A_REVERSE); }
-	set_field_type(f[0],TYPE_ALNUM,1);
-	set_field_type(f[1],TYPE_ALNUM,1);
-	set_field_type(f[2],TYPE_ENUM,eqs,0,0);
-	set_field_type(f[3],TYPE_INTEGER,2,1,12);
-	set_field_type(f[4],TYPE_INTEGER,2,1,31);
-	set_field_type(f[5],TYPE_INTEGER,4,1,9999);
-	set_field_type(f[6],TYPE_INTEGER,2,0,23);
-	set_field_type(f[7],TYPE_INTEGER,2,0,59);
-	set_field_type(f[8],TYPE_ENUM,eqs,0,0);
-	set_field_type(f[9],TYPE_INTEGER,2,1,12);
-	set_field_type(f[10],TYPE_INTEGER,2,1,31);
-	set_field_type(f[11],TYPE_INTEGER,4,1,9999);
-	set_field_type(f[12],TYPE_INTEGER,2,0,23);
-	set_field_type(f[13],TYPE_INTEGER,2,0,59);
-	field_opts_off(f[14],O_AUTOSKIP); //dummy
-	F = new_form(f);
-	WINDOW *wrec = newwin(20,30,0,0);
-	wattron(wrec,COLOR_PAIR(4));
-	set_form_win(F,wrec);
-	set_form_sub(F,derwin(wrec,20,30,2,2));
-	post_form(F);
-//	dress_rec_win(wrec);
-	wattroff(wrec,COLOR_PAIR(4));
-	cbreak();
-	keypad(wrec,TRUE);
+	WINDOW* wrec;
+	void init(){
+		f[0] = new_field(1,10,3,6,0,0); //uid
+		f[1] = new_field(1,5,3,23,0,0); //code
+		f[2] = new_field(1,2,5,19,0,0); // start-date eq
+		f[3] = new_field(1,2,7,3,0,0); //d1mth
+		f[4] = new_field(1,2,7,6,0,0); //d1d
+		f[5] = new_field(1,4,7,9,0,0); //d1yr
+		f[6] = new_field(1,2,7,14,0,0); //d1hr
+		f[7] = new_field(1,2,7,17,0,0); //d1min
+		f[8] = new_field(1,2,9,19,0,0); // end-date eq
+		f[9] = new_field(1,2,11,3,0,0); //d2mth
+		f[10] = new_field(1,2,11,6,0,0); //d2d
+		f[11] = new_field(1,4,11,9,0,0); //d2yr
+		f[12] = new_field(1,2,11,14,0,0); //d2hr
+		f[13] = new_field(1,2,11,17,0,0); //d2min
+		f[14] = new_field(1,1,1,1,0,0); //dummy
+		f[15] = 0;
+		const char* eqs[] = {"=","<","<=",">",">="," "};
+		for (size_t i=0;i<15;++i){ set_field_back(f[i],A_REVERSE); }
+		set_field_type(f[0],TYPE_ALNUM,1);
+		set_field_type(f[1],TYPE_ALNUM,1);
+		set_field_type(f[2],TYPE_ENUM,eqs,0,0);
+		set_field_type(f[3],TYPE_INTEGER,2,1,12);
+		set_field_type(f[4],TYPE_INTEGER,2,1,31);
+		set_field_type(f[5],TYPE_INTEGER,4,1,9999);
+		set_field_type(f[6],TYPE_INTEGER,2,0,23);
+		set_field_type(f[7],TYPE_INTEGER,2,0,59);
+		set_field_type(f[8],TYPE_ENUM,eqs,0,0);
+		set_field_type(f[9],TYPE_INTEGER,2,1,12);
+		set_field_type(f[10],TYPE_INTEGER,2,1,31);
+		set_field_type(f[11],TYPE_INTEGER,4,1,9999);
+		set_field_type(f[12],TYPE_INTEGER,2,0,23);
+		set_field_type(f[13],TYPE_INTEGER,2,0,59);
+		field_opts_off(f[14],O_AUTOSKIP); //dummy
+		F = new_form(f);
+	}
+	void clean(){
+		for (size_t i=0;i<15;++i){
+			free_field(f[i]);
+		}
+		free_form(F);
+	}
+	void dress(){
+		/**
+		 * Prints the text associated with the Record creation/editor
+		 * window/form.
+		 */
+		wattron(wrec,A_BOLD);
+		mvwprintw(wrec,1,1,"Filter Records");
+		wattroff(wrec,A_BOLD);
+		mvwprintw(wrec,3,2,"UID");
+		mvwprintw(wrec,3,18,"Code");
+		mvwprintw(wrec,5,2,"Start Date  w/eq\n   MM/DD/YYYY hh:mm");
+		mvwhline(wrec,5,19,' ' | A_REVERSE,2);
+		mvwaddch(wrec,7,5,'/');
+		mvwaddch(wrec,7,8,'/');
+		mvwaddch(wrec,7,16,':');
+		mvwprintw(wrec,9,2,"End Date    w/eq\n   MM/DD/YYYY hh:mm");
+		mvwhline(wrec,9,19,' ' | A_REVERSE,2);
+		mvwaddch(wrec,11,5,'/');
+		mvwaddch(wrec,11,8,'/');
+		mvwaddch(wrec,11,16,':');
+		box(wrec,0,0);
+		wmove(wrec,3,6);
+		wrefresh(wrec);
+		}
+	void show(){
+		wrec = newwin(14,30,0,0);
+		wattron(wrec,COLOR_PAIR(7));
+		set_form_win(F,wrec);
+		set_form_sub(F,derwin(wrec,14,30,2,2));
+		post_form(F);
+		dress();
+		wattroff(wrec,COLOR_PAIR(7));
+		cbreak();
+		keypad(wrec,TRUE);
+	}
+	int driver(){
+		int ch = wgetch(wrec);
+		switch (ch){
+			//< Arrow keys are usual for text-input. Where Up/Down function like shift-tab/tab.
+			//< Backspace/Enter/Tab functions as one would except
+			case 27:
+			//< ESC key
+			//< Followed by ESC or ENTER determines whether return is graceful or not.
+				switch (wgetch(wrec)){
+					case 27: return 1; break;
+					case 10: return 0; break;
+				}
+				break;
+			case '\\': return 1; break;
+			case KEY_LEFT: form_driver(F,REQ_LEFT_CHAR); break;
+			case KEY_RIGHT: form_driver(F,REQ_RIGHT_CHAR); break;
+			case KEY_BACKSPACE: form_driver(F,REQ_LEFT_CHAR); form_driver(F,REQ_DEL_CHAR); break;
+			case '\t': /* TAB */ case 10: /* ENTER */ case KEY_DOWN:
+				form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_END_LINE); break;
+			case KEY_UP: form_driver(F, REQ_PREV_FIELD); form_driver(F, REQ_END_LINE); break;
+			default: form_driver(F, ch); break;
+		}
+		return -1;
+	}
+	void loop(){
+	/**
+	 * Creates a record window at Y,X position with Record t.
+	 * If t is non-null, its properties are shown to be edited.
+	 * Else, user may fill the fields with their own properties.
+	 * ATM does not check whether the date-fields have input.
+	 * See get_start_time & get_end_time for their default values.
+	 * See loop for inputs.
+	 */
+	int r;
+	do { r = driver(); } while (r==-1);
+	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
+}
+	void hide(){
+		unpost_form(F);
+		delwin(wrec);
+	}
+}
+int prep_cus(SQLi &db){
 	string e;
 	e+=" AND uid=?1";
 
@@ -479,11 +600,5 @@ int prep_cus(SQLi &db){
 	e+=" AND end_time<?4";
 	e+=" AND end_time=?4";
 	e+=" AND end_time>?4";
-	for (size_t i=0;i<15;++i){
-		free_field(f[i]);
-	}
-	free_form(F);
-	delwin(wrec);
-
 	//db.set_cus(e);
 }

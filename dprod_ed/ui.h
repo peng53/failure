@@ -35,8 +35,20 @@ class mainMenu {
 		~mainMenu();
 		int run();
 };
-
+int init_viewr();
+int nloop();
+int cleanup();
 int getAfileName(char *s);
 void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db);
+
+namespace FilterForm {
+	void init();
+	void clean();
+	void dress();
+	void show();
+	int driver();
+	void loop();
+	void hide();
+}
 
 #endif
