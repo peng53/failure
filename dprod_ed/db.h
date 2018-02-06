@@ -14,6 +14,7 @@ struct Record {
 	time_t ds, de;
 	int rnum;
 	Record();
+	Record(const char* const fUID,const char* const fCODE,const time_t fTSTART,const time_t fTEND);
 	Record(const char* const cUID,const char* const cCODE,const time_t tSTART,const time_t tEND,const char* const cDESC);
 	Record(sqlite3_stmt* s);
 };
@@ -25,14 +26,11 @@ class SQLi {
 		void bind_all(sqlite3_stmt* s,const Record &t);
 	public:
 		sqlite3_stmt *vpg;
-		//*cus;
 		SQLi(sqlite3* _db);
 		~SQLi();
 		int endbeg();
 		int chg_row(const Record &t,const bool mknew);
-		//int set_cus(const string& e);
-		//int ins_row(const Record &t);
-		//int upd_row(const Record &t);
+		void set_cus(string& str,Record t,bool st_eq,bool et_eq);
 		int del_row(const unsigned rnum);
 		Record get_row(const unsigned rnum);
 		Record& get_row(const unsigned rnum,Record &R);

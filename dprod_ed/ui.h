@@ -43,12 +43,14 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db);
 
 namespace FilterForm {
 	void init();
+	void reset();
 	void clean();
 	void dress();
 	void show(unsigned Y,unsigned X);
 	int driver();
-	void loop();
+	void loop(SQLi &db);
 	void hide();
+	int prep_cus(SQLi &db);
 }
 
 #endif

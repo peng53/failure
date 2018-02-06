@@ -34,6 +34,12 @@ Record::Record(): rnum(-1){
 	code.reserve(5);
 	code.reserve(70);
 }
+Record::Record(const char* const fUID,const char* const fCODE,const time_t fTSTART,const time_t fTEND):
+	uid(fUID,trimWS(fUID,10)),
+	code(fCODE,trimWS(fCODE,5)),
+	ds(fTSTART),
+	de(fTEND){
+}
 Record::Record(const char* const cUID,const char* const cCODE,const time_t tSTART,const time_t tEND,const char* const cDESC):
 	uid(cUID,trimWS(cUID,10)),
 	code(cCODE,trimWS(cCODE,5)),
@@ -88,16 +94,23 @@ SQLi::~SQLi(){
 	//sqlite3_finalize(cus);
 	sqlite3_close(db);
 }
-/*
-int SQLi::set_cus(const string& e){
-	sqlite3_finalize(cus);
-	string s;
-	s.reserve(72+e.size());
-	s.assign("SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1");
-	s.append(e);
-	return sqlite3_prepare_v2(db,s.c_str(),-1,&cus,0);
+void SQLi::set_cus(string& str,Record t,bool st_eq,bool et_eq){
+	sqlite3_finalize(vpg);
+	sqlite3_prepare_v2(db,str.c_str(),-1,&vpg,0);
+	// TRANSIENT is needed because the Record isn't stored.
+	if (t.uid.length()>0){
+		sqlite3_bind_text(vpg,3,t.uid.c_str(),-1,SQLITE_TRANSIENT);
+	}
+	if (st_eq){
+		sqlite3_bind_int(vpg,5,t.ds);
+	}
+	if (et_eq){
+		sqlite3_bind_int(vpg,6,t.de);
+	}
+	if (t.code.length()>0){
+		sqlite3_bind_text(vpg,4,t.code.c_str(),-1,SQLITE_TRANSIENT);
+	}
 }
-*/
 int SQLi::endbeg(){
 	return sqlite3_exec(db,"END TRANSACTION;BEGIN TRANSACTION;",NULL,NULL,NULL);
 }

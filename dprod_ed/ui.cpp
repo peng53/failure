@@ -434,14 +434,16 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 			case 'r': refresh_records=1;pg=0; break;
 			case 'f':
 				FilterForm::show(0,52);
-				FilterForm::loop();
+				FilterForm::loop(db);
 				FilterForm::hide();
+				refresh_yxpos=1;
+				refresh_records=1; pg=0;
 				break;
 		}
 	} while (r==-1);
 	delwin(w);
 }
-int menu_equality(){
+int menu_equality(WINDOW* w){
 	ITEM* op[7];
 	MENU* M;
 	op[0] = new_item("[= ] Equal","");
@@ -454,11 +456,13 @@ int menu_equality(){
 	M = new_menu(op);
 	set_menu_back(M,COLOR_PAIR(1));
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
-	cbreak();
-	keypad(stdscr,TRUE);
+	set_menu_win(M,w);
+	set_menu_sub(M,derwin(w,6,24,13,2));
+	//box(w,0,0);
 	post_menu(M);
 	int c = -1;
 	do {
+		wrefresh(w);
 		switch (getch()){
 			case KEY_DOWN: menu_driver(M,REQ_DOWN_ITEM); break;
 			case KEY_UP: menu_driver(M,REQ_UP_ITEM); break;
@@ -470,12 +474,21 @@ int menu_equality(){
 		free_item(op[i]);
 	}
 	free_menu(M);
+	wrefresh(w);
 	return c;
 }
-
+int re_eq(const char* const str){
+	switch (str[0]){
+		case '=': return 0; break;
+		case '<': return (str[1]=='=') ? 2 : 1; break;
+		case '>': return (str[1]=='=') ? 4 : 3; break;
+		case ' ': return 5;
+	}
+	return 5;
+}
 namespace FilterForm {
 	FORM* F;
-	FIELD* f[16];
+	FIELD* f[15];
 	WINDOW* wrec;
 	const char* eqs[] = {"=","<","<=",">",">="," "};
 	void init(){
@@ -493,9 +506,8 @@ namespace FilterForm {
 		f[11] = new_field(1,4,11,9,0,0); //d2yr
 		f[12] = new_field(1,2,11,14,0,0); //d2hr
 		f[13] = new_field(1,2,11,17,0,0); //d2min
-		f[14] = new_field(1,1,1,1,0,0); //dummy
-		f[15] = 0;
-		for (size_t i=0;i<15;++i){ set_field_back(f[i],A_REVERSE); }
+		f[14] = 0;
+		for (size_t i=0;i<14;++i){ set_field_back(f[i],A_REVERSE); }
 		set_field_type(f[0],TYPE_ALNUM,1);
 		set_field_type(f[1],TYPE_ALNUM,1);
 		set_field_type(f[2],TYPE_ENUM,eqs,0,0);
@@ -510,11 +522,11 @@ namespace FilterForm {
 		set_field_type(f[11],TYPE_INTEGER,4,1,9999);
 		set_field_type(f[12],TYPE_INTEGER,2,0,23);
 		set_field_type(f[13],TYPE_INTEGER,2,0,59);
-		field_opts_off(f[14],O_AUTOSKIP); //dummy
+		reset();
 		F = new_form(f);
 	}
 	void clean(){
-		for (size_t i=0;i<15;++i){
+		for (size_t i=0;i<14;++i){
 			free_field(f[i]);
 		}
 		free_form(F);
@@ -544,19 +556,24 @@ namespace FilterForm {
 		wrefresh(wrec);
 		}
 	void show(unsigned Y,unsigned X){
-		wrec = newwin(14,30,Y,X);
+		wrec = newwin(20,30,Y,X);
 		wattron(wrec,COLOR_PAIR(7));
 		set_form_win(F,wrec);
-		set_form_sub(F,derwin(wrec,14,30,2,2));
+		set_form_sub(F,derwin(wrec,20,30,2,2));
 		post_form(F);
 		dress();
 		wattroff(wrec,COLOR_PAIR(7));
 		cbreak();
 		keypad(wrec,TRUE);
 	}
+	void hide(){
+		unpost_form(F);
+		werase(wrec);
+		wrefresh(wrec);
+		delwin(wrec);
+	}
 	int driver(){
 		int ch = wgetch(wrec);
-		int cf;
 		switch (ch){
 			//< Arrow keys are usual for text-input. Where Up/Down function like shift-tab/tab.
 			//< Backspace/Enter/Tab functions as one would except
@@ -573,49 +590,104 @@ namespace FilterForm {
 			case KEY_RIGHT: form_driver(F,REQ_RIGHT_CHAR); break;
 			case KEY_BACKSPACE: form_driver(F,REQ_LEFT_CHAR); form_driver(F,REQ_DEL_CHAR); break;
 			case 10: /* ENTER */
-				cf = field_index(current_field(F));
-				if (cf==2 || cf==8){
-					set_field_buffer(current_field(F),0,eqs[menu_equality()]);
-					wrefresh(wrec);
+				switch (field_index(current_field(F))){
+					case 2:
+					case 8:
+						set_field_buffer(current_field(F),0,eqs[menu_equality(wrec)]);
+						break;
+					case 13:
+						return 0; break;
 				}
 			case '\t': /* TAB */ case KEY_DOWN:
 				form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_END_LINE); break;
-
 			case KEY_UP: form_driver(F, REQ_PREV_FIELD); form_driver(F, REQ_END_LINE); break;
 			default: form_driver(F, ch); break;
 		}
 		return -1;
 	}
-	void loop(){
-	/**
-	 * Creates a record window at Y,X position with Record t.
-	 * If t is non-null, its properties are shown to be edited.
-	 * Else, user may fill the fields with their own properties.
-	 * ATM does not check whether the date-fields have input.
-	 * See get_start_time & get_end_time for their default values.
-	 * See loop for inputs.
-	 */
-	int r;
-	do { r = driver(); } while (r==-1);
-	form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
-}
-	void hide(){
-		unpost_form(F);
-		delwin(wrec);
+	void reset(){
+		set_field_buffer(f[0],0,"");
+		set_field_buffer(f[1],0,"");
+		set_field_buffer(f[2],0,"");
+		set_field_buffer(f[3],0,"01");
+		set_field_buffer(f[4],0,"01");
+		set_field_buffer(f[5],0,"1900");
+		set_field_buffer(f[6],0,"00");
+		set_field_buffer(f[7],0,"00");
+		set_field_buffer(f[8],0,"");
+		set_field_buffer(f[9],0,"01");
+		set_field_buffer(f[10],0,"01");
+		set_field_buffer(f[11],0,"1900");
+		set_field_buffer(f[12],0,"00");
+		set_field_buffer(f[13],0,"00");
+
 	}
-}
-int prep_cus(SQLi &db){
-	string e;
-	e+=" AND uid=?1";
-
-	e+=" AND code=?2";
-
-	e+=" AND start_time<?3";
-	e+=" AND start_time=?3";
-	e+=" AND start_time>?3";
-
-	e+=" AND end_time<?4";
-	e+=" AND end_time=?4";
-	e+=" AND end_time>?4";
-	//db.set_cus(e);
+	void loop(SQLi &db){
+		/**
+		 * Creates a record window at Y,X position with Record t.
+		 * If t is non-null, its properties are shown to be edited.
+		 * Else, user may fill the fields with their own properties.
+		 * ATM does not check whether the date-fields have input.
+		 * See get_start_time & get_end_time for their default values.
+		 * See loop for inputs.
+		 */
+		int r;
+		do { r = driver(); } while (r==-1);
+		form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
+		if (r==0){
+			prep_cus(db);
+		}
+	}
+	int prep_cus(SQLi &db){
+		// the initial string will be init here for the moment.
+		// will change later.
+		string e("SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1");
+		if (field_buffer(f[0],0)[0]!=' '){ // has UID entered
+			e+=" AND uid=?3";
+			printw("got uid! %s",field_buffer(f[0],0));
+		}
+		if (field_buffer(f[1],0)[0]!=' '){ // .. code
+			e+=" AND code=?4";
+			printw("got code!",field_buffer(f[1],0));
+		}
+		bool st_eq = 0, et_eq = 0;
+		if (field_buffer(f[2],0)[0]!=' '
+		&& field_buffer(f[3],0)[0]!=' '
+		&& field_buffer(f[4],0)[0]!=' '
+		&& field_buffer(f[5],0)[0]!=' '){ // .. start-eq, needs atleast a date
+			e+=" AND start_time";
+			switch (re_eq(field_buffer(f[2],0))){
+				case 0: e+='='; break;
+				case 1: e+="<"; break;
+				case 2: e+="<="; break;
+				case 3: e+=">"; break;
+				case 4: e+=">="; break;
+			}
+			e+="?5";
+			st_eq = 1;
+			printw("got time1!");
+		}
+		if (field_buffer(f[8],0)[0]!=' '
+		&& field_buffer(f[9],0)[0]!=' '
+		&& field_buffer(f[10],0)[0]!=' '
+		&& field_buffer(f[11],0)[0]!=' '){ // .. end-eq, needs atleast a date
+			e+=" AND end_time";
+			switch (re_eq(field_buffer(f[8],0))){
+				case 0: e+='='; break;
+				case 1: e+="<"; break;
+				case 2: e+="<="; break;
+				case 3: e+=">"; break;
+				case 4: e+=">="; break;
+			}
+			e+="?6";
+			et_eq = 1;
+			printw("got time2!");
+		}
+		e+=" ORDER BY rowid LIMIT ?2";
+		//printw("%s",e.c_str());
+		unsigned d[10];
+		for (size_t i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+3],0)); }
+		for (size_t i=5;i<10;++i){ d[i] = atoi(field_buffer(f[i+4],0)); }
+		db.set_cus(e,Record(field_buffer(f[0],0),field_buffer(f[1],0),to_time_t(d),to_time_t(d+5)),st_eq,et_eq);
+	}
 }
