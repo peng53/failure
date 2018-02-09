@@ -288,7 +288,7 @@ static int valid_str(const char* const s){
 	if (s[0]=='\\'){ return 2; }
 	return 0;
 }
-int getAfileName(char *s){
+static int getAfileName(char *s){
 	/**
 	 * Prompts user for a filename.
 	 * ATM this file is not checked by ui and relies on db.
@@ -334,6 +334,7 @@ static unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<
 		fill(ids.begin()+n+1,ids.end(),0);
 		while (n<l){ mvwhline(w,++n,1,' ',52); }
 	}
+
 	mvwvline(w,1,6,ACS_VLINE,l);
 	wattroff(w,COLOR_PAIR(3));
 	wmove(w,y,0);
@@ -341,7 +342,7 @@ static unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<
 	return r2;
 }
 
-void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
+static void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 	WINDOW* w=newwin(l,51,Y,X);
 	nRecord editor;
 	WINDOW * viewer;
@@ -433,17 +434,23 @@ void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
 			case 's': db.endbeg(); break;
 			case 'r': refresh_records=1;pg=0; break;
 			case 'f':
-				FilterForm::show(0,52);
-				FilterForm::loop(db);
-				FilterForm::hide();
+				if (FilterForm::once(0,52,db)==0){
+					refresh_yxpos=1;
+					refresh_records=1;
+					pg=0;
+				}
+				break;
+			case 'F':
+				db.set_vpg();
 				refresh_yxpos=1;
-				refresh_records=1; pg=0;
+				refresh_records=1;
+				pg=0;
 				break;
 		}
 	} while (r==-1);
 	delwin(w);
 }
-int menu_equality(WINDOW* w){
+static int menu_equality(WINDOW* w){
 	ITEM* op[7];
 	MENU* M;
 	op[0] = new_item("[= ] Equal","");
@@ -477,7 +484,7 @@ int menu_equality(WINDOW* w){
 	wrefresh(w);
 	return c;
 }
-int re_eq(const char* const str){
+static int re_eq(const char* const str){
 	switch (str[0]){
 		case '=': return 0; break;
 		case '<': return (str[1]=='=') ? 2 : 1; break;
@@ -532,10 +539,6 @@ namespace FilterForm {
 		free_form(F);
 	}
 	void dress(){
-		/**
-		 * Prints the text associated with the Record creation/editor
-		 * window/form.
-		 */
 		wattron(wrec,A_BOLD);
 		mvwprintw(wrec,1,1,"Filter Records");
 		wattroff(wrec,A_BOLD);
@@ -622,39 +625,14 @@ namespace FilterForm {
 		set_field_buffer(f[13],0,"00");
 
 	}
-	void loop(SQLi &db){
-		/**
-		 * Creates a record window at Y,X position with Record t.
-		 * If t is non-null, its properties are shown to be edited.
-		 * Else, user may fill the fields with their own properties.
-		 * ATM does not check whether the date-fields have input.
-		 * See get_start_time & get_end_time for their default values.
-		 * See loop for inputs.
-		 */
-		int r;
-		do { r = driver(); } while (r==-1);
-		form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
-		if (r==0){
-			prep_cus(db);
-		}
-	}
 	int prep_cus(SQLi &db){
-		// the initial string will be init here for the moment.
-		// will change later.
-		string e("SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1");
-		if (field_buffer(f[0],0)[0]!=' '){ // has UID entered
-			e+=" AND uid=?3";
-			printw("got uid! %s",field_buffer(f[0],0));
-		}
-		if (field_buffer(f[1],0)[0]!=' '){ // .. code
-			e+=" AND code=?4";
-			printw("got code!",field_buffer(f[1],0));
-		}
+		string e;
 		bool st_eq = 0, et_eq = 0;
 		if (field_buffer(f[2],0)[0]!=' '
 		&& field_buffer(f[3],0)[0]!=' '
 		&& field_buffer(f[4],0)[0]!=' '
 		&& field_buffer(f[5],0)[0]!=' '){ // .. start-eq, needs atleast a date
+			e.reserve(19);
 			e+=" AND start_time";
 			switch (re_eq(field_buffer(f[2],0))){
 				case 0: e+='='; break;
@@ -665,12 +643,12 @@ namespace FilterForm {
 			}
 			e+="?5";
 			st_eq = 1;
-			printw("got time1!");
 		}
 		if (field_buffer(f[8],0)[0]!=' '
 		&& field_buffer(f[9],0)[0]!=' '
 		&& field_buffer(f[10],0)[0]!=' '
 		&& field_buffer(f[11],0)[0]!=' '){ // .. end-eq, needs atleast a date
+			e.reserve(e.length()+17);
 			e+=" AND end_time";
 			switch (re_eq(field_buffer(f[8],0))){
 				case 0: e+='='; break;
@@ -681,13 +659,35 @@ namespace FilterForm {
 			}
 			e+="?6";
 			et_eq = 1;
-			printw("got time2!");
 		}
-		e+=" ORDER BY rowid LIMIT ?2";
-		//printw("%s",e.c_str());
+		if (field_buffer(f[0],0)[0]!=' '){ // has UID entered
+			e.reserve(e.length()+11);
+			e+=" AND uid=?3";
+		}
+		if (field_buffer(f[1],0)[0]!=' '){ // .. code
+			e.reserve(e.length()+12);
+			e+=" AND code=?4";
+
+		}
+
 		unsigned d[10];
 		for (size_t i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+3],0)); }
 		for (size_t i=5;i<10;++i){ d[i] = atoi(field_buffer(f[i+4],0)); }
 		db.set_cus(e,Record(field_buffer(f[0],0),field_buffer(f[1],0),to_time_t(d),to_time_t(d+5)),st_eq,et_eq);
+	}
+	int loop(SQLi &db){
+		int r;
+		do { r = driver(); } while (r==-1);
+		form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
+		if (r==0){
+			prep_cus(db);
+		}
+		return r;
+	}
+	int once(unsigned Y,unsigned X,SQLi &db){
+		show(Y,X);
+		int r = loop(db);
+		hide();
+		return r;
 	}
 }

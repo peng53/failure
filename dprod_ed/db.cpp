@@ -76,9 +76,13 @@ int open_sqdb(sqlite3** db,char *s,const bool mknew){
 	return r;
 }
 
+const string sel_rows = "SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1";
+const string row_order = " ORDER BY rowid LIMIT ?2";
+
 SQLi::SQLi(sqlite3* _db): db(_db){
 	//< Where _db is confirmed to be valid
-	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1 ORDER BY rowid LIMIT ?2",-1,&vpg,0);
+	sqlite3_prepare_v2(db,string(sel_rows+row_order).c_str(),-1,&vpg,0);
+	//sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1 ORDER BY rowid LIMIT ?2",-1,&vpg,0);
 	sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&ins,0);
 	sqlite3_prepare_v2(db,"DELETE FROM records WHERE rowid=?1 LIMIT 1",-1,&del,0);
 	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time,desc FROM records WHERE rowid=?1 LIMIT 1",-1,&getr,0);
@@ -91,12 +95,15 @@ SQLi::~SQLi(){
 	sqlite3_finalize(del);
 	sqlite3_finalize(getr);
 	sqlite3_finalize(upd);
-	//sqlite3_finalize(cus);
 	sqlite3_close(db);
+}
+void SQLi::set_vpg(){
+	sqlite3_finalize(vpg);
+	sqlite3_prepare_v2(db,string(sel_rows+row_order).c_str(),-1,&vpg,0);
 }
 void SQLi::set_cus(string& str,Record t,bool st_eq,bool et_eq){
 	sqlite3_finalize(vpg);
-	sqlite3_prepare_v2(db,str.c_str(),-1,&vpg,0);
+	sqlite3_prepare_v2(db,string(sel_rows+str+row_order).c_str(),-1,&vpg,0);
 	// TRANSIENT is needed because the Record isn't stored.
 	if (t.uid.length()>0){
 		sqlite3_bind_text(vpg,3,t.uid.c_str(),-1,SQLITE_TRANSIENT);

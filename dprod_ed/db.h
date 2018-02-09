@@ -30,6 +30,7 @@ class SQLi {
 		~SQLi();
 		int endbeg();
 		int chg_row(const Record &t,const bool mknew);
+		void set_vpg();
 		void set_cus(string& str,Record t,bool st_eq,bool et_eq);
 		int del_row(const unsigned rnum);
 		Record get_row(const unsigned rnum);

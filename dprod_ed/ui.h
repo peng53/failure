@@ -38,19 +38,16 @@ class mainMenu {
 int init_viewr();
 int nloop();
 int cleanup();
-int getAfileName(char *s);
-void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db);
+static int getAfileName(char *s);
+static void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db);
 
 namespace FilterForm {
 	void init();
 	void reset();
 	void clean();
-	void dress();
 	void show(unsigned Y,unsigned X);
-	int driver();
-	void loop(SQLi &db);
 	void hide();
-	int prep_cus(SQLi &db);
+	int once(unsigned Y,unsigned X,SQLi &db);
 }
 
 #endif
