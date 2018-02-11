@@ -8,9 +8,7 @@ using std::string;
 time_t to_time_t(const unsigned *d);
 size_t trimWS(const char* const s,const size_t m);
 struct Record {
-	string uid;
-	string code;
-	string desc;
+	string uid, code, desc;
 	time_t ds, de;
 	int rnum;
 	Record();
@@ -23,18 +21,18 @@ class SQLi {
 	private:
 		sqlite3* db;
 		sqlite3_stmt *ins,*del,*getr,*upd;
-		void bind_all(sqlite3_stmt* s,const Record &t);
+		void bind_all(sqlite3_stmt* s,const Record&);
 	public:
 		sqlite3_stmt *vpg;
 		SQLi(sqlite3* _db);
 		~SQLi();
 		int endbeg();
-		int chg_row(const Record &t,const bool mknew);
+		int chg_row(const Record&,const bool new1_existing0);
 		void set_vpg();
-		void set_cus(string& str,Record t,bool st_eq,bool et_eq);
+		void set_cus(string& str,Record,const bool has_st,const bool has_et);
 		int del_row(const unsigned rnum);
 		Record get_row(const unsigned rnum);
-		Record& get_row(const unsigned rnum,Record &R);
+		Record& get_row(const unsigned rnum,Record&);
 };
-int open_sqdb(sqlite3** db,char *s,const bool mknew);
+int open_sqdb(sqlite3** db,char *s,const bool new1_existing0);
 #endif
