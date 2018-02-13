@@ -5,7 +5,7 @@
 
 namespace RecordEditor {
 	void init();
-	void clean();
+	void freem();
 	void reset();
 	void hide();
 	Record exportr();
@@ -17,13 +17,13 @@ namespace RecordEditor {
 }
 namespace FilterForm {
 	void init();
-	void clean();
+	void freem();
 	void reset();
 	void hide();
 	void show(const unsigned Y,const unsigned X);
 	int edit(const unsigned Y,const unsigned X,SQLi&);
 }
-static void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi&);
+static void database_mnip(const unsigned Y,const unsigned X,const size_t l,SQLi&);
 int init_viewr();
 void nloop();
 void cleanup();

@@ -3,6 +3,8 @@
 #include <form.h>
 #include <menu.h>
 
+#define return_break return
+
 static int menu_equality(WINDOW* w){
 	ITEM* op[7];
 	MENU* M;
@@ -86,7 +88,7 @@ static void init_main_menu(){
 	set_menu_fore(men_m,COLOR_PAIR(2)|A_STANDOUT);
 }
 static void del_main_menu(){
-	for (unsigned i=0;i<3;++i){
+	for (size_t i=0;i<3;++i){
 		free_item(men_ops[i]);
 	}
 	free_menu(men_m);
@@ -132,9 +134,9 @@ namespace RecordEditor {
 		f[10] = new_field(1,2,11,14,0,0); //d2hr
 		f[11] = new_field(1,2,11,17,0,0); //d2min
 		f[12] = new_field(3,26,14,2,0,0); //desc
-		f[13] = new_field(1,1,1,1,0,0); //dummy
+		f[13] = new_field(1,1,18,6,0,0); //dummy
 		f[14] = 0;
-		for (unsigned i=0;i<13;++i){ set_field_back(f[i],A_REVERSE); }
+		for (size_t i=0;i<13;++i){ set_field_back(f[i],A_REVERSE); }
 		set_field_type(f[0],TYPE_ALNUM,1);
 		set_field_type(f[1],TYPE_ALNUM,1);
 		set_field_type(f[2],TYPE_INTEGER,2,1,12);
@@ -151,7 +153,7 @@ namespace RecordEditor {
 		F = new_form(f);
 		rnum = -1;
 	}
-	void cleanup(){
+	void freem(){
 		free_form(F);
 		for (size_t i=0;i<14;++i){ free_field(f[i]); }
 	}
@@ -181,6 +183,7 @@ namespace RecordEditor {
 		mvwaddch(wrec,11,8,'/');
 		mvwaddch(wrec,11,16,':');
 		mvwprintw(wrec,13,2,"Description");
+		mvwprintw(wrec,18,2,"Save?");
 		box(wrec,0,0);
 		wmove(wrec,3,6);
 		wrefresh(wrec);
@@ -204,22 +207,25 @@ namespace RecordEditor {
 	}
 	int driver(){
 		int ch = wgetch(wrec);
-		switch(ch) {
+		switch (ch){
 			//< Arrow keys are usual for text-input. Where Up/Down function like shift-tab/tab.
 			//< Backspace/Enter/Tab functions as one would except
 			case 27:
 			//< ESC key
 			//< Followed by ESC or ENTER determines whether return is graceful or not.
+				if (field_index(current_field(F))==13) return_break 1;
 				switch (wgetch(wrec)){
-					case 27: return 1; break;
-					case 10: return 0; break;
+					case 27: return_break 1;
+					case 10: return_break 0;
 				}
 				break;
-			case '\\': return 1; break;
+			case '\\': return_break 1;
 			case KEY_LEFT: form_driver(F,REQ_LEFT_CHAR); break;
 			case KEY_RIGHT: form_driver(F,REQ_RIGHT_CHAR); break;
 			case KEY_BACKSPACE: form_driver(F,REQ_LEFT_CHAR); form_driver(F,REQ_DEL_CHAR); break;
-			case '\t': /* TAB */ case 10: /* ENTER */ case KEY_DOWN:
+			case 10: /* ENTER */
+				if (field_index(current_field(F))==13) return_break 0;
+			case '\t': /* TAB */ case KEY_DOWN:
 				form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_END_LINE); break;
 			case KEY_UP: form_driver(F, REQ_PREV_FIELD); form_driver(F, REQ_END_LINE); break;
 			default: form_driver(F, ch); break;
@@ -281,7 +287,7 @@ namespace RecordEditor {
 		/**
 		 * Empties the fields. (spaces)
 		 */
-		for (unsigned i=0;i<14;++i) {set_field_buffer(f[i],0," "); }
+		for (size_t i=0;i<14;++i) {set_field_buffer(f[i],0," "); }
 	}
 	Record exportr(){
 		/**
@@ -340,7 +346,7 @@ namespace FilterForm {
 		reset();
 		F = new_form(f);
 	}
-	void clean(){
+	void freem(){
 		for (size_t i=0;i<14;++i){
 			free_field(f[i]);
 		}
@@ -392,22 +398,19 @@ namespace FilterForm {
 			//< ESC key
 			//< Followed by ESC or ENTER determines whether return is graceful or not.
 				switch (wgetch(wrec)){
-					case 27: return 1; break;
-					case 10: return 0; break;
+					case 27: return_break 1;
+					case 10: return_break 0;
 				}
 				break;
-			case '\\': return 1; break;
+			case '\\': return_break 1;
 			case KEY_LEFT: form_driver(F,REQ_LEFT_CHAR); break;
 			case KEY_RIGHT: form_driver(F,REQ_RIGHT_CHAR); break;
 			case KEY_BACKSPACE: form_driver(F,REQ_LEFT_CHAR); form_driver(F,REQ_DEL_CHAR); break;
 			case 10: /* ENTER */
 				switch (field_index(current_field(F))){
-					case 2:
-					case 8:
-						set_field_buffer(current_field(F),0,eqs[menu_equality(wrec)]);
-						break;
-					case 13:
-						return 0; break;
+					case 2: case 8:
+						set_field_buffer(current_field(F),0,eqs[menu_equality(wrec)]); break;
+					case 13: return_break 0;
 				}
 			case '\t': /* TAB */ case KEY_DOWN:
 				form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_END_LINE); break;
@@ -499,13 +502,13 @@ namespace FilterForm {
 		return r;
 	}
 }
-static unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<unsigned> &ids,const unsigned y,const unsigned r){
+static unsigned resultsf(WINDOW* w,const size_t l,sqlite3_stmt* s,std::vector<unsigned> &ids,const unsigned y,const unsigned r){
 	sqlite3_reset(s);
 	sqlite3_bind_int(s,1,r);
 	sqlite3_bind_int(s,2,l);
 	struct tm *t;
 	time_t d,d2;
-	unsigned n=0;
+	size_t n=0;
 	wattron(w,COLOR_PAIR(3));
 	while (sqlite3_step(s)==SQLITE_ROW && n<l){
 		d = sqlite3_column_int(s,3);
@@ -536,7 +539,7 @@ static unsigned resultsf(WINDOW* w,const unsigned l,sqlite3_stmt* s,std::vector<
 	return r2;
 }
 
-static void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQLi &db){
+static void database_mnip(const unsigned Y,const unsigned X,const size_t l,SQLi &db){
 	WINDOW* w=newwin(l,51,Y,X);
 	Record rec;
 	bool refresh_records = 1, refresh_yxpos = 1;
@@ -544,7 +547,7 @@ static void database_mnip(const unsigned Y,const unsigned X,const unsigned l,SQL
 	std::vector<unsigned> ids(l-2,0), pgs {0};
 	size_t pg = 0;
 	mvwprintw(w,0,1,"ROWID  %-10s  %-5s  MM/DD/YY hh:mm HRS","USER","CODE");
-	mvwprintw(w,l-1,1,"NEW EDIT VIEW COPY DELETE SAVE CLOSE REFRESH");
+	mvwprintw(w,l-1,1,"INSERT EDIT VIEW COPY DELETE SAVE CLOSE REFRESH");
 	int r = -1;
 	do {
 		if (refresh_records){
@@ -682,8 +685,8 @@ void nloop(){
 	} while (l!=2);
 }
 void cleanup(){
-	FilterForm::clean();
-	RecordEditor::cleanup();
+	FilterForm::freem();
+	RecordEditor::freem();
 	del_main_menu();
 	endwin();
 }
