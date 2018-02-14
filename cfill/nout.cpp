@@ -1,4 +1,5 @@
 #include <ncurses.h>
+#include <cstdlib>
 #include "nout.h"
 
 namespace oput {
@@ -24,8 +25,8 @@ namespace oput {
 		width = w;
 		height = h;
 		colors = c;
-		yoff = (LINES-h)/2;
-		xoff = (COLS-w)/2;
+		//yoff = (LINES-h)/2;
+		//xoff = (COLS-w)/2;
 	}
 	void draw_scan(unsigned a,unsigned b,int color){
 		//printw("i was called");
@@ -33,11 +34,13 @@ namespace oput {
 		mvhline(yoff+a/width,xoff+(a%width),ACS_BOARD,b-a+1);
 		//mvaddch(yoff+n/width,xoff+(n%width),ACS_BOARD | COLOR_PAIR(color));
 		attroff(COLOR_PAIR(color%colors));
-		refresh();
+		//move(0,0);
+		//printw("l @ %d : %d w/ %d",a/width,(a%width),b-a+1);
+		//refresh();
+		//getch();
 	}
 	void draw_board(char* data){
 		unsigned l = 0;
-
 		for (size_t i = 0, s = width*height; i < s;){
 			move(yoff+l,xoff);
 			for (unsigned c = 0; c < width; ++c){
@@ -48,7 +51,6 @@ namespace oput {
 		}
 		printw("\nwidth: %u; height: %u",width,height);
 		refresh();
-		getch();
 	}
 	void delay(){
 		//printw("something new");
@@ -58,6 +60,18 @@ namespace oput {
 	int get_input(){
 		char t[10];
 		return getnstr(t,0);
+	}
+	int get_move(){
+		char t[5];
+		getnstr(t,3);
+		if (t[0]<'0' || t[0]>'9') return -1;
+		return atoi(t);
+	}
+	void colrs(const char* cs,size_t len){
+		addch('\n');
+		for (size_t i=0;i<len;++i){
+			addch('0'+i | COLOR_PAIR(i));
+		}
 	}
 	void ps(char* s){
 		addstr(s);

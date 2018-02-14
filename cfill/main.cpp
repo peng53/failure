@@ -5,7 +5,35 @@
 
 using std::cout;
 
+void jcout(unsigned a,unsigned b,int color){
+	cout << a << ',' << b << ',' << color << '\n';
+}
+
 int main(int argc,char** argv){
+	unsigned h = 6;
+	unsigned w = 5;
+	unsigned c_cnt = 2;
+	FloodBoard f(h,w);
+	string sym;
+	reseed();
+	f.bshuf_normal(abc_sym(sym,c_cnt));
+	//oput::start();
+	//oput::setup(w,h,c_cnt);
+	//oput::draw_board(f.data());
+	//oput::colrs(sym.c_str(),c_cnt);
+	int m;
+	cout << f;
+	do {
+		//m = oput::get_move();
+		std::cin >> m;
+		if (m>=0 && m<c_cnt){
+			//f.fl_fill_sl(sym[m],oput::draw_scan);
+			f.fl_fill_sl(sym[m],jcout);
+		}
+		cout << f;
+	} while (m!=-1);
+	//oput::end();
+	/*
 	FloodBoard f(5,5);
 	f.set_arr(tpats::p1);
 	oput::start();
@@ -18,6 +46,7 @@ int main(int argc,char** argv){
 
 	oput::get_input();
 	oput::end();
+	*/
 	//char t = 0;
 	//std::cin >> t;
 	//if (t=='1') oput::end();

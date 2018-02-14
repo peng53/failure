@@ -57,7 +57,7 @@ Record::Record(sqlite3_stmt* s):
 	desc(reinterpret_cast<const char*>(sqlite3_column_text(s,5)),70){
 }
 
-int open_sqdb(sqlite3** db,char *s,const bool mknew){
+int open_sqdb(sqlite3** db,const char* const s,const bool mknew){
 	/**
 	 * Opens a database with filename s.
 	 * If mknew is true, then creates a new file (no overwrite)
@@ -82,7 +82,6 @@ const string row_order = " ORDER BY rowid LIMIT ?2";
 SQLi::SQLi(sqlite3* _db): db(_db){
 	//< Where _db is confirmed to be valid
 	sqlite3_prepare_v2(db,string(sel_rows+row_order).c_str(),-1,&vpg,0);
-	//sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1 ORDER BY rowid LIMIT ?2",-1,&vpg,0);
 	sqlite3_prepare_v2(db,"INSERT INTO records (uid,start_time,end_time,code,desc) VALUES(?1,?2,?3,?4,?5)",-1,&ins,0);
 	sqlite3_prepare_v2(db,"DELETE FROM records WHERE rowid=?1 LIMIT 1",-1,&del,0);
 	sqlite3_prepare_v2(db,"SELECT rowid,uid,code,start_time,end_time,desc FROM records WHERE rowid=?1 LIMIT 1",-1,&getr,0);
@@ -101,7 +100,7 @@ void SQLi::set_vpg(){
 	sqlite3_finalize(vpg);
 	sqlite3_prepare_v2(db,string(sel_rows+row_order).c_str(),-1,&vpg,0);
 }
-void SQLi::set_cus(string& str,Record t,bool st_eq,bool et_eq){
+void SQLi::set_cus(const string& str,const Record t,const bool st_eq,const bool et_eq){
 	sqlite3_finalize(vpg);
 	sqlite3_prepare_v2(db,string(sel_rows+str+row_order).c_str(),-1,&vpg,0);
 	// TRANSIENT is needed because the Record isn't stored.
@@ -135,17 +134,6 @@ int SQLi::chg_row(const Record &t,const bool mknew){
 	if (!mknew) sqlite3_bind_int(s,6,t.rnum);
 	return sqlite3_step(s);
 }
-/**
-int SQLi::ins_row(const Record &t){
-	bind_all(ins,t);
-	return sqlite3_step(ins);
-}
-int SQLi::upd_row(const Record &t){
-	bind_all(upd,t);
-	sqlite3_bind_int(upd,6,t.rnum);
-	return sqlite3_step(upd);
-}
-*/
 int SQLi::del_row(const unsigned rnum){
 	sqlite3_reset(del);
 	sqlite3_bind_int(del,1,rnum);

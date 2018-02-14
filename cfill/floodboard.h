@@ -24,5 +24,9 @@ struct FloodBoard {
 	int fl_fill_q(char newcol, std::function<void (unsigned,unsigned,int)> snitch);
 	char* data();
 };
+char* abc_sym(char* s,size_t len);
+string& abc_sym(string& s,size_t len);
 ostream& operator<<(ostream& out, FloodBoard& f);
+void reseed(int);
+void reseed();
 #endif

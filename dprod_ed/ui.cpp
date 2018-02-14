@@ -20,7 +20,6 @@ static int menu_equality(WINDOW* w){
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
 	set_menu_win(M,w);
 	set_menu_sub(M,derwin(w,6,24,13,2));
-	//box(w,0,0);
 	post_menu(M);
 	int c = -1;
 	do {
@@ -32,19 +31,16 @@ static int menu_equality(WINDOW* w){
 		}
 	} while (c==-1);
 	unpost_menu(M);
-	for (size_t i=0;i<6;++i){
-		free_item(op[i]);
-	}
+	for (size_t i=0;i<6;++i){ free_item(op[i]); }
 	free_menu(M);
 	wrefresh(w);
 	return c;
 }
-static int re_eq(const char* const str){
+static int re_eq(const char str[2]){
 	switch (str[0]){
-		case '=': return 0; break;
-		case '<': return (str[1]=='=') ? 2 : 1; break;
-		case '>': return (str[1]=='=') ? 4 : 3; break;
-		case ' ': return 5;
+		case '=': return_break 0;
+		case '<': return_break (str[1]=='=') ? 2 : 1;
+		case '>': return_break (str[1]=='=') ? 4 : 3;
 	}
 	return 5;
 }
@@ -230,7 +226,7 @@ namespace RecordEditor {
 			case KEY_UP: form_driver(F, REQ_PREV_FIELD); form_driver(F, REQ_END_LINE); break;
 			default: form_driver(F, ch); break;
 		}
-		return -1;
+		return driver();
 	}
 	int edit(const unsigned Y,const unsigned X){
 		/**
@@ -242,8 +238,9 @@ namespace RecordEditor {
 		 * See loop for inputs.
 		 */
 		show(Y,X);
-		int r;
-		do { r = driver(); } while (r==-1);
+		//int r;
+		//do { r = driver(); } while (r==-1);
+		int r = driver();
 		form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
 		hide();
 		return r;
@@ -347,9 +344,7 @@ namespace FilterForm {
 		F = new_form(f);
 	}
 	void freem(){
-		for (size_t i=0;i<14;++i){
-			free_field(f[i]);
-		}
+		for (size_t i=0;i<14;++i){ free_field(f[i]); }
 		free_form(F);
 	}
 	void dress(){
@@ -417,7 +412,7 @@ namespace FilterForm {
 			case KEY_UP: form_driver(F, REQ_PREV_FIELD); form_driver(F, REQ_END_LINE); break;
 			default: form_driver(F, ch); break;
 		}
-		return -1;
+		return driver();
 	}
 	void reset(){
 		set_field_buffer(f[0],0,"");
@@ -434,7 +429,15 @@ namespace FilterForm {
 		set_field_buffer(f[11],0,"1900");
 		set_field_buffer(f[12],0,"00");
 		set_field_buffer(f[13],0,"00");
-
+	}
+	void eq_op(string &s,const int c){
+		switch (c){
+			case 0: s+='='; break;
+			case 1: s+="<"; break;
+			case 2: s+="<="; break;
+			case 3: s+=">"; break;
+			case 4: s+=">="; break;
+		}
 	}
 	int prep_cus(SQLi &db){
 		string e;
@@ -445,13 +448,7 @@ namespace FilterForm {
 		&& field_buffer(f[5],0)[0]!=' '){ // .. start-eq, needs atleast a date
 			e.reserve(19);
 			e+=" AND start_time";
-			switch (re_eq(field_buffer(f[2],0))){
-				case 0: e+='='; break;
-				case 1: e+="<"; break;
-				case 2: e+="<="; break;
-				case 3: e+=">"; break;
-				case 4: e+=">="; break;
-			}
+			eq_op(e,re_eq(field_buffer(f[2],0)));
 			e+="?5";
 			st_eq = 1;
 		}
@@ -461,13 +458,7 @@ namespace FilterForm {
 		&& field_buffer(f[11],0)[0]!=' '){ // .. end-eq, needs atleast a date
 			e.reserve(e.length()+17);
 			e+=" AND end_time";
-			switch (re_eq(field_buffer(f[8],0))){
-				case 0: e+='='; break;
-				case 1: e+="<"; break;
-				case 2: e+="<="; break;
-				case 3: e+=">"; break;
-				case 4: e+=">="; break;
-			}
+			eq_op(e,re_eq(field_buffer(f[8],0)));
 			e+="?6";
 			et_eq = 1;
 		}
@@ -478,21 +469,18 @@ namespace FilterForm {
 		if (field_buffer(f[1],0)[0]!=' '){ // .. code
 			e.reserve(e.length()+12);
 			e+=" AND code=?4";
-
 		}
-
 		unsigned d[10];
 		for (size_t i=0;i<5;++i){ d[i] = atoi(field_buffer(f[i+3],0)); }
 		for (size_t i=5;i<10;++i){ d[i] = atoi(field_buffer(f[i+4],0)); }
 		db.set_cus(e,Record(field_buffer(f[0],0),field_buffer(f[1],0),to_time_t(d),to_time_t(d+5)),st_eq,et_eq);
 	}
 	int loop(SQLi &db){
-		int r;
-		do { r = driver(); } while (r==-1);
+		//int r;
+		//do { r = driver(); } while (r==-1);
+		int r = driver();
 		form_driver(F, REQ_NEXT_FIELD); form_driver(F, REQ_PREV_FIELD);
-		if (r==0){
-			prep_cus(db);
-		}
+		if (r==0){ prep_cus(db); }
 		return r;
 	}
 	int edit(const unsigned Y,const unsigned X,SQLi &db){

@@ -9,6 +9,8 @@ namespace oput {
 	void draw_board(char* data);
 	void delay();
 	int get_input();
+	void colrs(const char* cs,size_t len);
 	void ps(char* s);
+	int get_move();
 }
 #endif

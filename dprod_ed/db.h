@@ -29,10 +29,10 @@ class SQLi {
 		int endbeg();
 		int chg_row(const Record&,const bool new1_existing0);
 		void set_vpg();
-		void set_cus(string& str,Record,const bool has_st,const bool has_et);
+		void set_cus(const string& str,const Record,const bool has_st,const bool has_et);
 		int del_row(const unsigned rnum);
 		Record get_row(const unsigned rnum);
 		Record& get_row(const unsigned rnum,Record&);
 };
-int open_sqdb(sqlite3** db,char *s,const bool new1_existing0);
+int open_sqdb(sqlite3** db,const char* const s,const bool new1_existing0);
 #endif

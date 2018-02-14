@@ -6,7 +6,12 @@
 using std::shuffle;
 
 auto rng = std::default_random_engine {};
-
+void reseed(int s){
+	rng.seed(s);
+}
+void reseed(){
+	rng.seed(std::random_device {}());
+}
 struct FloodBoard::IMPL {
 	std::vector<char> b;
 };
@@ -64,15 +69,22 @@ int FloodBoard::fl_fill_q(char newcol, std::function<void (unsigned,unsigned,int
 char* FloodBoard::data(){
 	return M->b.data();
 }
-
+string& abc_sym(string &s, size_t len){
+	for (size_t i=0;i<len;++i){
+		s+=('0'+i);
+	}
+	return s;
+}
 ostream& operator<<(ostream& out,FloodBoard& f){
 	unsigned i = 0;
+	unsigned r = 0;
 	for (auto c : f.M->b){
 		out << c;
 		++i;
+		++r;
 		if (i==f.rs){
 			i = 0;
-			out << '\n';
+			out << '\t' << r << '\n';
 		}
 	}
 	return out;

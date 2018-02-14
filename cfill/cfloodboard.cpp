@@ -6,6 +6,12 @@
 using std::shuffle;
 
 auto rng = std::default_random_engine {};
+void reseed(int s){
+	rng.seed(s);
+}
+void reseed(){
+	rng.seed(std::random_device {}());
+}
 struct FloodBoard::IMPL {
 	char* b;
 	IMPL(size_t s){
@@ -55,17 +61,24 @@ void FloodBoard::bshuf_perfect(const char* const sym,size_t sym_l){
 	(M->b)[rs*rc]='\0';
 	shuffle((M->b),(M->b)+rs*rc,rng);
 }
-int FloodBoard::fl_fill_sl(char newcol){
+int FloodBoard::fl_fill_sl(char newcol, std::function<void (unsigned,unsigned,int)> snitch){
 	// Calls scanlinefill with newcol.
 	// This by default selects first scanline as
 	// the oldcol.
-	return scanlinefill(M->b,rs,rc,newcol);
+	return scanlinefill(M->b,rs,rc,newcol,snitch);
 }
-int FloodBoard::fl_fill_q(char newcol){
-	return qfill(M->b,rs,rc,newcol);
+int FloodBoard::fl_fill_q(char newcol, std::function<void (unsigned,unsigned,int)> snitch){
+	return qfill(M->b,rs,rc,newcol,snitch);
 }
 char* FloodBoard::data(){
 	return M->b;
+}
+char* abc_sym(char* s,size_t len){
+	// s should be large enough to hold the characters plus the terminator
+	for (size_t i=0;i<len;i++){
+		s[i] = ('a'+i);
+	}
+	return s;
 }
 
 ostream& operator<<(ostream& out,FloodBoard& f){
