@@ -84,7 +84,7 @@ ostream& operator<<(ostream& out,FloodBoard& f){
 		++r;
 		if (i==f.rs){
 			i = 0;
-			out << '\t' << r << '\n';
+			out << '\t' << r-1 << '\n';
 		}
 	}
 	return out;

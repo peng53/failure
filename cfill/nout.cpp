@@ -25,15 +25,19 @@ namespace oput {
 		width = w;
 		height = h;
 		colors = c;
-		//yoff = (LINES-h)/2;
-		//xoff = (COLS-w)/2;
+		yoff = (LINES-h)/2;
+		xoff = (COLS-w)/2;
 	}
 	void draw_scan(unsigned a,unsigned b,int color){
+		if (b%width<a%width){
+			printw("scanline is too long!");
+		}
 		//printw("i was called");
 		attron(COLOR_PAIR(color%colors));
 		mvhline(yoff+a/width,xoff+(a%width),ACS_BOARD,b-a+1);
 		//mvaddch(yoff+n/width,xoff+(n%width),ACS_BOARD | COLOR_PAIR(color));
 		attroff(COLOR_PAIR(color%colors));
+		mvprintw(yoff+a/width,0,"%d to %d",a,b);
 		//move(0,0);
 		//printw("l @ %d : %d w/ %d",a/width,(a%width),b-a+1);
 		//refresh();
@@ -47,6 +51,7 @@ namespace oput {
 				addch(ACS_BOARD | COLOR_PAIR(data[i]%colors));
 				i++;
 			}
+			mvprintw(l+yoff,width+1+xoff+10,"%d",(1+l)*width-1);
 			l++;
 		}
 		printw("\nwidth: %u; height: %u",width,height);

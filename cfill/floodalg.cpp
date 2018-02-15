@@ -1,5 +1,6 @@
 #include <queue>
 #include "floodalg.h"
+#define INC_IOSTREAM
 #ifdef INC_IOSTREAM
 #define DEBUG(x) do { std::cerr << x << '\n'; } while (0)
 #else
@@ -127,10 +128,12 @@ int r_qfill(char* B,unsigned width,size_t bsize,char newcol,unsigned pt, std::fu
 		while (w%width>0 && B[w]==oldcol){
 			w--;
 		}
-		while ((e%width)<(width-1) && B[e]==oldcol){
+		//while ((e+1)%width>0 && B[e]==oldcol){
+		while (((e+1)%width)<(width-1) && B[e+1]==oldcol){
 			e++;
 		}
 		//std::cout << "snitch" << *snitch;
+		DEBUG("G(" << w << ',' << e << ") ");
 		if (snitch){
 			snitch(w,e,newcol);
 		}
