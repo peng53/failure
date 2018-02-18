@@ -76,8 +76,8 @@ int open_sqdb(sqlite3** db,const char* const s,const bool mknew){
 	return r;
 }
 
-const string sel_rows = "SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1";
-const string row_order = " ORDER BY rowid LIMIT ?2";
+static const string sel_rows = "SELECT rowid,uid,code,start_time,end_time FROM records WHERE rowid>?1";
+static const string row_order = " ORDER BY rowid LIMIT ?2";
 
 SQLi::SQLi(sqlite3* _db): db(_db){
 	//< Where _db is confirmed to be valid

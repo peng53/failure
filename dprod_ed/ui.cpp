@@ -2,6 +2,7 @@
 #include <ncurses.h>
 #include <form.h>
 #include <menu.h>
+#include <vector>
 
 #define return_break return
 
