@@ -7,15 +7,19 @@
 #define return_break return
 
 static int menu_equality(WINDOW* w){
+	/** Creates a menu for selecting a comparison operator, prompts
+	 * for choice, frees said menu, and returns operator.
+	 */
 	ITEM* op[7];
 	MENU* M;
+	//< allocation step
 	op[0] = new_item("[= ] Equal","");
 	op[1] = new_item("[< ] Exclusive Before","");
 	op[2] = new_item("[<=] Inclusive Before","");
 	op[3] = new_item("[> ] Exclusive After","");
 	op[4] = new_item("[>=] Inclusive After","");
 	op[5] = new_item("[  ] None","");
-	op[6] = 0;
+	op[6] = 0; // has to be NULL?
 	M = new_menu(op);
 	set_menu_back(M,COLOR_PAIR(1));
 	set_menu_fore(M,COLOR_PAIR(2)|A_STANDOUT);
@@ -23,7 +27,7 @@ static int menu_equality(WINDOW* w){
 	set_menu_sub(M,derwin(w,6,24,13,2));
 	post_menu(M);
 	int c = -1;
-	do {
+	do { // the loop, prompts for choice
 		wrefresh(w);
 		switch (getch()){
 			case KEY_DOWN: menu_driver(M,REQ_DOWN_ITEM); break;
@@ -31,6 +35,7 @@ static int menu_equality(WINDOW* w){
 			case 10: c = item_index(current_item(M));break;
 		}
 	} while (c==-1);
+	//< cleanup step
 	unpost_menu(M);
 	for (size_t i=0;i<6;++i){ free_item(op[i]); }
 	free_menu(M);
@@ -38,6 +43,8 @@ static int menu_equality(WINDOW* w){
 	return c;
 }
 static int re_eq(const char str[2]){
+	/** Returns int corresponding to operator
+	 */
 	switch (str[0]){
 		case '=': return_break 0;
 		case '<': return_break (str[1]=='=') ? 2 : 1;
