@@ -35,18 +35,18 @@ The following commands are possible:
 		value, but editing is permited. Any input will hide this
 		view.
 
-	COPY
-		Doesn't do anything. Will be removed/renamed.
+	COPY (I)
+		Creates a new row based on current row.
 
-	DELETE (d)
-		Deletes current row. User will not be prompted for confirmation.
-		This may change later on.
+	DELETE (d) / (D)
+		Deletes current row. Capital d skips prompt.
 
-	SAVE (s)
-		Saves changes to the database. Simple as that.
+	SAVE (s) / (S)
+		Saves changes to the database. Simple as that. Capital s skips prompt.
 
-	CLOSE (c)
+	CLOSE (c) / (C)
 		Closes the database view and returns to the 'load/new/quit' screen.
+		Capital s skips prompt.
 
 	REFRESH (r)
 		Calls for the program to redraw the screen.

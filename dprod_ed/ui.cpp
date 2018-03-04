@@ -6,6 +6,22 @@
 
 #define return_break return
 
+static bool yesno(WINDOW* w,const char* const desc){
+	/** Prompts user for YES or NO.
+	 */
+	mvwprintw(w,4,2,desc);
+	mvwprintw(w,5,4,"Yes / NO ?");
+	wrefresh(w);
+	switch (getch()){
+		case 'y':
+		case 'Y':
+			return_break 1;
+		default:
+			return_break 0;
+	}
+	return 0;
+}
+
 static int menu_equality(WINDOW* w){
 	/** Creates a menu for selecting a comparison operator, prompts
 	 * for choice, frees said menu, and returns operator.
@@ -543,7 +559,7 @@ static void database_mnip(const unsigned Y,const unsigned X,const size_t l,SQLi 
 	std::vector<unsigned> ids(l-2,0), pgs {0};
 	size_t pg = 0;
 	mvwprintw(w,0,1,"ROWID  %-10s  %-5s  MM/DD/YY hh:mm HRS","USER","CODE");
-	mvwprintw(w,l-1,1,"INSERT EDIT VIEW COPY DELETE SAVE CLOSE REFRESH");
+	mvwprintw(w,l-1,1,"INSERT EDIT VIEW DELETE FILTER SAVE CLOSE REFRESH");
 	int r = -1;
 	do {
 		if (refresh_records){
@@ -589,6 +605,7 @@ static void database_mnip(const unsigned Y,const unsigned X,const size_t l,SQLi 
 				break;
 			case KEY_RIGHT:
 			case 'v':
+			case 'V':
 				if (ids[y-1]!=0){
 					RecordEditor::reset();
 					RecordEditor::import(db.get_row(ids[y-1],rec));
@@ -604,8 +621,18 @@ static void database_mnip(const unsigned Y,const unsigned X,const size_t l,SQLi 
 					refresh_records=1;
 				}
 				break;
+			case 'I':
+				if (ids[y-1]==0) break;
+				RecordEditor::reset();
+				RecordEditor::import(db.get_row(ids[y-1],rec));
+				if (RecordEditor::edit(0,52)==0){
+					db.chg_row(RecordEditor::exportr(rec),1);
+					refresh_records=1;
+				}
+				break;
 			case 10: // ENTER
 			case 'e':
+			case 'E':
 				if (ids[y-1]==0) break;
 				RecordEditor::reset();
 				RecordEditor::import(db.get_row(ids[y-1],rec));
@@ -615,12 +642,27 @@ static void database_mnip(const unsigned Y,const unsigned X,const size_t l,SQLi 
 				}
 				break;
 			case 'd':
+				if (!yesno(w,"Delete row?")){
+					refresh_records=1;
+					break;
+				}
+			case 'D':
 				if (ids[y-1]==0) break;
 				db.del_row(ids[y-1]);
 				refresh_records=1;
 				break;
-			case 'c': r=0; break;
-			case 's': db.endbeg(); break;
+			case 'c':
+				if (!yesno(w,"Close database?")){
+					refresh_records=1;
+					break;
+				}
+			case 'C': r=0; break;
+			case 's':
+				if (!yesno(w,"Save database?")){
+					refresh_records=1;
+					break;
+				}
+			case 'S': db.endbeg(); break;
 			case 'r': refresh_records=1;pg=0; break;
 			case 'f':
 				if (FilterForm::edit(0,52,db)==0){
