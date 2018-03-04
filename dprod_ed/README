@@ -1,0 +1,69 @@
+README for dprod_ed (database productivity editor)
+
+How to use:
+Run dprod_ed in a terminal. Be sure your terminal is large enough
+or the program will not continue.
+Select new or load database. This will prompt for a filename. The
+filename may also be an absolute or relative path.
+
+	E.g. Relative in upper directory
+	../file.db
+	E.g. Absolute
+	/home/user/file.db
+
+If the file does not fit intended schema (or does not exist),
+file loading will fail. It may also fail if file cannot be created.
+
+In event of success, rows of the loaded database are displayed
+ordered by rowid.
+
+To manipulate the database, one may use the commands on the
+lower part of the display. The key-bindings correspond to the
+first letter of the command (lowercase).
+
+The following commands are possible:
+	INSERT (i)
+		Creates a row to be added. An editor is opening for
+		specifying the row's values. See Editor for specifics.
+
+	EDIT (e)
+		Edits an existing row. As expected, an editor is opened
+		with that row's current values. See Editor for specifics.
+
+	VIEW (v)
+		Views an existing row. An editor is opened with that row's
+		value, but editing is permited. Any input will hide this
+		view.
+
+	COPY
+		Doesn't do anything. Will be removed/renamed.
+
+	DELETE (d)
+		Deletes current row. User will not be prompted for confirmation.
+		This may change later on.
+
+	SAVE (s)
+		Saves changes to the database. Simple as that.
+
+	CLOSE (c)
+		Closes the database view and returns to the 'load/new/quit' screen.
+
+	REFRESH (r)
+		Calls for the program to redraw the screen.
+
+	FILTER ON (f)
+		Opens an editor for filter which will filter rows on completion.
+		See Filter Editor.
+
+	FILTER OFF (F)
+		Resets to having no filter.
+
+	NEXT PAGE OF ROWS (page-down)
+		Goes to next page of entries.
+
+	PREVIOUS PAGE OF ROWS (page-up)
+		Goes to previous page of entries.
+
+.
+.
+.
