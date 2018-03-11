@@ -5,9 +5,69 @@ import Queue
 def qboard(height,width,colors):
 	return np.random.randint(colors,size=(height,width))
 
-def slfill(qb,coord_y,coord_x,new_color):
+def expand_sl_left(qb,coord_y,coord_x,color_match):
+	while coord_x-1>=0 and qb[coord_y,coord_x-1]==color_match:
+		coord_x -= 1
+	return coord_x
+
+def expand_sl_right(qb,coord_y,coord_x,color_match):
+	max_x = qb.shape[1]
+	while coord_x+1<max_x and qb[coord_y,coord_x+1]==color_match:
+		coord_x += 1
+	return coord_x
+
+def slfill(qb,coord_y,coord_x,new_color,changelog=None):
 	if qb[coord_y,coord_x]==new_color:
 		return
+	q = Queue.Queue()
+	# where y,x-1 is assumed not available
+	old_color = qb[coord_y,coord_x]
+	height,width = qb.shape
+	coord_x2 = expand_sl_right(qb,coord_y,coord_x,old_color)
+	q.put((coord_y,coord_x,coord_x2))
+	upper_x1 = lower_x1 = upper_y = lower_y = -1
+	while not q.empty():
+		y,x0,x1 = q.get()
+		if qb[y,x0]==new_color:
+			continue
+		if changelog==None:
+			print "got", y,x0,x1
+		else:
+			changelog.append((y,x0,x1))
+		for x in xrange(x0,x1+1):
+			qb[y,x] = new_color
+
+			if y>0 and qb[y-1,x]==old_color:
+				if upper_y!=-1 and upper_x1+1==x:
+					upper_x1 += 1
+				else:
+					if upper_x1!=-1:
+						q.put((upper_y,upper_x0,upper_x1))
+						#print "put", upper_y,upper_x0,upper_x1
+					upper_y = y-1
+					upper_x1 = x
+					upper_x0 = expand_sl_left(qb,y-1,x,old_color)
+
+			if y+1<height and qb[y+1,x]==old_color:
+				if lower_y!=-1 and lower_x1+1==x:
+					lower_x1 += 1
+				else:
+					if lower_x1!=-1:
+						q.put((lower_y,lower_x0,lower_x1))
+						#print "put",lower_y,lower_x0,lower_x1
+					lower_y = y+1
+					lower_x1 = x
+					lower_x0 = expand_sl_left(qb,y+1,x,old_color)
+
+		if upper_x1!=-1:
+			q.put((upper_y,upper_x0,expand_sl_right(qb,upper_y,upper_x1,old_color)))
+			#print "put", upper_y,upper_x0,upper_x1
+			upper_x1 = upper_x0 = upper_y = -1
+		if lower_x1!=-1:
+			q.put((lower_y,lower_x0,expand_sl_right(qb,lower_y,lower_x1,old_color)))
+			#print "put",lower_y,lower_x0,lower_x1
+			lower_x1 = lower_x0 = lower_y = -1
+	return qb
 
 def qufill(qb,coord_y,coord_x,new_color,changelog=None):
 	if qb[coord_y,coord_x]==new_color:
@@ -41,8 +101,23 @@ q = np.array(
  [1, 0, 1, 1],
  [1, 0, 0, 0]]
 )
+q2 = np.array(
+[[0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0],
+ [0,0,0,0,0,1,0],
+ [0,0,0,0,0,1,0]]
+)
+q3 = np.array(
+[[0,0,0,0,0,1],
+ [0,1,1,1,0,1],
+ [0,1,0,1,0,1],
+ [1,1,0,1,0,1],
+ [0,0,0,0,0,1]]
+)
+
 chlog = []
-print q
-qufill(q,0,0,2,chlog)
-print q
+print q3
+#qufill(q,0,0,2,chlog)
+slfill(q3,0,0,2,chlog)
+print q3
 print chlog
