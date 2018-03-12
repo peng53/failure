@@ -51,25 +51,25 @@ def slfill2(qb,coord_y,coord_x,coord_x2,new_color,old_color,changelog=None):
 					upper_x1 += 1
 				else:
 					if upper_x1!=-1:
-						q.put((upper_y,expand_sl_left(qb,upper_y,upper_x1,old_color),upper_x1))
+						q.put((upper_y,expand_sl_left(qb,upper_y,upper_x0,old_color),upper_x1))
 					upper_y = y-1
-					upper_x1 = x
+					upper_x1 = upper_x0 = x
 
 			if y<max_y and qb[y+1,x]==old_color:
 				if lower_y!=-1 and lower_x1+1==x:
 					lower_x1 += 1
 				else:
 					if lower_x1!=-1:
-						q.put((lower_y,expand_sl_left(qb,lower_y,lower_x1,old_color),lower_x1))
+						q.put((lower_y,expand_sl_left(qb,lower_y,lower_x0,old_color),lower_x1))
 					lower_y = y+1
-					lower_x1 = x
+					lower_x1 = lower_x0 = x
 
 		if upper_y!=-1:
-			q.put((upper_y,expand_sl_left(qb,upper_y,upper_x1,old_color),expand_sl_right(qb,upper_y,upper_x1,old_color)))
+			q.put((upper_y,expand_sl_left(qb,upper_y,upper_x0,old_color),expand_sl_right(qb,upper_y,upper_x1,old_color)))
 			upper_y = upper_x1 = -1
 
 		if lower_y!=-1:
-			q.put((lower_y,expand_sl_left(qb,lower_y,lower_x1,old_color),expand_sl_right(qb,lower_y,lower_x1,old_color)))
+			q.put((lower_y,expand_sl_left(qb,lower_y,lower_x0,old_color),expand_sl_right(qb,lower_y,lower_x1,old_color)))
 			lower_x1 = lower_y = -1
 
 	return qb
@@ -120,12 +120,13 @@ q3 = np.array(
  [0,0,0,0,0,1]]
 )
 q4 = qboard(7,10,4)
+q5 = qboard(1,25,3)
 chlog = []
-print q4
+print q5
 i = raw_input()
 while i!='q':
-	slfill(q4,0,0,int(i))
-	print q4
+	slfill(q5,0,0,int(i))
+	print q5
 	i = raw_input()
 #qufill(q,0,0,2,chlog)
 #slfill(q3,0,0,2,chlog)
