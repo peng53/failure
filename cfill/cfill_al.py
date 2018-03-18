@@ -34,7 +34,7 @@ def slfill2(qb,coord_y,coord_x,coord_x2,new_color,old_color,changelog=None):
 	max_y = qb.shape[0]-1
 	q = Queue.Queue()
 	q.put((coord_y,coord_x,coord_x2))
-	upper_x1 = lower_x1 = upper_y = lower_y = -1
+	upper_y = lower_y = None
 	while not q.empty():
 		y,x0,x1 = q.get()
 		if qb[y,x0]!=old_color:
@@ -47,30 +47,34 @@ def slfill2(qb,coord_y,coord_x,coord_x2,new_color,old_color,changelog=None):
 			qb[y,x] = new_color
 
 			if y>0 and qb[y-1,x]==old_color:
-				if upper_y!=-1 and upper_x1+1==x:
+				if upper_y is None:
+					upper_y = y-1
+					upper_x1 = upper_x0 = x
+				elif upper_x1+1==x:
 					upper_x1 += 1
 				else:
-					if upper_x1!=-1:
-						q.put((upper_y,expand_sl_left(qb,upper_y,upper_x0,old_color),upper_x1))
+					q.put((upper_y,expand_sl_left(qb,upper_y,upper_x0,old_color),upper_x1))
 					upper_y = y-1
 					upper_x1 = upper_x0 = x
 
 			if y<max_y and qb[y+1,x]==old_color:
-				if lower_y!=-1 and lower_x1+1==x:
+				if lower_y is None:
+					lower_y = y+1
+					lower_x1 = lower_x0 = x
+				elif lower_x1+1==x:
 					lower_x1 += 1
 				else:
-					if lower_x1!=-1:
-						q.put((lower_y,expand_sl_left(qb,lower_y,lower_x0,old_color),lower_x1))
+					q.put((lower_y,expand_sl_left(qb,lower_y,lower_x0,old_color),lower_x1))
 					lower_y = y+1
 					lower_x1 = lower_x0 = x
 
-		if upper_y!=-1:
+		if upper_y is not None:
 			q.put((upper_y,expand_sl_left(qb,upper_y,upper_x0,old_color),expand_sl_right(qb,upper_y,upper_x1,old_color)))
-			upper_y = upper_x1 = -1
+			upper_y = None
 
-		if lower_y!=-1:
+		if lower_y is not None:
 			q.put((lower_y,expand_sl_left(qb,lower_y,lower_x0,old_color),expand_sl_right(qb,lower_y,lower_x1,old_color)))
-			lower_x1 = lower_y = -1
+			lower_y = None
 
 	return qb
 
@@ -122,11 +126,11 @@ q3 = np.array(
 q4 = qboard(7,10,4)
 q5 = qboard(1,25,3)
 chlog = []
-print q5
+print q3
 i = raw_input()
 while i!='q':
-	slfill(q5,0,0,int(i))
-	print q5
+	slfill(q3,0,0,int(i))
+	print q3
 	i = raw_input()
 #qufill(q,0,0,2,chlog)
 #slfill(q3,0,0,2,chlog)
