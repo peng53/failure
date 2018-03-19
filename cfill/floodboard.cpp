@@ -61,7 +61,7 @@ int FloodBoard::fl_fill_sl(char newcol, std::function<void (unsigned,unsigned,in
 	// Calls scanlinefill with newcol.
 	// This by default selects first scanline as
 	// the oldcol.
-	return scanlinefill(M->b.data(),rs,rc,newcol, snitch);
+	return scanlinefill_new(M->b.data(),rs,rc,newcol, snitch);
 }
 int FloodBoard::fl_fill_q(char newcol, std::function<void (unsigned,unsigned,int)> snitch){
 	return qfill(M->b.data(),rs,rc,newcol,snitch);

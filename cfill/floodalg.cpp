@@ -10,6 +10,116 @@
 #include <functional>
 
 using std::queue;
+
+unsigned expand_sl_right(char *B,unsigned width,unsigned coord_y,unsigned coord_x,char color_match){
+	if (coord_x==width-1){
+		return coord_x;
+	}
+	unsigned max_right = coord_y*width; // at this point max_right is off by +width-1
+	unsigned curr = max_right+coord_x;
+	max_right += width-1;
+	while (curr<max_right && B[curr+1]==color_match){
+		++curr;
+		++coord_x;
+	}
+	return coord_x;
+}
+unsigned expand_sl_left(char *B,unsigned width,unsigned coord_y,unsigned coord_x,char color_match){
+	if (coord_x==0){
+		return coord_x;
+	}
+	unsigned max_left = coord_y*width;
+	unsigned curr = max_left+coord_x;
+	while (curr>max_left && B[curr-1]==color_match){
+		--curr;
+		--coord_x;
+	}
+	return coord_x;
+}
+unsigned expand_sl_left_naive(char *B,unsigned width,unsigned coord_y,unsigned coord_x,char color_match){
+	unsigned max_left = coord_y*width;
+	unsigned current_left = max_left+coord_x;
+	for (; coord_x-1>0 && B[current_left-1]==color_match; --coord_x){
+		--current_left;
+	}
+	if (B[current_left-1]==color_match){
+		return --coord_x;
+	}
+	return coord_x;
+}
+
+void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,unsigned x0,unsigned x1,std::function<void (unsigned,unsigned,int)> snitch){
+	queue<unsigned> q;
+	q.emplace(y);
+	q.emplace(x0);
+	q.emplace(x1);
+	bool has_upper = 0, has_lower = 0;
+	int upper_x0, upper_x1, lower_x0, lower_x1;
+	unsigned y_max = height-1;
+	size_t a = y*width+x0;
+	char oldcol = B[a];
+	while (!q.empty()){
+		y = q.front();
+		q.pop();
+		x0 = q.front();
+		q.pop();
+		x1 = q.front();
+		q.pop();
+		a = y*width+x0;
+		if (B[a]!=oldcol){
+			DEBUG("REPEAT");
+			continue;
+		}
+		DEBUG("G(" << y << ',' << x0 << ',' << x1 << ") ");
+		for (;x0<=x1;++x0){
+			B[a] = newcol;
+			if (y>0 && B[(y-1)*width+x0]==oldcol){
+				if (!has_upper){
+					has_upper = 1;
+					upper_x0 = upper_x1 = x0;
+				} else if (upper_x1+1==x0){
+					upper_x1++;
+				} else {
+					q.emplace(y-1);
+					q.emplace(expand_sl_left(B,width,y-1,upper_x0,oldcol));
+					q.emplace(upper_x1);
+				}
+			}
+			if (y<y_max && B[(y+1)*width+x0]==oldcol){
+				if (!has_lower){
+					has_lower = 1;
+					lower_x0 = lower_x1 = x0;
+				} else if (lower_x1+1==x0){
+					lower_x1++;
+				} else {
+					q.emplace(y+1);
+					q.emplace(expand_sl_left(B,width,y+1,lower_x0,oldcol));
+					q.emplace(lower_x1);
+				}
+			}
+			a++;
+		}
+		if (has_upper){
+			q.emplace(y-1);
+			q.emplace(expand_sl_left(B,width,y-1,upper_x0,oldcol));
+			q.emplace(expand_sl_right(B,width,y-1,upper_x1,oldcol));
+			has_upper = 0;
+		}
+		if (has_lower){
+			q.emplace(y+1);
+			q.emplace(expand_sl_left(B,width,y+1,lower_x0,oldcol));
+			q.emplace(expand_sl_right(B,width,y+1,lower_x1,oldcol));
+			has_lower = 0;
+		}
+	}
+}
+int scanlinefill_new(char* board,unsigned width,unsigned height,char newchar,std::function<void (unsigned,unsigned,int)> snitch){
+	char oldchar = board[0];
+	if (newchar==oldchar) return 0;
+	unsigned b_max = expand_sl_right(board,width,0,0,oldchar);
+	rscanline2(board,width,height,newchar,0,0,b_max,snitch);
+	return 0;
+}
 void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsigned b,std::function<void (unsigned,unsigned,int)> snitch){
 	// Recolors scanline a,b to newcol.
 	// The oldcol is derived from the first point of the inital scanline.
