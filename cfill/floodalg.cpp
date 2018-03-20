@@ -76,7 +76,8 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 		DEBUG("G(" << y << ',' << x0 << ',' << x1 << ") ");
 		for (;x0<=x1;++x0){
 			B[a] = newcol;
-			if (y>0 && B[(y-1)*width+x0]==oldcol){
+			//if (y>0 && B[(y-1)*width+x0]==oldcol){
+			if (y>0 && B[a-width]==oldcol){
 				if (!has_upper){
 					has_upper = 1;
 					upper_x0 = upper_x1 = x0;
@@ -86,9 +87,11 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 					q.emplace(y-1);
 					q.emplace(expand_sl_left(B,width,y-1,upper_x0,oldcol));
 					q.emplace(upper_x1);
+					upper_x0 = upper_x1 = x0;
 				}
 			}
-			if (y<y_max && B[(y+1)*width+x0]==oldcol){
+			//if (y<y_max && B[(y+1)*width+x0]==oldcol){
+			if (y<y_max && B[a+width]==oldcol){
 				if (!has_lower){
 					has_lower = 1;
 					lower_x0 = lower_x1 = x0;
@@ -98,6 +101,7 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 					q.emplace(y+1);
 					q.emplace(expand_sl_left(B,width,y+1,lower_x0,oldcol));
 					q.emplace(lower_x1);
+					lower_x0 = lower_x1 = x0;
 				}
 			}
 			a++;

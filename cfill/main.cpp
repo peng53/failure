@@ -10,9 +10,9 @@ void jcout(unsigned a,unsigned b,int color){
 }
 
 int main(int argc,char** argv){
-	unsigned h = 5;
+	unsigned h = 2;
 	unsigned w = 10;
-	unsigned c_cnt = 5;
+	unsigned c_cnt = 7;
 	FloodBoard f(w,h);
 	string sym;
 	reseed();
