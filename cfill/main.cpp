@@ -10,7 +10,7 @@ void jcout(unsigned a,unsigned b,int color){
 }
 
 int main(int argc,char** argv){
-	unsigned h = 1;
+	unsigned h = 5;
 	unsigned w = 10;
 	unsigned c_cnt = 5;
 	FloodBoard f(w,h);
@@ -18,27 +18,28 @@ int main(int argc,char** argv){
 	reseed();
 	f.bshuf_normal(abc_sym(sym,c_cnt));
 	//f.set_arr(tpats::p1);
-	//oput::start();
-	//oput::setup(w,h,c_cnt);
-	//oput::draw_board(f.data());
-	//oput::colrs(sym.c_str(),c_cnt);
+	oput::start();
+	oput::setup(w,h,c_cnt);
+	oput::draw_board(f.data());
+	oput::colrs(sym.c_str(),c_cnt);
 	int m;
-	std::cerr << f;
-	cout << f;
-	cout << "----\n";
+	//std::cerr << f;
+	//cout << f;
+	//cout << "----\n";
 	do {
-		//m = oput::get_move();
-		std::cin >> m;
+		m = oput::get_move();
+		//std::cin >> m;
 		if (m>=0 && m<c_cnt){
 			//f.fl_fill_q(sym[m],oput::draw_scan);
-			f.fl_fill_sl(sym[m],jcout);
+			//f.fl_fill_sl(sym[m],jcout);
+			f.fl_fill_sl_new(sym[m],oput::draw_scan_y);
 			//std::cerr << f;
 
 		}
-		cout << "----\n";
-		cout << f;
+		//cout << "----\n";
+		//cout << f;
 	} while (m!=-1);
-	//oput::end();
+	oput::end();
 	/*
 	FloodBoard f(5,5);
 	f.set_arr(tpats::p1);

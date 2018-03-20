@@ -48,7 +48,7 @@ unsigned expand_sl_left_naive(char *B,unsigned width,unsigned coord_y,unsigned c
 	return coord_x;
 }
 
-void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,unsigned x0,unsigned x1,std::function<void (unsigned,unsigned,int)> snitch){
+void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,unsigned x0,unsigned x1,std::function<void (unsigned,unsigned,unsigned,int)> snitch){
 	queue<unsigned> q;
 	q.emplace(y);
 	q.emplace(x0);
@@ -69,6 +69,9 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 		if (B[a]!=oldcol){
 			DEBUG("REPEAT");
 			continue;
+		}
+		if (snitch){
+			snitch(y,x0,x1,newcol);
 		}
 		DEBUG("G(" << y << ',' << x0 << ',' << x1 << ") ");
 		for (;x0<=x1;++x0){
@@ -113,7 +116,7 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 		}
 	}
 }
-int scanlinefill_new(char* board,unsigned width,unsigned height,char newchar,std::function<void (unsigned,unsigned,int)> snitch){
+int scanlinefill_new(char* board,unsigned width,unsigned height,char newchar,std::function<void (unsigned,unsigned,unsigned,int)> snitch){
 	char oldchar = board[0];
 	if (newchar==oldchar) return 0;
 	unsigned b_max = expand_sl_right(board,width,0,0,oldchar);

@@ -6,6 +6,7 @@ namespace oput {
 	void end();
 	void setup(unsigned w,unsigned h,unsigned c);
 	void draw_scan(unsigned a,unsigned b,int color);
+	void draw_scan_y(unsigned y,unsigned x0,unsigned x1,int color);
 	void draw_board(char* data);
 	void delay();
 	int get_input();

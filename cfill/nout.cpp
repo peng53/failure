@@ -43,6 +43,16 @@ namespace oput {
 		//refresh();
 		//getch();
 	}
+	void draw_scan_y(unsigned y,unsigned x0,unsigned x1,int color){
+		attron(COLOR_PAIR(color%colors));
+		mvhline(yoff+y,xoff+x0,ACS_BOARD,x1-x0+1);
+		attroff(COLOR_PAIR(color%colors));
+
+		move(0,0);
+		for (unsigned c=0;c<colors;c++){
+			addch('0'+c | COLOR_PAIR(c));
+		}
+	}
 	void draw_board(char* data){
 		unsigned l = 0;
 		for (size_t i = 0, s = width*height; i < s;){
@@ -55,6 +65,9 @@ namespace oput {
 			l++;
 		}
 		printw("\nwidth: %u; height: %u",width,height);
+		for (unsigned c=0;c<colors;c++){
+			addch('0'+c | COLOR_PAIR(c));
+		}
 		refresh();
 	}
 	void delay(){
