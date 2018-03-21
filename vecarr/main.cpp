@@ -1,5 +1,7 @@
 #include <vector>
 #include <iostream>
+#include <queue>
+#include <tuple>
 
 template <class T>
 class VecArr {
@@ -52,6 +54,54 @@ class VecArr {
 			return &(wrap_arr[rows]);
 		}
 };
+
+template <class T>
+size_t expand_sl_left(VecArr<T> &va,size_t y,size_t x,const T to_match){
+	while (x>0 && va[y][x-1]==to_match){
+		--x;
+	}
+	return x;
+}
+template <class T>
+size_t expand_sl_right(VecArr<T> &va,size_t y,size_t x,const T to_match){
+	while (x<va.cols-1 && va[y][x+1]==to_match){
+		++x;
+	}
+	return x;
+}
+
+template <class T>
+void scanlinefill(VecArr<T> &va,size_t y,size_t x0,size_t x1,const T new_color){
+	T old_color = va[y][x0];
+	if (old_color==new_color){
+		return;
+	}
+	std::queue<std::tuple<size_t,size_t,size_t>> q;
+	q.emplace(y,x0,x1);
+	bool has_upper = 0, has_lower = 0;
+	size_t upper_x0, upper_x1, lower_x0, lower_x1;
+	size_t y_max = va.rows-1;
+	while (!q.empty()){
+		std::tie(y,x0,x1) = q.front();
+		q.pop();
+		if (va[y][x0]!=old_color){
+			continue;
+		}
+		for (;x0<=x1;++x0){
+			va[y][x0] = new_color;
+			if (y>0 && va[y-1][x0]==old_color){
+				if (!has_upper){
+					has_upper = 1;
+				} else if (upper_x1+1==x0){
+					++upper_x1;
+				} else {
+					q.emplace(y-1,expand_sl_left(va,y-1,upper_x0,old_color),upper_x1);
+					upper_x0 = upper_x1 = x0;
+				}
+			}
+		}
+	}
+}
 
 int main(){
 	size_t rows = 3;
