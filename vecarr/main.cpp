@@ -2,6 +2,7 @@
 #include <iostream>
 #include <queue>
 #include <tuple>
+#include <ostream>
 
 template <class T>
 class VecArr {
@@ -20,6 +21,11 @@ class VecArr {
 		void set_val(const T& newval){
 			for (size_t s=0;s<size;++s){
 				base_arr[s] = newval;
+			}
+		}
+		void set_vals(const size_t valcnt,const T* const newvals){
+			for (size_t i=0;i<valcnt;++i){
+				base_arr[i] = newvals[i];
 			}
 		}
 		void set_row(const size_t row,const T* const newvals){
@@ -53,7 +59,21 @@ class VecArr {
 		T** end(){
 			return &(wrap_arr[rows]);
 		}
+	template <class TT>
+	friend std::ostream& operator <<(std::ostream &out,VecArr<TT> &va);
 };
+
+template <class TT>
+std::ostream& operator <<(std::ostream &out,VecArr<TT> &va){
+	for (auto tp : va){
+		//out << tp << '\n'; if class is char, it will print the char*, else a memory location
+		for (size_t c=0;c<va.cols;++c){
+			out << tp[c] << ' ';
+		}
+		out << '\n';
+	}
+	return out;
+}
 
 template <class T>
 size_t expand_sl_left(VecArr<T> &va,size_t y,size_t x,const T to_match){
@@ -69,10 +89,19 @@ size_t expand_sl_right(VecArr<T> &va,size_t y,size_t x,const T to_match){
 	}
 	return x;
 }
+template <class T>
+size_t expand_sl_i(VecArr<T> &va,const size_t y,size_t x,const T to_match,int dir){
+	size_t lim_x = (dir==-1) ? 0 : va.cols-1;
+	while (x<lim_x && va[y][x+dir]==to_match){
+		(dir==-1) ? --x : ++x;
+	}
+	return x;
+}
 
 template <class T>
 void scanlinefill(VecArr<T> &va,size_t y,size_t x0,size_t x1,const T new_color){
 	T old_color = va[y][x0];
+	//std::cout << "old color is " << old_color << '\n';
 	if (old_color==new_color){
 		return;
 	}
@@ -84,6 +113,7 @@ void scanlinefill(VecArr<T> &va,size_t y,size_t x0,size_t x1,const T new_color){
 	while (!q.empty()){
 		std::tie(y,x0,x1) = q.front();
 		q.pop();
+		//std::cout <<"y,x,x1 is: " << y << ' ' << x0 << ' ' << x1 << '\n';
 		if (va[y][x0]!=old_color){
 			continue;
 		}
@@ -92,6 +122,7 @@ void scanlinefill(VecArr<T> &va,size_t y,size_t x0,size_t x1,const T new_color){
 			if (y>0 && va[y-1][x0]==old_color){
 				if (!has_upper){
 					has_upper = 1;
+					upper_x0 = upper_x1 = x0;
 				} else if (upper_x1+1==x0){
 					++upper_x1;
 				} else {
@@ -99,41 +130,55 @@ void scanlinefill(VecArr<T> &va,size_t y,size_t x0,size_t x1,const T new_color){
 					upper_x0 = upper_x1 = x0;
 				}
 			}
+			if (y<y_max && va[y+1][x0]==old_color){
+				if (!has_lower){
+					has_lower = 1;
+					lower_x0 = lower_x1 = x0;
+				} else if (lower_x1+1==x0){
+					++lower_x1;
+				} else {
+					q.emplace(y+1,expand_sl_left(va,y+1,lower_x0,old_color),lower_x1);
+					lower_x0 = lower_x1 = x0;
+				}
+			}
+		}
+		if (has_upper){
+			q.emplace(y-1,expand_sl_left(va,y-1,upper_x0,old_color),expand_sl_right(va,y-1,upper_x1,old_color));
+			has_upper = 0;
+		}
+		if (has_lower){
+			q.emplace(y+1,expand_sl_left(va,y+1,lower_x0,old_color),expand_sl_right(va,y+1,lower_x1,old_color));
+			has_lower = 0;
 		}
 	}
 }
 
 int main(){
-	size_t rows = 3;
-	size_t cols = 10;
-	float test_row [10] = {1.1,2.2,3.3,4.4,5.5,6.6,7.7,8.8,9.9,10.10};
-	VecArr<float> my_vec_array(cols,rows,test_row);
-	for (size_t r=0;r<my_vec_array.rows;++r){
-		std::cout << "ROW " << r << ':';
-		for (size_t c=0;c<my_vec_array.cols;++c){
-			std::cout << my_vec_array[r][c] << ' ';
-			my_vec_array[r][c] = (r+1.5)*(c+2);
-		}
-		std::cout << '\n';
-	}
-	std::cout << '\n';
-	for (size_t r=0;r<my_vec_array.rows;++r){
-		std::cout << "ROW " << r << ':';
-		for (size_t c=0;c<my_vec_array.cols;++c){
-			std::cout << my_vec_array[r][c] << ' ';
-		}
-		std::cout << '\n';
-	}
-	for (size_t s=0;s<10;++s){
-		test_row[s] *= 10;
-	}
-	my_vec_array.set_row(1,test_row);
-	for (auto tp : my_vec_array){
-		std::cout << tp << '\n';
-		for (size_t c=0;c<my_vec_array.cols;++c){
-			std::cout << tp[c] << ' ';
-		}
-		std::cout << '\n';
-	}
+	char test_row[26] =
+		"oxxoo"
+		"ooxoo"
+		"oooxo"
+		"xxooo"
+		"oooxx"; // 0,0 all should change
+	size_t rows = 5;
+	size_t cols = 5;
+	VecArr<char> my_vec_array(cols,rows);
+	my_vec_array.set_vals(25,test_row);
+	std::cout << my_vec_array << '\n';
+	scanlinefill(my_vec_array,3,2,4,'x');
+	std::cout << my_vec_array << '\n';
+	std::cout << "\nNon-square matrix test\n";
+	char test_row2[29] =
+		"xooxxox"
+		"xxooxxo"
+		"oxoxoxo"
+		"ooooxoo";
+	rows = 4;
+	cols = 7;
+	VecArr<char> my_vec_array2(cols,rows);
+	my_vec_array2.set_vals(28,test_row2);
+	std::cout << my_vec_array2 << '\n';
+	scanlinefill(my_vec_array2,2,2,2,'x');
+	std::cout << my_vec_array2 << '\n';
 	return 0;
 }
