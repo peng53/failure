@@ -3,6 +3,7 @@
 #include <queue>
 #include <tuple>
 #include <ostream>
+#include <iomanip>
 
 template <class T>
 class VecArr {
@@ -24,6 +25,10 @@ class VecArr {
 			}
 		}
 		void set_vals(const size_t valcnt,const T* const newvals){
+			/**
+			 * Sets values of base_array for indices 0 to valcnt-1 to newvals
+			 * Required: |newvals| >= valcnt
+			 */
 			for (size_t i=0;i<valcnt;++i){
 				base_arr[i] = newvals[i];
 			}
@@ -53,12 +58,16 @@ class VecArr {
 		T* operator[](const size_t row){
 			return wrap_arr[row];
 		}
+		T* operator[](const size_t row) const {
+			return wrap_arr[row];
+		}
 		T** begin(){
 			return &(wrap_arr[0]);
 		}
 		T** end(){
 			return &(wrap_arr[rows]);
 		}
+
 	template <class TT>
 	friend std::ostream& operator <<(std::ostream &out,VecArr<TT> &va);
 };
@@ -68,7 +77,7 @@ std::ostream& operator <<(std::ostream &out,VecArr<TT> &va){
 	for (auto tp : va){
 		//out << tp << '\n'; if class is char, it will print the char*, else a memory location
 		for (size_t c=0;c<va.cols;++c){
-			out << tp[c] << ' ';
+			out << tp[c] << out.fill();
 		}
 		out << '\n';
 	}
@@ -76,23 +85,23 @@ std::ostream& operator <<(std::ostream &out,VecArr<TT> &va){
 }
 
 template <class T>
-size_t expand_sl_left(VecArr<T> &va,size_t y,size_t x,const T to_match){
+size_t expand_sl_left(const VecArr<T> &va,const size_t y,size_t x,const T to_match){
 	while (x>0 && va[y][x-1]==to_match){
 		--x;
 	}
 	return x;
 }
 template <class T>
-size_t expand_sl_right(VecArr<T> &va,size_t y,size_t x,const T to_match){
+size_t expand_sl_right(const VecArr<T> &va,const size_t y,size_t x,const T to_match){
 	while (x<va.cols-1 && va[y][x+1]==to_match){
 		++x;
 	}
 	return x;
 }
 template <class T>
-size_t expand_sl_i(VecArr<T> &va,const size_t y,size_t x,const T to_match,int dir){
+size_t expand_sl_i(const VecArr<T> &va,const size_t y,size_t x,const T to_match,const int dir){
 	size_t lim_x = (dir==-1) ? 0 : va.cols-1;
-	while (x<lim_x && va[y][x+dir]==to_match){
+	while (x!=lim_x && va[y][x+dir]==to_match){
 		(dir==-1) ? --x : ++x;
 	}
 	return x;
@@ -126,7 +135,8 @@ void scanlinefill(VecArr<T> &va,size_t y,size_t x0,size_t x1,const T new_color){
 				} else if (upper_x1+1==x0){
 					++upper_x1;
 				} else {
-					q.emplace(y-1,expand_sl_left(va,y-1,upper_x0,old_color),upper_x1);
+					//q.emplace(y-1,expand_sl_left(va,y-1,upper_x0,old_color),upper_x1);
+					q.emplace(y-1,expand_sl_i(va,y-1,upper_x0,old_color,-1),upper_x1);
 					upper_x0 = upper_x1 = x0;
 				}
 			}
@@ -137,17 +147,20 @@ void scanlinefill(VecArr<T> &va,size_t y,size_t x0,size_t x1,const T new_color){
 				} else if (lower_x1+1==x0){
 					++lower_x1;
 				} else {
-					q.emplace(y+1,expand_sl_left(va,y+1,lower_x0,old_color),lower_x1);
+					//q.emplace(y+1,expand_sl_left(va,y+1,lower_x0,old_color),lower_x1);
+					q.emplace(y+1,expand_sl_i(va,y+1,lower_x0,old_color,-1),lower_x1);
 					lower_x0 = lower_x1 = x0;
 				}
 			}
 		}
 		if (has_upper){
-			q.emplace(y-1,expand_sl_left(va,y-1,upper_x0,old_color),expand_sl_right(va,y-1,upper_x1,old_color));
+			//q.emplace(y-1,expand_sl_left(va,y-1,upper_x0,old_color),expand_sl_right(va,y-1,upper_x1,old_color));
+			q.emplace(y-1,expand_sl_i(va,y-1,upper_x0,old_color,-1),expand_sl_i(va,y-1,upper_x1,old_color,1));
 			has_upper = 0;
 		}
 		if (has_lower){
-			q.emplace(y+1,expand_sl_left(va,y+1,lower_x0,old_color),expand_sl_right(va,y+1,lower_x1,old_color));
+			//q.emplace(y+1,expand_sl_left(va,y+1,lower_x0,old_color),expand_sl_right(va,y+1,lower_x1,old_color));
+			q.emplace(y+1,expand_sl_i(va,y+1,lower_x0,old_color,-1),expand_sl_i(va,y+1,lower_x1,old_color,1));
 			has_lower = 0;
 		}
 	}
@@ -179,6 +192,7 @@ int main(){
 	my_vec_array2.set_vals(28,test_row2);
 	std::cout << my_vec_array2 << '\n';
 	scanlinefill(my_vec_array2,2,2,2,'x');
-	std::cout << my_vec_array2 << '\n';
+	std::cout << std::setfill(',') << my_vec_array2 << '\n';
+	std::cout << std::setfill('\0') << my_vec_array2 << '\n';
 	return 0;
 }
