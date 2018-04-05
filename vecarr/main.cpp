@@ -1,4 +1,4 @@
-#include <vector>
+//#include <vector>
 #include <iostream>
 #include <queue>
 #include <tuple>
@@ -9,14 +9,17 @@ template <class T>
 class VecArr {
 	private:
 		T* base_arr;
-		std::vector<T*> wrap_arr;
+		//std::vector<T*> wrap_arr;
+		T** wrap_arr;
 	public:
 		const size_t rows, cols, size;
 		VecArr(const size_t col_count,const size_t row_count):size(col_count*row_count), cols(col_count), rows(row_count){
 			base_arr = new T[size];
-			wrap_arr.reserve(row_count);
-			for (size_t n=0;n<size;n+=col_count){
-				wrap_arr.emplace_back(&base_arr[n]);
+			wrap_arr = new T*[row_count];
+			//wrap_arr.reserve(row_count);
+			for (size_t n=0, a=0;n<size;n+=col_count){
+				//wrap_arr.emplace_back(&base_arr[n]);
+				wrap_arr[a++] = &base_arr[n];
 			}
 		}
 		void set_val(const T& newval){
@@ -54,6 +57,7 @@ class VecArr {
 		}
 		~VecArr(){
 			delete[] base_arr;
+			delete[] wrap_arr;
 		}
 		T* operator[](const size_t row){
 			return wrap_arr[row];

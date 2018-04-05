@@ -44,9 +44,8 @@ class VecArr3 {
 		friend std::ostream& operator<<(std::ostream& out,VecArr3<TT>& va);
 };
 template <class TT>
-std::ostream& operator<<(std::ostream& out,VecArr3<TT>& va){
-	size_t a = 0;
-	for (size_t layer=0;layer<va.layers;++layer){
+std::ostream& operator<<(std::ostream& out,const VecArr3<TT>& va){
+	for (size_t layer=0, a=0;layer<va.layers;++layer){
 		out << "Layer: " << layer << '\n';
 		for (size_t r=0;r<va.rows;++r){
 			for (size_t c=0;c<va.cols;++c){

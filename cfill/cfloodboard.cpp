@@ -84,7 +84,7 @@ char* abc_sym(char* s,size_t len){
 ostream& operator<<(ostream& out,FloodBoard& f){
 	unsigned i=0;
 	for (size_t s = 0;s<f.rs*f.rc;++s){
-		out << f.M->b[s];
+		out << f.M->b[s] << out.fill();
 		++i;
 		if (i==f.rs){
 			i = 0;

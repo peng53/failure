@@ -83,14 +83,15 @@ string& abc_sym(string &s, size_t len){
 }
 ostream& operator<<(ostream& out,FloodBoard& f){
 	unsigned i = 0;
-	unsigned r = 0;
+	//unsigned r = 0;
 	for (auto c : f.M->b){
-		out << c;
+		out << c << out.fill();
 		++i;
-		++r;
+		//++r;
 		if (i==f.rs){
 			i = 0;
-			out << '\t' << r-1 << '\n';
+			out << '\n';
+			//out << '\t' << r-1 << '\n';
 		}
 	}
 	return out;
