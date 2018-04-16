@@ -3,6 +3,8 @@
 #include <limits>
 #include <bitset>
 #include <random>
+#include <ncurses.h>
+#include "mprint.h"
 
 uint32_t mcell(uint32_t block,size_t y,size_t x){
 	// Returns a maze cell given a block
@@ -68,5 +70,16 @@ int main(){
 		std::cout << '#' << '\n';
 	}
 	std::cout << "Bits: " << my_block << "\n   _   _   _   _   _   _   _   _\n" << std::bitset<32>(my_block) << '\n';
+
+	initscr();
+	for (int y=0;y<4;++y){
+		for (int x=0;x<2;++x){
+			MazePrint::print_cell(mcell(my_block,y,x),y*3,x*3);
+		}
+	}
+	refresh();
+	getch();
+
+	endwin();
 	return 0;
 }
