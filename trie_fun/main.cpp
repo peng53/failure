@@ -9,9 +9,9 @@
 #include <iostream>
 
 int main(){
-	WordBank ws = WordBank();
+	WordBank ws;
 	std::string t  = "bar";
-	ws.add_word(t);
+	ws.add_word(std::string("bar"));
 	t  = "bat";
 	ws.add_word(t);
 	ws.add_word("cat");

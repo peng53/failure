@@ -12,14 +12,12 @@
 //#define T int
 
 typedef struct {
-	size_t cap;
-	size_t siz;
-	size_t vsize;
+	size_t cap, siz, vsize;
 	//T* data;
 	void** data;
 } Vec;
 
-int mk_vec_with_cap(Vec* V,size_t cap,size_t vsize){
+int mk_vec_with_cap(Vec* V,const size_t cap,const size_t vsize){
 	/* Makes V into a Vector with initial
 	 * capacity cap.
 	 * Returns 0 for a malloc fail.
@@ -37,7 +35,7 @@ int mk_vec_with_cap(Vec* V,size_t cap,size_t vsize){
 	return 1;
 }
 
-int mk_vec(Vec* V,size_t vsize){
+int mk_vec(Vec* V,const size_t vsize){
 	/* Makes V into Vector with default
 	 * parameters. See mk_vec_with_cap().
 	 * V should not be already valid.
@@ -64,7 +62,7 @@ unsigned vec_msize(Vec* V){
 	return (V->vsize)*(V->cap)+sizeof(size_t)*3;
 }
 
-int vec_resize(Vec* V,size_t newsize){
+int vec_resize(Vec* V,const size_t newsize){
 	/* Reserves capacity in Vector V with
 	 * newsize. Returns 0 on realloc fail.
 	 * Used prior to large push_backs().
@@ -79,7 +77,7 @@ int vec_resize(Vec* V,size_t newsize){
 	return 1;
 }
 
-int vec_reserve(Vec* V,size_t newsize){
+int vec_reserve(Vec* V,const size_t newsize){
 	/* Grows Vector V to newsize.
 	 * Returns -1 if no resize occurs.
 	 * Returns 0 if realloc fails.
@@ -143,7 +141,7 @@ int vec_pop_back(Vec* V){
 	return 1;
 }
 
-void* vec_at(Vec* V,size_t i){
+void* vec_at(Vec* V,const size_t i){
 	/* Returns value T as position i of
 	 * Vector V. Returns NULL if position is
 	 * invalid. Better way to verify is check
@@ -159,19 +157,20 @@ void* vec_at(Vec* V,size_t i){
 
 int main(){
 	Vec scores;
-	mk_vec_with_cap(&scores,33,sizeof(int));
-	printf("%d \n",scores.cap);
-	for (size_t i=0;i<32;++i){
+	size_t cap = 33;
+	size_t vsize = sizeof(char);
+	mk_vec_with_cap(&scores,cap,vsize);
+	printf("%d\n",scores.cap);
+	for (size_t i=0;i<cap-10;++i){
 		vec_push_back(&scores,(void*)i+65);
 	}
-	printf("%d \n",scores.cap);
-	for (size_t i=0;i<32;++i){
+	printf("have %u values\n",scores.siz);
+	printf("can hold %u\n",scores.cap);
+	while (scores.siz>0){
 		printf("%c ",(int)vec_top(&scores));
 		vec_pop_back(&scores);
 	}
-	putchar('\n');
-	printf("%d\n",vec_msize(&scores));
+	printf("\nsizeof(scores)=%u\n",vec_msize(&scores));
 	del_vec(&scores);
-
 	return 0;
 }

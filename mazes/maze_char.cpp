@@ -119,5 +119,7 @@ int main(){
 	}
 
 	delete[] arr;
+	unsigned t = 0xF;
+	std::cout << t << '\n';
 	return 0;
 }
