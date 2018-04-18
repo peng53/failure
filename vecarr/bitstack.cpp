@@ -87,11 +87,12 @@ class BitStk {
 				left = 0; // reset 'left' counter to # of left on prev node
 			}
 			*/
-			while (bsz-left<n){
-				data[node] = 0;
-				n -= bsz-left;
-				--node;
-				left = 0;
+			while (bsz-left<n){ // if true, the pop expands form this node and before
+				// meaning wiping the current node is the same as shifting back.
+				data[node] = 0; // wipe entire node
+				n -= bsz-left; // decr # bits left to pop
+				--node; // move to previous node
+				left = 0; // reset 'left' counter for new current node
 			}
 			data[node] >>= n; // clear leftover bits
 			left += n; // increase 'left' by the bits we popped
