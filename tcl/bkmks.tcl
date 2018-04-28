@@ -1,9 +1,13 @@
+#!/usr/bin/env tclsh8.6
 package require Tk
+package require sqlite3
 menu .men
 . configure -menu .men
-.men add command -label Open
-.men add command -label Save
-.men add command -label Close -command {destroy .}
+.men add command -label {New DB} -command init_db
+.men add command -label Open -command open_db
+.men add command -label Save -command save_db
+.men add command -label Close -command close_db
+.men add command -label Exit -command exit_prog
 .men add command -label {Add Link} -command {modify_row -1}
 .men add command -label Modify -command {mod_if_sel [.tv_links selection]}
 .men add command -label Delete
@@ -27,9 +31,12 @@ proc save_row {rownumber} {
 	puts $t
 	puts $u
 	if {$rownumber == -1} {
+		conn eval {INSERT into bookmarks VALUES(NULL,:t,:u,:u)}
+		set rownumber [conn eval {select last_insert_rowid();}]
 		# note : need sql for get id (which is also text)
-		.tv_links insert {} end -value [list $t $u ?NEWDATE?]
+		.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u ?NEWDATE?]
 	} else {
+		conn eval {UPDATE bookmarks SET title=:t, url=:u, mtime=:u WHERE rowid=:rownumber}
 		.tv_links item $rownumber -value [list $t $u ?NEWDATE?]
 	}
 	destroy .win_row_mod
@@ -51,6 +58,55 @@ proc modify_row {rownumber} {
 		.win_row_mod.u.e insert 0 $u
 	}
 }
-.tv_links insert {} end -id 0 -text 0 -values [list {Some Site} http://123fakesite.456 18-04-28]
-.tv_links insert {} end -id 1 -text 1 -values [list {Some Site} http://123fakesite.456 18-04-28]
+namespace eval DB {
+	variable is_open 0
+}
+proc init_db {} {
+	if {$DB::is_open} { return }
+	set file_name [tk_getSaveFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Save database as..}]
+	if {[string length $file_name] == 0} { return }
+	if {[file exists $file_name]} { file delete $file_name }
+	sqlite3 conn $file_name
+	conn eval {CREATE TABLE bookmarks(rowid INTEGER PRIMARY KEY autoincrement,title TEXT,url TEXT,mtime TEXT); BEGIN TRANSACTION;}
+	set DB::is_open 1
+}
+proc open_db {} {
+	if {$DB::is_open} {
+		tk_messageBox -icon error -type ok -message {Close current file first.}
+	} else {
+		set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
+		if {[string length $s] > 0} {
+			puts "Opened DB $s"
+			sqlite3 conn $s
+			conn eval {BEGIN TRANSACTION;}
+			set DB::is_open 1
+			#set rs [list]
+			conn eval {SELECT rowid,title,url,mtime from bookmarks ORDER BY rowid} {
+				#lappend rs [list $rowid $title $url $mtime]
+				.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
+			}
+			#foreach r $rs {
+			#	puts $r
+			#}
+		}
+	}
+	puts "DB status: $DB::is_open"
+}
+proc close_db {} {
+	if {$DB::is_open} {
+		puts {Closing DB..}
+		conn close
+		set DB::is_open 0
+		.tv_links delete [.tv_links children {}]
+	}
+}
+proc exit_prog {} {
+	close_db
+	destroy .
+}
+proc save_db {} {
+	conn eval {END TRANSACTION;BEGIN TRANSACTION;}
+}
+#.tv_links insert {} end -id 0 -text 0 -values [list {Some Site} http://123fakesite.456 18-04-28]
+#.tv_links insert {} end -id 1 -text 1 -values [list {Some Site} http://123fakesite.456 18-04-28]
 
