@@ -9,23 +9,32 @@ menu .men.mfile
 .men.mfile add separator
 .men.mfile add command -label Save -command save_db
 .men.mfile add command -label Close -command close_db
+.men.mfile add command -label Quit -command exit_prog
 .men add cascade -label File -menu .men.mfile
-#.men add command -label Exit -command exit_prog
 .men add command -label {Add Link} -command {modify_row -1}
 .men add command -label Modify -command try_modify
 .men add command -label Delete -command try_delete
-pack [ttk::treeview .tv_links -columns {title url mtime}] -side left -fill both -expand 1
-pack [scrollbar .tv_links_sb] -side left -fill y
+pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
+pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
 foreach {c l w} [list #0 # 32 title Name 128 url URL 256 mtime {Time Modified} 128] {
 	# this loop adjusts the treeview's columns
 	.tv_links heading $c -text $l -anchor w
 	.tv_links column $c -minwidth 16 -width $w
 }
+bind .tv_links <Return> {
+	try_modify
+}
+bind .tv_links <Delete> {
+	try_delete
+}
 proc try_modify {} {
 	# Modify a row if there is a selection
-	set rownumber [.tv_links selection]
-	if {[string length $rownumber] != 0} {
-		modify_row $rownumber
+	set rownumbers [.tv_links selection]
+	if {[llength $rownumbers] > 0} {
+		foreach r $rownumbers {
+			modify_row $r
+			tkwait window .win_row_mod
+		}
 	} else {
 		tk_messageBox -type ok -icon error -message {Please select link to modify.}
 	}
@@ -34,10 +43,13 @@ proc try_delete {} {
 	# Delete a row if one is selected
 	# Deletes from db first, then from treeview.
 	# Note, DB::is_open need not be checked
-	set rownumber [.tv_links selection]
-	if {[string length $rownumber] != 0} {
-		conn eval {DELETE from bookmarks WHERE rowid=:rownumber LIMIT 1}
-		.tv_links delete $rownumber
+	# TODO: add warning prompt on multiple?
+	set rownumbers [.tv_links selection]
+	if {[llength $rownumbers] > 0} {
+		foreach r $rownumbers {
+			conn eval {DELETE from bookmarks WHERE rowid=:r LIMIT 1}
+			.tv_links delete $r
+		}
 	}
 }
 proc save_row {rownumber} {
@@ -72,12 +84,25 @@ proc modify_row {rownumber} {
 		return
 	}
 	toplevel .win_row_mod
-	wm title .win_row_mod {Modify Row}
+	grab set .win_row_mod
+	wm attributes .win_row_mod -topmost 1
+	bind .win_row_mod <Escape> {
+		destroy .win_row_mod
+	}
+	wm title .win_row_mod {Modify link..}
 	wm resizable .win_row_mod 0 0
 	pack [labelframe .win_row_mod.t -text Title]
-	pack [entry .win_row_mod.t.e]
+	pack [entry .win_row_mod.t.e -width 50]
 	pack [labelframe .win_row_mod.u -text URL]
-	pack [entry .win_row_mod.u.e]
+	pack [entry .win_row_mod.u.e -width 50]
+	bind .win_row_mod.t.e <Shift-Button-1> {
+		.win_row_mod.t.e selection range 0 end
+	}
+	bind .win_row_mod.u.e <Shift-Button-1> {
+		.win_row_mod.u.e selection range 0 end
+	}
+	set srn [expr {($rownumber>0) ? $rownumber : "NEW"}]
+	pack [label .win_row_mod.l -text "LINK #: $srn"]
 	pack [frame .win_row_mod.buttons] -side bottom
 	pack [button .win_row_mod.buttons.save -text Save -command "save_row $rownumber"] -side left
 	pack [button .win_row_mod.buttons.cancel -text Cancel -command {destroy .win_row_mod}] -side left
@@ -148,3 +173,15 @@ proc save_db {} {
 #.tv_links insert {} end -id 0 -text 0 -values [list {Some Site} http://123fakesite.456 18-04-28]
 #.tv_links insert {} end -id 1 -text 1 -values [list {Some Site} http://123fakesite.456 18-04-28]
 
+bind . <Control-c> {
+	# TODO: add yes/no prompt
+	close_db
+}
+bind . <Control-s> {
+	# TODO: add yes/no prompt
+	save_db
+}
+bind . <Control-o> {
+	# TODO: add warning if DB::is_open
+	open_db
+}
