@@ -4,16 +4,16 @@ package require sqlite3
 menu .men
 . configure -menu .men
 menu .men.mfile
-.men.mfile add command -label New -command init_db
-.men.mfile add command -label Open -command open_db
+.men.mfile add command -label New -command init_db -underline 0
+.men.mfile add command -label Open -command open_db -underline 0
 .men.mfile add separator
-.men.mfile add command -label Save -command save_db
-.men.mfile add command -label Close -command close_db
-.men.mfile add command -label Quit -command exit_prog
+.men.mfile add command -label Save -command save_db -state disabled -underline 0
+.men.mfile add command -label Close -command close_db -state disabled -underline 0
+.men.mfile add command -label Quit -command exit_prog -underline 0
 .men add cascade -label File -menu .men.mfile
-.men add command -label {Add Link} -command {modify_row -1}
-.men add command -label Modify -command try_modify
-.men add command -label Delete -command try_delete
+.men add command -label {Add Link} -command {modify_row -1} -state disabled
+.men add command -label Modify -command try_modify -state disabled
+.men add command -label Delete -command try_delete -state disabled
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
 pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
 foreach {c l w} [list #0 # 32 title Name 128 url URL 256 mtime {Time Modified} 128] {
@@ -115,6 +115,7 @@ proc modify_row {rownumber} {
 namespace eval DB {
 	# Simply stores whether a DB is open or not. ATM.
 	variable is_open 0
+	variable order rowid
 }
 proc init_db {} {
 	# Creates a database file, if one is not already open.
@@ -122,13 +123,26 @@ proc init_db {} {
 	# exists and it WILL delete that file. Warnings were given.
 	# A default table is created in the new file and a transaction
 	# is started.
-	if {$DB::is_open} { return }
+	if {$DB::is_open} {
+		set saved [tk_messageBox -icon question -message {DB Already open. Proceed?} -type yesno -title Prompt]
+		if {[string equal $saved no]} {
+			return
+		}
+		close_db
+	}
 	set file_name [tk_getSaveFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Save database as..}]
 	if {[string length $file_name] == 0} { return }
 	if {[file exists $file_name]} { file delete $file_name }
 	sqlite3 conn $file_name
 	conn eval {CREATE TABLE bookmarks(rowid INTEGER PRIMARY KEY autoincrement,title TEXT,url TEXT,mtime TEXT); BEGIN TRANSACTION;}
 	set DB::is_open 1
+	menu_is_open
+}
+proc load_rows {} {
+	# Adds rows to treeview.
+	conn eval {SELECT rowid,title,url,mtime from bookmarks ORDER BY rowid} {
+		.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
+	}
 }
 proc open_db {} {
 	# Prompt user to choose which database file to open. Given one,
@@ -144,9 +158,8 @@ proc open_db {} {
 			sqlite3 conn $s
 			conn eval {BEGIN TRANSACTION;}
 			set DB::is_open 1
-			conn eval {SELECT rowid,title,url,mtime from bookmarks ORDER BY rowid} {
-				.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
-			}
+			load_rows
+			menu_is_open
 		}
 	}
 	puts "DB status: $DB::is_open"
@@ -155,24 +168,49 @@ proc close_db {} {
 	# Closes a database if one is open. Does not commit changes.
 	# Also clears treeview of rows from last file.
 	if {$DB::is_open} {
+		set saveit [tk_messageBox -icon question -message {Save before closing?} -type yesno -title Prompt]
+		if {[string equal $saveit yes]} {
+			save_db
+		}
 		puts {Closing DB..}
 		conn close
 		set DB::is_open 0
 		.tv_links delete [.tv_links children {}]
+		menu_is_open
 	}
 }
 proc exit_prog {} {
 	# Closes the database and then the program.
+	if {[string equal [tk_messageBox -icon question -message {Quit program?} -type yesno -title Prompt] no]} { return }
 	close_db
 	destroy .
 }
 proc save_db {} {
 	# Commits changes to database with end and begin.
+	puts {Saving DB..}
 	conn eval {END TRANSACTION;BEGIN TRANSACTION;}
+}
+proc menu_is_open {} {
+	set nstate [expr {($DB::is_open) ? "normal" : "disabled"}]
+	for {set i 2} {$i<5} {incr i} {
+		.men entryconfigure $i -state $nstate
+	}
+	.men.mfile entryconfigure 4 -state $nstate
+	.men.mfile entryconfigure 5 -state $nstate
 }
 #.tv_links insert {} end -id 0 -text 0 -values [list {Some Site} http://123fakesite.456 18-04-28]
 #.tv_links insert {} end -id 1 -text 1 -values [list {Some Site} http://123fakesite.456 18-04-28]
-
+proc reorder_rows {bycol} {
+	set rs [list]
+	foreach r [.tv_links children {}] {
+		lappend rs [concat $r [.tv_links item $r -values]]
+	}
+	puts [lsort -index $bycol $rs]
+}
+bind . <Control-n> {
+	# TODO: add yes/no prompt
+	init_db
+}
 bind . <Control-c> {
 	# TODO: add yes/no prompt
 	close_db
@@ -184,4 +222,11 @@ bind . <Control-s> {
 bind . <Control-o> {
 	# TODO: add warning if DB::is_open
 	open_db
+}
+bind . <Control-q> {
+	exit_prog
+}
+bind . <Control-z> {
+	reorder_rows t
+
 }
