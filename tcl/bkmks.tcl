@@ -138,7 +138,7 @@ proc init_db {} {
 	set DB::is_open 1
 	menu_is_open
 }
-proc load_rows {} {
+proc load_rows {{where {}}} {
 	# Adds rows to treeview.
 	conn eval {SELECT rowid,title,url,mtime from bookmarks ORDER BY rowid} {
 		.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
@@ -150,17 +150,20 @@ proc open_db {} {
 	# ATM no checks are made whether this table exists nor if the schema
 	# matches.
 	if {$DB::is_open} {
-		tk_messageBox -icon error -type ok -message {Close current file first.}
-	} else {
-		set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
-		if {[string length $s] > 0} {
-			puts "Opened DB $s"
-			sqlite3 conn $s
-			conn eval {BEGIN TRANSACTION;}
-			set DB::is_open 1
-			load_rows
-			menu_is_open
+		set closeit [tk_messageBox -icon question -message {Close current DB?} -type yesno -title Prompt]
+		if {[string equal $closeit no]} {
+			tk_messageBox -icon error -type ok -message {Close current file first.}
+			return
 		}
+	}
+	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
+	if {[string length $s] > 0} {
+		puts "Opened DB $s"
+		sqlite3 conn $s
+		conn eval {BEGIN TRANSACTION;}
+		set DB::is_open 1
+		load_rows
+		menu_is_open
 	}
 	puts "DB status: $DB::is_open"
 }
