@@ -115,7 +115,7 @@ proc modify_row {rownumber} {
 namespace eval DB {
 	# Simply stores whether a DB is open or not. ATM.
 	variable is_open 0
-	variable order rowid
+	variable order 0
 }
 proc init_db {} {
 	# Creates a database file, if one is not already open.
@@ -191,6 +191,7 @@ proc save_db {} {
 	conn eval {END TRANSACTION;BEGIN TRANSACTION;}
 }
 proc menu_is_open {} {
+	# Toggles menu options based on file state.
 	set nstate [expr {($DB::is_open) ? "normal" : "disabled"}]
 	for {set i 2} {$i<5} {incr i} {
 		.men entryconfigure $i -state $nstate
@@ -198,35 +199,43 @@ proc menu_is_open {} {
 	.men.mfile entryconfigure 4 -state $nstate
 	.men.mfile entryconfigure 5 -state $nstate
 }
-#.tv_links insert {} end -id 0 -text 0 -values [list {Some Site} http://123fakesite.456 18-04-28]
-#.tv_links insert {} end -id 1 -text 1 -values [list {Some Site} http://123fakesite.456 18-04-28]
+
 proc reorder_rows {bycol} {
+	# Reorders rows by column. The reordering is only done visually
+	# meaning that no reads from DB will occur. A column is reordered
+	# in reverse if it was the previous order. See variable DB::order.
 	set rs [list]
 	foreach r [.tv_links children {}] {
 		lappend rs [concat $r [.tv_links item $r -values]]
+		.tv_links delete $r
 	}
-	puts [lsort -index $bycol $rs]
+	set reverse [expr {($bycol==$DB::order) ? "-decreasing" : "-increasing"}]
+	set DB::order $bycol
+	foreach r [lsort -index $bycol $reverse $rs] {
+		set val [lassign $r id]
+		.tv_links insert {} end -id $id -text $id -values $val
+	}
 }
 bind . <Control-n> {
-	# TODO: add yes/no prompt
 	init_db
 }
 bind . <Control-c> {
-	# TODO: add yes/no prompt
 	close_db
 }
 bind . <Control-s> {
-	# TODO: add yes/no prompt
 	save_db
 }
 bind . <Control-o> {
-	# TODO: add warning if DB::is_open
 	open_db
 }
 bind . <Control-q> {
 	exit_prog
 }
 bind . <Control-z> {
-	reorder_rows t
-
+	reorder_rows 0
+}
+bind .tv_links <Button-1> {
+	if {[string equal [.tv_links identify region %x %y] heading]} {
+		reorder_rows [string range [.tv_links identify column %x %y] 1 end]
+	}
 }
