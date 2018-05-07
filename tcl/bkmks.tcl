@@ -14,8 +14,11 @@ menu .men.mfile
 .men add command -label {Add Link} -command {modify_row -1} -state disabled
 .men add command -label Modify -command try_modify -state disabled
 .men add command -label Delete -command try_delete -state disabled
+.men add command -label {Copy URL} -command copy_url -state disabled -underline 0
+pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
 pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
+
 foreach {c l w} [list #0 # 32 title Name 128 url URL 256 mtime {Time Modified} 128] {
 	# this loop adjusts the treeview's columns
 	.tv_links heading $c -text $l -anchor w
@@ -50,6 +53,37 @@ proc try_delete {} {
 			conn eval {DELETE from bookmarks WHERE rowid=:r LIMIT 1}
 			.tv_links delete $r
 		}
+	}
+}
+proc entry_sel_all {e} {
+	# Selects all the text in an entry
+	focus $e
+	$e selection range 0 end
+}
+proc entry_del_sel {e} {
+	# Deletes selected text in an entry
+	if {[$e selection present]} {
+		$e delete sel.first sel.last
+	}
+}
+proc entry_copy {e} {
+	# Copies either selection of entry or entire entry.
+	set s [$e get]
+	if {[$e selection present]} {
+		set s [string range $s [$e index sel.first] [$e index sel.last]]
+	}
+	if {[string length $s]>0} {
+		clipboard clear
+		clipboard append $s
+	}
+}
+proc entry_del_paste {e} {
+	# Replaces contents of entry with whats in clipboard
+	# (if clipboard length >0)
+	set s [clipboard get]
+	if {[string length $s]>0} {
+		$e delete 0 end
+		$e insert 0 $s
 	}
 }
 proc save_row {rownumber} {
@@ -92,9 +126,26 @@ proc modify_row {rownumber} {
 	wm title .win_row_mod {Modify link..}
 	wm resizable .win_row_mod 0 0
 	pack [labelframe .win_row_mod.t -text Title]
-	pack [entry .win_row_mod.t.e -width 50]
+	pack [entry .win_row_mod.t.e -width 50] -side left
+	pack [button .win_row_mod.t.ba -text A -command {entry_sel_all .win_row_mod.t.e}
+	] -side left
+	pack [button .win_row_mod.t.bc -text C -command {entry_copy .win_row_mod.t.e}
+	] -side left
+	pack [button .win_row_mod.t.bd -text D -command {entry_del_sel .win_row_mod.t.e}
+	] -side left
+	pack [button .win_row_mod.t.br -text R -command {entry_del_paste .win_row_mod.t.e}
+	] -side left
 	pack [labelframe .win_row_mod.u -text URL]
-	pack [entry .win_row_mod.u.e -width 50]
+	pack [entry .win_row_mod.u.e -width 50] -side left
+	pack [button .win_row_mod.u.ba -text A -command {entry_sel_all .win_row_mod.u.e}
+	] -side left
+	pack [button .win_row_mod.u.bc -text C -command {entry_copy .win_row_mod.u.e}
+] -side left
+	pack [button .win_row_mod.u.bd -text D -command {entry_del_sel .win_row_mod.u.e}
+	] -side left
+	pack [button .win_row_mod.u.br -text R -command {entry_del_paste .win_row_mod.u.e}
+	] -side left
+
 	bind .win_row_mod.t.e <Shift-Button-1> {
 		.win_row_mod.t.e selection range 0 end
 	}
@@ -116,6 +167,7 @@ namespace eval DB {
 	# Simply stores whether a DB is open or not. ATM.
 	variable is_open 0
 	variable order 0
+	variable col_n [dict create 0 rowid 1 title 2 url 3 mtime]
 }
 proc init_db {} {
 	# Creates a database file, if one is not already open.
@@ -140,7 +192,8 @@ proc init_db {} {
 }
 proc load_rows {{where {}}} {
 	# Adds rows to treeview.
-	conn eval {SELECT rowid,title,url,mtime from bookmarks ORDER BY rowid} {
+	set order [dict get $DB::col_n $DB::order]
+	conn eval "SELECT rowid,title,url,mtime from bookmarks ORDER BY $order" {
 		.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
 	}
 }
@@ -156,9 +209,12 @@ proc open_db {} {
 			return
 		}
 	}
+	close_db
 	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
 	if {[string length $s] > 0} {
 		puts "Opened DB $s"
+		wm title . "bkmks - $s"
+		set_status "Opened DB $s"
 		sqlite3 conn $s
 		conn eval {BEGIN TRANSACTION;}
 		set DB::is_open 1
@@ -196,7 +252,7 @@ proc save_db {} {
 proc menu_is_open {} {
 	# Toggles menu options based on file state.
 	set nstate [expr {($DB::is_open) ? "normal" : "disabled"}]
-	for {set i 2} {$i<5} {incr i} {
+	for {set i 2} {$i<6} {incr i} {
 		.men entryconfigure $i -state $nstate
 	}
 	.men.mfile entryconfigure 4 -state $nstate
@@ -218,6 +274,20 @@ proc reorder_rows {bycol} {
 		set val [lassign $r id]
 		.tv_links insert {} end -id $id -text $id -values $val
 	}
+}
+proc copy_url {} {
+	# Sets clipboard to url of selected row
+	# If no row is selected, nothing happens
+	# and clipboard is left same
+	set r [.tv_links selection]
+	if {[llength $r] > 0} {
+		lassign [.tv_links item [lindex $r 0] -values] title url mtime
+		clipboard clear
+		clipboard append $url
+	}
+}
+proc set_status {s} {
+	.statusbar configure -text $s
 }
 bind . <Control-n> {
 	init_db
@@ -241,4 +311,7 @@ bind .tv_links <Button-1> {
 	if {[string equal [.tv_links identify region %x %y] heading]} {
 		reorder_rows [string range [.tv_links identify column %x %y] 1 end]
 	}
+}
+bind .tv_links <c> {
+	copy_url
 }
