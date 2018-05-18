@@ -88,18 +88,63 @@ proc get_tree {} {
 	}
 	return $groups
 }
+proc change_pgroup {gid {new_pid 0}} {
+	# Changes the parent group of gid to new_pid.
+	# Assume root if 0.
+	# ATM branch completely if root
+	if {$new_pid==0} {
+		# Replace gid's relation with one to root
+		conn eval {
+			DELETE FROM rel WHERE gid=:gid AND depth>0;
+			INSERT INTO rel VALUES(NULL,:gid,NULL,1);
+		}
+		# Get subgroups whose relations should also change
+		set children [conn eval {
+			SELECT gid FROM rel WHERE pid=:gid AND depth>0 ORDER BY depth DESC;
+		}]
+		set ch_parents [list]
+		# Get the subgroups intermediate parent
+		foreach c $children {
+			conn eval {
+				SELECT pid FROM rel WHERE gid=:c AND depth=1 LIMIT 1;
+			} {
+				lappend ch_parents $pid
+				puts "pid $pid"
+				puts "ch_parents is: $ch_parents"
+			}
+			#puts [lappend ch_parent [conn eval {
+			#	SELECT pid FROM rel WHERE gid=:c;
+			#}
+			#
+		}
+		puts {children were:}
+		puts $children
+		puts {parents were:}
+		puts $ch_parents
+		lmap c $children p $ch_parents {
+			# For each subgroup, clear all relations except identity
+			# Then re-associate with its previous parent
+			puts "c= $c | p= $p"
+			conn eval {
+				DELETE FROM rel WHERE gid=:c AND depth>0;
+				INSERT INTO rel SELECT NULL,:c,pid,depth+1 FROM rel WHERE gid=:p AND pid IS NOT NULL;
+			}
+		}
+	}
+}
 sqlite3 conn :memory:
 build_tables
 set cats_gid [add_group cats]
 set dogs_gid [add_group dogs]
-add_group large $cats_gid
+set large_gid [add_group large $cats_gid]
 add_group small $cats_gid
-conn eval {
-	SELECT name,gid FROM groups JOIN rel ON groups.rowid=rel.gid WHERE pid=:cats_gid ORDER BY pid;
-} {
-puts "$name $gid"
-}
-puts ----
+add_group tammy $large_gid
+#conn eval {
+#	SELECT name,gid FROM groups JOIN rel ON groups.rowid=rel.gid WHERE pid=:cats_gid ORDER BY pid;
+#} {
+#puts "$name $gid"
+#}
+#puts ----
 #del_group $cats_gid
 #
 #puts DELETED
@@ -108,4 +153,48 @@ puts ----
 #} {
 #	puts "$name $gid $pid $depth"
 #}
-puts [get_tree]
+#puts [get_tree]
+change_pgroup $large_gid
+conn eval {
+	SELECT name,groups.rowid as rid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid ORDER BY pid ASC;
+} {
+	puts "$name | $rid | $pid | $depth"
+}
+puts {BETTER PRINT}
+puts {      NAME | GID | PID | DEPTH}
+puts --------------------------------
+set root_c [list]
+conn eval {
+	SELECT gid FROM groups JOIN rel on groups.rowid=rel.gid WHERE pid is NULL;
+} {
+	lappend root_c $gid
+}
+foreach g $root_c {
+	puts "GROUP NUMBER $g"
+	conn eval {
+		SELECT name,gid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid WHERE rel.pid=:g;
+	} {
+		puts [format {%10s | %3d | %3d | %3d} $name $gid $pid $depth]
+#		puts "$name | $gid | $pid | $depth"
+	}
+	puts ---------------
+}
+# First we made this tree:
+# {
+# Cats
+# 	* Large
+# 		* Tammy
+# 	* Small
+# Dogs
+# }
+#
+# Then we moved large to be a root child
+# {
+# Cats
+# 	* Small
+# Dogs
+# Large
+# 	* Tammy
+# }
+# Should be the result
+#
