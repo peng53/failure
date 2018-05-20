@@ -77,7 +77,7 @@ proc del_group_alt {gid {new_parent {}}} {
 	if {![dict exists $DBConn::groups $gid]} {
 		return
 	}
-	if {$new_parent!={} && [dict exist $DBConn::groups $pid]} {
+	if {$new_parent!={} && [dict exist $DBConn::groups $new_parent]} {
 		if {[conn eval {
 			SELECT 1 FROM rel WHERE gid=:new_parent AND pid=:gid LIMIT 1;
 		}]==1} {
@@ -89,7 +89,7 @@ proc del_group_alt {gid {new_parent {}}} {
 			SELECT ifnull(pid,0) FROM rel WHERE gid=:gid AND depth=1 LIMIT 1;
 		}]
 	}
-	dict remove DBConn::groups $gid
+	dict unset DBConn::groups $gid
 	if {$new_parent==0} {
 		conn eval {UPDATE data SET gid=NULL WHERE gid=:gid;}
 	} else {
@@ -196,17 +196,33 @@ proc change_pgroup {gid {new_pid 0}} {
 
 sqlite3 conn :memory:
 build_tables
-set cats_gid [add_group cats]
-set dogs_gid [add_group dogs]
-set large_gid [add_group large $cats_gid]
-add_group small $cats_gid
-add_group tammy $large_gid
-change_pgroup $large_gid
-conn eval {
-	SELECT name,groups.rowid as rid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid ORDER BY pid ASC;
-} {
-	puts "$name | $rid | $pid | $depth"
-}
+# Inital should be
+# cats
+# * blue
+# * red
+# * yellow
+# * * large
+# dogs
+# * black
+# * * small
+set cats [add_group cats]
+add_group blue $cats
+add_group red $cats
+set yellow [add_group yellow $cats]
+add_group large $yellow
+set dogs [add_group dogs]
+set black [add_group black $dogs]
+add_group small $black
+# Now lets delete_alt dogs
+# black
+# * small
+# should belong to root
+del_group_alt $dogs
+# Let's do the same for 'yellow'
+# but at same time set parent group to black (large black)
+del_group_alt $yellow $black
+
+
 puts {BETTER PRINT}
 puts {      NAME | GID | PID | DEPTH}
 puts --------------------------------
@@ -219,54 +235,18 @@ conn eval {
 foreach g $root_c {
 	puts "GROUP NUMBER $g"
 	conn eval {
-		SELECT name,gid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid WHERE rel.pid=:g;
+		SELECT name,gid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid WHERE rel.pid=:g ORDER BY depth;
 	} {
-		puts [format {%10s | %3d | %3d | %3d} $name $gid $pid $depth]
+		if {$depth==0} {
+			puts [format {%10s | %3d | PAR   ENT} $name $gid]
+		} else {
+			puts [format {%10s | %3d | %3d | %3d} $name $gid $pid $depth]
+		}
 	}
 	puts ---------------
 }
-# First we made this tree:
-# {
-# Cats
-# 	* Large
-# 		* Tammy
-# 	* Small
-# Dogs
-# }
-#
-# Then we moved large to be a root child
-# {
-# Cats
-# 	* Small
-# Dogs
-# Large
-# 	* Tammy
-# }
-# Should be the result
-change_pgroup $large_gid $dogs_gid
-#del_group $dogs_gid
-puts {BETTER PRINT 2}
-puts {      NAME | GID | PID | DEPTH}
-puts --------------------------------
-set root_c [list]
-conn eval {
-	SELECT gid FROM groups JOIN rel on groups.rowid=rel.gid WHERE pid is NULL;
-} {
-	lappend root_c $gid
+puts {raw closure table with group names}
+conn eval {select * from rel join groups on groups.rowid=gid} {
+	puts "$gid|$name {$pid} $depth"
 }
-foreach g $root_c {
-	puts "GROUP NUMBER $g"
-	conn eval {
-		SELECT name,gid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid WHERE rel.pid=:g;
-	} {
-		puts [format {%10s | %3d | %3d | %3d} $name $gid $pid $depth]
-	}
-	puts ---------------
-}
-foreach {rowid gid pid depth} [conn eval {select * from rel}] {
-	puts "$rowid $gid $pid $depth"
-}
-add_group cat [del_group_alt $cats_gid]
-conn eval {SELECT * from rel JOIN groups ON groups.rowid=rel.gid} {
-	puts "$name $gid $pid $depth"
-}
+
