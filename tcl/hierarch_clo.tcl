@@ -70,6 +70,40 @@ proc del_group {gid} {
 	# Second pass, delete subgroups' data
 	# and relation.
 }
+proc del_group_alt {gid {new_parent {}}} {
+	# Alternative delete group that preserves
+	# data and sub-groups by dropping them to
+	# gid's parent.
+	if {![dict exists $DBConn::groups $gid]} {
+		return
+	}
+	if {$new_parent!={} && [dict exist $DBConn::groups $pid]} {
+		if {[conn eval {
+			SELECT 1 FROM rel WHERE gid=:new_parent AND pid=:gid LIMIT 1;
+		}]==1} {
+			# Tried to change_pgroup to a child, not valid ATM
+			return
+		}
+	} else {
+		set new_parent [conn eval {
+			SELECT ifnull(pid,0) FROM rel WHERE gid=:gid AND depth=1 LIMIT 1;
+		}]
+	}
+	dict remove DBConn::groups $gid
+	if {$new_parent==0} {
+		conn eval {UPDATE data SET gid=NULL WHERE gid=:gid;}
+	} else {
+		conn eval {UPDATE data SET gid=:new_parent WHERE gid=:gid;}
+	}
+	set children [list [conn eval {
+		DELETE FROM groups WHERE rowid=:gid;
+		SELECT gid FROM rel WHERE pid=:gid AND depth=1;
+	}]]
+	foreach c $children {
+		change_pgroup $c $new_parent
+	}
+	return $new_parent
+}
 proc add_data {key value mtime {gid 0}} {
 	# Adds a row to data table to group gid.
 	# If gid is 0, assume root.
@@ -231,4 +265,8 @@ foreach g $root_c {
 }
 foreach {rowid gid pid depth} [conn eval {select * from rel}] {
 	puts "$rowid $gid $pid $depth"
+}
+add_group cat [del_group_alt $cats_gid]
+conn eval {SELECT * from rel JOIN groups ON groups.rowid=rel.gid} {
+	puts "$name $gid $pid $depth"
 }
