@@ -202,11 +202,18 @@ proc change_pgroup {gid {new_pid 0}} {
 	}
 }
 proc open_db_i {fname} {
+	# Opens an existing DB
 	if {$DBConn::is_open} {
 		return
 	}
 	sqlite3 conn $fname
 	set DBConn::is_open 1
+	set DBConn::groups [dict create]
+	conn eval {
+		SELECT rowid,name FROM groups;
+	} {
+		dict set DBConn::groups $rowid $name
+	}
 }
 proc testing_db {} {
 sqlite3 conn :memory:
@@ -236,6 +243,8 @@ add_group small $black
 # Let's do the same for 'yellow'
 # but at same time set parent group to black (large black)
 #del_group_alt $yellow $black
+add_data hello world t $black
+add_data root data bbb
 
 
 puts {BETTER PRINT}
