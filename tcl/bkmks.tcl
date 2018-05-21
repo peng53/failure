@@ -98,14 +98,12 @@ proc save_row {rownumber} {
 	puts $t
 	puts $u
 	if {$rownumber == -1} {
-# OLD 1d
-#		conn eval {INSERT into bookmarks VALUES(NULL,:t,:u,:m)}
+		conn eval {INSERT into bookmarks VALUES(NULL,:t,:u,:m)}
 		set rownumber [conn eval {select last_insert_rowid();}]
 		# note : need sql for get id (which is also text)
 		.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
 	} else {
-# OLD 1d
-#		conn eval {UPDATE bookmarks SET title=:t, url=:u, mtime=:m WHERE rowid=:rownumber}
+		conn eval {UPDATE bookmarks SET title=:t, url=:u, mtime=:m WHERE rowid=:rownumber}
 		.tv_links item $rownumber -value [list $t $u $m]
 	}
 	destroy .win_row_mod
@@ -170,7 +168,6 @@ namespace eval DB {
 	variable is_open 0
 	variable order 0
 	variable col_n [dict create 0 rowid 1 title 2 url 3 mtime]
-	variable groups [dict create]
 }
 proc init_db {} {
 	# Creates a database file, if one is not already open.
@@ -189,32 +186,15 @@ proc init_db {} {
 	if {[string length $file_name] == 0} { return }
 	if {[file exists $file_name]} { file delete $file_name }
 	sqlite3 conn $file_name
-# OLD 1d
-#	conn eval {CREATE TABLE bookmarks(rowid INTEGER PRIMARY KEY autoincrement,title TEXT,url TEXT,mtime TEXT); BEGIN TRANSACTION;}
-	conn eval {
-		CREATE TABLE groups(name TEXT);
-		CREATE TABLE rel(gid INTEGER,pid INTEGER,depth));
-		CREATE TABLE data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);
-		BEGIN TRANSACTION;
-	}
+	conn eval {CREATE TABLE bookmarks(rowid INTEGER PRIMARY KEY autoincrement,title TEXT,url TEXT,mtime TEXT); BEGIN TRANSACTION;}
 	set DB::is_open 1
 	menu_is_open
 }
 proc load_rows {{where {}}} {
 	# Adds rows to treeview.
 	set order [dict get $DB::col_n $DB::order]
-# OLD 1d
-#	conn eval "SELECT rowid,title,url,mtime from bookmarks ORDER BY $order" {
-#		.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
-#	}
-	set DB::groups [dict create]
-	conn eval {SELECT name,gid,
-	conn eval "SELECT rowid,gid,key,value,mtime from data ORDER by $order" {
-		if {![dict exists $DB::groups $gid]} {
-			dict append DB::groups $gid
-			.tv_links insert {}
-		}
-		.tv_links insert {} end -id $rowid -text $rowid -values [list "$gid $key" $value $mtime]
+	conn eval "SELECT rowid,title,url,mtime from bookmarks ORDER BY $order" {
+		.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
 	}
 }
 proc open_db {} {
