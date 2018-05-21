@@ -143,6 +143,7 @@ proc change_pgroup {gid {new_pid 0}} {
 	# Assume root if 0.
 	# ATM branch completely if root
 	if {$new_pid==$gid} {
+		puts {Attempted to change parent to self}
 		return
 	} elseif {$new_pid==0} {
 		# Replace gid's relation with one to root
@@ -169,6 +170,13 @@ proc change_pgroup {gid {new_pid 0}} {
 		}
 	} elseif {[dict exists $DBConn::groups $new_pid]} {
 		# .. to new_pid.
+		if {[conn eval {
+				SELECT 1 FROM rel WHERE gid=:new_pid AND pid=:gid LIMIT 1;
+			}]==1} {
+			puts {Attempted to change parent to child}
+			return
+			# Can't change parent to child
+		}
 		conn eval {
 			DELETE FROM rel WHERE gid=:gid AND depth>1;
 			UPDATE rel SET pid=:new_pid WHERE gid=:gid AND depth=1 LIMIT 1;
@@ -193,7 +201,14 @@ proc change_pgroup {gid {new_pid 0}} {
 		}
 	}
 }
-
+proc open_db_i {fname} {
+	if {$DBConn::is_open} {
+		return
+	}
+	sqlite3 conn $fname
+	set DBConn::is_open 1
+}
+proc testing_db {} {
 sqlite3 conn :memory:
 build_tables
 # Inital should be
@@ -217,10 +232,10 @@ add_group small $black
 # black
 # * small
 # should belong to root
-del_group_alt $dogs
+#del_group_alt $dogs
 # Let's do the same for 'yellow'
 # but at same time set parent group to black (large black)
-del_group_alt $yellow $black
+#del_group_alt $yellow $black
 
 
 puts {BETTER PRINT}
@@ -249,4 +264,4 @@ puts {raw closure table with group names}
 conn eval {select * from rel join groups on groups.rowid=gid} {
 	puts "$gid|$name {$pid} $depth"
 }
-
+}
