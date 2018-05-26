@@ -27,6 +27,8 @@ foreach {c l w} [list #0 Groups 128 title Name 128 url URL 256 mtime {Time Modif
 	.tv_links heading $c -text $l -anchor w
 	.tv_links column $c -minwidth 16 -width $w
 }
+
+
 proc g_open_db {} {
 	# Opens a database and reads it.
 	if {$DBConn::is_open} {
@@ -57,7 +59,7 @@ proc load_rows {} {
 	foreach g $groups {
 		puts $g
 		conn eval {
-			SELECT gid,pid FROM rel WHERE gid IN 
+			SELECT gid,pid FROM rel WHERE gid IN
 				(SELECT gid FROM rel WHERE pid=:g AND gid!=pid)
 			and depth=1 and pid IS NOT NULL;
 		} {
@@ -71,6 +73,7 @@ proc load_rows {} {
 		.tv_links insert [expr {($gid==0)?{}:"g$gid"}] end -id $rowid -text $rowid -values [list $key $value $mtime]
 	}
 }
+
 proc modify_row {rownumber} {
 	# Opens a window for entering/modifying properties of
 	# a row. Only allows edit of title & url. This proc takes
@@ -139,39 +142,6 @@ proc modify_row {rownumber} {
 		g_grp_root_onoff .win_row_mod
 	}
 }
-proc g_grp_root_onoff {w} {
-	global rootg_cb
-	if {$rootg_cb} {
-		set m select
-		set s disabled
-	} else {
-		set m deselect
-		set s normal
-		if {[$w.grp.cb get]=={}} {
-			$w.grp.cb current 0
-		}
-	}
-	$w.grp.root $m
-	$w.grp.cb configure -state $s
-}
-
-proc try_modify {} {
-	# Modify a row if there is a selection
-	set rownumbers [.tv_links selection]
-	if {[llength $rownumbers] > 0} {
-		foreach r $rownumbers {
-			if {[string index $r 0]!={g}} {
-				modify_row $r
-				tkwait window .win_row_mod
-			} else {
-				modify_grp [string range $r 1 end]
-				tkwait window .win_grp_mod
-			}
-		}
-	} else {
-		tk_messageBox -type ok -icon error -message {Please select link to modify.}
-	}
-}
 proc save_row {rownumber} {
 	# Takes properties from 'win_row_mod' window and
 	# saves them to both database & treeview with
@@ -212,6 +182,7 @@ proc save_row {rownumber} {
 	}
 	destroy .win_row_mod
 }
+
 proc modify_grp {gid} {
 	# Change a group's parent and/or name
 	if {!$DBConn::is_open} {
@@ -231,10 +202,10 @@ proc modify_grp {gid} {
 	pack [labelframe .win_grp_mod.n -text Name]
 	pack [entry .win_grp_mod.n.e -width 50]
 	pack [frame .win_grp_mod.b]
-	pack [button .win_grp_mod.b.save -text Save] -side left
+	pack [button .win_grp_mod.b.save -text Save -command "save_grp $gid"] -side left
 	pack [button .win_grp_mod.b.cancel -text Cancel -command {destroy .win_grp_mod}] -side left
 
-	if {$gid!=0} {
+	if {$gid!=-1} {
 		# existing group
 		# need to set parent and current name
 		# parent
@@ -250,5 +221,75 @@ proc modify_grp {gid} {
 	}
 	g_grp_root_onoff .win_grp_mod
 }
+proc save_grp {gid} {
+	# Save changes to group (gid is just an int)
+	set n [.win_grp_mod.n.e get]
+	global rootg_cb
+	if {$rootg_cb==1} {
+		set p 0
+	} else {
+		set p [lindex [dict keys $DBConn::groups] [.win_grp_mod.grp.cb current]]
+	}
+	if {$gid == -1} {
+		# a new group.
+		set gid [add_group $n $p]
+		if {$p==0} {
+			.tv_links insert {} end -id g$gid -text "$gid $n"
+		} else {
+			.tv_links insert g$p end -id g$gid -text "$gid $n"
+		}
+	} else {
+		# need to check whether the parent is the child.
+		if {$gid==$p} {
+			# TODO: an error message
+			return
+		}
+		update_grp $gid $n
+		.tv_links item g$gid -text "$gid $n"
+		if {$p!=[string range [.tv_links parent g$gid] 1 end]} {
+			# there was a change in parent group
+			change_pgroup $gid $p
+			if {$p==0} {
+				.tv_links move g$gid {} end
+			} else {
+				.tv_links move g$gid g$p end
+			}
+		}
+	}
+	destroy .win_grp_mod
+}
+proc try_modify {} {
+	# Modify a row if there is a selection
+	set rownumbers [.tv_links selection]
+	if {[llength $rownumbers] > 0} {
+		foreach r $rownumbers {
+			if {[string index $r 0]!={g}} {
+				modify_row $r
+				tkwait window .win_row_mod
+			} else {
+				modify_grp [string range $r 1 end]
+				tkwait window .win_grp_mod
+			}
+		}
+	} else {
+		tk_messageBox -type ok -icon error -message {Please select link to modify.}
+	}
+}
+proc g_grp_root_onoff {w} {
+	global rootg_cb
+	if {$rootg_cb} {
+		set m select
+		set s disabled
+	} else {
+		set m deselect
+		set s normal
+		if {[$w.grp.cb get]=={}} {
+			$w.grp.cb current 0
+		}
+	}
+	$w.grp.root $m
+	$w.grp.cb configure -state $s
+}
+
 testing_db
 load_rows

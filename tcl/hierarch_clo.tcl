@@ -216,6 +216,12 @@ proc update_data {rowid key value mtime ngid} {
 		# ngid is not 0 or a group
 	}
 }
+proc update_grp {gid name} {
+	# Changes a group's name
+	conn eval {
+		UPDATE groups SET name=:name WHERE rowid=:gid;
+	}
+}
 proc open_db_i {fname} {
 	# Opens an existing DB
 	if {$DBConn::is_open} {
