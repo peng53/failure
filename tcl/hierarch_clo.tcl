@@ -107,6 +107,7 @@ proc del_group_alt {gid {new_parent {}}} {
 proc add_data {key value mtime {gid 0}} {
 	# Adds a row to data table to group gid.
 	# If gid is 0, assume root.
+	puts "INSERTING KEY $key VALUE $value MTIME $mtime GID $gid"
 	if {$gid==0} {
 		conn eval {
 			INSERT INTO data VALUES(NULL,:key,:value,:mtime);
@@ -116,6 +117,7 @@ proc add_data {key value mtime {gid 0}} {
 			INSERT INTO data VALUES(:gid,:key,:value,:mtime);
 		}
 	} else {
+		# how did we get here?
 		return 0
 	}
 	return [conn eval {SELECT last_insert_rowid();}]
@@ -201,6 +203,19 @@ proc change_pgroup {gid {new_pid 0}} {
 		}
 	}
 }
+proc update_data {rowid key value mtime ngid} {
+	# Updates properties of a row in data.
+	conn eval {
+		UPDATE data SET key=:key value=:value mtime=:mtime WHERE rowid=:rowid LIMIT 1;
+	}
+	if {$ngid==0} {
+		conn eval { UPDATE data SET gid=NULL WHERE rowid=:rowid LIMIT 1; }
+	} elseif {[dict exists $DBConn::groups $ngid]} {
+		conn eval { UPDATE data SET gid=:ngid WHERE rowid=:rowid LIMIT 1; }
+	} else {
+		# ngid is not 0 or a group
+	}
+}
 proc open_db_i {fname} {
 	# Opens an existing DB
 	if {$DBConn::is_open} {
@@ -216,6 +231,7 @@ proc open_db_i {fname} {
 	}
 }
 proc testing_db {} {
+	set DBConn::is_open 1
 sqlite3 conn :memory:
 build_tables
 # Inital should be
@@ -273,4 +289,8 @@ puts {raw closure table with group names}
 conn eval {select * from rel join groups on groups.rowid=gid} {
 	puts "$gid|$name {$pid} $depth"
 }
+conn eval {select * from groups} {
+	puts "$rowid $name"
 }
+}
+
