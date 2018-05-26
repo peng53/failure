@@ -12,9 +12,8 @@ menu .men.mfile
 .men.mfile add command -label Quit -command exit_prog -underline 0
 .men add cascade -label File -menu .men.mfile
 .men add command -label {Add Group} -command {modify_grp -1}
-.men add command -label {Modify Group} -command {try_mod_grp}
-.men add command -label {Delete Group} -command {try_del_grp}
 .men add command -label {Add Link} -command {modify_row -1}
+
 .men add command -label Modify -command try_modify
 .men add command -label Delete -command try_delete -state disabled
 .men add command -label {Copy URL} -command copy_url -state disabled -underline 0
@@ -112,7 +111,7 @@ proc modify_row {rownumber} {
 	pack [labelframe .win_row_mod.grp -text Group] -fill x
 	pack [ttk::combobox .win_row_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	global rootg_cb
-	pack [checkbutton .win_row_mod.grp.root -text Root -command g_grp_root_onoff -variable rootg_cb] -side left
+	pack [checkbutton .win_row_mod.grp.root -text Root -command {g_grp_root_onoff .win_row_mod} -variable rootg_cb] -side left
 	bind .win_row_mod.t.e <Shift-Button-1> {
 		.win_row_mod.t.e selection range 0 end
 	}
@@ -137,10 +136,10 @@ proc modify_row {rownumber} {
 			# If the selected is a root key, check the button instead
 			.win_row_mod.grp.root select
 		}
-		g_grp_root_onoff
+		g_grp_root_onoff .win_row_mod
 	}
 }
-proc g_grp_root_onoff {} {
+proc g_grp_root_onoff {w} {
 	global rootg_cb
 	if {$rootg_cb} {
 		set m select
@@ -148,12 +147,12 @@ proc g_grp_root_onoff {} {
 	} else {
 		set m deselect
 		set s normal
-		if {[.win_row_mod.grp.cb get]=={}} {
-			.win_row_mod.grp.cb current 0
+		if {[$w.grp.cb get]=={}} {
+			$w.grp.cb current 0
 		}
 	}
-	.win_row_mod.grp.root $m
-	.win_row_mod.grp.cb configure -state $s
+	$w.grp.root $m
+	$w.grp.cb configure -state $s
 }
 
 proc try_modify {} {
@@ -164,6 +163,9 @@ proc try_modify {} {
 			if {[string index $r 0]!={g}} {
 				modify_row $r
 				tkwait window .win_row_mod
+			} else {
+				modify_grp [string range $r 1 end]
+				tkwait window .win_grp_mod
 			}
 		}
 	} else {
@@ -222,16 +224,31 @@ proc modify_grp {gid} {
 		destroy %W
 	}
 	wm title .win_grp_mod {Modify Group..}
-	pack [labelframe .win_grp_mod.p -text Parent] -fill x
-	pack [ttk::combobox .win_grp_mod.p.cb -state readonly] -fill x -expand 1
+	pack [labelframe .win_grp_mod.grp -text Parent] -fill x
+	pack [ttk::combobox .win_grp_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
+	global rootg_cb
+	pack [checkbutton .win_grp_mod.grp.root -text Root -variable rootg_cb -command {g_grp_root_onoff .win_grp_mod}] -side left
 	pack [labelframe .win_grp_mod.n -text Name]
 	pack [entry .win_grp_mod.n.e -width 50]
 	pack [frame .win_grp_mod.b]
-	pack [button .win_grp_mod.b.save -text Save]
-	pack [button .win_grp_mod.b.cancel -text Cancel]
-}
-proc try_mod_grp {} {
-	modify_grp -1
+	pack [button .win_grp_mod.b.save -text Save] -side left
+	pack [button .win_grp_mod.b.cancel -text Cancel -command {destroy .win_grp_mod}] -side left
+
+	if {$gid!=0} {
+		# existing group
+		# need to set parent and current name
+		# parent
+		set p [.tv_links parent g$gid]
+		if {[string length $p]>0} {
+			.win_grp_mod.grp.root deselect
+			.win_grp_mod.grp.cb set [dict get $DBConn::groups [string range $p 1 end]]
+		} else {
+			.win_grp_mod.grp.root select
+		}
+		# name
+		.win_grp_mod.n.e insert 0 [dict get $DBConn::groups $gid]
+	}
+	g_grp_root_onoff .win_grp_mod
 }
 testing_db
 load_rows
