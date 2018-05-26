@@ -98,7 +98,6 @@ proc load_rows {} {
 	}
 	# Second, other groups
 	foreach g $groups {
-		puts $g
 		conn eval {
 			SELECT gid,pid FROM rel WHERE gid IN
 				(SELECT gid FROM rel WHERE pid=:g AND gid!=pid)
@@ -125,23 +124,20 @@ proc modify_row {rownumber} {
 	wm attributes .win_row_mod -topmost 1
 	wm title .win_row_mod {Modify link..}
 	wm resizable .win_row_mod 0 0
-	pack [labelframe .win_row_mod.t -text Title]
-	pack [entry .win_row_mod.t.e -width 50] -side left
-	pack [button .win_row_mod.t.ba -text A -command {entry_sel_all .win_row_mod.t.e}] -side left
-	pack [button .win_row_mod.t.bc -text C -command {entry_copy .win_row_mod.t.e}] -side left
-	pack [button .win_row_mod.t.bd -text D -command {entry_del_sel .win_row_mod.t.e}] -side left
-	pack [button .win_row_mod.t.br -text R -command {entry_del_paste .win_row_mod.t.e}] -side left
-	pack [labelframe .win_row_mod.u -text URL]
-	pack [entry .win_row_mod.u.e -width 50] -side left
-	pack [button .win_row_mod.u.ba -text A -command {entry_sel_all .win_row_mod.u.e}] -side left
-	pack [button .win_row_mod.u.bc -text C -command {entry_copy .win_row_mod.u.e}] -side left
-	pack [button .win_row_mod.u.bd -text D -command {entry_del_sel .win_row_mod.u.e}] -side left
-	pack [button .win_row_mod.u.br -text R -command {entry_del_paste .win_row_mod.u.e}] -side left
+	foreach {p n} [list t Title u URL] {
+		set w .win_row_mod.$p
+		pack [labelframe .win_row_mod.$p -text $n]
+		pack [entry $w.e -width 50] -side left
+		pack [button $w.ba -text A -command "entry_sel_all $w.e"] -side left
+		pack [button $w.bc -text C -command "entry_copy $w.e"] -side left
+		pack [button $w.bd -text D -command "entry_del_sel $w.e"] -side left
+		pack [button $w.br -text R -command "entry_del_paste $w.e"] -side left
+	}
 	pack [labelframe .win_row_mod.grp -text Group] -fill x
 	pack [ttk::combobox .win_row_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	global rootg_cb
 	pack [checkbutton .win_row_mod.grp.root -text Root -command {g_grp_root_onoff .win_row_mod} -variable rootg_cb] -side left
-	set srn [expr {($rownumber>0) ? $rownumber : "NEW"}]
+	set srn [expr {($rownumber>0) ? $rownumber : {NEW}}]
 	pack [label .win_row_mod.l -text "LINK #: $srn"]
 	pack [frame .win_row_mod.buttons] -side bottom
 	pack [button .win_row_mod.buttons.save -text Save -command "save_row $rownumber"] -side left
@@ -189,9 +185,6 @@ proc save_row {rownumber} {
 	set t [.win_row_mod.t.e get]
 	set u [.win_row_mod.u.e get]
 	set m [clock format [clock seconds] -format {%D - %R}]
-	#puts $DBConn::groups
-	#set g [lindex $DBConn::groups [expr {2*[.win_row_mod.grp.cb current]+1}]]
-	#set g [lindex [dict keys $DB::groups] .win_row_mod.grp.cb]
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set g 0
@@ -305,6 +298,7 @@ proc try_modify {} {
 	# Modify a row if there is a selection
 	set rownumbers [.tv_links selection]
 	if {[llength $rownumbers] > 0} {
+		conn eval {BEGIN TRANSACTION;}
 		foreach r $rownumbers {
 			if {[string index $r 0]!={g}} {
 				modify_row $r
@@ -314,6 +308,7 @@ proc try_modify {} {
 				tkwait window .win_grp_mod
 			}
 		}
+		conn eval {END TRANSACTION;}
 	} else {
 		tk_messageBox -type ok -icon error -message {Please select link to modify.}
 	}
@@ -339,12 +334,14 @@ proc try_delete {} {
 			}
 		}
 		default {
+			conn eval {BEGIN TRANSACTION;}
 			foreach r $rownumbers {
 				if {[string index $r 0]!={g}} {
 					rm_data $r
 					.tv_links delete $r
 				}
 			}
+			conn eval {END TRANSACTION;}
 		}
 	}
 }

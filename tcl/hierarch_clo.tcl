@@ -56,6 +56,7 @@ proc del_group {gid} {
 	if {![dict exists $DBConn::groups $gid]} {
 		return
 	}
+	conn eval {BEGIN TRANSACTION;}
 	set subgroups [conn eval {
 		DELETE FROM groups WHERE rowid=:gid LIMIT 1;
 		DELETE FROM data WHERE gid=:gid;
@@ -73,6 +74,7 @@ proc del_group {gid} {
 			DELETE FROM rel WHERE gid=:s_gid;
 		}
 	}
+	conn eval {END TRANSACTION;}
 	# Second pass, delete subgroups' data
 	# and relation.
 }
@@ -95,6 +97,7 @@ proc del_group_alt {gid {new_parent {}}} {
 			SELECT ifnull(pid,0) FROM rel WHERE gid=:gid AND depth=1 LIMIT 1;
 		}]
 	}
+	conn eval {BEGIN TRANSACTION;}
 	dict unset DBConn::groups $gid
 	if {$new_parent==0} {
 		conn eval {UPDATE data SET gid=NULL WHERE gid=:gid;}
@@ -108,12 +111,12 @@ proc del_group_alt {gid {new_parent {}}} {
 	foreach c $children {
 		change_pgroup $c $new_parent
 	}
+	conn eval {END TRANSACTION;}
 	return $new_parent
 }
 proc add_data {key value mtime {gid 0}} {
 	# Adds a row to data table to group gid.
 	# If gid is 0, assume root.
-	puts "INSERTING KEY $key VALUE $value MTIME $mtime GID $gid"
 	if {$gid==0} {
 		conn eval {
 			INSERT INTO data VALUES(NULL,:key,:value,:mtime);
@@ -200,7 +203,6 @@ proc change_pgroup {gid {new_pid 0}} {
 			set p [conn eval {
 				SELECT pid FROM rel WHERE gid=:c AND depth=1 LIMIT 1;
 			}]
-			puts "child $c parent $p"
 			conn eval {
 				DELETE FROM rel WHERE gid=:c AND depth>0;
 				INSERT INTO rel

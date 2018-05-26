@@ -120,38 +120,20 @@ proc modify_row {rownumber} {
 	toplevel .win_row_mod
 	grab set .win_row_mod
 	wm attributes .win_row_mod -topmost 1
-	bind .win_row_mod <Escape> {
-		destroy .win_row_mod
-	}
 	wm title .win_row_mod {Modify link..}
 	wm resizable .win_row_mod 0 0
 	pack [labelframe .win_row_mod.t -text Title]
 	pack [entry .win_row_mod.t.e -width 50] -side left
-	pack [button .win_row_mod.t.ba -text A -command {entry_sel_all .win_row_mod.t.e}
-	] -side left
-	pack [button .win_row_mod.t.bc -text C -command {entry_copy .win_row_mod.t.e}
-	] -side left
-	pack [button .win_row_mod.t.bd -text D -command {entry_del_sel .win_row_mod.t.e}
-	] -side left
-	pack [button .win_row_mod.t.br -text R -command {entry_del_paste .win_row_mod.t.e}
-	] -side left
+	pack [button .win_row_mod.t.ba -text A -command {entry_sel_all .win_row_mod.t.e}] -side left
+	pack [button .win_row_mod.t.bc -text C -command {entry_copy .win_row_mod.t.e}] -side left
+	pack [button .win_row_mod.t.bd -text D -command {entry_del_sel .win_row_mod.t.e}] -side left
+	pack [button .win_row_mod.t.br -text R -command {entry_del_paste .win_row_mod.t.e}] -side left
 	pack [labelframe .win_row_mod.u -text URL]
 	pack [entry .win_row_mod.u.e -width 50] -side left
-	pack [button .win_row_mod.u.ba -text A -command {entry_sel_all .win_row_mod.u.e}
-	] -side left
-	pack [button .win_row_mod.u.bc -text C -command {entry_copy .win_row_mod.u.e}
-] -side left
-	pack [button .win_row_mod.u.bd -text D -command {entry_del_sel .win_row_mod.u.e}
-	] -side left
-	pack [button .win_row_mod.u.br -text R -command {entry_del_paste .win_row_mod.u.e}
-	] -side left
-
-	bind .win_row_mod.t.e <Shift-Button-1> {
-		.win_row_mod.t.e selection range 0 end
-	}
-	bind .win_row_mod.u.e <Shift-Button-1> {
-		.win_row_mod.u.e selection range 0 end
-	}
+	pack [button .win_row_mod.u.ba -text A -command {entry_sel_all .win_row_mod.u.e}] -side left
+	pack [button .win_row_mod.u.bc -text C -command {entry_copy .win_row_mod.u.e}] -side left
+	pack [button .win_row_mod.u.bd -text D -command {entry_del_sel .win_row_mod.u.e}] -side left
+	pack [button .win_row_mod.u.br -text R -command {entry_del_paste .win_row_mod.u.e}] -side left
 	set srn [expr {($rownumber>0) ? $rownumber : "NEW"}]
 	pack [label .win_row_mod.l -text "LINK #: $srn"]
 	pack [frame .win_row_mod.buttons] -side bottom
@@ -161,6 +143,15 @@ proc modify_row {rownumber} {
 		lassign [.tv_links item $rownumber -values] t u
 		.win_row_mod.t.e insert 0 $t
 		.win_row_mod.u.e insert 0 $u
+	}
+	bind .win_row_mod <Escape> {
+		destroy %W
+	}
+	bind .win_row_mod.t.e <Shift-Button-1> {
+		%W selection range 0 end
+	}
+	bind .win_row_mod.u.e <Shift-Button-1> {
+		%W selection range 0 end
 	}
 }
 namespace eval DB {
@@ -308,8 +299,8 @@ bind . <Control-z> {
 	reorder_rows 0
 }
 bind .tv_links <Button-1> {
-	if {[string equal [.tv_links identify region %x %y] heading]} {
-		reorder_rows [string range [.tv_links identify column %x %y] 1 end]
+	if {[string equal [%W identify region %x %y] heading]} {
+		reorder_rows [string range [%W identify column %x %y] 1 end]
 	}
 }
 bind .tv_links <c> {
