@@ -2,40 +2,52 @@
 package require Tk
 source hierarch_clo.tcl
 menu .men
-. configure -menu .men
 menu .men.mfile
 .men.mfile add command -label New -command init_db -underline 0
 .men.mfile add command -label Open -command g_open_db -underline 0
 .men.mfile add separator
+.men.mfile add command -label {Save as} -command g_saveas -underline 0 -state disabled
 .men.mfile add command -label Save -command g_save_db -underline 0 -state disabled
 .men.mfile add command -label Close -command g_close_db -underline 0 -state disabled
+.men.mfile add separator
 .men.mfile add command -label Quit -command exit_prog -underline 0
 .men add cascade -label File -menu .men.mfile
 .men add command -label {Add Group} -command {modify_grp -1} -state disabled
 .men add command -label {Add Link} -command {modify_row -1} -state disabled
-
 .men add command -label Modify -command try_modify -state disabled
 .men add command -label Delete -command try_delete -state disabled
 .men add command -label {Copy URL} -command copy_url -underline 0 -state disabled
+. configure -menu .men
 set rootg_cb 0
-pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
+#pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
 pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
 
-foreach {c l w} [list #0 Groups 128 title Name 128 url URL 256 mtime {Time Modified} 128] {
+foreach {c l w} [list #0 Groups/RowID 128 title Name 128 url URL 256 mtime {Time Modified} 128] {
 	# this loop adjusts the treeview's columns
 	.tv_links heading $c -text $l -anchor w
 	.tv_links column $c -minwidth 16 -width $w
 }
 
 proc init_db {} {
+	if {$DBConn::is_open} {
+		set saved [tk_messageBox -icon question -message {DB Already open. Proceed?} -type yesno -title Prompt]
+		if {[string equal $saved no]} {
+			return
+		}
+		close_db
+	}
 	prepare_memory
 	menu_is_open
 }
 proc g_open_db {} {
 	# Opens a database and reads it.
 	if {$DBConn::is_open} {
-		return
+		set saved [tk_messageBox -icon question -message {DB Already open. Proceed?} -type yesno -title Prompt]
+		if {[string equal $saved no]} {
+			return
+		}
+		close_db
 	}
 	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
 	if {[string length $s] > 0} {
@@ -51,10 +63,22 @@ proc g_save_db {} {
 	if {!$DBConn::is_open} {
 		return
 	}
+	if {[string length $DBConn::current_file]==0} {
+		g_saveas
+	} else {
+		save_db_i
+	}
+}
+
+proc g_saveas {} {
+	if {!$DBConn::is_open} {
+		return
+	}
 	set file_name [tk_getSaveFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Save database as..}]
 	if {[string length $file_name] == 0} { return }
 	if {[file exists $file_name]} { file delete $file_name }
-	save_db_i $file_name
+	set DBConn::current_file $file_name
+	save_db_i
 }
 proc g_close_db {} {
 	close_db
@@ -96,48 +120,27 @@ proc modify_row {rownumber} {
 	# a row. Only allows edit of title & url. This proc takes
 	# values from the treeview only, which should be okay since
 	# modification of the treeview is limited.
-	if {!$DBConn::is_open} {
-		tk_messageBox -icon error -type ok -message {Please open a database first.}
-		return
-	}
 	toplevel .win_row_mod
 	grab set .win_row_mod
 	wm attributes .win_row_mod -topmost 1
-	bind .win_row_mod <Escape> {
-		destroy .win_row_mod
-	}
 	wm title .win_row_mod {Modify link..}
 	wm resizable .win_row_mod 0 0
 	pack [labelframe .win_row_mod.t -text Title]
 	pack [entry .win_row_mod.t.e -width 50] -side left
-	pack [button .win_row_mod.t.ba -text A -command {entry_sel_all .win_row_mod.t.e}
-	] -side left
-	pack [button .win_row_mod.t.bc -text C -command {entry_copy .win_row_mod.t.e}
-	] -side left
-	pack [button .win_row_mod.t.bd -text D -command {entry_del_sel .win_row_mod.t.e}
-	] -side left
-	pack [button .win_row_mod.t.br -text R -command {entry_del_paste .win_row_mod.t.e}
-	] -side left
+	pack [button .win_row_mod.t.ba -text A -command {entry_sel_all .win_row_mod.t.e}] -side left
+	pack [button .win_row_mod.t.bc -text C -command {entry_copy .win_row_mod.t.e}] -side left
+	pack [button .win_row_mod.t.bd -text D -command {entry_del_sel .win_row_mod.t.e}] -side left
+	pack [button .win_row_mod.t.br -text R -command {entry_del_paste .win_row_mod.t.e}] -side left
 	pack [labelframe .win_row_mod.u -text URL]
 	pack [entry .win_row_mod.u.e -width 50] -side left
-	pack [button .win_row_mod.u.ba -text A -command {entry_sel_all .win_row_mod.u.e}
-	] -side left
-	pack [button .win_row_mod.u.bc -text C -command {entry_copy .win_row_mod.u.e}
-] -side left
-	pack [button .win_row_mod.u.bd -text D -command {entry_del_sel .win_row_mod.u.e}
-	] -side left
-	pack [button .win_row_mod.u.br -text R -command {entry_del_paste .win_row_mod.u.e}
-	] -side left
+	pack [button .win_row_mod.u.ba -text A -command {entry_sel_all .win_row_mod.u.e}] -side left
+	pack [button .win_row_mod.u.bc -text C -command {entry_copy .win_row_mod.u.e}] -side left
+	pack [button .win_row_mod.u.bd -text D -command {entry_del_sel .win_row_mod.u.e}] -side left
+	pack [button .win_row_mod.u.br -text R -command {entry_del_paste .win_row_mod.u.e}] -side left
 	pack [labelframe .win_row_mod.grp -text Group] -fill x
 	pack [ttk::combobox .win_row_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	global rootg_cb
 	pack [checkbutton .win_row_mod.grp.root -text Root -command {g_grp_root_onoff .win_row_mod} -variable rootg_cb] -side left
-	bind .win_row_mod.t.e <Shift-Button-1> {
-		.win_row_mod.t.e selection range 0 end
-	}
-	bind .win_row_mod.u.e <Shift-Button-1> {
-		.win_row_mod.u.e selection range 0 end
-	}
 	set srn [expr {($rownumber>0) ? $rownumber : "NEW"}]
 	pack [label .win_row_mod.l -text "LINK #: $srn"]
 	pack [frame .win_row_mod.buttons] -side bottom
@@ -157,6 +160,25 @@ proc modify_row {rownumber} {
 			.win_row_mod.grp.root select
 		}
 		g_grp_root_onoff .win_row_mod
+	} else {
+		#otherwise, if something was selected in treeview, select the group here.
+		set q_grp [.tv_links selection]
+		if {[llength $q_grp]==1} {
+			if {[string index $q_grp 0]!={g}} {
+				set q_grp [.tv_links parent $q_grp]
+			}
+			.win_row_mod.grp.root deselect
+			.win_row_mod.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+		}
+	}
+	bind .win_row_mod <Escape> {
+		destroy %W
+	}
+	bind .win_row_mod.t.e <Shift-Button-1> {
+		%W selection range 0 end
+	}
+	bind .win_row_mod.u.e <Shift-Button-1> {
+		%W selection range 0 end
 	}
 }
 proc save_row {rownumber} {
@@ -202,15 +224,9 @@ proc save_row {rownumber} {
 
 proc modify_grp {gid} {
 	# Change a group's parent and/or name
-	if {!$DBConn::is_open} {
-		return
-	}
 	toplevel .win_grp_mod
 	grab set .win_grp_mod
 	wm attributes .win_grp_mod -topmost 1
-	bind .win_grp_mod <Escape> {
-		destroy %W
-	}
 	wm title .win_grp_mod {Modify Group..}
 	pack [labelframe .win_grp_mod.grp -text Parent] -fill x
 	pack [ttk::combobox .win_grp_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
@@ -224,8 +240,6 @@ proc modify_grp {gid} {
 
 	if {$gid!=-1} {
 		# existing group
-		# need to set parent and current name
-		# parent
 		set p [.tv_links parent g$gid]
 		if {[string length $p]>0} {
 			.win_grp_mod.grp.root deselect
@@ -233,10 +247,22 @@ proc modify_grp {gid} {
 		} else {
 			.win_grp_mod.grp.root select
 		}
-		# name
 		.win_grp_mod.n.e insert 0 [dict get $DBConn::groups $gid]
+	} else {
+		# otherwise, if something was selected in treeview, select the group here.
+		set q_grp [.tv_links selection]
+		if {[llength $q_grp]==1} {
+			if {[string index $q_grp 0]!={g}} {
+				set q_grp [.tv_links parent $q_grp]
+			}
+			.win_grp_mod.grp.root deselect
+			.win_grp_mod.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+		}
 	}
 	g_grp_root_onoff .win_grp_mod
+	bind .win_grp_mod <Escape> {
+		destroy %W
+	}
 }
 proc save_grp {gid} {
 	# Save changes to group (gid is just an int)
@@ -352,8 +378,10 @@ proc menu_is_open {} {
 		.men entryconfigure $i -state $nstate
 	}
 	.men.mfile entryconfigure 4 -state $nstate
-	# Save
+	# Save as
 	.men.mfile entryconfigure 5 -state $nstate
+	# Save
+	.men.mfile entryconfigure 6 -state $nstate
 	# Close
 }
 proc entry_sel_all {e} {
@@ -380,7 +408,6 @@ proc entry_copy {e} {
 }
 proc entry_del_paste {e} {
 	# Replaces contents of entry with whats in clipboard
-	# (if clipboard length >0)
 	set s [clipboard get]
 	if {[string length $s]>0} {
 		$e delete 0 end
@@ -401,5 +428,3 @@ proc copy_url {} {
 bind .tv_links <c> {
 	copy_url
 }
-#testing_db
-#load_rows

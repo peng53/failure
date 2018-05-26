@@ -5,6 +5,7 @@ package require sqlite3
 namespace eval DBConn {
 	variable is_open 0
 	variable groups [dict create]
+	variable current_file {}
 }
 
 proc prepare_memory {} {
@@ -211,7 +212,7 @@ proc change_pgroup {gid {new_pid 0}} {
 proc update_data {rowid key value mtime ngid} {
 	# Updates properties of a row in data.
 	conn eval {
-		UPDATE data SET key=:key value=:value mtime=:mtime WHERE rowid=:rowid LIMIT 1;
+		UPDATE data SET key=:key, value=:value, mtime=:mtime WHERE rowid=:rowid LIMIT 1;
 	}
 	if {$ngid==0} {
 		conn eval { UPDATE data SET gid=NULL WHERE rowid=:rowid LIMIT 1; }
@@ -231,6 +232,8 @@ proc close_db {} {
 	# 'Closes' the db
 	if {$DBConn::is_open} {
 		set DBConn::is_open 0
+		set DBConn::current_file {}
+		set DBConn::groups [dict create]
 		conn close
 	}
 }
@@ -239,6 +242,7 @@ proc open_db_i {fname} {
 	if {$DBConn::is_open} {
 		return
 	}
+	set DBConn::current_file $fname
 	prepare_memory
 	conn eval {
 		ATTACH :fname AS M;
@@ -256,7 +260,8 @@ proc open_db_i {fname} {
 		dict set DBConn::groups $rowid $name
 	}
 }
-proc save_db_i {fname} {
+proc save_db_i {} {
+	set fname $DBConn::current_file
 	conn eval {
 		ATTACH :fname AS M;
 		BEGIN TRANSACTION;
