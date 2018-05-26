@@ -7,6 +7,11 @@ namespace eval DBConn {
 	variable groups [dict create]
 }
 
+proc prepare_memory {} {
+	sqlite3 conn :memory:
+	set DBConn::is_open 1
+	build_tables
+}
 proc build_tables {} {
 	# Builds required tables for hierarch action
 	# Ensure that a file in open and bound to 'conn'
@@ -227,8 +232,16 @@ proc open_db_i {fname} {
 	if {$DBConn::is_open} {
 		return
 	}
-	sqlite3 conn $fname
-	set DBConn::is_open 1
+	prepare_memory
+	conn eval {
+		ATTACH :fname AS M;
+		BEGIN TRANSACTION;
+		INSERT INTO groups SELECT * FROM M.groups;
+		INSERT INTO rel SELECT * FROM M.rel;
+		INSERT INTO data SELECT * FROM M.data;
+		END TRANSACTION;
+		DETACH M;
+	}
 	set DBConn::groups [dict create]
 	conn eval {
 		SELECT rowid,name FROM groups;
@@ -236,67 +249,84 @@ proc open_db_i {fname} {
 		dict set DBConn::groups $rowid $name
 	}
 }
+proc save_db_i {fname} {
+	conn eval {
+		ATTACH :fname AS M;
+		BEGIN TRANSACTION;
+		DROP TABLE IF EXISTS M.groups;
+		DROP TABLE IF EXISTS M.rel;
+		DROP TABLE IF EXISTS M.data;
+		CREATE TABLE M.groups(rowid INTEGER primary key,name TEXT);
+		CREATE TABLE M.rel(rowid INTEGER primary key, gid INTEGER,pid INTEGER,depth INTEGER);
+		CREATE TABLE M.data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);
+		INSERT INTO M.groups SELECT * from groups;
+		INSERT INTO M.rel SELECT * from rel;
+		INSERT INTO M.data SELECT * from data;
+		END TRANSACTION;
+		DETACH M;
+	}
+}
 proc testing_db {} {
 	set DBConn::is_open 1
-sqlite3 conn :memory:
-build_tables
-# Inital should be
-# cats
-# * blue
-# * red
-# * yellow
-# * * large
-# dogs
-# * black
-# * * small
-set cats [add_group cats]
-add_group blue $cats
-add_group red $cats
-set yellow [add_group yellow $cats]
-add_group large $yellow
-set dogs [add_group dogs]
-set black [add_group black $dogs]
-add_group small $black
-# Now lets delete_alt dogs
-# black
-# * small
-# should belong to root
-#del_group_alt $dogs
-# Let's do the same for 'yellow'
-# but at same time set parent group to black (large black)
-#del_group_alt $yellow $black
-add_data hello world t $black
-add_data root data bbb
+	sqlite3 conn :memory:
+	build_tables
+	# Inital should be
+	# cats
+	# * blue
+	# * red
+	# * yellow
+	# * * large
+	# dogs
+	# * black
+	# * * small
+	set cats [add_group cats]
+	add_group blue $cats
+	add_group red $cats
+	set yellow [add_group yellow $cats]
+	add_group large $yellow
+	set dogs [add_group dogs]
+	set black [add_group black $dogs]
+	add_group small $black
+	# Now lets delete_alt dogs
+	# black
+	# * small
+	# should belong to root
+	#del_group_alt $dogs
+	# Let's do the same for 'yellow'
+	# but at same time set parent group to black (large black)
+	#del_group_alt $yellow $black
+	add_data hello world t $black
+	add_data root data bbb
 
 
-puts {BETTER PRINT}
-puts {      NAME | GID | PID | DEPTH}
-puts --------------------------------
-set root_c [list]
-conn eval {
-	SELECT gid FROM groups JOIN rel on groups.rowid=rel.gid WHERE pid is NULL;
-} {
-	lappend root_c $gid
-}
-foreach g $root_c {
-	puts "GROUP NUMBER $g"
+	puts {BETTER PRINT}
+	puts {      NAME | GID | PID | DEPTH}
+	puts --------------------------------
+	set root_c [list]
 	conn eval {
-		SELECT name,gid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid WHERE rel.pid=:g ORDER BY depth;
+		SELECT gid FROM groups JOIN rel on groups.rowid=rel.gid WHERE pid is NULL;
 	} {
-		if {$depth==0} {
-			puts [format {%10s | %3d | PAR   ENT} $name $gid]
-		} else {
-			puts [format {%10s | %3d | %3d | %3d} $name $gid $pid $depth]
-		}
+		lappend root_c $gid
 	}
-	puts ---------------
-}
-puts {raw closure table with group names}
-conn eval {select * from rel join groups on groups.rowid=gid} {
-	puts "$gid|$name {$pid} $depth"
-}
-conn eval {select * from groups} {
-	puts "$rowid $name"
-}
+	foreach g $root_c {
+		puts "GROUP NUMBER $g"
+		conn eval {
+			SELECT name,gid,pid,depth FROM groups JOIN rel ON groups.rowid=rel.gid WHERE rel.pid=:g ORDER BY depth;
+		} {
+			if {$depth==0} {
+				puts [format {%10s | %3d | PAR   ENT} $name $gid]
+			} else {
+				puts [format {%10s | %3d | %3d | %3d} $name $gid $pid $depth]
+			}
+		}
+		puts ---------------
+	}
+	puts {raw closure table with group names}
+	conn eval {select * from rel join groups on groups.rowid=gid} {
+		puts "$gid|$name {$pid} $depth"
+	}
+	conn eval {select * from groups} {
+		puts "$rowid $name"
+	}
 }
 

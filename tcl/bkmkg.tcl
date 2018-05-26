@@ -5,18 +5,18 @@ menu .men
 . configure -menu .men
 menu .men.mfile
 .men.mfile add command -label New -command init_db -underline 0
-.men.mfile add command -label Open -command open_db -underline 0
+.men.mfile add command -label Open -command g_open_db -underline 0
 .men.mfile add separator
-.men.mfile add command -label Save -command save_db -state disabled -underline 0
-.men.mfile add command -label Close -command close_db -state disabled -underline 0
+.men.mfile add command -label Save -command g_save_db -underline 0
+.men.mfile add command -label Close -command close_db -underline 0
 .men.mfile add command -label Quit -command exit_prog -underline 0
 .men add cascade -label File -menu .men.mfile
 .men add command -label {Add Group} -command {modify_grp -1}
 .men add command -label {Add Link} -command {modify_row -1}
 
 .men add command -label Modify -command try_modify
-.men add command -label Delete -command try_delete -state disabled
-.men add command -label {Copy URL} -command copy_url -state disabled -underline 0
+.men add command -label Delete -command try_delete
+.men add command -label {Copy URL} -command copy_url -underline 0
 set rootg_cb 0
 pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
@@ -28,22 +28,31 @@ foreach {c l w} [list #0 Groups 128 title Name 128 url URL 256 mtime {Time Modif
 	.tv_links column $c -minwidth 16 -width $w
 }
 
-
+proc init_db {} {
+	prepare_memory
+}
 proc g_open_db {} {
 	# Opens a database and reads it.
 	if {$DBConn::is_open} {
 		return
 	}
- set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
+	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
 	if {[string length $s] > 0} {
 		open_db_i $s
 		load_rows
 		puts "Opened DB $s"
 		wm title . "bkmks - $s"
-		set_status "Opened DB $s"
-		menu_is_open
 	}
-	puts "DB status: $DB::is_open"
+	puts "DB status: $DBConn::is_open"
+}
+proc g_save_db {} {
+	if {!$DBConn::is_open} {
+		return
+	}
+	set file_name [tk_getSaveFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Save database as..}]
+	if {[string length $file_name] == 0} { return }
+	if {[file exists $file_name]} { file delete $file_name }
+	save_db_i $file_name
 }
 proc load_rows {} {
 	# Loads rows of DB to treeview.
@@ -165,7 +174,7 @@ proc save_row {rownumber} {
 		if {$rootg_cb==1} {
 			.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
 		} else {
-		.tv_links insert $g end -id $rownumber -text $rownumber -value [list $t $u $m]
+		.tv_links insert g$g end -id $rownumber -text $rownumber -value [list $t $u $m]
 		}
 	} else {
 		update_data $rownumber $t $u $m $g
@@ -277,19 +286,26 @@ proc try_modify {} {
 }
 proc g_grp_root_onoff {w} {
 	global rootg_cb
-	if {$rootg_cb} {
+	if {$rootg_cb==1} {
 		set m select
 		set s disabled
 	} else {
 		set m deselect
 		set s normal
 		if {[$w.grp.cb get]=={}} {
-			$w.grp.cb current 0
+			if {[dict size $DBConn::groups]>0} {
+				$w.grp.cb current 0
+			}
 		}
 	}
 	$w.grp.root $m
 	$w.grp.cb configure -state $s
 }
-
-testing_db
-load_rows
+proc exit_prog {} {
+	# Closes the database and then the program.
+	if {[string equal [tk_messageBox -icon question -message {Quit program?} -type yesno -title Prompt] no]} { return }
+	close_db
+	destroy .
+}
+#testing_db
+#load_rows
