@@ -7,16 +7,16 @@ menu .men.mfile
 .men.mfile add command -label New -command init_db -underline 0
 .men.mfile add command -label Open -command g_open_db -underline 0
 .men.mfile add separator
-.men.mfile add command -label Save -command g_save_db -underline 0
-.men.mfile add command -label Close -command close_db -underline 0
+.men.mfile add command -label Save -command g_save_db -underline 0 -state disabled
+.men.mfile add command -label Close -command g_close_db -underline 0 -state disabled
 .men.mfile add command -label Quit -command exit_prog -underline 0
 .men add cascade -label File -menu .men.mfile
-.men add command -label {Add Group} -command {modify_grp -1}
-.men add command -label {Add Link} -command {modify_row -1}
+.men add command -label {Add Group} -command {modify_grp -1} -state disabled
+.men add command -label {Add Link} -command {modify_row -1} -state disabled
 
-.men add command -label Modify -command try_modify
-.men add command -label Delete -command try_delete
-.men add command -label {Copy URL} -command copy_url -underline 0
+.men add command -label Modify -command try_modify -state disabled
+.men add command -label Delete -command try_delete -state disabled
+.men add command -label {Copy URL} -command copy_url -underline 0 -state disabled
 set rootg_cb 0
 pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
@@ -30,6 +30,7 @@ foreach {c l w} [list #0 Groups 128 title Name 128 url URL 256 mtime {Time Modif
 
 proc init_db {} {
 	prepare_memory
+	menu_is_open
 }
 proc g_open_db {} {
 	# Opens a database and reads it.
@@ -39,6 +40,7 @@ proc g_open_db {} {
 	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
 	if {[string length $s] > 0} {
 		open_db_i $s
+		menu_is_open
 		load_rows
 		puts "Opened DB $s"
 		wm title . "bkmks - $s"
@@ -54,6 +56,12 @@ proc g_save_db {} {
 	if {[file exists $file_name]} { file delete $file_name }
 	save_db_i $file_name
 }
+proc g_close_db {} {
+	close_db
+	.tv_links delete [.tv_links children {}]
+	menu_is_open
+	puts "DB status: $DBConn::is_open"
+}
 proc load_rows {} {
 	# Loads rows of DB to treeview.
 	# First, the root groups
@@ -61,7 +69,7 @@ proc load_rows {} {
 	conn eval {
 		SELECT gid FROM rel WHERE pid IS NULL;
 	} {
-		.tv_links insert {} end -id "g$gid" -text "$gid [dict get $DBConn::groups $gid]"
+		.tv_links insert {} end -id "g$gid" -text [dict get $DBConn::groups $gid]
 		lappend groups $gid
 	}
 	# Second, other groups
@@ -72,7 +80,7 @@ proc load_rows {} {
 				(SELECT gid FROM rel WHERE pid=:g AND gid!=pid)
 			and depth=1 and pid IS NOT NULL;
 		} {
-			.tv_links insert "g$pid" end -id "g$gid" -text "$gid [dict get $DBConn::groups $gid]"
+			.tv_links insert "g$pid" end -id "g$gid" -text [dict get $DBConn::groups $gid]
 		}
 	}
 	# Lastly, the data
@@ -243,9 +251,9 @@ proc save_grp {gid} {
 		# a new group.
 		set gid [add_group $n $p]
 		if {$p==0} {
-			.tv_links insert {} end -id g$gid -text "$gid $n"
+			.tv_links insert {} end -id g$gid -text $n
 		} else {
-			.tv_links insert g$p end -id g$gid -text "$gid $n"
+			.tv_links insert g$p end -id g$gid -text $n
 		}
 	} else {
 		# need to check whether the parent is the child.
@@ -254,7 +262,7 @@ proc save_grp {gid} {
 			return
 		}
 		update_grp $gid $n
-		.tv_links item g$gid -text "$gid $n"
+		.tv_links item g$gid -text $n
 		if {$p!=[string range [.tv_links parent g$gid] 1 end]} {
 			# there was a change in parent group
 			change_pgroup $gid $p
@@ -284,6 +292,36 @@ proc try_modify {} {
 		tk_messageBox -type ok -icon error -message {Please select link to modify.}
 	}
 }
+proc try_delete {} {
+	# Deletes a row or group
+	# Will only delete a group if multiple is selected
+	set rownumbers [.tv_links selection]
+	set n [llength $rownumbers]
+	switch $n {
+		0 {
+			return
+		}
+		1 {
+			if {[string index $rownumbers 0]=={g}} {
+				# its a group
+				del_group $rownumbers
+				.tv_links delete $rownumbers
+			} else {
+				# its a row
+				rm_data $rownumbers
+				.tv_links delete $rownumbers
+			}
+		}
+		default {
+			foreach r $rownumbers {
+				if {[string index $r 0]!={g}} {
+					rm_data $r
+					.tv_links delete $r
+				}
+			}
+		}
+	}
+}
 proc g_grp_root_onoff {w} {
 	global rootg_cb
 	if {$rootg_cb==1} {
@@ -306,6 +344,62 @@ proc exit_prog {} {
 	if {[string equal [tk_messageBox -icon question -message {Quit program?} -type yesno -title Prompt] no]} { return }
 	close_db
 	destroy .
+}
+proc menu_is_open {} {
+	# Toggles menu options based on file state.
+	set nstate [expr {($DBConn::is_open) ? "normal" : "disabled"}]
+	for {set i 2} {$i<7} {incr i} {
+		.men entryconfigure $i -state $nstate
+	}
+	.men.mfile entryconfigure 4 -state $nstate
+	# Save
+	.men.mfile entryconfigure 5 -state $nstate
+	# Close
+}
+proc entry_sel_all {e} {
+	# Selects all the text in an entry
+	focus $e
+	$e selection range 0 end
+}
+proc entry_del_sel {e} {
+	# Deletes selected text in an entry
+	if {[$e selection present]} {
+		$e delete sel.first sel.last
+	}
+}
+proc entry_copy {e} {
+	# Copies either selection of entry or entire entry.
+	set s [$e get]
+	if {[$e selection present]} {
+		set s [string range $s [$e index sel.first] [$e index sel.last]]
+	}
+	if {[string length $s]>0} {
+		clipboard clear
+		clipboard append $s
+	}
+}
+proc entry_del_paste {e} {
+	# Replaces contents of entry with whats in clipboard
+	# (if clipboard length >0)
+	set s [clipboard get]
+	if {[string length $s]>0} {
+		$e delete 0 end
+		$e insert 0 $s
+	}
+}
+proc copy_url {} {
+	# Sets clipboard to url of selected row
+	# If no row is selected, nothing happens
+	# and clipboard is left same
+	set r [.tv_links selection]
+	if {[llength $r] > 0} {
+		lassign [.tv_links item [lindex $r 0] -values] title url mtime
+		clipboard clear
+		clipboard append $url
+	}
+}
+bind .tv_links <c> {
+	copy_url
 }
 #testing_db
 #load_rows

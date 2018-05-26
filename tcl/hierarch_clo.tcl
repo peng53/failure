@@ -227,6 +227,13 @@ proc update_grp {gid name} {
 		UPDATE groups SET name=:name WHERE rowid=:gid;
 	}
 }
+proc close_db {} {
+	# 'Closes' the db
+	if {$DBConn::is_open} {
+		set DBConn::is_open 0
+		conn close
+	}
+}
 proc open_db_i {fname} {
 	# Opens an existing DB
 	if {$DBConn::is_open} {
