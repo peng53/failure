@@ -15,6 +15,7 @@ menu .men.mfile
 .men add command -label {Add Group} -command {modify_grp -1} -state disabled
 .men add command -label {Add Link} -command {modify_row -1} -state disabled
 .men add command -label Modify -command try_modify -state disabled
+.men add command -label {Batch Group} -command switch_grp -state disabled
 .men add command -label Delete -command try_delete -state disabled
 .men add command -label {Copy URL} -command copy_url -underline 0 -state disabled
 . configure -menu .men
@@ -133,10 +134,11 @@ proc modify_row {rownumber} {
 		pack [button $w.bd -text D -command "entry_del_sel $w.e"] -side left
 		pack [button $w.br -text R -command "entry_del_paste $w.e"] -side left
 	}
-	pack [labelframe .win_row_mod.grp -text Group] -fill x
-	pack [ttk::combobox .win_row_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
-	global rootg_cb
-	pack [checkbutton .win_row_mod.grp.root -text Root -command {g_grp_root_onoff .win_row_mod} -variable rootg_cb] -side left
+	grp_frame .win_row_mod
+	#pack [labelframe .win_row_mod.grp -text Group] -fill x
+	#pack [ttk::combobox .win_row_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
+	#global rootg_cb
+	#pack [checkbutton .win_row_mod.grp.root -text Root -command {g_grp_root_onoff .win_row_mod} -variable rootg_cb] -side left
 	set srn [expr {($rownumber>0) ? $rownumber : {NEW}}]
 	pack [label .win_row_mod.l -text "LINK #: $srn"]
 	pack [frame .win_row_mod.buttons] -side bottom
@@ -214,6 +216,47 @@ proc save_row {rownumber} {
 	}
 	destroy .win_row_mod
 }
+proc grp_frame {w} {
+	global rootg_cb
+	pack [labelframe $w.grp -text Group] -fill x
+	pack [ttk::combobox $w.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
+	pack [checkbutton $w.grp.root -text Root -variable rootg_cb -command "g_grp_root_onoff $w"] -side left
+}
+proc switch_grp {} {
+	if {[llength [.tv_links selection]]==0} {
+		return
+	}
+	toplevel .win_grp_chg
+	grab set .win_grp_chg
+	wm attributes .win_grp_chg -topmost 1
+	wm title .win_grp_chg {Switch to group..}
+	grp_frame .win_grp_chg
+	pack [frame .win_grp_chg.b]
+	pack [button .win_grp_chg.b.apply -text Apply -command apply_g_chg] -side left
+	pack [button .win_grp_chg.b.cancel -text Cancel -command {destroy .win_grp_chg}] -side left
+}
+proc apply_g_chg {} {
+	global rootg_cb
+	if {$rootg_cb==1} {
+		set p 0
+	} else {
+		set p [lindex [dict keys $DBConn::groups] [.win_grp_chg.grp.cb current]]
+	}
+	set rowids [.tv_links selection]
+	conn eval { BEGIN TRANSACTION; }
+	foreach r $rowids {
+		if {[string index $r 0]!={g}} {
+			data_group $r $p
+			if {$rootg_cb==1} {
+				.tv_links move $r {} end
+			} else {
+				.tv_links move $r g$p end
+			}
+		}
+	}
+	conn eval { END TRANSACTION; }
+	destroy .win_grp_chg
+}
 
 proc modify_grp {gid} {
 	# Change a group's parent and/or name
@@ -221,10 +264,11 @@ proc modify_grp {gid} {
 	grab set .win_grp_mod
 	wm attributes .win_grp_mod -topmost 1
 	wm title .win_grp_mod {Modify Group..}
-	pack [labelframe .win_grp_mod.grp -text Parent] -fill x
-	pack [ttk::combobox .win_grp_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
-	global rootg_cb
-	pack [checkbutton .win_grp_mod.grp.root -text Root -variable rootg_cb -command {g_grp_root_onoff .win_grp_mod}] -side left
+	grp_frame .win_grp_mod
+#	pack [labelframe .win_grp_mod.grp -text Parent] -fill x
+#	pack [ttk::combobox .win_grp_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
+#	global rootg_cb
+#	pack [checkbutton .win_grp_mod.grp.root -text Root -variable rootg_cb -command {g_grp_root_onoff .win_grp_mod}] -side left
 	pack [labelframe .win_grp_mod.n -text Name]
 	pack [entry .win_grp_mod.n.e -width 50]
 	pack [frame .win_grp_mod.b]
@@ -371,7 +415,7 @@ proc exit_prog {} {
 proc menu_is_open {} {
 	# Toggles menu options based on file state.
 	set nstate [expr {($DBConn::is_open) ? "normal" : "disabled"}]
-	for {set i 2} {$i<7} {incr i} {
+	for {set i 2} {$i<8} {incr i} {
 		.men entryconfigure $i -state $nstate
 	}
 	.men.mfile entryconfigure 4 -state $nstate

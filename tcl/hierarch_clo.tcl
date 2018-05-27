@@ -131,6 +131,18 @@ proc add_data {key value mtime {gid 0}} {
 	}
 	return [conn eval {SELECT last_insert_rowid();}]
 }
+proc data_group {rowid {gid 0}} {
+	# Simplified version of update_data that only changes group
+	if {$gid==0} {
+		conn eval {
+			UPDATE data SET gid=NULL WHERE rowid=:rowid LIMIT 1;
+		}
+	} else {
+		conn eval {
+			UPDATE data SET gid=:gid WHERE rowid=:rowid LIMIT 1;
+		}
+	}
+}
 proc rm_data {rowid} {
 	# Removes a row from data with rowid
 	conn eval {
