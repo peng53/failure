@@ -29,8 +29,10 @@ foreach {c l w} [list #0 Groups/RowID 128 title Name 128 url URL 256 mtime {Time
 	.tv_links heading $c -text $l -anchor w
 	.tv_links column $c -minwidth 16 -width $w
 }
+.tv_links heading #0 -command {reorder_id {}}
 
 proc init_db {} {
+	# Creates a working database in memory. Doesn't work if DB is already open.
 	if {$DBConn::is_open} {
 		set saved [tk_messageBox -icon question -message {DB Already open. Proceed?} -type yesno -title Prompt]
 		if {[string equal $saved no]} {
@@ -186,28 +188,19 @@ proc save_row {rownumber} {
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set g 0
+		set k {}
 	} else {
-		set g [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
+		set k g[set g [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]]
 	}
 	if {$rownumber == -1} {
 		set rownumber [add_data $t $u $m $g]
 		# note : need sql for get id (which is also text)
-		if {$rootg_cb==1} {
-			.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
-		} else {
-			.tv_links insert g$g end -id $rownumber -text $rownumber -value [list $t $u $m]
-		}
+		.tv_links insert $k end -id $rownumber -text $rownumber -value [list $t $u $m]
 	} else {
 		update_data $rownumber $t $u $m $g
 		.tv_links item $rownumber -value [list $t $u $m]
-		if {$rootg_cb==1} {
-			if {[string length [.tv_links parent $rownumber]]>0} {
-				.tv_links move $rownumber {} end
-			}
-		} else {
-			if {[.tv_links parent $rownumber]!="g$g"} {
-				.tv_links move $rownumber g$g end
-			}
+		if {![string equal $k [.tv_links parent $rownumber]]} {
+			.tv_links move $rownumber $k end
 		}
 	}
 	destroy .sub
@@ -237,8 +230,7 @@ proc apply_g_chg {} {
 		set p 0
 		set k {}
 	} else {
-		set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
-		set k g$p
+		set k g[set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]]
 	}
 	set rowids [.tv_links selection]
 	conn eval { BEGIN TRANSACTION; }
@@ -297,17 +289,14 @@ proc save_grp {gid} {
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set p 0
+		set k {}
 	} else {
-		set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
+		set k g[set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]]
 	}
 	if {$gid == -1} {
 		# a new group.
 		set gid [add_group $n $p]
-		if {$p==0} {
-			.tv_links insert {} end -id g$gid -text $n
-		} else {
-			.tv_links insert g$p end -id g$gid -text $n
-		}
+		.tv_links insert $k end -id g$gid -text $n
 	} else {
 		# need to check whether the parent is the child.
 		if {$gid==$p} {
@@ -319,11 +308,7 @@ proc save_grp {gid} {
 		if {$p!=[string range [.tv_links parent g$gid] 1 end]} {
 			# there was a change in parent group
 			change_pgroup $gid $p
-			if {$p==0} {
-				.tv_links move g$gid {} end
-			} else {
-				.tv_links move g$gid g$p end
-			}
+			.tv_links move g$gid $k end
 		}
 	}
 	destroy .sub
@@ -453,6 +438,15 @@ proc copy_url {} {
 		lassign [.tv_links item [lindex $r 0] -values] title url mtime
 		clipboard clear
 		clipboard append $url
+	}
+}
+proc reorder_id {c} {
+	set rows [lsort -increasing [.tv_links children $c]]
+	foreach r $rows {
+		.tv_links move $r $c end
+		if {[string index $r 0]=={g}} {
+			reorder_id $r
+		}
 	}
 }
 bind .tv_links <c> {
