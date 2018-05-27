@@ -120,44 +120,40 @@ proc modify_row {rownumber} {
 	# a row. Only allows edit of title & url. This proc takes
 	# values from the treeview only, which should be okay since
 	# modification of the treeview is limited.
-	toplevel .win_row_mod
-	grab set .win_row_mod
-	wm attributes .win_row_mod -topmost 1
-	wm title .win_row_mod {Modify link..}
-	wm resizable .win_row_mod 0 0
+	toplevel .sub
+	grab set .sub
+	wm attributes .sub -topmost 1
+	wm title .sub {Modify link..}
+	wm resizable .sub 0 0
 	foreach {p n} [list t Title u URL] {
-		set w .win_row_mod.$p
-		pack [labelframe .win_row_mod.$p -text $n]
+		set w .sub.$p
+		pack [labelframe .sub.$p -text $n]
 		pack [entry $w.e -width 50] -side left
 		pack [button $w.ba -text A -command "entry_sel_all $w.e"] -side left
 		pack [button $w.bc -text C -command "entry_copy $w.e"] -side left
 		pack [button $w.bd -text D -command "entry_del_sel $w.e"] -side left
 		pack [button $w.br -text R -command "entry_del_paste $w.e"] -side left
 	}
-	grp_frame .win_row_mod
-	#pack [labelframe .win_row_mod.grp -text Group] -fill x
-	#pack [ttk::combobox .win_row_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
-	#global rootg_cb
-	#pack [checkbutton .win_row_mod.grp.root -text Root -command {g_grp_root_onoff .win_row_mod} -variable rootg_cb] -side left
+	grp_frame
 	set srn [expr {($rownumber>0) ? $rownumber : {NEW}}]
-	pack [label .win_row_mod.l -text "LINK #: $srn"]
-	pack [frame .win_row_mod.buttons] -side bottom
-	pack [button .win_row_mod.buttons.save -text Save -command "save_row $rownumber"] -side left
-	pack [button .win_row_mod.buttons.cancel -text Cancel -command {destroy .win_row_mod}] -side left
+	pack [label .sub.l -text "LINK #: $srn"]
+	pack [frame .sub.buttons] -side bottom
+	pack [button .sub.buttons.save -text Save -command "save_row $rownumber"] -side left
+	pack [button .sub.buttons.cancel -text Cancel -command {destroy .sub}] -side left
 	if {$rownumber != -1} {
 		lassign [.tv_links item $rownumber -values] t u
-		.win_row_mod.t.e insert 0 $t
-		.win_row_mod.u.e insert 0 $u
+		.sub.t.e insert 0 $t
+		.sub.u.e insert 0 $u
 		if {[set p [.tv_links parent $rownumber]]!={}} {
 			# Set selected group to that of row's
 			#.win_row_mod.grp.root deselect
 			set rootg_cb 0
-			.win_row_mod.grp.cb set [dict get $DBConn::groups [string range $p 1 end]]
+			.sub.grp.cb set [dict get $DBConn::groups [string range $p 1 end]]
 		} else {
 			# If the selected is a root key, check the button instead
-			.win_row_mod.grp.root select
+			.sub.grp.root select
 		}
-		g_grp_root_onoff .win_row_mod
+		g_grp_root_onoff
 	} else {
 		#otherwise, if something was selected in treeview, select the group here.
 		set q_grp [.tv_links selection]
@@ -165,17 +161,17 @@ proc modify_row {rownumber} {
 			if {[string index $q_grp 0]!={g}} {
 				set q_grp [.tv_links parent $q_grp]
 			}
-			.win_row_mod.grp.root deselect
-			.win_row_mod.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+			.sub.grp.root deselect
+			.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
 		}
 	}
-	bind .win_row_mod <Escape> {
+	bind .sub <Escape> {
 		destroy %W
 	}
-	bind .win_row_mod.t.e <Shift-Button-1> {
+	bind .sub.t.e <Shift-Button-1> {
 		%W selection range 0 end
 	}
-	bind .win_row_mod.u.e <Shift-Button-1> {
+	bind .sub.u.e <Shift-Button-1> {
 		%W selection range 0 end
 	}
 }
@@ -184,14 +180,14 @@ proc save_row {rownumber} {
 	# saves them to both database & treeview with
 	# current time. A rownumber of -1 implies a new
 	# row. This proc also closes 'win_row_mod'.
-	set t [.win_row_mod.t.e get]
-	set u [.win_row_mod.u.e get]
+	set t [.sub.t.e get]
+	set u [.sub.u.e get]
 	set m [clock format [clock seconds] -format {%D - %R}]
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set g 0
 	} else {
-		set g [lindex [dict keys $DBConn::groups] [.win_row_mod.grp.cb current]]
+		set g [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
 	}
 	if {$rownumber == -1} {
 		set rownumber [add_data $t $u $m $g]
@@ -199,7 +195,7 @@ proc save_row {rownumber} {
 		if {$rootg_cb==1} {
 			.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
 		} else {
-		.tv_links insert g$g end -id $rownumber -text $rownumber -value [list $t $u $m]
+			.tv_links insert g$g end -id $rownumber -text $rownumber -value [list $t $u $m]
 		}
 	} else {
 		update_data $rownumber $t $u $m $g
@@ -214,77 +210,71 @@ proc save_row {rownumber} {
 			}
 		}
 	}
-	destroy .win_row_mod
+	destroy .sub
 }
-proc grp_frame {w} {
+proc grp_frame {} {
 	global rootg_cb
-	pack [labelframe $w.grp -text Group] -fill x
-	pack [ttk::combobox $w.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
-	pack [checkbutton $w.grp.root -text Root -variable rootg_cb -command "g_grp_root_onoff $w"] -side left
+	pack [labelframe .sub.grp -text Group] -fill x
+	pack [ttk::combobox .sub.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
+	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command g_grp_root_onoff] -side left
 }
 proc switch_grp {} {
 	if {[llength [.tv_links selection]]==0} {
 		return
 	}
-	toplevel .win_grp_chg
-	grab set .win_grp_chg
-	wm attributes .win_grp_chg -topmost 1
-	wm title .win_grp_chg {Switch to group..}
-	grp_frame .win_grp_chg
-	pack [frame .win_grp_chg.b]
-	pack [button .win_grp_chg.b.apply -text Apply -command apply_g_chg] -side left
-	pack [button .win_grp_chg.b.cancel -text Cancel -command {destroy .win_grp_chg}] -side left
+	toplevel .sub
+	grab set .sub
+	wm attributes .sub -topmost 1
+	wm title .sub {Switch to group..}
+	grp_frame
+	pack [frame .sub.b]
+	pack [button .sub.b.apply -text Apply -command apply_g_chg] -side left
+	pack [button .sub.b.cancel -text Cancel -command {destroy .sub}] -side left
 }
 proc apply_g_chg {} {
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set p 0
+		set k {}
 	} else {
-		set p [lindex [dict keys $DBConn::groups] [.win_grp_chg.grp.cb current]]
+		set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
+		set k g$p
 	}
 	set rowids [.tv_links selection]
 	conn eval { BEGIN TRANSACTION; }
 	foreach r $rowids {
 		if {[string index $r 0]!={g}} {
 			data_group $r $p
-			if {$rootg_cb==1} {
-				.tv_links move $r {} end
-			} else {
-				.tv_links move $r g$p end
-			}
+			.tv_links move $r $k end
 		}
 	}
 	conn eval { END TRANSACTION; }
-	destroy .win_grp_chg
+	destroy .sub
 }
 
 proc modify_grp {gid} {
 	# Change a group's parent and/or name
-	toplevel .win_grp_mod
-	grab set .win_grp_mod
-	wm attributes .win_grp_mod -topmost 1
-	wm title .win_grp_mod {Modify Group..}
-	grp_frame .win_grp_mod
-#	pack [labelframe .win_grp_mod.grp -text Parent] -fill x
-#	pack [ttk::combobox .win_grp_mod.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
-#	global rootg_cb
-#	pack [checkbutton .win_grp_mod.grp.root -text Root -variable rootg_cb -command {g_grp_root_onoff .win_grp_mod}] -side left
-	pack [labelframe .win_grp_mod.n -text Name]
-	pack [entry .win_grp_mod.n.e -width 50]
-	pack [frame .win_grp_mod.b]
-	pack [button .win_grp_mod.b.save -text Save -command "save_grp $gid"] -side left
-	pack [button .win_grp_mod.b.cancel -text Cancel -command {destroy .win_grp_mod}] -side left
+	toplevel .sub
+	grab set .sub
+	wm attributes .sub -topmost 1
+	wm title .sub {Modify Group..}
+	grp_frame
+	pack [labelframe .sub.n -text Name]
+	pack [entry .sub.n.e -width 50]
+	pack [frame .sub.b]
+	pack [button .sub.b.save -text Save -command "save_grp $gid"] -side left
+	pack [button .sub.b.cancel -text Cancel -command {destroy .sub}] -side left
 
 	if {$gid!=-1} {
 		# existing group
 		set p [.tv_links parent g$gid]
 		if {[string length $p]>0} {
-			.win_grp_mod.grp.root deselect
-			.win_grp_mod.grp.cb set [dict get $DBConn::groups [string range $p 1 end]]
+			.sub.grp.root deselect
+			.sub.grp.cb set [dict get $DBConn::groups [string range $p 1 end]]
 		} else {
-			.win_grp_mod.grp.root select
+			.sub.grp.root select
 		}
-		.win_grp_mod.n.e insert 0 [dict get $DBConn::groups $gid]
+		.sub.n.e insert 0 [dict get $DBConn::groups $gid]
 	} else {
 		# otherwise, if something was selected in treeview, select the group here.
 		set q_grp [.tv_links selection]
@@ -292,23 +282,23 @@ proc modify_grp {gid} {
 			if {[string index $q_grp 0]!={g}} {
 				set q_grp [.tv_links parent $q_grp]
 			}
-			.win_grp_mod.grp.root deselect
-			.win_grp_mod.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+			.sub.grp.root deselect
+			.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
 		}
 	}
-	g_grp_root_onoff .win_grp_mod
-	bind .win_grp_mod <Escape> {
+	g_grp_root_onoff
+	bind .sub <Escape> {
 		destroy %W
 	}
 }
 proc save_grp {gid} {
 	# Save changes to group (gid is just an int)
-	set n [.win_grp_mod.n.e get]
+	set n [.sub.n.e get]
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set p 0
 	} else {
-		set p [lindex [dict keys $DBConn::groups] [.win_grp_mod.grp.cb current]]
+		set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
 	}
 	if {$gid == -1} {
 		# a new group.
@@ -336,7 +326,7 @@ proc save_grp {gid} {
 			}
 		}
 	}
-	destroy .win_grp_mod
+	destroy .sub
 }
 proc try_modify {} {
 	# Modify a row if there is a selection
@@ -346,11 +336,10 @@ proc try_modify {} {
 		foreach r $rownumbers {
 			if {[string index $r 0]!={g}} {
 				modify_row $r
-				tkwait window .win_row_mod
 			} else {
 				modify_grp [string range $r 1 end]
-				tkwait window .win_grp_mod
 			}
+			tkwait window .sub
 		}
 		conn eval {END TRANSACTION;}
 	} else {
@@ -389,7 +378,7 @@ proc try_delete {} {
 		}
 	}
 }
-proc g_grp_root_onoff {w} {
+proc g_grp_root_onoff {} {
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set m select
@@ -397,14 +386,14 @@ proc g_grp_root_onoff {w} {
 	} else {
 		set m deselect
 		set s normal
-		if {[$w.grp.cb get]=={}} {
+		if {[.sub.grp.cb get]=={}} {
 			if {[dict size $DBConn::groups]>0} {
-				$w.grp.cb current 0
+				.sub.grp.cb current 0
 			}
 		}
 	}
-	$w.grp.root $m
-	$w.grp.cb configure -state $s
+	.sub.grp.root $m
+	.sub.grp.cb configure -state $s
 }
 proc exit_prog {} {
 	# Closes the database and then the program.
