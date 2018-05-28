@@ -93,11 +93,11 @@ proc save_row {rownumber} {
 	set u [.win_row_mod.u.e get]
 	set m [clock format [clock seconds] -format {%D - %R}]
 	if {$rownumber == -1} {
-		set rownumber [conn eval {INSERT into bookmarks VALUES(NULL,:t,:u,:m);
+		set rownumber [conn eval {INSERT into data (gid,key,value,mtime) VALUES(NULL,:t,:u,:m);
 			SELECT last_insert_rowid();}]
 		.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
 	} else {
-		conn eval {UPDATE bookmarks SET title=:t, url=:u, mtime=:m WHERE rowid=:rownumber}
+		conn eval {UPDATE data SET title=:t, url=:u, mtime=:m WHERE rowid=:rownumber}
 		.tv_links item $rownumber -value [list $t $u $m]
 	}
 	destroy .win_row_mod
@@ -161,15 +161,20 @@ proc init_db {} {
 	if {[string length $file_name] == 0} { return }
 	if {[file exists $file_name]} { file delete $file_name }
 	sqlite3 conn $file_name
-	conn eval {CREATE TABLE bookmarks(rowid INTEGER PRIMARY KEY autoincrement,title TEXT,url TEXT,mtime TEXT); BEGIN TRANSACTION;}
+	conn eval {
+		CREATE TABLE groups(rowid INTEGER primary key,name TEXT);
+		CREATE TABLE rel(rowid INTEGER primary key, gid INTEGER,pid INTEGER,depth INTEGER);
+		CREATE TABLE data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);
+		BEGIN TRANSACTION;
+	}
 	set DB::is_open 1
 	menu_is_open
 }
 proc load_rows {} {
 	# Adds rows to treeview.
 	set order [dict get $DB::col_n $DB::order]
-	conn eval "SELECT rowid,title,url,mtime from bookmarks ORDER BY $order" {
-		.tv_links insert {} end -id $rowid -text $rowid -values [list $title $url $mtime]
+	conn eval "SELECT rowid,key,value,mtime from data ORDER BY $order" {
+		.tv_links insert {} end -id $rowid -text $rowid -values [list $key $value $mtime]
 	}
 }
 proc open_db {} {
