@@ -3,12 +3,14 @@ package require Tk
 source hierarch_clo.tcl
 menu .men
 menu .men.mfile
+# Create the file menu options
 foreach {l c s} [list New init_db 1 Open g_open_db 1 {Save as} g_saveas 0 Save g_save_db 0 Close g_close_db 0 Quit exit_prog 1] {
 	.men.mfile add command -label $l -command $c -state [expr {($s==1) ? {normal} : {disabled}}]
 }
 .men.mfile insert 6 separator
 .men.mfile insert 3 separator
 .men add cascade -label File -menu .men.mfile
+# Create operation bar options.
 foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url] {
 	.men add command -label $l -command $c -state disabled
 }
@@ -58,6 +60,8 @@ proc g_open_db {} {
 	puts "DB status: $DBConn::is_open"
 }
 proc g_save_db {} {
+	# Saves rows to file. If no current file name is stored,
+	# prompt g_save_as
 	if {!$DBConn::is_open} {
 		return
 	}
@@ -69,6 +73,8 @@ proc g_save_db {} {
 }
 
 proc g_saveas {} {
+	# Saves rows to a chosen file.
+	# Beware: that file is deleted.
 	if {!$DBConn::is_open} {
 		return
 	}
@@ -79,6 +85,8 @@ proc g_saveas {} {
 	save_db_i
 }
 proc g_close_db {} {
+	# Doesn't actually close anything.
+	# Clears rows visually, wipes :memory:, and disables options.
 	close_db
 	.tv_links delete [.tv_links children {}]
 	menu_is_open
@@ -86,6 +94,8 @@ proc g_close_db {} {
 }
 proc load_rows {} {
 	# Loads rows of DB to treeview.
+	# Group items' ids are prepend with g
+	# while data items are just their rowid.
 	# First, the root groups
 	set groups [list]
 	conn eval {
@@ -114,22 +124,17 @@ proc load_rows {} {
 
 proc modify_row {rownumber} {
 	# Opens a window for entering/modifying properties of
-	# a row. Only allows edit of title & url. This proc takes
+	# a row. Only allows edit of title, url, and group. This proc takes
 	# values from the treeview only, which should be okay since
 	# modification of the treeview is limited.
-	toplevel .sub
-	grab set .sub
-	wm attributes .sub -topmost 1
-	wm title .sub {Modify link..}
-	wm resizable .sub 0 0
+	sub_win {Modify link..}
 	foreach {p n} [list t Title u URL] {
 		set w .sub.$p
 		pack [labelframe .sub.$p -text $n]
 		pack [entry $w.e -width 50] -side left
-		pack [button $w.ba -text A -command "entry_sel_all $w.e"] -side left
-		pack [button $w.bc -text C -command "entry_copy $w.e"] -side left
-		pack [button $w.bd -text D -command "entry_del_sel $w.e"] -side left
-		pack [button $w.br -text R -command "entry_del_paste $w.e"] -side left
+		foreach {l cc} [list a sel_all c copy d del_sel r del_paste] {
+			pack [button $w.b$l -text $l -command "entry_$cc $w.e" -takefocus 0] -side left
+		}
 	}
 	grp_frame
 	set srn [expr {($rownumber>0) ? $rownumber : {NEW}}]
@@ -138,6 +143,7 @@ proc modify_row {rownumber} {
 	pack [button .sub.buttons.save -text Save -command "save_row $rownumber"] -side left
 	pack [button .sub.buttons.cancel -text Cancel -command {destroy .sub}] -side left
 	if {$rownumber != -1} {
+		# Prefill fields if possible.
 		lassign [.tv_links item $rownumber -values] t u
 		.sub.t.e insert 0 $t
 		.sub.u.e insert 0 $u
@@ -201,25 +207,28 @@ proc save_row {rownumber} {
 	destroy .sub
 }
 proc grp_frame {} {
+	# Creates the widget for group selection.
+	# A combobox and a checkbutton in a labelframe.
 	global rootg_cb
 	pack [labelframe .sub.grp -text Group] -fill x
 	pack [ttk::combobox .sub.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command g_grp_root_onoff] -side left
 }
 proc switch_grp {} {
+	# Allows user to change the group of multiple
+	# items in batch.
 	if {[llength [.tv_links selection]]==0} {
 		return
 	}
-	toplevel .sub
-	grab set .sub
-	wm attributes .sub -topmost 1
-	wm title .sub {Switch to group..}
+	sub_win {Switch to group..}
 	grp_frame
 	pack [frame .sub.b]
 	pack [button .sub.b.apply -text Apply -command apply_g_chg] -side left
 	pack [button .sub.b.cancel -text Cancel -command {destroy .sub}] -side left
 }
 proc apply_g_chg {} {
+	# See switch_grp. The actually changes the 'gid' by
+	# calling procs in hierarch_clo.
 	global rootg_cb
 	if {$rootg_cb==1} {
 		set p 0
@@ -241,10 +250,7 @@ proc apply_g_chg {} {
 
 proc modify_grp {gid} {
 	# Change a group's parent and/or name
-	toplevel .sub
-	grab set .sub
-	wm attributes .sub -topmost 1
-	wm title .sub {Modify Group..}
+	sub_win {Modify Group..}
 	grp_frame
 	pack [labelframe .sub.n -text Name]
 	pack [entry .sub.n.e -width 50]
@@ -466,6 +472,13 @@ proc reorder_title {c} {
 		.tv_links move $r $c end
 		reorder_title $r
 	}
+}
+proc sub_win {t} {
+	toplevel .sub
+	grab set .sub
+	wm attributes .sub -topmost 1
+	wm resizable .sub 0 0
+	wm title .sub $t
 }
 bind .tv_links <c> {
 	copy_url
