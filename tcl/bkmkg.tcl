@@ -69,6 +69,7 @@ proc g_save_db {} {
 		g_saveas
 	} else {
 		save_db_i
+		puts "Saved rows to $DBConn::current_file"
 	}
 }
 
@@ -83,14 +84,16 @@ proc g_saveas {} {
 	if {[file exists $file_name]} { file delete $file_name }
 	set DBConn::current_file $file_name
 	save_db_i
+	puts "Saved rows to $DBConn::current_file"
 }
 proc g_close_db {} {
 	# Doesn't actually close anything.
 	# Clears rows visually, wipes :memory:, and disables options.
+	puts "Closed file $DBConn::current_file"
 	close_db
 	.tv_links delete [.tv_links children {}]
 	menu_is_open
-	puts "DB status: $DBConn::is_open"
+
 }
 proc load_rows {} {
 	# Loads rows of DB to treeview.
@@ -132,6 +135,9 @@ proc modify_row {rownumber} {
 		set w .sub.$p
 		pack [labelframe .sub.$p -text $n]
 		pack [entry $w.e -width 50] -side left
+		bind $w.e <Shift-Button-1> {
+			%W selection range 0 end
+		}
 		foreach {l cc} [list a sel_all c copy d del_sel r del_paste] {
 			pack [button $w.b$l -text $l -command "entry_$cc $w.e" -takefocus 0] -side left
 		}
@@ -164,18 +170,13 @@ proc modify_row {rownumber} {
 			if {[string index $q_grp 0]!={g}} {
 				set q_grp [.tv_links parent $q_grp]
 			}
-			.sub.grp.root deselect
-			.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+			if {[string length $q_grp]==0} {
+				.sub.grp.root select
+			} else {
+				.sub.grp.root deselect
+				.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+			}
 		}
-	}
-	bind .sub <Escape> {
-		destroy %W
-	}
-	bind .sub.t.e <Shift-Button-1> {
-		%W selection range 0 end
-	}
-	bind .sub.u.e <Shift-Button-1> {
-		%W selection range 0 end
 	}
 }
 proc save_row {rownumber} {
@@ -473,13 +474,42 @@ proc reorder_title {c} {
 		reorder_title $r
 	}
 }
-proc sub_win {t} {
-	toplevel .sub
-	grab set .sub
-	wm attributes .sub -topmost 1
-	wm resizable .sub 0 0
-	wm title .sub $t
+proc sub_win {t {lf 0}} {
+	# Creates the sub-window with default options and title.
+	if {$lf==0} {
+		toplevel .sub
+		grab set .sub
+		wm attributes .sub -topmost 1
+		wm resizable .sub 0 0
+		wm title .sub $t
+	} else {
+		pack [labelframe .sub -text $t]
+	}
+	bind .sub <Escape> {
+		destroy %W
+	}
+}
+bind . <Control-n> {
+	init_db
+}
+bind . <Control-c> {
+	g_close_db
+}
+bind . <Control-s> {
+	g_save_db
+}
+bind . <Control-o> {
+	g_open_db
+}
+bind . <Control-q> {
+	exit_prog
 }
 bind .tv_links <c> {
 	copy_url
+}
+bind .tv_links <Return> {
+	try_modify
+}
+bind .tv_links <Delete> {
+	try_delete
 }
