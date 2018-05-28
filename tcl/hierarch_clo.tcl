@@ -1,6 +1,5 @@
 #!/bin/tclsh8.6
 package require sqlite3
-#package require Tk
 
 namespace eval DBConn {
 	variable is_open 0
@@ -9,6 +8,7 @@ namespace eval DBConn {
 }
 
 proc prepare_memory {} {
+	# Sets up 'conn' as handler for below procs.
 	sqlite3 conn :memory:
 	set DBConn::is_open 1
 	build_tables
@@ -289,6 +289,7 @@ proc save_db_i {} {
 		INSERT INTO M.rel SELECT * from rel;
 		INSERT INTO M.data SELECT * from data;
 		END TRANSACTION;
+		PRAGMA M.optimize;
 		DETACH M;
 	}
 }

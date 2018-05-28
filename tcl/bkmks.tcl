@@ -97,7 +97,7 @@ proc save_row {rownumber} {
 			SELECT last_insert_rowid();}]
 		.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
 	} else {
-		conn eval {UPDATE data SET title=:t, url=:u, mtime=:m WHERE rowid=:rownumber}
+		conn eval {UPDATE data SET key=:t, value=:u, mtime=:m WHERE rowid=:rownumber}
 		.tv_links item $rownumber -value [list $t $u $m]
 	}
 	destroy .win_row_mod
@@ -209,6 +209,9 @@ proc close_db {} {
 		set saveit [tk_messageBox -icon question -message {Save before closing?} -type yesno -title Prompt]
 		if {[string equal $saveit yes]} {
 			save_db
+		}
+		conn eval {
+			PRAGMA optimize;
 		}
 		conn close
 		set DB::is_open 0
