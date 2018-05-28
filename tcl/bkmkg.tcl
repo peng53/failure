@@ -20,13 +20,15 @@ set rootg_cb 0
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
 pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
 
+set i -1
 foreach {c l w} [list #0 Groups/RowID 128 title Name 128 url URL 256 mtime {Time Modified} 128] {
 	# this loop adjusts the treeview's columns
-	.tv_links heading $c -text $l -anchor w
+	.tv_links heading $c -text $l -anchor w -command "reorder_rows_q $i {}"
 	.tv_links column $c -minwidth 16 -width $w
+	incr i
 }
-.tv_links heading #0 -command {reorder_#0 {}}
-.tv_links heading title -command {reorder_title {}}
+#.tv_links heading #0 -command {reorder_#0 {}}
+#.tv_links heading title -command {reorder_title {}}
 
 proc init_db {} {
 	# Creates a working database in memory. Doesn't work if DB is already open.
@@ -47,7 +49,7 @@ proc g_open_db {} {
 		if {[string equal $saved no]} {
 			return
 		}
-		close_db
+		g_close_db
 	}
 	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
 	if {[string length $s] > 0} {
@@ -104,7 +106,7 @@ proc load_rows {} {
 	conn eval {
 		SELECT gid FROM rel WHERE pid IS NULL;
 	} {
-		.tv_links insert {} end -id "g$gid" -text [dict get $DBConn::groups $gid]
+		.tv_links insert {} end -id "g$gid" -text [dict get $DBConn::groups $gid] -open 1
 		lappend groups $gid
 	}
 	# Second, other groups
@@ -452,26 +454,35 @@ proc reorder_#0 {c} {
 		}
 	}
 }
-proc reorder_title {c} {
-	set g [list]
-	set d [list]
-	foreach r [.tv_links children $c] {
-		if {[string index $r 0]=={g}} {
-			lappend g $r
-		} else {
-			lassign [.tv_links item $r -values] title url mtime
-			lappend d [list $title $r]
+proc reorder_rows_q {bycol fp} {
+	# Reorder the items starting at $c by a column.
+	puts "Reordered by column $bycol"
+	if {$bycol==-1} {
+		reorder_#0 {}
+		return
+	}
+	set i 0
+	set ql 1
+	set Q [list $fp]
+	while {$i<$ql} {
+		set c [lindex $Q $i]
+		set D [list]
+		foreach {r} [.tv_links children $c] {
+			if {[string index $r 0]=={g}} {
+				lappend Q $r
+				incr ql
+			} else {
+				lappend D [list $r [lindex [.tv_links item $r -values] $bycol]]
+			}
+			.tv_links detach $r
 		}
-		.tv_links detach $r
-	}
-	foreach {v} [lsort -index 0 $d] {
-		lassign $v k r
-		.tv_links move $r $c end
-	}
-	foreach r [lsort $g] {
-		.tv_links move $r $c end
-		.tv_links move $r $c end
-		reorder_title $r
+		foreach {i_i} [lsort -indices -index 1 $D] {
+			set r
+			.tv_links move [lindex [lindex $D $i_i] 0] $c end
+		}
+		for {set i_i [incr i]} {$i_i<$ql} {incr i_i} {
+			.tv_links move [lindex $Q $i_i] $c 0
+		}
 	}
 }
 proc sub_win {t {lf 0}} {
