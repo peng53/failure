@@ -3,21 +3,15 @@ package require Tk
 source hierarch_clo.tcl
 menu .men
 menu .men.mfile
-.men.mfile add command -label New -command init_db -underline 0
-.men.mfile add command -label Open -command g_open_db -underline 0
-.men.mfile add separator
-.men.mfile add command -label {Save as} -command g_saveas -underline 0 -state disabled
-.men.mfile add command -label Save -command g_save_db -underline 0 -state disabled
-.men.mfile add command -label Close -command g_close_db -underline 0 -state disabled
-.men.mfile add separator
-.men.mfile add command -label Quit -command exit_prog -underline 0
+foreach {l c s} [list New init_db 1 Open g_open_db 1 {Save as} g_saveas 0 Save g_save_db 0 Close g_close_db 0 Quit exit_prog 1] {
+	.men.mfile add command -label $l -command $c -state [expr {($s==1) ? {normal} : {disabled}}]
+}
+.men.mfile insert 6 separator
+.men.mfile insert 3 separator
 .men add cascade -label File -menu .men.mfile
-.men add command -label {Add Group} -command {modify_grp -1} -state disabled
-.men add command -label {Add Link} -command {modify_row -1} -state disabled
-.men add command -label Modify -command try_modify -state disabled
-.men add command -label {Batch Group} -command switch_grp -state disabled
-.men add command -label Delete -command try_delete -state disabled
-.men add command -label {Copy URL} -command copy_url -underline 0 -state disabled
+foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url] {
+	.men add command -label $l -command $c -state disabled
+}
 . configure -menu .men
 set rootg_cb 0
 #pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
@@ -29,7 +23,8 @@ foreach {c l w} [list #0 Groups/RowID 128 title Name 128 url URL 256 mtime {Time
 	.tv_links heading $c -text $l -anchor w
 	.tv_links column $c -minwidth 16 -width $w
 }
-.tv_links heading #0 -command {reorder_id {}}
+.tv_links heading #0 -command {reorder_#0 {}}
+.tv_links heading title -command {reorder_title {}}
 
 proc init_db {} {
 	# Creates a working database in memory. Doesn't work if DB is already open.
@@ -440,13 +435,36 @@ proc copy_url {} {
 		clipboard append $url
 	}
 }
-proc reorder_id {c} {
+proc reorder_#0 {c} {
 	set rows [lsort -increasing [.tv_links children $c]]
+	.tv_links detach $rows
 	foreach r $rows {
 		.tv_links move $r $c end
 		if {[string index $r 0]=={g}} {
-			reorder_id $r
+			reorder_#0 $r
 		}
+	}
+}
+proc reorder_title {c} {
+	set g [list]
+	set d [list]
+	foreach r [.tv_links children $c] {
+		if {[string index $r 0]=={g}} {
+			lappend g $r
+		} else {
+			lassign [.tv_links item $r -values] title url mtime
+			lappend d [list $title $r]
+		}
+		.tv_links detach $r
+	}
+	foreach {v} [lsort -index 0 $d] {
+		lassign $v k r
+		.tv_links move $r $c end
+	}
+	foreach r [lsort $g] {
+		.tv_links move $r $c end
+		.tv_links move $r $c end
+		reorder_title $r
 	}
 }
 bind .tv_links <c> {

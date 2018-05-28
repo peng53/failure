@@ -18,17 +18,16 @@ menu .men.mfile
 pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
 pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
-
-foreach {c l w} [list #0 # 32 title Name 128 url URL 256 mtime {Time Modified} 128] {
+set i 0
+foreach {c l w } [list #0 # 32 title Name 128 url URL 256 mtime {Time Modified} 128] {
 	# this loop adjusts the treeview's columns
-	.tv_links heading $c -text $l -anchor w
+	.tv_links heading $c -text $l -anchor w -command "reorder_rows $i"
 	.tv_links column $c -minwidth 16 -width $w
+	incr i
 }
-bind .tv_links <Return> {
-	try_modify
-}
-bind .tv_links <Delete> {
-	try_delete
+namespace eval DB {
+	# Simply stores whether a DB is open or not. ATM.
+	variable is_open 0 order 0 col_n [dict create 0 rowid 1 title 2 url 3 mtime]
 }
 proc try_modify {} {
 	# Modify a row if there is a selection
@@ -80,8 +79,7 @@ proc entry_copy {e} {
 proc entry_del_paste {e} {
 	# Replaces contents of entry with whats in clipboard
 	# (if clipboard length >0)
-	set s [clipboard get]
-	if {[string length $s]>0} {
+	if {[string length [set s [clipboard get]]]>0} {
 		$e delete 0 end
 		$e insert 0 $s
 	}
@@ -91,16 +89,12 @@ proc save_row {rownumber} {
 	# saves them to both database & treeview with
 	# current time. A rownumber of -1 implies a new
 	# row. This proc also closes 'win_row_mod'.
-	puts $rownumber
 	set t [.win_row_mod.t.e get]
 	set u [.win_row_mod.u.e get]
 	set m [clock format [clock seconds] -format {%D - %R}]
-	puts $t
-	puts $u
 	if {$rownumber == -1} {
-		conn eval {INSERT into bookmarks VALUES(NULL,:t,:u,:m)}
-		set rownumber [conn eval {select last_insert_rowid();}]
-		# note : need sql for get id (which is also text)
+		set rownumber [conn eval {INSERT into bookmarks VALUES(NULL,:t,:u,:m);
+			SELECT last_insert_rowid();}]
 		.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
 	} else {
 		conn eval {UPDATE bookmarks SET title=:t, url=:u, mtime=:m WHERE rowid=:rownumber}
@@ -122,19 +116,15 @@ proc modify_row {rownumber} {
 	wm attributes .win_row_mod -topmost 1
 	wm title .win_row_mod {Modify link..}
 	wm resizable .win_row_mod 0 0
-	pack [labelframe .win_row_mod.t -text Title]
-	pack [entry .win_row_mod.t.e -width 50] -side left
-	pack [button .win_row_mod.t.ba -text A -command {entry_sel_all .win_row_mod.t.e}] -side left
-	pack [button .win_row_mod.t.bc -text C -command {entry_copy .win_row_mod.t.e}] -side left
-	pack [button .win_row_mod.t.bd -text D -command {entry_del_sel .win_row_mod.t.e}] -side left
-	pack [button .win_row_mod.t.br -text R -command {entry_del_paste .win_row_mod.t.e}] -side left
-	pack [labelframe .win_row_mod.u -text URL]
-	pack [entry .win_row_mod.u.e -width 50] -side left
-	pack [button .win_row_mod.u.ba -text A -command {entry_sel_all .win_row_mod.u.e}] -side left
-	pack [button .win_row_mod.u.bc -text C -command {entry_copy .win_row_mod.u.e}] -side left
-	pack [button .win_row_mod.u.bd -text D -command {entry_del_sel .win_row_mod.u.e}] -side left
-	pack [button .win_row_mod.u.br -text R -command {entry_del_paste .win_row_mod.u.e}] -side left
-	set srn [expr {($rownumber>0) ? $rownumber : "NEW"}]
+	foreach {p n} [list t Title u URL] {
+		set w .win_row_mod.$p
+		pack [labelframe $w -text $n]
+		pack [entry $w.e -width 50] -side left
+		foreach {l cc} [list a sel_all c copy d del_sel r del_paste] {
+			pack [button $w.b$l -text $l -command "entry_$cc $w.e" -takefocus 0] -side left
+		}
+	}
+	set srn [expr {($rownumber>0) ? $rownumber : {NEW}}]
 	pack [label .win_row_mod.l -text "LINK #: $srn"]
 	pack [frame .win_row_mod.buttons] -side bottom
 	pack [button .win_row_mod.buttons.save -text Save -command "save_row $rownumber"] -side left
@@ -153,12 +143,6 @@ proc modify_row {rownumber} {
 	bind .win_row_mod.u.e <Shift-Button-1> {
 		%W selection range 0 end
 	}
-}
-namespace eval DB {
-	# Simply stores whether a DB is open or not. ATM.
-	variable is_open 0
-	variable order 0
-	variable col_n [dict create 0 rowid 1 title 2 url 3 mtime]
 }
 proc init_db {} {
 	# Creates a database file, if one is not already open.
@@ -181,7 +165,7 @@ proc init_db {} {
 	set DB::is_open 1
 	menu_is_open
 }
-proc load_rows {{where {}}} {
+proc load_rows {} {
 	# Adds rows to treeview.
 	set order [dict get $DB::col_n $DB::order]
 	conn eval "SELECT rowid,title,url,mtime from bookmarks ORDER BY $order" {
@@ -203,7 +187,6 @@ proc open_db {} {
 	close_db
 	set s [tk_getOpenFile -defaultextension .db -filetypes {{{Bookmarks DB} .db}} -title {Load Bookmarks}]
 	if {[string length $s] > 0} {
-		puts "Opened DB $s"
 		wm title . "bkmks - $s"
 		set_status "Opened DB $s"
 		sqlite3 conn $s
@@ -222,11 +205,11 @@ proc close_db {} {
 		if {[string equal $saveit yes]} {
 			save_db
 		}
-		puts {Closing DB..}
 		conn close
 		set DB::is_open 0
 		.tv_links delete [.tv_links children {}]
 		menu_is_open
+		set_status {Closed DB}
 	}
 }
 proc exit_prog {} {
@@ -237,12 +220,12 @@ proc exit_prog {} {
 }
 proc save_db {} {
 	# Commits changes to database with end and begin.
-	puts {Saving DB..}
 	conn eval {END TRANSACTION;BEGIN TRANSACTION;}
+	set_status [format {Saved at %s} [clock format [clock seconds] -format {%D - %R}]]
 }
 proc menu_is_open {} {
 	# Toggles menu options based on file state.
-	set nstate [expr {($DB::is_open) ? "normal" : "disabled"}]
+	set nstate [expr {($DB::is_open) ? {normal} : {disabled}}]
 	for {set i 2} {$i<6} {incr i} {
 		.men entryconfigure $i -state $nstate
 	}
@@ -257,14 +240,15 @@ proc reorder_rows {bycol} {
 	set rs [list]
 	foreach r [.tv_links children {}] {
 		lappend rs [concat $r [.tv_links item $r -values]]
-		.tv_links delete $r
+		.tv_links detach $r
 	}
-	set reverse [expr {($bycol==$DB::order) ? "-decreasing" : "-increasing"}]
+	set reverse [expr {($bycol==$DB::order) ? {decreasing} : {increasing}}]
 	set DB::order $bycol
-	foreach r [lsort -index $bycol $reverse $rs] {
-		set val [lassign $r id]
-		.tv_links insert {} end -id $id -text $id -values $val
+	foreach i [lsort -indices -index $bycol -$reverse $rs] {
+		set r [lindex [lindex $rs $i] 0]
+		.tv_links move $r {} end
 	}
+	set_status "Reordered by column $bycol in $reverse order"
 }
 proc copy_url {} {
 	# Sets clipboard to url of selected row
@@ -275,6 +259,7 @@ proc copy_url {} {
 		lassign [.tv_links item [lindex $r 0] -values] title url mtime
 		clipboard clear
 		clipboard append $url
+		set_status "Copied $url"
 	}
 }
 proc set_status {s} {
@@ -295,14 +280,12 @@ bind . <Control-o> {
 bind . <Control-q> {
 	exit_prog
 }
-bind . <Control-z> {
-	reorder_rows 0
-}
-bind .tv_links <Button-1> {
-	if {[string equal [%W identify region %x %y] heading]} {
-		reorder_rows [string range [%W identify column %x %y] 1 end]
-	}
-}
 bind .tv_links <c> {
 	copy_url
+}
+bind .tv_links <Return> {
+	try_modify
+}
+bind .tv_links <Delete> {
+	try_delete
 }
