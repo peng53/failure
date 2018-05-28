@@ -21,14 +21,12 @@ pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_li
 pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
 
 set i -1
-foreach {c l w} [list #0 Groups/RowID 128 title Name 128 url URL 256 mtime {Time Modified} 128] {
+foreach {c l w} [list #0 Groups/RowID 128 title Name 128 url URL 256 mtime {Time Modified} 170] {
 	# this loop adjusts the treeview's columns
 	.tv_links heading $c -text $l -anchor w -command "reorder_rows_q $i {}"
 	.tv_links column $c -minwidth 16 -width $w
 	incr i
 }
-#.tv_links heading #0 -command {reorder_#0 {}}
-#.tv_links heading title -command {reorder_title {}}
 
 proc init_db {} {
 	# Creates a working database in memory. Doesn't work if DB is already open.
@@ -57,7 +55,7 @@ proc g_open_db {} {
 		menu_is_open
 		load_rows
 		puts "Opened DB $s"
-		wm title . "bkmks - $s"
+		wm title . "bkmkg - $s"
 	}
 	puts "DB status: $DBConn::is_open"
 }
@@ -188,12 +186,13 @@ proc save_row {rownumber} {
 	# row. This proc also closes 'win_row_mod'.
 	set t [.sub.t.e get]
 	set u [.sub.u.e get]
-	set m [clock format [clock seconds] -format {%D - %R}]
+	set m [clock format [clock seconds] -format {%Y-%m-%d %T.000}]
 	global rootg_cb
-	if {$rootg_cb==1} {
+	if {$rootg_cb==1 || [string length [.sub.grp.cb get]]==0} {
 		set g 0
 		set k {}
 	} else {
+		puts "this"
 		set k g[set g [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]]
 	}
 	if {$rownumber == -1} {
@@ -467,22 +466,20 @@ proc reorder_rows_q {bycol fp} {
 	while {$i<$ql} {
 		set c [lindex $Q $i]
 		set D [list]
-		foreach {r} [.tv_links children $c] {
+		foreach {r} [lsort [.tv_links children $c]] {
 			if {[string index $r 0]=={g}} {
+				.tv_links move $r $c end
 				lappend Q $r
 				incr ql
 			} else {
 				lappend D [list $r [lindex [.tv_links item $r -values] $bycol]]
+				.tv_links detach $r
 			}
-			.tv_links detach $r
 		}
 		foreach {i_i} [lsort -indices -index 1 $D] {
-			set r
 			.tv_links move [lindex [lindex $D $i_i] 0] $c end
 		}
-		for {set i_i [incr i]} {$i_i<$ql} {incr i_i} {
-			.tv_links move [lindex $Q $i_i] $c 0
-		}
+		incr i
 	}
 }
 proc sub_win {t {lf 0}} {
