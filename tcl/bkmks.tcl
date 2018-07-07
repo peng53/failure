@@ -9,6 +9,8 @@ menu .men.mfile
 .men.mfile add separator
 .men.mfile add command -label Save -command save_db -state disabled -underline 0
 .men.mfile add command -label Close -command close_db -state disabled -underline 0
+.men.mfile add command -label Import -command import_txt -state disabled -underline 0
+
 .men.mfile add command -label Quit -command exit_prog -underline 0
 .men add cascade -label File -menu .men.mfile
 .men add command -label {Add Link} -command {modify_row -1} -state disabled
@@ -49,7 +51,7 @@ proc try_delete {} {
 	set rownumbers [.tv_links selection]
 	if {[llength $rownumbers] > 0} {
 		foreach r $rownumbers {
-			conn eval {DELETE from bookmarks WHERE rowid=:r LIMIT 1}
+			conn eval {DELETE from data WHERE rowid=:r LIMIT 1}
 			.tv_links delete $r
 		}
 	}
@@ -84,13 +86,7 @@ proc entry_del_paste {e} {
 		$e insert 0 $s
 	}
 }
-proc save_row {rownumber} {
-	# Takes properties from 'win_row_mod' window and
-	# saves them to both database & treeview with
-	# current time. A rownumber of -1 implies a new
-	# row. This proc also closes 'win_row_mod'.
-	set t [.win_row_mod.t.e get]
-	set u [.win_row_mod.u.e get]
+proc add_row {t u rownumber} {
 	set m [clock format [clock seconds] -format {%D - %R}]
 	if {$rownumber == -1} {
 		set rownumber [conn eval {INSERT into data (gid,key,value,mtime) VALUES(NULL,:t,:u,:m);
@@ -100,6 +96,24 @@ proc save_row {rownumber} {
 		conn eval {UPDATE data SET key=:t, value=:u, mtime=:m WHERE rowid=:rownumber}
 		.tv_links item $rownumber -value [list $t $u $m]
 	}
+}
+proc save_row {rownumber} {
+	# Takes properties from 'win_row_mod' window and
+	# saves them to both database & treeview with
+	# current time. A rownumber of -1 implies a new
+	# row. This proc also closes 'win_row_mod'.
+	set t [.win_row_mod.t.e get]
+	set u [.win_row_mod.u.e get]
+	#set m [clock format [clock seconds] -format {%D - %R}]
+	add_row $t $u $rownumber
+	#if {$rownumber == -1} {
+	#	set rownumber [conn eval {INSERT into data (gid,key,value,mtime) VALUES(NULL,:t,:u,:m);
+	#		SELECT last_insert_rowid();}]
+	#	.tv_links insert {} end -id $rownumber -text $rownumber -value [list $t $u $m]
+	#} else {
+	#	conn eval {UPDATE data SET key=:t, value=:u, mtime=:m WHERE rowid=:rownumber}
+	#	.tv_links item $rownumber -value [list $t $u $m]
+	#}
 	destroy .win_row_mod
 }
 proc modify_row {rownumber} {
@@ -147,7 +161,7 @@ proc modify_row {rownumber} {
 proc init_db {} {
 	# Creates a database file, if one is not already open.
 	# The dialog asks whether to replace if the file already
-	# exists and it WILL delete that file. Warnings were given.
+	# exists and it WILL deletedelete that file. Warnings were given.
 	# A default table is created in the new file and a transaction
 	# is started.
 	if {$DB::is_open} {
@@ -239,6 +253,7 @@ proc menu_is_open {} {
 	}
 	.men.mfile entryconfigure 4 -state $nstate
 	.men.mfile entryconfigure 5 -state $nstate
+	.men.mfile entryconfigure 6 -state $nstate
 }
 
 proc reorder_rows {bycol} {
@@ -272,6 +287,21 @@ proc copy_url {} {
 }
 proc set_status {s} {
 	.statusbar configure -text $s
+}
+proc import_txt {} {
+	set myfile [tk_getOpenFile -defaultextension .txt -filetypes {{{Bookmarks TXT} .txt}} -title {Load TXT}]
+	if {[string length $myfile]==0} return
+	set fp [open $myfile r]
+	while {[gets $fp L]>=0} {
+		#set L2 [split $L "|"]
+		#if {[llength $L2]==2} {
+		#	add_row {*}$L2 -1
+		#} else {
+		#	add_row [concat [lrange $L2 0 end-1]] [lindex $L2 end] -1
+		#}
+		set d [string last "|" $L]
+		add_row [string range $L 0 $d-1] [string range $L $d+1 end] -1
+	}
 }
 bind . <Control-n> {
 	init_db

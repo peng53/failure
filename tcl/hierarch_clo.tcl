@@ -5,6 +5,9 @@ namespace eval DBConn {
 	variable is_open 0
 	variable groups [dict create]
 	variable current_file {}
+	variable penalty [dict create add 1 del 1 mod 1 gadd 2 gdel 10 gmod 1 move 1 gmove 4]
+	variable max_penalty 20
+	variable in_trans 0
 }
 
 proc prepare_memory {} {
@@ -291,6 +294,19 @@ proc save_db_i {} {
 		END TRANSACTION;
 		PRAGMA M.optimize;
 		DETACH M;
+	}
+}
+proc export_tswv {fname} {
+	if {!$DBConn::is_open} {
+		return
+	}
+	set fh [open $fh w]
+	set G [list]
+
+	conn eval {
+		SELECT gid FROM rel WHERE pid IS NULL;
+	} {
+		lappend G $gid
 	}
 }
 proc testing_db {} {
