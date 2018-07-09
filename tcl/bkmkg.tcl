@@ -9,11 +9,13 @@ foreach {l c s} [list New init_db 1 Open g_open_db 1 {Save as} g_saveas 0 Save g
 }
 .men.mfile insert 6 separator
 .men.mfile insert 3 separator
+
 .men add cascade -label File -menu .men.mfile
 # Create operation bar options.
 foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url] {
 	.men add command -label $l -command $c -state disabled
 }
+.men add command -label Import -command firefox_bm
 . configure -menu .men
 set rootg_cb 0
 #pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
@@ -497,6 +499,29 @@ proc sub_win {t {lf 0}} {
 		destroy %W
 	}
 }
+proc firefox_bm {} {
+	set myfile [tk_getOpenFile -defaultextension .sqlite -filetypes {{{Firefox places.sqlite} .sqlite}} -title {Select places.sqlite..}]
+	if {[string length $myfile]==0} return
+	set mtime [clock format [clock seconds] -format {%Y-%m-%d %T.000}]
+	set ngid [import_places $myfile $mtime]
+	switch $ngid {
+		-1 {
+			puts {NO FILE OPEN!!}
+		}
+		0 {
+			puts {IMPORT GROUP EXISTS ALREADY!!}
+		}
+		default {
+			.tv_links insert {} end -id "g$ngid" -text [format {places.sqlite %s} $mtime]
+			conn eval {
+				SELECT rowid,key,value FROM data WHERE gid=:ngid;
+			} {
+				.tv_links insert "g$ngid" end -id $rowid -text $rowid -values [list $key $value $mtime]
+			}
+		}
+	}
+}
+
 bind . <Control-n> {
 	init_db
 }
@@ -520,4 +545,7 @@ bind .tv_links <Return> {
 }
 bind .tv_links <Delete> {
 	try_delete
+}
+bind . <Control-i> {
+	firefox_bm
 }

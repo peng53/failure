@@ -309,6 +309,26 @@ proc export_tswv {fname} {
 		lappend G $gid
 	}
 }
+proc import_places {fname mtime} {
+	if {!$DBConn::is_open} {
+		return -1
+	}
+	# only imports bookmarks (and not structure) ATM
+	set ngid [add_group [format {places.sqlite %s} $mtime]]
+	if {$ngid!=0} {
+		conn eval {
+			ATTACH :fname AS PL;
+			BEGIN TRANSACTION;
+			INSERT INTO data
+				SELECT :ngid,PL.moz_bookmarks.title,PL.moz_places.url,:mtime
+				FROM PL.moz_bookmarks JOIN PL.moz_places ON PL.moz_bookmarks.id=PL.moz_places.id
+					WHERE url LIKE 'http%';
+			END TRANSACTION;
+			DETACH PL;
+		}
+	}
+	return $ngid
+}
 proc testing_db {} {
 	set DBConn::is_open 1
 	sqlite3 conn :memory:
