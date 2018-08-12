@@ -20,27 +20,34 @@ struct Node;
 class WordBank {
 	private:
 		Node* root;
-		Node* prefix(const char* s,size_t lc);
+		Node* prefix(const string& s,size_t lc);
 	public:
 		WordBank();
 		~WordBank();
-		bool prefix_exists(const string& prefix,size_t lc);
-		bool prefix_exists(const string& prefix);
-		bool prefix_exists(const char* s,size_t lc);
-		bool prefix_exists(const char* s);
-		vector<char> next_possible_letters(string& prefix);
 
-		vector<string> with_prefix(const string& prefix);
+		void add_word(const string& s,size_t letters);
+		void add_word(const string& s){
+			add_word(s,s.length());
+		}
 
-		void add_word(const char* w,size_t letters);
-		void add_word(const char* w);
-		void add_word(const string& s);
-
-		void remove_word(const char* w,size_t lc);
-		void remove_word(const char* w);
 		void remove_word(const string& w,size_t lc);
-		void remove_word(const string& w);
+		void remove_word(const string& w){
+			remove_word(w,w.length());
+		}
 
+		bool prefix_exists(const string& s,size_t lc){
+			return prefix(s,lc);
+		}
+		bool prefix_exists(const string& prefix){
+			return prefix_exists(prefix,prefix.length());
+		}
+		
+		vector<string> with_prefix(const string& prefix,size_t lc);		
+		vector<string> with_prefix(const string& prefix){
+			return with_prefix(prefix,prefix.length());
+		}
+
+		vector<char> next_possible_letters(string& prefix);
 		ostream& import_words(ostream& o);
 		int import_words(const vector<string>& o);
 		ostream& export_words(ostream& o);

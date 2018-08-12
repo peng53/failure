@@ -76,31 +76,22 @@ struct Node {
 		}
 	}
 };
-WordBank::WordBank(){
-	root = new Node();
-}
+WordBank::WordBank(): root(new Node){}
 
 WordBank::~WordBank(){
 	root->deleteRoot();
 }
 
-void WordBank::add_word(const char* s, size_t lc){
+void WordBank::add_word(const string& s,size_t len){
 	Node* l = root;
-	for (size_t i=0;i<lc;++i){
+	for (size_t i=0;i<len;++i){
 		l->add_child(s[i]);
 		l = l->p[cInd(s[i])];
 	}
 	l->word_end += 1;
 }
-void WordBank::add_word(const char* s){
-	add_word(s,strlen(s));
-}
 
-void WordBank::add_word(const string& s){
-	add_word(s.c_str(),s.length());
-}
-
-void WordBank::remove_word(const char* s, size_t lc){
+void WordBank::remove_word(const string& s,size_t lc){
 	Node* l = root;
 	stack<Node*> stk;
 	for (size_t i=0;i<lc;++i){
@@ -119,12 +110,13 @@ void WordBank::remove_word(const char* s, size_t lc){
 		for (size_t i=0;i<26;++i){
 			if (l->p[i]!=nullptr) return;
 		}
+		std::cout << "removing " << l << '\n';
 		delete l;
 	}
 	root->p[cInd(s[0])] = nullptr;
 }
 
-Node* WordBank::prefix(const char* s, size_t lc){
+Node* WordBank::prefix(const string& s,size_t lc){
 	Node* l = root;
 	for (size_t i=0;i<lc;++i){
 		if (l->p[cInd(s[i])]==nullptr) return nullptr;
@@ -133,43 +125,20 @@ Node* WordBank::prefix(const char* s, size_t lc){
 	return l;
 }
 
-
-bool WordBank::prefix_exists(const char* s,size_t lc){
-	return prefix(s,lc);
-}
-bool WordBank::prefix_exists(const char* s){
-	return prefix_exists(s,strlen(s));
-}
-bool WordBank::prefix_exists(const string& s,size_t lc){
-	return prefix(s.c_str(),lc);
-}
-bool WordBank::prefix_exists(const string& s){
-	return prefix_exists(s,s.length());
-}
-
-bool WordBank::operator[](const char* s){
-	Node* n = prefix(s,strlen(s));
-	return (n!=nullptr && n->word_end);
-}
-bool WordBank::operator[](const string& s){
-	return operator[](s.c_str());
-}
-
-vector<string> WordBank::with_prefix(const string &s){
-	vector<string> R;
-	Node* l = prefix(s.c_str(),s.length());
+vector<string> WordBank::with_prefix(const string &s,size_t lc){
+	Node* l = prefix(s,lc);
 	if (l==nullptr){
-		std::cout << "what\n";
-		return R;
+		// Prefix didn't exist.
+		return vector<string>();
 	}
 	queue<pair<string,Node*>> q;
 	for (char i='a';i<='z';++i){
 		if (l->p[i-97]!=nullptr){
-			q.emplace(s+i,l->p[i-97]);
+			q.emplace(string(1,i),l->p[i-97]);
 		}
 	}
+	vector<string> R;
 	string sp;
-
 	while (!q.empty()){
 		sp = move(q.front().first);
 		l = q.front().second;
@@ -184,4 +153,12 @@ vector<string> WordBank::with_prefix(const string &s){
 		}
 	}
 	return R;
+}
+
+bool WordBank::operator[](const char* s){
+	Node* n = prefix(s,strlen(s));
+	return (n!=nullptr && n->word_end);
+}
+bool WordBank::operator[](const string& s){
+	return operator[](s.c_str());
 }
