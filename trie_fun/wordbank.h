@@ -19,7 +19,7 @@ using std::ostream;
 struct Node;
 class WordBank {
 	private:
-		Node* p[26];
+		Node* root;
 		Node* prefix(const char* s,size_t lc);
 	public:
 		WordBank();
@@ -29,10 +29,9 @@ class WordBank {
 		bool prefix_exists(const char* s,size_t lc);
 		bool prefix_exists(const char* s);
 		vector<char> next_possible_letters(string& prefix);
-		vector<string> with_prefix(string& prefix);
 
-		void add_word(const string& w,size_t letters);
-		void add_word(const string& w);
+		vector<string> with_prefix(const string& prefix);
+
 		void add_word(const char* w,size_t letters);
 		void add_word(const char* w);
 
@@ -50,6 +49,8 @@ class WordBank {
 		int with_prefix_remove_words(const string& prefix);
 		bool operator[](const string &key);
 		bool operator[](const char* s);
+		
+		void dump_levels(ostream &o);
 };
 
 #endif

@@ -31,22 +31,10 @@ struct Node {
 	Node(): word_end(false){
 		for (size_t i=0;i<26;++i) p[i]=nullptr;
 	}
-	~Node(){
-		/*
-		// Disabled currently.
-		for (size_t i=0;i<26;++i){
-			if (p[i]!=nullptr){
-				std::cout<<(char)('a'+i)<<" released\n";
-				delete p[i];
-				p[i]=nullptr;
-			}
-		}
-		*/
-	}
 	void add_child(const char c){
 		if (p[cInd(c)]==nullptr){
 			p[cInd(c)]=new Node();
-			std::cout<<char(c)<<" allocated\n";
+			std::cout<<char(c)<<" allocated " << p[cInd(c)] << "\n";
 		}
 	}
 	bool has_child(const char c){
@@ -72,77 +60,74 @@ struct Node {
 			delete par;
 		}
 	}
-};
-WordBank::WordBank(){
-	for (size_t i=0;i<26;++i) p[i]=nullptr;
-}
-WordBank::~WordBank(){
-	for (size_t i=0;i<26;++i){
-		if (p[i]!=nullptr){
-			//delete p[i];
-			p[i]->delete_all();
-			std::cout<<(char)(i+97)<<" deleted\n";
-			//p[i]=nullptr;
+	void deleteRoot(){
+		stack<Node*> todel;
+		todel.push(this);
+		Node* l;
+		while (!todel.empty()){
+			l = todel.top();
+			todel.pop();
+			for (size_t i=0;i<26;++i){
+				if (l->p[i]!=nullptr){
+					todel.push(l->p[i]);
+				}
+			}
+			delete l;
 		}
 	}
+};
+WordBank::WordBank(): root(){}
+
+WordBank::~WordBank(){
+	root->deleteRoot();
 }
-void WordBank::add_word(const string& w){
-	/*
-	Node* l;
-	if (p[w[0]-97]==nullptr){
-		p[w[0]-97]=new Node();
-		std::cout<<w[0]<<" Made node\n";
-	}
-	l = p[w[0]-97];
-	for (size_t i=1;i<w.length();++i){
-		l->add_child(w[i]);
-		//if (l->p[w[i]-97]==nullptr){
-			//l->p[w[i]-97]=new Node();
-			//std::cout<<w[i]<<" Made node\n";
-		//}
-		l=l->p[w[i]-97];
-	}
-	l->word_end += 1;
-	*/
-	add_word(w.c_str());
-}
-void WordBank::add_word(const char* w,size_t letters){
-	if (p[w[0]-97]==nullptr){
-		p[w[0]-97]=new Node();
-		std::cout<<w[0]<<" Made node\n";
-	}
-	Node* l = p[w[0]-97];
-	//unsigned letters=strlen(w);
-	for (size_t i=1;i<letters;++i){
-		l->add_child(w[i]);
-		//if (l->p[w[i]-97]==nullptr){
-			//l->p[w[i]-97]=new Node();
-			//std::cout<<w[i]<<" Made node\n";
-		//}
-		l=l->p[w[i]-97];
+
+void WordBank::add_word(const char* s, size_t lc){
+	Node* l = root;
+	for (size_t i=0;i<lc;++i){
+		l.add_child(s[i]);
+		l = l->p[cInd(s[i])];
 	}
 	l->word_end += 1;
 }
-void WordBank::add_word(const char* w){
-	add_word(w,strlen(w));
+void WordBank::add_word(const char* s){
+	add_word(s,strlen(s));
 }
-Node* WordBank::prefix(const char* s,size_t lc){
-	/*
-	Node* l = p[s[0]-97];
-	if (l==nullptr) return 0;
-	size_t i = 1;
-	while (l!=nullptr && i<lc){
-		l=l->p[s[i]-97];
-		++i;
+
+void WordBank::delete_word(const char* s, size_t lc){
+	Node* l = root;
+	stack<Node*> stk;
+	for (size_t i=0;i<lc;++i){
+		if (l->p[cInd(s[i])]==nullptr) return;
+		l = l->p[cInd(s[i])];
+		stk.push(l);
 	}
-	*/
-	size_t i = 1;
-	Node* n = p[cInd(s[0])];
-	while (n!=nullptr && i<lc){
-		n=n->p[cInd(s[i++])];
+	l->word_end = 0;
+	for (size_t c=lc; c>0; --c){
+		l = stk.top();
+		stk.pop();
+		if (c!=lc){
+			l->p[cInd(s[c])] = nullptr;
+		}
+		if (l->word_end) return;
+		for (size_t i=0;i<26;++i){
+			if (l->p[i]!=nullptr) return;
+		}
+		delete l;
 	}
-	return (i==lc ? n : nullptr);
+	root->p[cInd(s[0])] = nullptr;
 }
+
+Node* WordBank::prefix(const char* s, size_t lc){
+	Node* l = root;
+	for (size_t i=0;i<lc;++i){
+		if (l->p[cInd(s[i])]==nullptr) return nullptr;
+		l = l->p[cInd(s[i])];
+	}
+	return l;
+}
+
+
 bool WordBank::prefix_exists(const char* s,size_t lc){
 	return prefix(s,lc);
 }
@@ -162,6 +147,37 @@ bool WordBank::operator[](const char* s){
 }
 bool WordBank::operator[](const string& s){
 	return operator[](s.c_str());
+}
+
+vector<string> WordBank::with_prefix(const string &s){
+	vector<string> R;
+	Node* l = prefix(s.c_str(),s.length());
+	if (l==nullptr){
+		std::cout << "what\n";
+		return R;
+	}
+	queue<pair<string,Node*>> q;
+	for (char i='a';i<='z';++i){
+		if (l->p[i-97]!=nullptr){
+			q.emplace(s+i,p[i-97]);
+		}
+	}
+	string sp;
+
+	while (!q.empty()){
+		sp = move(q.front().first);
+		l = q.front().second;
+		q.pop();
+		if (l->word_end){
+			R.emplace_back(sp);
+		}
+		for (char i='a';i<='z';++i){
+			if (l->p[i-97]!=nullptr){
+				q.emplace(sp+i,l->p[i-97]);
+			}
+		}
+	}
+	return R;
 }
 
 /*bool WordBank::operator[](const string &s){
@@ -230,7 +246,6 @@ vector<string> WordBank::as_vector(){
 			}
 		}
 	}
-	
 	return R;
 }
 
@@ -337,3 +352,32 @@ void WordBank::remove_word(const string &s){
 	p[cInd(s[0])] = nullptr;
 }
 */
+void WordBank::dump_levels(ostream &o){
+	queue<pair<Node*,int>> q;
+	for (char i='a';i<='z';++i){
+		if (p[i-97]!=nullptr){
+			o << i << '\t';
+			q.emplace(p[i-97],1);
+		}
+	}
+	Node* l;
+	int n=0;
+	while (!q.empty()){
+		l = q.front().first;
+				if (l->word_end){
+					o << '*';
+				}
+		if (n<q.front().second){
+			o << '\n';
+		}
+		n = q.front().second;
+		q.pop();
+		for (char i='a';i<='z';++i){
+			if (l->p[i-97]!=nullptr){
+				o << i;
+				o << '\t';
+				q.emplace(l->p[i-97],n+1);
+			}
+		}
+	}
+}

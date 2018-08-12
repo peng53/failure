@@ -29,8 +29,8 @@ int main(int argc, char** argv){
 	*/
 	for (int i=1;i<argc;++i){
 		ws.add_word(argv[i],strlen(argv[i]));
-		cout << argv[i] << '\n';
 	}
+	/*
 	if (ws.prefix_exists("bat",3)){
 		cout << "'bat' is in the wordbank\n";
 	}
@@ -48,5 +48,8 @@ int main(int argc, char** argv){
 	for (auto s : r){
 		cout << s << '\n';
 	}
+	*/
+	ws.dump_levels(cout);
+	
 	return 0;
 }
