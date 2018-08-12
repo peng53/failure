@@ -34,6 +34,7 @@ class WordBank {
 
 		void add_word(const char* w,size_t letters);
 		void add_word(const char* w);
+		void add_word(const string& s);
 
 		void remove_word(const char* w,size_t lc);
 		void remove_word(const char* w);
