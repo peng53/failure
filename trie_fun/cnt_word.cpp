@@ -29,5 +29,20 @@ int main(int argc, char** argv){
 	}
 	std::cout << argv[1] << " removed\n";
 	ws.remove_word(argv[1]);
+	if (ws["cat"]){
+		std::cout << "you had cat!\n";
+	} else {
+		std::cout << "you didn't have cat!\n";
+	}
+	vector<char> l = ws.next_possible_letters("ad");
+	for (auto s : l){
+		std::cout << s << '\n';
+	}
+	array<bool,26> ls = ws.next_tf("ad");
+	for (char i='a';i<='z';++i){
+		if (ls[i-97]){
+			std::cout << i << " is viable.\n";
+		}
+	}
 	return 0;
 }

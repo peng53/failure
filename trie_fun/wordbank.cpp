@@ -155,10 +155,33 @@ vector<string> WordBank::with_prefix(const string &s,size_t lc){
 	return R;
 }
 
-bool WordBank::operator[](const char* s){
-	Node* n = prefix(s,strlen(s));
+bool WordBank::operator[](const string& s){
+	Node* n = prefix(s,s.length());
 	return (n!=nullptr && n->word_end);
 }
-bool WordBank::operator[](const string& s){
-	return operator[](s.c_str());
+
+vector<char> WordBank::next_possible_letters(const string& s,size_t lc){
+	Node* n = prefix(s,lc);
+	if (n==nullptr){
+		// Prefix didn't exist.
+		return vector<char>();
+	}
+	vector<char> R;
+	for (char i='a';i<='z';++i){
+		if (n->p[i-97]!=nullptr){
+			R.push_back(i);
+		}
+	}
+	return R;
+}
+array<bool,26> WordBank::next_tf(const string& s,size_t lc){
+	array<bool,26> R;
+	Node* n = prefix(s,lc);
+	if (n==nullptr){
+		return R;
+	}
+	for (size_t i=0;i<26;++i){
+		R[i] = (n->p[i]!=nullptr);
+	}
+	return R;
 }

@@ -11,8 +11,10 @@
 
 #include <vector>
 #include <string>
+#include <array>
 #include <iostream>
 using std::vector;
+using std::array;
 using std::string;
 using std::ostream;
 
@@ -38,16 +40,26 @@ class WordBank {
 		bool prefix_exists(const string& s,size_t lc){
 			return prefix(s,lc);
 		}
-		bool prefix_exists(const string& prefix){
-			return prefix_exists(prefix,prefix.length());
+		bool prefix_exists(const string& s){
+			return prefix_exists(s,s.length());
 		}
 		
-		vector<string> with_prefix(const string& prefix,size_t lc);		
-		vector<string> with_prefix(const string& prefix){
-			return with_prefix(prefix,prefix.length());
+		vector<string> with_prefix(const string& s,size_t lc);		
+		vector<string> with_prefix(const string& s){
+			return with_prefix(s,s.length());
 		}
 
-		vector<char> next_possible_letters(string& prefix);
+		bool operator[](const string &key);
+		
+		vector<char> next_possible_letters(const string& s,size_t lc);
+		vector<char> next_possible_letters(const string& s){
+			return next_possible_letters(s,s.length());
+		}
+		array<bool,26> next_tf(const string& s,size_t lc);
+		array<bool,26> next_tf(const string& s){
+			return next_tf(s,s.length());
+		}
+
 		ostream& import_words(ostream& o);
 		int import_words(const vector<string>& o);
 		ostream& export_words(ostream& o);
@@ -55,8 +67,7 @@ class WordBank {
 		int count_words();
 		int with_prefix_count_word(const string& prefix);
 		int with_prefix_remove_words(const string& prefix);
-		bool operator[](const string &key);
-		bool operator[](const char* s);
+
 		
 		void dump_levels(ostream &o);
 };
