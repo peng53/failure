@@ -329,6 +329,13 @@ proc import_places {fname mtime} {
 	}
 	return $ngid
 }
+proc import_json {fname} {
+	#set fp [open $myfile r]
+	#set lines [split [read $fp] ","]
+	#foreach l $lines {
+	#}
+
+}
 proc testing_db {} {
 	set DBConn::is_open 1
 	sqlite3 conn :memory:

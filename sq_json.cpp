@@ -6,12 +6,6 @@
 
 using namespace std;
 
-struct Item {
-	string title;
-	string mtime;
-	string uri;
-};
-
 void get_tprop(string& s,fstream& f){
 	char ch;
 	while ((f >> noskipws >> ch) && ch!='"'){
@@ -37,10 +31,11 @@ int main(){
 	string t_str;
 	string title = "Bookmarks";
 	string uri;
+	string mtime;
 	vector<int> gids;
 
 	sqlite3* db;
-	sqlite3_open("/mnt/ramdisk/wakaa",&db);
+	sqlite3_open("/mnt/ramdisk/wakaa.db",&db);
 	sqlite3_exec(db,"CREATE TABLE groups(rowid INTEGER primary key,name TEXT);CREATE TABLE rel(rowid INTEGER primary key, gid INTEGER,pid INTEGER,depth INTEGER);CREATE TABLE data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);",NULL,NULL,NULL);
 	sqlite3_stmt *new_grp;
 	sqlite3_prepare_v2(db,"INSERT INTO groups (name) VALUES(?1)",-1,&new_grp,0);
@@ -78,7 +73,8 @@ int main(){
 						//}
 						sqlite3_bind_text(new_data,2,title.c_str(),-1,SQLITE_TRANSIENT); //title
 						sqlite3_bind_text(new_data,3,uri.c_str(),-1,SQLITE_TRANSIENT); //uri
-						//sqlite3_bind_text(new_data,4,uri.c_str(),-1,SQLITE_TRANSIENT); //uri
+						//sqlite3_bind_text(new_data,4,mtime.c_str(),-1,SQLITE_TRANSIENT); //uri
+						//sqlite3_bind_int(new_data,4,atoll(mtime.c_str())); //uri
 						sqlite3_step(new_data);
 						//cout << "t: " << title
 						//	<< "\nu: " << uri << "\n-\n";
@@ -127,7 +123,17 @@ int main(){
 							continue;
 						}
 					}
+				//} else if (ch=='l'){
+				//	while ((myfile >> noskipws >> ch) && ch!='"'){
+				//		t_str += ch;
+				//	}
+				//	if (t_str.compare("astModified")==0){
+				//		mtime = "";
+				//		get_dprop(mtime,myfile);
+
+				//	}
 				}
+
 				t_str = "";
 				break;
 			case ']':
@@ -137,9 +143,7 @@ int main(){
 
 		}
 	}
-	for (auto i : gids){
-		cout << i << '\n';
-	}
+	/*
 	sqlite3_stmt *read_data;
 	sqlite3_prepare_v2(db,"SELECT gid,key,value FROM data;",-1,&read_data,0);
 	while (sqlite3_step(read_data)==SQLITE_ROW){
@@ -150,26 +154,12 @@ int main(){
 
 	}
 	sqlite3_finalize(read_data);
-
-	/*
-	cout << "title: " << top_item.title << '\n';
-	cout << "mtime: " << top_item.mtime << '\n';
-	cout << "uri: " << top_item.uri << '\n';
-	while (!items.empty()){
-		top_item = items.top();
-		cout << "-\n";
-		cout << "title: " << top_item.title << '\n';
-		cout << "mtime: " << top_item.mtime << '\n';
-		cout << "uri: " << top_item.uri << '\n';
-		items.pop();
-	}
-
-	sqlite3_bind_text(new_grp,1,"test",-1,SQLITE_STATIC);
-	sqlite3_step(new_grp);
-	cout << sqlite3_column_int(new_grp,1) << '\n';
 	*/
-	sqlite3_finalize(read_data);
+
 	sqlite3_finalize(new_grp);
 	sqlite3_finalize(new_data);
+	sqlite3_finalize(rel1);
+	sqlite3_finalize(rel_null);
+	sqlite3_finalize(rel_par);
 	return 0;
 }

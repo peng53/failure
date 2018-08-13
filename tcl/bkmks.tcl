@@ -303,6 +303,21 @@ proc import_txt {} {
 		add_row [string range $L 0 $d-1] [string range $L $d+1 end] -1
 	}
 }
+proc firefox_bm {} {
+	## TODO TODO
+	set myfile [tk_getOpenFile -defaultextension .sqlite -filetypes {{{Firefox places.sqlite} .sqlite}} -title {Select places.sqlite..}]
+	if {[string length $myfile]==0} return
+	set ngid [conn eval {INSERT INTO groups VALUES(NULL,}]
+	conn eval {
+		END TRANSACTION;
+		ATTACH :myfile AS PL;
+		BEGIN TRANSACTION;
+			INSERT INTO data
+				SELECT :ngid,PL.moz_bookmarks.title,PL.moz_places.url,:mtime
+				FROM PL.moz_bookmarks JOIN PL.moz_places ON PL.moz_bookmarks.id=PL.moz_places.id
+					WHERE url LIKE 'http%';
+	}
+}
 bind . <Control-n> {
 	init_db
 }
