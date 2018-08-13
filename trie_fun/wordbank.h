@@ -27,6 +27,10 @@ class WordBank {
 		WordBank();
 		~WordBank();
 
+		void new_word(const string& s,size_t letters);
+		void new_word(const string& s){
+			new_word(s,s.length());
+		}
 		void add_word(const string& s,size_t letters);
 		void add_word(const string& s){
 			add_word(s,s.length());
@@ -43,14 +47,14 @@ class WordBank {
 		bool prefix_exists(const string& s){
 			return prefix_exists(s,s.length());
 		}
-		
-		vector<string> with_prefix(const string& s,size_t lc);		
+
+		vector<string> with_prefix(const string& s,size_t lc);
 		vector<string> with_prefix(const string& s){
 			return with_prefix(s,s.length());
 		}
 
 		bool operator[](const string &key);
-		
+
 		vector<char> next_possible_letters(const string& s,size_t lc);
 		vector<char> next_possible_letters(const string& s){
 			return next_possible_letters(s,s.length());
@@ -68,7 +72,7 @@ class WordBank {
 		int with_prefix_count_word(const string& prefix);
 		int with_prefix_remove_words(const string& prefix);
 
-		
+
 		void dump_levels(ostream &o);
 };
 

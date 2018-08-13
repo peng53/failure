@@ -16,7 +16,7 @@ int main(int argc, char** argv){
 	}
 	WordBank ws;
 	for (int i=1;i<argc;++i){
-		ws.add_word(argv[i]);
+		ws.new_word(argv[i]);
 	}
 	if (ws.prefix_exists("ad")){
 		std::cout << "you have 'ad' as a prefix\n";
