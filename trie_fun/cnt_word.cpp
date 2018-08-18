@@ -44,5 +44,16 @@ int main(int argc, char** argv){
 			std::cout << i << " is viable.\n";
 		}
 	}
+	std::cout << "my words were\n" << ws << '\n';
+	
+	WordBank ws2;
+	ws2.copy_ws(ws);
+	for (int i=1;i<argc;++i){
+		ws.remove_word(argv[i]);
+	}
+	std::cout << "i removed all the words in ws, so now ws is:\n";
+	std::cout << ws;
+	std::cout << "but ws2 is a copy!\n";
+	std::cout << ws2;
 	return 0;
 }

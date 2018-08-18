@@ -40,6 +40,7 @@ struct Node {
 	Node* operator[](const size_t i){
 		return ((i>25) ? nullptr : p[i]);
 	}
+
 	void add_child(const char c){
 		if (p[cInd(c)]==nullptr){
 			p[cInd(c)]=new Node();
@@ -55,6 +56,10 @@ struct Node {
 		if (p[i]==nullptr){
 			p[i] = new Node();
 		}
+		return p[i];
+	}
+	Node* nchild(size_t i){
+		p[i] = new Node();
 		return p[i];
 	}
 	bool has_child(const char c){
@@ -77,28 +82,34 @@ struct Node {
 					todel.push((*l)[i]);
 				}
 			}
-			std::cout << "gced " << l << '\n';
 			delete l;
 		}
 	}
 };
 WordBank::WordBank(): root(new Node){}
 
+WordBank::WordBank(Node* n): root(n){}
+
+WordBank::WordBank(WordBank& ws2): root(new Node){
+	copy_ws(ws2);
+}
+
 WordBank::~WordBank(){
 	root->deleteRoot();
 }
 
-void WordBank::add_word(const string& s,size_t len){
-	Node* l = root;
-	for (size_t i=0;i<len;++i){
-		l->add_child(s[i]);
-		l = l->p[cInd(s[i])];
-	}
-	l->word_end += 1;
-}
+// void WordBank::add_word(const string& s,size_t len){
+	// Node* l = root;
+	// for (size_t i=0;i<len;++i){
+		// l->add_child(s[i]);
+		// l = l->p[cInd(s[i])];
+	// }
+	// l->word_end += 1;
+// }
 void WordBank::new_word(const string& s,size_t len){
 	// Uses child_node which ignores non-alphas
 	// and does the checking
+	if (len==0) len=s.length();
 	Node* l = root;
 	for (size_t i=0;i<len;++i){
 		l = l->child_node(s[i]);
@@ -106,15 +117,10 @@ void WordBank::new_word(const string& s,size_t len){
 	l->word_end += 1;
 }
 void WordBank::remove_word(const string& s,size_t lc){
+	if (lc==0) lc=s.length();
 	Node* l = root;
 	stack<Node*> stk;
-	//for (size_t i=0;i<lc;++i){
-	//	if (l->p[cInd(s[i])]==nullptr) return;
-	//	l = l->p[cInd(s[i])];
-	//	stk.push(l);
-	//}
 	for (size_t i=0;i<lc;++i){
-		//if (!(*l)[s[i]]) return;
 		l = (*l)[s[i]];
 		if (!l) return;
 		stk.push(l);
@@ -128,7 +134,7 @@ void WordBank::remove_word(const string& s,size_t lc){
 		}
 		if (l->word_end) return;
 		for (size_t i=0;i<26;++i){
-			if (l->p[i]!=nullptr) return;
+			if (!(*l)[i]) return;
 		}
 		std::cout << "removing " << l << '\n';
 		delete l;
@@ -145,6 +151,7 @@ Node* WordBank::prefix(const string& s,size_t lc){
 }
 
 vector<string> WordBank::with_prefix(const string &s,size_t lc){
+	if (lc==0) lc=s.length();
 	Node* l = prefix(s,lc);
 	if (!l){
 		// Prefix didn't exist.
@@ -166,7 +173,6 @@ vector<string> WordBank::with_prefix(const string &s,size_t lc){
 			R.emplace_back(sp);
 		}
 		for (char i='a';i<='z';++i){
-			//if (l->p[i-97]!=nullptr){
 			if ((*l)[i]){
 				q.emplace(sp+i,l->p[i-97]);
 			}
@@ -181,6 +187,7 @@ bool WordBank::operator[](const string& s){
 }
 
 vector<char> WordBank::next_possible_letters(const string& s,size_t lc){
+	if (lc==0) lc = s.length();
 	Node* n = prefix(s,lc);
 	if (!n){
 		// Prefix didn't exist.
@@ -195,6 +202,7 @@ vector<char> WordBank::next_possible_letters(const string& s,size_t lc){
 	return R;
 }
 array<bool,26> WordBank::next_tf(const string& s,size_t lc){
+	if (lc==0) lc = s.length();
 	array<bool,26> R;
 	Node* n = prefix(s,lc);
 	if (!n){
@@ -205,4 +213,57 @@ array<bool,26> WordBank::next_tf(const string& s,size_t lc){
 		R[i] = ((*n)[i]);
 	}
 	return R;
+}
+
+bool WordBank::prefix_exists(const string& s,size_t lc){
+	if (lc==0) lc=s.length();
+	return prefix(s,lc);
+}
+vector<string> WordBank::words(){
+	return with_prefix("",0);
+}
+
+ostream& operator<<(ostream& o,WordBank& ws){
+	vector<string> R = ws.words();
+	for (auto s : R){
+		o << s << '\n';
+	}
+	return o;
+}
+WordBank WordBank::copy(){
+	Node* root_clone = new Node;
+	Node *origin, *clone;
+	queue<pair<Node*,Node*>> q;
+	q.emplace(root,root_clone);
+	while (!q.empty()){
+		origin = q.front().first;
+		clone = q.front().second;
+		clone->word_end = origin->word_end;
+		q.pop();
+		for (size_t i=0;i<26;++i){
+			if ((*origin)[i]){
+				q.emplace((*origin)[i],clone->nchild(i));
+			}
+		}	
+	}
+	return WordBank(root_clone);
+}
+// WordBank WordBank::operator+(WordBank& ws2){
+	// WordBank t = this.copy();
+// }
+void WordBank::copy_ws(WordBank& ws2){
+	Node *dest, *source;
+	queue<pair<Node*,Node*>> q;
+	q.emplace(root,ws2.root);
+	while (!q.empty()){
+		dest = q.front().first;
+		source = q.front().second;
+		q.pop();
+		dest->word_end += source->word_end;
+		for (char c='a';c<='z';++c){
+			if ((*source)[c]){
+				q.emplace(dest->child_node(c),(*source)[c]);
+			}
+		}
+	}
 }
