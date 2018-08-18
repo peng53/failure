@@ -85,27 +85,49 @@ struct Node {
 			delete l;
 		}
 	}
+	Node* copyr(){	
+		Node *dest, *source;
+		Node *R = new Node;
+		queue<pair<Node*,Node*>> q;
+		q.emplace(R,this);
+		while (!q.empty()){
+			dest = q.front().first;
+			source = q.front().second;
+			q.pop();
+			dest->word_end += source->word_end;
+			for (char c='a';c<='z';++c){
+				if ((*source)[c]){
+					q.emplace(dest->child_node(c),(*source)[c]);
+				}
+			}
+		}
+		return R;
+	}
 };
 WordBank::WordBank(): root(new Node){}
 
 WordBank::WordBank(Node* n): root(n){}
 
-WordBank::WordBank(WordBank& ws2): root(new Node){
-	copy_ws(ws2);
+WordBank::WordBank(const WordBank& rhs) noexcept {
+	root = (rhs.root)->copyr();
+}
+WordBank& WordBank::operator+=(const string& s){
+	new_word(s,s.length());
+	return *this;
+}
+
+WordBank WordBank::operator=(const WordBank& rhs){
+	if (this!=&rhs){
+		root->deleteRoot();
+		root = (rhs.root)->copyr();		
+	}
+	return *this;
 }
 
 WordBank::~WordBank(){
 	root->deleteRoot();
 }
 
-// void WordBank::add_word(const string& s,size_t len){
-	// Node* l = root;
-	// for (size_t i=0;i<len;++i){
-		// l->add_child(s[i]);
-		// l = l->p[cInd(s[i])];
-	// }
-	// l->word_end += 1;
-// }
 void WordBank::new_word(const string& s,size_t len){
 	// Uses child_node which ignores non-alphas
 	// and does the checking
@@ -180,6 +202,24 @@ vector<string> WordBank::with_prefix(const string &s,size_t lc){
 	}
 	return R;
 }
+WordBank WordBank::prefix_subset(const string &s,size_t lc){
+	if (lc==0) lc=s.length();
+	Node* l = prefix(s,lc);
+	// Get to part where copy begins
+	if (!l){
+		std::cout << "no prefix";
+		return WordBank();
+	}
+	Node* R = new Node;
+	Node* r = R;
+	// Create prefix nodes, except last letter
+	for (size_t i=0;i<lc;++i){
+		r = r->nchild(s[i]);
+	}
+	// Set 'last' node to be 'recursive' copy of prefix
+	r->p[s[lc-1]] = l->copyr();
+	return WordBank(R);	
+}
 
 bool WordBank::operator[](const string& s){
 	Node* n = prefix(s,s.length());
@@ -229,41 +269,4 @@ ostream& operator<<(ostream& o,WordBank& ws){
 		o << s << '\n';
 	}
 	return o;
-}
-WordBank WordBank::copy(){
-	Node* root_clone = new Node;
-	Node *origin, *clone;
-	queue<pair<Node*,Node*>> q;
-	q.emplace(root,root_clone);
-	while (!q.empty()){
-		origin = q.front().first;
-		clone = q.front().second;
-		clone->word_end = origin->word_end;
-		q.pop();
-		for (size_t i=0;i<26;++i){
-			if ((*origin)[i]){
-				q.emplace((*origin)[i],clone->nchild(i));
-			}
-		}	
-	}
-	return WordBank(root_clone);
-}
-// WordBank WordBank::operator+(WordBank& ws2){
-	// WordBank t = this.copy();
-// }
-void WordBank::copy_ws(WordBank& ws2){
-	Node *dest, *source;
-	queue<pair<Node*,Node*>> q;
-	q.emplace(root,ws2.root);
-	while (!q.empty()){
-		dest = q.front().first;
-		source = q.front().second;
-		q.pop();
-		dest->word_end += source->word_end;
-		for (char c='a';c<='z';++c){
-			if ((*source)[c]){
-				q.emplace(dest->child_node(c),(*source)[c]);
-			}
-		}
-	}
 }

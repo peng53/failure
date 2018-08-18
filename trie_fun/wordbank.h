@@ -26,7 +26,7 @@ class WordBank {
 	public:
 		WordBank();
 		WordBank(Node*);
-		WordBank(WordBank&);
+		WordBank(const WordBank& ws) noexcept;
 		~WordBank();
 
 		void new_word(const string& s,size_t letters=0);
@@ -48,9 +48,9 @@ class WordBank {
 
 		friend ostream& operator<<(ostream& o,WordBank& ws);
 		// void dump_levels(ostream &o);
-		WordBank copy();
-		// WordBank operator+(WordBank& ws2);
-		void copy_ws(WordBank& ws2);
+		WordBank& operator+=(const string& s);
+		WordBank operator=(const WordBank& rhs);
+		WordBank prefix_subset(const string &s,size_t lc=0);
 };
 
 #endif

@@ -16,7 +16,8 @@ int main(int argc, char** argv){
 	}
 	WordBank ws;
 	for (int i=1;i<argc;++i){
-		ws.new_word(argv[i]);
+		ws+=argv[i];
+		//ws.new_word(argv[i]);
 	}
 	if (ws.prefix_exists("ad")){
 		std::cout << "you have 'ad' as a prefix\n";
@@ -27,6 +28,9 @@ int main(int argc, char** argv){
 	for (auto s : r){
 		std::cout << s << '\n';
 	}
+	//WordBank ws_ad = ws.prefix_subset("ad");
+	//std::cout << "Results as wordbank subset\n";
+	//std::cout << ws_ad << '\n';
 	std::cout << argv[1] << " removed\n";
 	ws.remove_word(argv[1]);
 	if (ws["cat"]){
@@ -46,8 +50,8 @@ int main(int argc, char** argv){
 	}
 	std::cout << "my words were\n" << ws << '\n';
 	
-	WordBank ws2;
-	ws2.copy_ws(ws);
+	WordBank ws2 = ws;
+	//ws2.copy_ws(ws);
 	for (int i=1;i<argc;++i){
 		ws.remove_word(argv[i]);
 	}
