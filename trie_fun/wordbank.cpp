@@ -6,7 +6,7 @@
  *
  */
 
-#include <cstring>
+//#include <cstring>
 #include <queue>
 #include <stack>
 #include <utility>
@@ -29,7 +29,7 @@ size_t cInd(char c){
 struct Node {
 	Node* p[26];
 	unsigned word_end;
-	Node(): word_end(false){
+	Node(): word_end(0){
 		for (size_t i=0;i<26;++i) p[i]=nullptr;
 	}
 	Node* operator[](const char c){
@@ -86,8 +86,8 @@ struct Node {
 		}
 	}
 	Node* copyr(){	
-		Node *dest, *source;
-		Node *R = new Node;
+		Node *dest, *source, *R;
+		R = new Node;
 		queue<pair<Node*,Node*>> q;
 		q.emplace(R,this);
 		while (!q.empty()){
@@ -103,13 +103,52 @@ struct Node {
 		}
 		return R;
 	}
+	void copyrt(Node* R){
+		// Copies R's nodes into this.
+		Node *source, *dest;
+		queue<pair<Node*,Node*>> q;
+		q.emplace(this,R);
+		while (!q.empty()){
+			dest = q.front().first;
+			source = q.front().second;
+			q.pop();
+			dest->word_end += source->word_end;
+			for (char c='a';c<='z';++c){
+				if ((*source)[c]){
+					q.emplace(dest->child_node(c),(*source)[c]);
+				}
+			}
+		}
+	}
 };
+void node_walk(Node*&l,size_t i){
+	if (!((*l)[i])){
+		l->nchild(i);
+	}
+	l = (*l)[i];
+}
+void node_walk(Node*&l,char c){
+	node_walk(l,cInd(c));
+}
 WordBank::WordBank(): root(new Node){}
 
 WordBank::WordBank(Node* n): root(n){}
 
 WordBank::WordBank(const WordBank& rhs) noexcept {
 	root = (rhs.root)->copyr();
+}
+WordBank& WordBank::operator+=(const WordBank& rhs){
+	// Add words from rhs to this.
+	Node *l, *r;
+	queue<pair<Node*,Node*>> q;
+	q.emplace(root,rhs.root);
+	while (!q.empty()){
+		l = q.front().first;
+		r = q.front().second;
+		q.pop();
+		// Now copy r's node to l.
+	}
+	return *this;
 }
 WordBank& WordBank::operator+=(const string& s){
 	new_word(s,s.length());
@@ -164,7 +203,7 @@ void WordBank::remove_word(const string& s,size_t lc){
 	root->p[cInd(s[0])] = nullptr;
 }
 
-Node* WordBank::prefix(const string& s,size_t lc){
+Node* WordBank::prefix(const string& s,size_t lc) const {
 	Node* l = root;
 	for (size_t i=0;i<lc && l;++i){
 		l = (*l)[s[i]];
@@ -172,7 +211,7 @@ Node* WordBank::prefix(const string& s,size_t lc){
 	return l;
 }
 
-vector<string> WordBank::with_prefix(const string &s,size_t lc){
+vector<string> WordBank::with_prefix(const string &s,size_t lc) const {
 	if (lc==0) lc=s.length();
 	Node* l = prefix(s,lc);
 	if (!l){
@@ -204,20 +243,23 @@ vector<string> WordBank::with_prefix(const string &s,size_t lc){
 }
 WordBank WordBank::prefix_subset(const string &s,size_t lc){
 	if (lc==0) lc=s.length();
-	Node* l = prefix(s,lc);
+	Node *l, *R, *r;
+	//Node* l = prefix(s,lc);
 	// Get to part where copy begins
-	if (!l){
-		std::cout << "no prefix";
+	if (!(l=prefix(s,lc))){
 		return WordBank();
 	}
-	Node* R = new Node;
-	Node* r = R;
+	r = R = new Node;
+	//Node* R = new Node;
+	//Node* r = R;
 	// Create prefix nodes, except last letter
-	for (size_t i=0;i<lc;++i){
-		r = r->nchild(s[i]);
+	for (size_t i=0;i<lc-1;++i){
+		//		r = r->nchild(s[i]);
+		//node_walk(r,s[i]-97);
+		node_walk(r,s[i]);
 	}
 	// Set 'last' node to be 'recursive' copy of prefix
-	r->p[s[lc-1]] = l->copyr();
+	r->p[s[lc-1]-97] = l->copyr();
 	return WordBank(R);	
 }
 
@@ -259,14 +301,18 @@ bool WordBank::prefix_exists(const string& s,size_t lc){
 	if (lc==0) lc=s.length();
 	return prefix(s,lc);
 }
-vector<string> WordBank::words(){
+vector<string> WordBank::words() const {
 	return with_prefix("",0);
 }
 
-ostream& operator<<(ostream& o,WordBank& ws){
+ostream& operator<<(ostream& o,const WordBank& ws){
 	vector<string> R = ws.words();
 	for (auto s : R){
 		o << s << '\n';
 	}
 	return o;
+}
+WordBank& WordBank::operator<<(const WordBank& rhs){
+	root->copyrt(rhs.root);
+	return *this;
 }
