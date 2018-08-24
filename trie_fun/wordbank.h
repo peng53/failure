@@ -22,36 +22,32 @@ struct Node;
 class WordBank {
 	private:
 		Node* root;
-		Node* prefix(const string& s,size_t lc) const;
+		//Node* prefix(const string& s,size_t lc) const;
+		WordBank(Node*); // constructs a WordBank from a Node
 	public:
-		WordBank();
-		WordBank(Node*);
-		WordBank(const WordBank& ws) noexcept;
-		~WordBank();
+		WordBank(); // constructs an empty WordBank
+		WordBank(const WordBank& ws) noexcept; // constructs a WordBank from another
+		~WordBank(); // destructor, destroys root, so root is more-or-less unique to this WordBank
 
-		void new_word(const string& s,size_t letters=0);
-		void remove_word(const string& w,size_t lc=0);
-		bool prefix_exists(const string& s,size_t lc=0);
-		vector<string> with_prefix(const string& s,size_t lc=0) const;
+		bool prefix_exists(const string& s,size_t lc=0) const; // returns whether prefix 's' exists
+		vector<string> with_prefix(const string& s,size_t lc=0) const; // returns all words with prefix 's' from WordBank as vector of strings
+		vector<string> words() const; // returns all words in WordBank as vector of strings
+		bool operator[](const string &key) const; //check whether key exists as a word
+		vector<char> next_possible_letters(const string& s,size_t lc=0) const; // returns chars that lead off of prefix 's'
+		array<bool,26> next_tf(const string& s,size_t lc=0) const; // returns t/f array of cars that lead off of prefix 's'
 
-		vector<string> words() const;
-		bool operator[](const string &key);
-		vector<char> next_possible_letters(const string& s,size_t lc=0);
-		array<bool,26> next_tf(const string& s,size_t lc=0);
-
-		// ostream& import_words(ostream& o);
-		// int import_words(const vector<string>& o);
-		// ostream& export_words(ostream& o);
 		// int count_words();
 		// int with_prefix_count_word(const string& prefix);
 		// int with_prefix_remove_words(const string& prefix);
 
-		friend ostream& operator<<(ostream& o,const WordBank& ws);
-		WordBank& operator+=(const WordBank& rhs);
-		WordBank& operator+=(const string& s);
-		WordBank operator=(const WordBank& rhs);
-		WordBank prefix_subset(const string &s,size_t lc=0);
-		WordBank& operator<<(const WordBank& rhs);
+		friend ostream& operator<<(ostream& o,const WordBank& ws); // outputs words seperated by linefeed
+
+		void new_word(const string& s,size_t letters=0); // adds word s[0:lc] to WordBank
+		void remove_word(const string& w,size_t lc=0); // removes word 's' from WordBank, if it exists
+		WordBank& operator+=(const string& s);  // adds a word. (new_word but, s[0:s.length()])
+		WordBank operator=(const WordBank& rhs); // assignment operator, assigns rhs to this
+		WordBank prefix_subset(const string &s,size_t lc=0); // returns a WordBank with only words that have prefix s[0:lc]
+		WordBank& operator<<(const WordBank& rhs); // copies words from rhs to this
 };
 
 #endif
