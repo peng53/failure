@@ -6,10 +6,10 @@
  *
  */
 
-//#include <cstring>
 #include <queue>
 #include <stack>
 #include <utility>
+#include <unordered_map>
 #include "wordbank.h"
 #define ERR_CHAR '{'
 
@@ -17,6 +17,24 @@ using std::queue;
 using std::stack;
 using std::pair;
 
+/* Map ideas:
+TYPE		CHAR		INDEX
+digits		0 to 9		0 - 9
+alphas		a to z		10 to 36?
+			A to Z
+space		 			after alphas
+symbols		! to /(ascii)	after space
+			: to @(ascii)	after above
+			[ to `(ascii)	after above
+			{ to ~(ascii)	after above
+^^ or maybe it will be easier to just do
+SPACE to ~
+so char -> size_t would be c-32 where 32<=c<=126
+
+static std::unordered_map<char,size_t> TR {
+	{}
+};
+*/
 char cLow(char c){
 	if (c>='a' && c<='z') return c;
 	if (c>='A' && c<='Z') return c+32;
@@ -28,27 +46,25 @@ size_t cInd(char c){
 
 struct Node {
 	Node* p[26];
-	unsigned word_end;
+	unsigned word_end; // tracks how many times a word has been added.
 	Node(): word_end(0){
+		// Creates a node with no children.
 		for (size_t i=0;i<26;++i) p[i]=nullptr;
 	}
 	Node* operator[](const char c){
+		// returns child node at that char
 		if (c>='a' && c<='z') return p[c-97];
 		if (c>='A' && c<='Z') return p[c-65];
 		return nullptr;
 	}
 	Node* operator[](const size_t i){
+		// returns child node at index
 		return ((i>25) ? nullptr : p[i]);
-	}
-
-	void add_child(const char c){
-		if (p[cInd(c)]==nullptr){
-			p[cInd(c)]=new Node();
-			std::cout<<c<<" allocated " << p[cInd(c)] << "\n";
-		}
 	}
 	Node* child_node(const char c){
 		// Child node ignore non alphas.
+		// Creates a child-node as char c if it doesn't exists
+		// Then returns ptr to that position c.
 		size_t i = cInd(c);
 		if (i>25){
 			return this;
@@ -59,8 +75,16 @@ struct Node {
 		return p[i];
 	}
 	Node* nchild(size_t i){
+		// Creates child-node at position i and returns it.
 		p[i] = new Node();
 		return p[i];
+	}
+	/*
+	void add_child(const char c){
+		if (p[cInd(c)]==nullptr){
+			p[cInd(c)]=new Node();
+			std::cout<<c<<" allocated " << p[cInd(c)] << "\n";
+		}
 	}
 	bool has_child(const char c){
 		return p[cInd(c)]!=nullptr;
@@ -68,6 +92,7 @@ struct Node {
 	Node* child_c(const char c){
 		return p[cInd(c)];
 	}
+	*/
 	void deleteRoot(){
 		// Deletes this node & and its children node
 		// via a stack, not recursively.
@@ -84,24 +109,6 @@ struct Node {
 			}
 			delete l;
 		}
-	}
-	Node* copyr(){	
-		Node *dest, *source, *R;
-		R = new Node;
-		queue<pair<Node*,Node*>> q;
-		q.emplace(R,this);
-		while (!q.empty()){
-			dest = q.front().first;
-			source = q.front().second;
-			q.pop();
-			dest->word_end += source->word_end;
-			for (char c='a';c<='z';++c){
-				if ((*source)[c]){
-					q.emplace(dest->child_node(c),(*source)[c]);
-				}
-			}
-		}
-		return R;
 	}
 	void copyrt(Node* R){
 		// Copies R's nodes into this.
@@ -120,6 +127,13 @@ struct Node {
 			}
 		}
 	}
+	Node* prefix(const string& s,size_t lc){
+		Node* l = this;
+		for (size_t i=0;i<lc && l;++i){
+			l = (*l)[s[i]];
+		}
+		return l;
+	}
 };
 void node_walk(Node*&l,size_t i){
 	if (!((*l)[i])){
@@ -134,21 +148,9 @@ WordBank::WordBank(): root(new Node){}
 
 WordBank::WordBank(Node* n): root(n){}
 
-WordBank::WordBank(const WordBank& rhs) noexcept {
-	root = (rhs.root)->copyr();
-}
-WordBank& WordBank::operator+=(const WordBank& rhs){
-	// Add words from rhs to this.
-	Node *l, *r;
-	queue<pair<Node*,Node*>> q;
-	q.emplace(root,rhs.root);
-	while (!q.empty()){
-		l = q.front().first;
-		r = q.front().second;
-		q.pop();
-		// Now copy r's node to l.
-	}
-	return *this;
+WordBank::WordBank(const WordBank& rhs) noexcept  : root(new Node){
+	//root = (rhs.root)->copyr();
+	root->copyrt(rhs.root);
 }
 WordBank& WordBank::operator+=(const string& s){
 	new_word(s,s.length());
@@ -158,7 +160,9 @@ WordBank& WordBank::operator+=(const string& s){
 WordBank WordBank::operator=(const WordBank& rhs){
 	if (this!=&rhs){
 		root->deleteRoot();
-		root = (rhs.root)->copyr();		
+		root = new Node;
+		root->copyrt(rhs.root);
+		//root = (rhs.root)->copyr();		
 	}
 	return *this;
 }
@@ -203,17 +207,10 @@ void WordBank::remove_word(const string& s,size_t lc){
 	root->p[cInd(s[0])] = nullptr;
 }
 
-Node* WordBank::prefix(const string& s,size_t lc) const {
-	Node* l = root;
-	for (size_t i=0;i<lc && l;++i){
-		l = (*l)[s[i]];
-	}
-	return l;
-}
-
 vector<string> WordBank::with_prefix(const string &s,size_t lc) const {
 	if (lc==0) lc=s.length();
-	Node* l = prefix(s,lc);
+	//Node* l = prefix(s,lc);
+	Node* l = root->prefix(s,lc);
 	if (!l){
 		// Prefix didn't exist.
 		return vector<string>();
@@ -246,7 +243,7 @@ WordBank WordBank::prefix_subset(const string &s,size_t lc){
 	Node *l, *R, *r;
 	//Node* l = prefix(s,lc);
 	// Get to part where copy begins
-	if (!(l=prefix(s,lc))){
+	if (!(l=root->prefix(s,lc))){
 		return WordBank();
 	}
 	r = R = new Node;
@@ -259,18 +256,21 @@ WordBank WordBank::prefix_subset(const string &s,size_t lc){
 		node_walk(r,s[i]);
 	}
 	// Set 'last' node to be 'recursive' copy of prefix
-	r->p[s[lc-1]-97] = l->copyr();
+	//r->p[s[lc-1]-97] = l->copyr();
+	r->p[s[lc-1]-97]->copyrt(l);
 	return WordBank(R);	
 }
 
-bool WordBank::operator[](const string& s){
-	Node* n = prefix(s,s.length());
+bool WordBank::operator[](const string& s) const {
+	//Node* n = prefix(s,s.length());
+	Node* n = root->prefix(s,s.length());
 	return (n && n->word_end);
 }
 
-vector<char> WordBank::next_possible_letters(const string& s,size_t lc){
+vector<char> WordBank::next_possible_letters(const string& s,size_t lc) const {
 	if (lc==0) lc = s.length();
-	Node* n = prefix(s,lc);
+	//Node* n = prefix(s,lc);
+	Node* n = root->prefix(s,lc);
 	if (!n){
 		// Prefix didn't exist.
 		return vector<char>();
@@ -283,10 +283,11 @@ vector<char> WordBank::next_possible_letters(const string& s,size_t lc){
 	}
 	return R;
 }
-array<bool,26> WordBank::next_tf(const string& s,size_t lc){
+array<bool,26> WordBank::next_tf(const string& s,size_t lc) const {
 	if (lc==0) lc = s.length();
 	array<bool,26> R;
-	Node* n = prefix(s,lc);
+	//Node* n = prefix(s,lc);
+	Node* n = root->prefix(s,lc);
 	if (!n){
 		R.fill(false);
 		return R;
@@ -297,9 +298,10 @@ array<bool,26> WordBank::next_tf(const string& s,size_t lc){
 	return R;
 }
 
-bool WordBank::prefix_exists(const string& s,size_t lc){
+bool WordBank::prefix_exists(const string& s,size_t lc) const {
 	if (lc==0) lc=s.length();
-	return prefix(s,lc);
+	return root->prefix(s,lc);
+	//return prefix(s,lc);
 }
 vector<string> WordBank::words() const {
 	return with_prefix("",0);
