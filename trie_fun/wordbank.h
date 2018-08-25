@@ -12,11 +12,14 @@
 #include <vector>
 #include <string>
 #include <array>
-#include <iostream>
+#include <ostream>
+
 using std::vector;
 using std::array;
 using std::string;
 using std::ostream;
+
+static const size_t NSIZE = 36;
 
 struct Node;
 class WordBank {
@@ -34,7 +37,7 @@ class WordBank {
 		vector<string> words() const; // returns all words in WordBank as vector of strings
 		bool operator[](const string &key) const; //check whether key exists as a word
 		vector<char> next_possible_letters(const string& s,size_t lc=0) const; // returns chars that lead off of prefix 's'
-		array<bool,26> next_tf(const string& s,size_t lc=0) const; // returns t/f array of cars that lead off of prefix 's'
+		array<bool,NSIZE> next_tf(const string& s,size_t lc=0) const; // returns t/f array of cars that lead off of prefix 's'
 
 		// int count_words();
 		// int with_prefix_count_word(const string& prefix);
@@ -44,10 +47,11 @@ class WordBank {
 
 		void new_word(const string& s,size_t letters=0); // adds word s[0:lc] to WordBank
 		void remove_word(const string& w,size_t lc=0); // removes word 's' from WordBank, if it exists
-		WordBank& operator+=(const string& s);  // adds a word. (new_word but, s[0:s.length()])
+		WordBank& operator<<(const string& s);  // adds a word. (new_word but, s[0:s.length()])
 		WordBank operator=(const WordBank& rhs); // assignment operator, assigns rhs to this
 		WordBank prefix_subset(const string &s,size_t lc=0); // returns a WordBank with only words that have prefix s[0:lc]
-		WordBank& operator<<(const WordBank& rhs); // copies words from rhs to this
+		WordBank& operator+=(const WordBank& rhs); // copies words from rhs to this
+		WordBank operator+(const WordBank& rhs); 
 };
 
 #endif
