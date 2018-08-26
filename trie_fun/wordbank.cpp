@@ -40,6 +40,31 @@ struct NSeq {
 		return i<NSIZE;
 	}
 };
+struct CSeq {
+	/* CSeq takes a reference of string and a length and will return
+		a char when dereferenced.
+	Yes, I am aware this is might be slightly overengineered, but
+		I wanted to see if it would work.
+	*/
+	const string& s;
+	size_t i, e;
+	CSeq(const string& _s, size_t end): s(_s), i(0), e(end){}
+	char operator*(){
+		return s[i];
+	}
+	char operator++(){ // prefix only please!
+		return s[++i];
+	}
+	bool live(){
+		return i<e;
+	}
+	char operator--(){ // prefix only please!
+		return s[--i];
+	}
+	bool evil(){
+		return i>0;
+	}
+};
 
 struct Node {
 	Node* p[NSIZE];
@@ -58,22 +83,16 @@ struct Node {
 		// returns child node at index
 		return at(i);
 	}
-	Node* child_node(const char c){
+	Node* childc(const char c){
 		// Child node ignore non alphas.
 		// Creates a child-node as char c if it doesn't exists
 		// Then returns ptr to that position c.
-		size_t i = tr(c);
-		if (i==NSIZE){
-			return this;
-		}
-		if (p[i]==nullptr){
-			p[i] = new Node();
-		}
-		return p[i];
+		return childi(tr(c));
 	}
-	Node* nchild(size_t i){
+	Node* childi(size_t i){
 		// Creates child-node at position i and returns it.
-		p[i] = new Node();
+		if (i>=NSIZE) return this;
+		if (p[i]==nullptr) p[i] = new Node;
 		return p[i];
 	}
 
@@ -104,9 +123,16 @@ struct Node {
 			source = q.front().second;
 			q.pop();
 			dest->word_end += source->word_end;
+			/*
 			for (NSeq c; c.live(); ++c){
 				if ((*source)[*c]){
-					q.emplace(dest->child_node(*c),(*source)[*c]);
+					q.emplace(dest->childc(*c),(*source)[*c]);
+				}
+			}
+			*/
+			for (size_t i=0;i<NSIZE;++i){
+				if ((*source)[i]){
+					q.emplace(dest->childi(i),(*source)[i]);
 				}
 			}
 		}
@@ -118,18 +144,15 @@ struct Node {
 		}
 		return l;
 	}
-};
-/*
-void node_walk(Node*&l,size_t i){
-	if (!((*l)[i])){
-		l->nchild(i);
+	Node* prefix(CSeq S){
+		Node* l = this;
+		for (; S.live(); ++S){
+			l = (*l)[*S];
+		}
+		return l;
 	}
-	l = (*l)[i];
-}
-void node_walk(Node*&l,char c){
-	node_walk(l,tr(c));
-}
-*/
+};
+
 WordBank::WordBank(): root(new Node){}
 
 WordBank::WordBank(Node* n): root(n){}
@@ -138,7 +161,7 @@ WordBank::WordBank(const WordBank& rhs) noexcept  : root(new Node){
 	root->copyrt(rhs.root);
 }
 WordBank& WordBank::operator<<(const string& s){
-	new_word(s,s.length());
+	new_word_z(s,s.length());
 	return *this;
 }
 
@@ -159,14 +182,25 @@ void WordBank::new_word(const string& s,size_t len){
 	// Uses child_node which ignores non-alphas
 	// and does the checking
 	if (len==0) len=s.length();
+	if (len==0) return;
 	Node* l = root;
 	for (size_t i=0;i<len;++i){
-		l = l->child_node(s[i]);
+		l = l->childc(s[i]);
+	}
+	l->word_end += 1;
+}
+void WordBank::new_word_z(const string& s,size_t len){
+	if (len==0) len=s.length();
+	if (len==0) return;
+	Node* l = root;
+	for (CSeq S(s,len); S.live(); ++S){
+		l = l->childc(*S);
 	}
 	l->word_end += 1;
 }
 void WordBank::remove_word(const string& s,size_t lc){
 	if (lc==0) lc=s.length();
+	if (lc==0) return;
 	Node* l = root;
 	stack<Node*> stk;
 	for (size_t i=0;i<lc;++i){
@@ -176,6 +210,8 @@ void WordBank::remove_word(const string& s,size_t lc){
 	}
 	l->word_end = 0;
 	for (size_t c=lc; c>0; --c){
+		// Wait a minute, there shouldn't be char at s[lc]!
+		// Does this need fixing?
 		l = stk.top();
 		stk.pop();
 		if (c!=lc){
@@ -188,6 +224,7 @@ void WordBank::remove_word(const string& s,size_t lc){
 		delete l;
 	}
 	root->p[tr(s[0])] = nullptr;
+	//root->p[s[0]] = nullptr;
 }
 
 vector<string> WordBank::with_prefix(const string &s,size_t lc) const {
@@ -229,20 +266,11 @@ WordBank WordBank::prefix_subset(const string &s,size_t lc){
 		std::cout << "nope";
 		return WordBank();
 	}
-	R = new Node;
-	r = R;
-	/*
+	r = R = new Node;
 	// Create prefix nodes, except last letter
-	for (size_t i=0;i<lc-1;++i){
-		node_walk(r,s[i]);
-	}
 	// Set 'last' node to be 'recursive' copy of prefix
-	//r->p[s[lc-1]-97]->copyrt(l);
-
-	r->p[s[lc-1]]->copyrt(l);
-	*/
 	for (size_t i=0;i<lc;++i){
-		r = r->child_node(s[i]);
+		r = r->childc(s[i]);
 	}
 	r->copyrt(l);
 	return WordBank(R);	
@@ -287,7 +315,7 @@ bool WordBank::prefix_exists(const string& s,size_t lc) const {
 	return root->prefix(s,lc);
 }
 vector<string> WordBank::words() const {
-	return with_prefix("",0);
+	return with_prefix("");
 }
 
 ostream& operator<<(ostream& o,const WordBank& ws){
@@ -307,4 +335,36 @@ WordBank WordBank::operator+(const WordBank& rhs){
 	WordBank AB = *this;
 	AB += rhs;
 	return AB;
+}
+void WordBank::with_prefix_remove_words(const string& s,size_t lc){
+	if (lc==0) lc = s.length();
+	Node* l = root->prefix(s,lc);
+	if (!l) return;
+	for (size_t i=0;i<NSIZE;++i){
+		if ((*l)[i]){
+			(*l)[i]->deleteRoot();
+		}
+	}
+}
+unsigned WordBank::with_prefix_count_words(const string& s,size_t lc){
+	if (lc==0) lc = s.length();
+	Node* l = root->prefix(s,lc);
+	if (!l) return 0;
+	unsigned c = 0;
+	stack<Node*> stk;
+	stk.push(l);
+	while (!stk.empty()){
+		l = stk.top();
+		if (l->word_end) ++c;
+		stk.pop();
+		for (size_t i=0;i<NSIZE;++i){
+			if ((*l)[i]){
+				stk.push((*l)[i]);
+			}
+		}
+	}
+	return c;
+}
+unsigned WordBank::count_words(){
+	return with_prefix_count_words("");
 }

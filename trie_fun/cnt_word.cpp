@@ -15,6 +15,7 @@ int main(int argc, char** argv){
 	// }
 	WordBank ws, ws2, ws3;
 	ws << "69cat" << "bat123" << "mat";
+	ws.new_word_z("jacketcatbagmagoot",5);
 	ws2 << "frogmanzoo456" << "telegraph" << "alphastrike" << "catwarriorz";
 	ws3 << "zebrararitytango" << "poop";
 	std::cout << "\nWordBank::ws\n" << ws << "\nWordBank::ws2\n" << ws2 << "\nWordBank::ws3\n" << ws3;
