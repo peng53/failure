@@ -91,6 +91,65 @@ static void part_storer(char** &A, char** A_end, PartedString &P){
 	}
 }
 int main(int argc,char **argv){
+	/*
+	To call:
+		First arg can be -c N
+		if one wants multiple strings,
+		if omited, only 1 string is printed.
+		N must be a number.
+		
+		Next any number of 'parts'
+		'-B' takes a 6 char boolstring of what chars to include
+		'-b' is same as above but has second arg which is removed from that set
+		'-a' is same as -b but adds second arg to that set
+		some string that doesn't start with -
+		'-c' seem to have been an option to use a coin flip, but seems to be
+			disabled right now?
+		
+		After the parts, one does the output string, which is signals by
+		the '-s' flag.
+		Arguments following '-s' are either:
+			1 to 4 numbers seperated by non-space
+			some string, note: - is available now.
+		
+		More on the output string:
+			No parts that are prepended by '-' can be generated here.
+			'-' is now intepreted as a string.
+			
+			Depending on how many numbers are in an argument, different things
+			are outputed in a 'segment', (that being an argument in an argument)
+			All indices are 0 based. 
+			
+			# : effect
+			1 : outputs part at index
+				Note: parts are really just strings
+			2	first number acts as part index
+				second acts as # of chars to output (random)
+			3 : first number acts as part index
+				second acts as a 'delimiter part'
+				third acts as # of times to print first part.
+				the first part sandwiches the second part.
+			4 : acts as if you used 2 args, repeats it as many
+				times as the 4th arg sandwiching the 3rd arg
+				as part index (delimiter)
+				
+			If 'some string' in the '-s' section, it will appear output string
+			as a segment (like 1 arg) but will also be available as a part.
+			however, if it is referenced before is it introduced, it will not appear
+			in the output.
+			
+			[0th part] -s 1 [1st part (string only)] 
+			will print nothing as 1 didn't exist when it was referenced, but:
+			[0th part] -s [1st part (string only)] 1
+			will print the [1st part] twice (without delimiter).
+			
+			Also note, one can omit the '-s'. Doing so calls a 'dry run'.
+			This prints out all parts seperated by linefeed.
+		
+		So to call,
+		./binary [-c N] [[part0] [part1]] [-s [segment] [segment]]
+		No arguments are actually required.
+	*/
 	if (argc<3) return 1;
 	cout << "Compiled on " << __DATE__ << " at " << __TIME__ << '\n';
 	unsigned C=1;
