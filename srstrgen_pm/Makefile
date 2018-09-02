@@ -1,5 +1,6 @@
 CFLAGS=-pedantic -std=c++11 -O2 -march=native
 CC=clg++
+CSC=mcs
 
 build: main.o ste.o b_inc.o
 	$(CC) $(CFLAGS) main.o ste.o b_inc.o -o srstrgen
@@ -24,8 +25,8 @@ test:
 clean:
 	rm -I *.o *.gch srstrgen
 
-parted.cs:
-	csc /t:library /out:parted.dll parted.cs
+parted.dll: parted.cs
+	$(CSC) /t:library /out:parted.dll parted.cs
 
-main.cs: parted.cs
-	csc /reference:parted.dll /t:exe /out:main.exe
+main_cs: parted.dll main.cs
+	$(CSC) /reference:parted.dll /t:exe /out:main.exe main.cs
