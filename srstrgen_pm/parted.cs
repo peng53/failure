@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 public class PartedString {
-	public enum PartT { Plain, RandomPool, RandomN, SubStr };
+	public enum PartT { Plain, RandomPool, RandomN, SubStr, Clone };
 	private struct Part {
 		public int a,b,c,d;
 		public PartT t;
@@ -26,6 +26,7 @@ public class PartedString {
 		parts = new List<Part>();
 	}
 	public void add_part(PartT i,int a,int b=-1,int c=-1,int d=-1){
+		//int t;
 		switch (i){
 			case PartT.Plain:
 				if (a>=literals.Count || b>=literals.Count) return;
@@ -45,6 +46,15 @@ public class PartedString {
 			case PartT.SubStr:
 				if (b==-1 || c==-1) return;
 				if (a>=literals.Count || b>=c || c>(literals[a].Length)) return;
+				break;
+			case PartT.Clone:
+				if (a>=parts.Count) return;
+				//t = a;
+				i = parts[a].t;
+				b = parts[a].b;
+				c = parts[a].c;
+				d = parts[a].d;
+				a = parts[a].a;
 				break;
 			default:
 				return;
