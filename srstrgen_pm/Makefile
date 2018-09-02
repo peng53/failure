@@ -23,3 +23,9 @@ test:
 	./srstrgen -c 3 -b 001000 abc - BOB CAS EGD -s 0,4,1,2 " cool cat" " " 2,4,0
 clean:
 	rm -I *.o *.gch srstrgen
+
+parted.cs:
+	csc /t:library /out:parted.dll parted.cs
+
+main.cs: parted.cs
+	csc /reference:parted.dll /t:exe /out:main.exe
