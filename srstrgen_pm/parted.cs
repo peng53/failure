@@ -4,6 +4,28 @@ using System.Text;
 
 public class PartedString {
 	public enum PartT { Plain, RandomPool, RandomN, SubStr };
+	/* Currently (as in pout):
+	 * Plain
+	 * a -> literal index
+	 * b -> literal index (delimiter) optional
+	 * c -> # times to repeat, default 1
+	 *
+	 * RandomPool
+	 * a -> literal index
+	 * b -> a length (# of random chars (of a) to be printed)
+	 * c -> literal index
+	 * d -> # times to repeat, default 1
+	 *
+	 * RandomN
+	 * a -> min number, if b not present, default to 0
+	 * b -> max number, if not present, defaults to a
+	 *
+	 * SubStr
+	 * a -> literal index
+	 * b -> start index
+	 * c -> end index, last index of char to print
+	 *
+	 */
 	private struct Part {
 		public int a,b,c,d;
 		public PartT t;
@@ -59,7 +81,7 @@ public class PartedString {
 			Console.WriteLine("{0}",s);
 		}
 	}
-	
+
 	public string pout(){
 		StringBuilder sb = new StringBuilder();
 		Random r = new Random();
@@ -78,7 +100,7 @@ public class PartedString {
 						for (int j=p.b; j>0; --j){
 							sb.Append(literals[p.a][r.Next(l)]);
 						}
-						if (p.c!=-1 && i!=1) sb.Append(literals[p.c][r.Next(literals[p.c].Length)]);
+						if (p.c!=-1 && i!=1) sb.Append(literals[p.c]);
 					}
 					break;
 				case PartT.SubStr: // substring
@@ -88,7 +110,7 @@ public class PartedString {
 					sb.Append(r.Next(p.a,p.b));
 					break;
 			}
-			
+
 		}
 		return sb.ToString();
 	}
