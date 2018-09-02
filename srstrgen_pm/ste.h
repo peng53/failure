@@ -11,13 +11,13 @@ class PartedString {
 		struct IMPL;
 		IMPL* M;
 		friend ostream& operator<<(ostream& out,PartedString &PS);
-		friend PartedString& operator<<(PartedString& p,const string& s);
-		friend PartedString& operator<<(PartedString& p,const unsigned i);
 	public:
 		PartedString();
 		~PartedString();
 		size_t lits_size();
+		PartedString& operator<<(const string& s);
 		void add_part(const string& s);
+		PartedString& operator<<(const unsigned i);
 		void add_part(const unsigned I);
 		void add_part(const unsigned I,const unsigned L);
 		void add_part(const unsigned I,const unsigned D,const unsigned R);
