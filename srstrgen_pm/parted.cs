@@ -9,6 +9,7 @@ public class PartedString {
 	 * a -> literal index
 	 * b -> literal index (delimiter) optional
 	 * c -> # times to repeat, default 1
+	 * d -> delimiter index
 	 *
 	 * RandomPool
 	 * a -> literal index
@@ -88,15 +89,15 @@ public class PartedString {
 		foreach (Part p in parts){
 			switch (p.t){
 				case PartT.Plain: // string delimited c times.
-					for (int i=p.c-1; i>0; --i){
+					for (int i=p.c; i>0; --i){
 						sb.Append(literals[p.a]);
-						if (p.b!=-1) sb.Append(literals[p.b]);
+						if (p.b!=-1 && i!=1) sb.Append((p.d==-1) ? literals[p.b] : literals[p.b][p.d].ToString());
 					}
-					sb.Append(literals[p.a]);
+					//sb.Append(literals[p.a]);
 					break;
 				case PartT.RandomPool: // RANA-DELIMIT-RANA..
-					int l = literals[p.a].Length-1;
-					for (int i=p.d-1; i>0; --i){
+					int l = literals[p.a].Length;
+					for (int i=p.d; i>0; --i){
 						for (int j=p.b; j>0; --j){
 							sb.Append(literals[p.a][r.Next(l)]);
 						}
@@ -116,12 +117,16 @@ public class PartedString {
 	}
 	public static void Main(string[] args){
 		PartedString s = new PartedString();
-		s.add_literal("abc");
-		s.add_literal("-");
-		s.add_literal("maconi");
-		s.add_part(PartT.Plain,0,1,2);
-		s.add_part(PartT.SubStr,2,0,6);
-		s.add_part(PartT.RandomN,1,25);
+		s.add_literal("0123456789");
+		s.add_literal("-_");
+		s.add_literal("ABC");
+		//s.add_literal("-");
+		//s.add_literal("maconi");
+		//s.add_part(PartT.Plain,0,1,2);
+		//s.add_part(PartT.SubStr,2,0,6);
+		//s.add_part(PartT.RandomN,1,25);
+		s.add_part(PartT.RandomPool,0,3,1,3);
+		s.add_part(PartT.Plain,2,1,3,1);
 		Console.WriteLine("test: {0}", s.pout());
 		//Console.WriteLine("here {0}",a.t);
 	}
