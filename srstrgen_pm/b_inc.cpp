@@ -41,8 +41,7 @@ void BInc::rem(char* E){
 	O.insert(O.end(),i,s.cend());
 	s.assign(O);
 }
-void BInc::add(const char* A){
-	size_t a_len = strlen(A);
-	s.reserve(s.length()+a_len);
-	s.insert(s.end(),A,A+a_len);
+void BInc::add(const string& A){
+	s.reserve(s.length()+A.length());
+	s += A;
 }

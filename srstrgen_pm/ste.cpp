@@ -74,9 +74,9 @@ ostream& operator<<(ostream& sout,PartedString &PS){
 	}
 	return sout;
 }
-PartedString& operator<<(PartedString& p, const string& s){
-	p.M->add_lit(s);
-	return p;
+PartedString& PartedString::operator<<(const string& s){
+	M->add_lit(s);
+	return *this;
 }
 void PartedString::add_part(const string& s){
 	M->add_lit(s);
@@ -85,9 +85,9 @@ void PartedString::add_part(const string& s){
 void PartedString::add_part(const unsigned I){
 	M->parts.emplace_back(make_unique<CPart>(M->lits[I].get()));
 }
-PartedString& operator<<(PartedString& p, const unsigned i){
-	p.add_part(i);
-	return p;
+PartedString& PartedString::operator<<(const unsigned i){
+	add_part(i);
+	return *this;
 }
 void PartedString::add_part(const unsigned I,const unsigned L){
 	M->parts.emplace_back(make_unique<RPart>(M->lits[I].get(),L));
