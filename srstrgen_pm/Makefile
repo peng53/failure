@@ -14,19 +14,20 @@ b_inc.o: b_inc.cpp b_inc.h
 st.o: st.cpp st.h
 	$(CC) $(CFLAGS) -c st.cpp -o ste.o
 
-
 compile:
-	$(CC) -pedantic -std=c++11 -c st.cpp
-	$(CC) -pedantic -std=c++11 -c ste.cpp
-	$(CC) -pedantic -std=c++11 -c b_inc.cpp
-	$(CC) -pedantic -std=c++11 -c main.cpp
+	$(CC) $(CFLAGS) -c st.cpp
+	$(CC) $(CFLAGS) -c ste.cpp
+	$(CC) $(CFLAGS) -c b_inc.cpp
+	$(CC) $(CFLAGS) -c main.cpp
 test:
 	./srstrgen -c 3 -b 001000 abc - BOB CAS EGD -s 0,4,1,2 " cool cat" " " 2,4,0
 clean:
 	rm -I *.o *.gch srstrgen
+	rm -I sr_csc.exe
+	rm -I parted.dll
 
 parted.dll: parted.cs
 	$(CSC) /t:library /out:parted.dll parted.cs
 
-main_cs: parted.dll main.cs
-	$(CSC) /reference:parted.dll /t:exe /out:main.exe main.cs
+sr_csc.exe: parted.dll main.cs
+	$(CSC) /reference:parted.dll /t:exe /out:sr_csc.exe main.cs
