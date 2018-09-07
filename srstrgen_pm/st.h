@@ -9,28 +9,27 @@
 using std::ostream;
 using std::string;
 using std::vector;
-using std::list;
 using std::unique_ptr;
 
 struct Part {
-	virtual void out(ostream& sout) = 0;
+	virtual void out(ostream& sout) const = 0;
 };
 class PartedString {
 	private:
 		vector<unique_ptr<string>> lits;
-		list<unique_ptr<Part>> parts;
-		friend ostream& operator<<(ostream& out,PartedString &PS);
+		std::list<unique_ptr<Part>> parts;
+		friend ostream& operator<<(ostream& out,const PartedString &PS);
 		void add_lit(const string& s);
 	public:
 		PartedString(){}
 		~PartedString(){}
-		size_t lits_size();
+		size_t lits_size() const;
 		void add_part(const string& s);
-		void add_part(const unsigned I);
-		void add_part(const unsigned I,const unsigned L);
-		void add_part(const unsigned I,const unsigned D,const unsigned R);
-		void add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W);
+		void add_part(const size_t index);
+		void add_part(const size_t index,const size_t count);
+		void add_part(const size_t indexORstart,const size_t delimORend,const size_t repeat);
+		void add_part(const size_t index,const size_t count,const size_t delim,const size_t repeat);
 		PartedString& operator<<(const string& s);
-		PartedString& operator<<(const unsigned i);
+		PartedString& operator<<(const size_t index);
 };
 #endif

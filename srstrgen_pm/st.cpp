@@ -1,5 +1,4 @@
 #include "st.h"
-
 #include <random>
 #include <ctime>
 
@@ -8,11 +7,11 @@ std::mt19937 RNG(time(0));
 struct CPart : Part {
 	string* s;
 	string* d = nullptr;
-	unsigned r = 1;
+	size_t r = 1;
 	CPart(string* _s) : s(_s){}
-	CPart(string* _s,string* _d,unsigned _r) : s(_s),d(_d),r(_r){}
-	void out(ostream& sout){
-		for (unsigned i=r;i>0;--i){
+	CPart(string* _s,string* _d,size_t _r) : s(_s),d(_d),r(_r){}
+	void out(ostream& sout) const {
+		for (size_t i=r;i>0;--i){
 			sout<<*s;
 			if (i!=1) sout<<*d;
 		}
@@ -20,15 +19,15 @@ struct CPart : Part {
 };
 struct RPart : Part {
 	string* c;
-	unsigned l;
+	size_t l;
 	string* d = nullptr;
-	unsigned t = 1;
-	RPart(string* _c,unsigned _l) : c(_c),l(_l){};
-	RPart(string* _c,unsigned _l,string* _d,unsigned _t) : c(_c),l(_l),d(_d),t(_t){};
-	void out(ostream& sout){
-		std::uniform_int_distribution<unsigned> r(0,c->length()-1);
-		for (unsigned i=t;i>0;--i){
-			for (unsigned n=0;n<l;++n){
+	size_t t = 1;
+	RPart(string* _c,size_t _l) : c(_c),l(_l){};
+	RPart(string* _c,size_t _l,string* _d,size_t _t) : c(_c),l(_l),d(_d),t(_t){};
+	void out(ostream& sout) const {
+		std::uniform_int_distribution<size_t> r(0,c->length()-1);
+		for (size_t i=t;i>0;--i){
+			for (size_t n=0;n<l;++n){
 				sout<< (*c)[r(RNG)];
 			}
 			if (i!=1) sout<<*d;
@@ -37,25 +36,20 @@ struct RPart : Part {
 };
 struct DPart : Part {
 	vector<string*> f;
-	void out(ostream& sout){
-		std::uniform_int_distribution<unsigned> r(0,f.size()-1);
+	void out(ostream& sout) const {
+		std::uniform_int_distribution<size_t> r(0,f.size()-1);
 		sout << *(f[r(RNG)]);
 	}
-	DPart(const vector<unique_ptr<string>> &s, const unsigned b, const unsigned e){
-		for (unsigned i=b;i<=e; ++i){
+	DPart(const vector<unique_ptr<string>> &s, const size_t b, const size_t e){
+		for (size_t i=b;i<=e; ++i){
 			f.push_back(s[i].get());
 		}
 	}
 };
 
-ostream& operator<<(ostream& sout,Part& p){
-	p.out(sout);
-	return sout;
-}
-
-ostream& operator<<(ostream& out,PartedString &PS){
+ostream& operator<<(ostream& out,const PartedString &PS){
 	for (auto const &p : PS.parts){
-		out<<*p.get();
+		p.get()->out(out);
 	}
 	return out;
 }
@@ -75,26 +69,26 @@ void PartedString::add_part(const string& s){
 	add_lit(s);
 	add_part(lits.size()-1);
 }
-void PartedString::add_part(const unsigned I){
+void PartedString::add_part(const size_t I){
 	parts.emplace_back(make_unique<CPart>(lits[I].get()));
 }
-PartedString& PartedString::operator<<(const unsigned i){
+PartedString& PartedString::operator<<(const size_t i){
 	add_part(i);
 	return *this;
 }
-void PartedString::add_part(const unsigned I,const unsigned L){
+void PartedString::add_part(const size_t I,const size_t L){
 	parts.emplace_back(make_unique<RPart>(lits[I].get(),L));
 }
-void PartedString::add_part(const unsigned I,const unsigned D,const unsigned R){
+void PartedString::add_part(const size_t I,const size_t D,const size_t R){
 	if (R!=0){
 		parts.emplace_back(make_unique<CPart>(lits[I].get(),lits[D].get(),R));
 	} else {
 		parts.emplace_back(make_unique<DPart>(lits,I,D));
 	}
 }
-void PartedString::add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W){
+void PartedString::add_part(const size_t I,const size_t L,const size_t D,const size_t W){
 	parts.emplace_back(make_unique<RPart>(lits[I].get(),L,lits[D].get(),W));
 }
-size_t PartedString::lits_size(){
+size_t PartedString::lits_size() const {
 	return lits.size();
 }
