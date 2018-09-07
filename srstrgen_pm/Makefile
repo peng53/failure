@@ -2,7 +2,7 @@ CFLAGS=-pedantic -std=c++11 -O2 -march=native
 CC=clg++
 CSC=mcs
 
-build: main.o ste.o b_inc.o
+srstrgen: main.o ste.o b_inc.o
 	$(CC) $(CFLAGS) main.o ste.o b_inc.o -o srstrgen
 main.o: main.cpp
 	$(CC) $(CFLAGS) -c main.cpp
@@ -21,6 +21,7 @@ compile:
 	$(CC) $(CFLAGS) -c main.cpp
 test:
 	./srstrgen -c 3 -b 001000 abc - BOB CAS EGD -s 0,4,1,2 " cool cat" " " 2,4,0
+	./srstrgen -c 6 1 2 3 _ -s 0,2,0 3 0,2,0 3 0,2,0
 clean:
 	rm -I *.o *.gch srstrgen
 	rm -I sr_csc.exe

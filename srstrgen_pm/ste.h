@@ -10,17 +10,17 @@ class PartedString {
 	private:
 		struct IMPL;
 		IMPL* M;
-		friend ostream& operator<<(ostream& out,PartedString &PS);
+		friend ostream& operator<<(ostream& out,const PartedString &PS);
 	public:
 		PartedString();
 		~PartedString();
-		size_t lits_size();
+		size_t lits_size() const;
 		PartedString& operator<<(const string& s);
 		void add_part(const string& s);
-		PartedString& operator<<(const unsigned i);
-		void add_part(const unsigned I);
-		void add_part(const unsigned I,const unsigned L);
-		void add_part(const unsigned I,const unsigned D,const unsigned R);
-		void add_part(const unsigned I,const unsigned L,const unsigned D,const unsigned W);
+		PartedString& operator<<(const size_t i);
+		void add_part(const size_t index);
+		void add_part(const size_t index,const size_t count);
+		void add_part(const size_t index,const size_t delimORend,const size_t repeat);
+		void add_part(const size_t index,const size_t count,const size_t delim,const size_t repeat);
 };
 #endif
