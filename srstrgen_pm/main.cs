@@ -12,6 +12,7 @@ public class SrStrGen {
 		for (int i=0;i<10; ++i){
 			Console.WriteLine(s);
 		}
+		Console.WriteLine("I found {0}.", s.firsts("123"));
 		//Console.WriteLine("here {0}",a.t);
 	}
 }

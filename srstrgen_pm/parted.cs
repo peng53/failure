@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
-public enum PartT { Plain, RandomPool, RandomN, SubStr, Clone };
+public enum PartT { Plain, RandomPool, RandomN, SubStr, Clone, NSeries };
 public class PartedString {
 	/* Currently (as in pout):
 	 * Plain
 	 * a -> literal index
-	 * b -> literal index (delimiter) optional
-	 * c -> # times to repeat, default 1
+	 * b -> # times to repeat, default 1
+	 * c -> literal index (delimiter) optional
 	 * d -> delimiter index
 	 *
 	 * RandomPool
@@ -28,6 +29,12 @@ public class PartedString {
 	 *
 	 * Clone
 	 * a -> part index
+	 *
+	 * NSeries
+	 * a -> begin number
+	 * b -> end number
+	 * c -> increment number
+	 * d -> initial-number
 	 */
 	struct Part {
 		public int a,b,c,d;
@@ -65,7 +72,7 @@ public class PartedString {
 				if (b==-1) b = 1;
 				break;
 			case PartT.SubStr:
-				if (a<0 || b==-1 || b>=c || a>=literals.Count || c>(literals[a].Length)) return;
+				if (a<0 || b<0 || b>=c || a>=literals.Count || c>(literals[a].Length)) return;
 				break;
 			case PartT.Clone:
 				if (a<0 || a>=parts.Count) return;
@@ -75,10 +82,23 @@ public class PartedString {
 				d = parts[a].d;
 				a = parts[a].a;
 				break;
+			/*
+			case PartT.NSeries:
+				if (c==0) return; // we'll never reach b
+				if (c<0 && b>a) return; // we'll never reach b
+				if (c>0 && a>b) return; // we'll never reach b
+				if (d==-1) d = a;
+				if (d>b || d<a) return; // d isn't in range
+				break;
+			*/
 			default:
 				return;
 		}
 		parts.Add(new Part(i,a,b,c,d));
+	}
+	public void rem_part(int i){
+		if (i<0 || i>parts.Count) return;
+		parts.RemoveAt(i);
 	}
 	public void add_literal(string s){
 		literals.Add(s);
@@ -91,6 +111,9 @@ public class PartedString {
 			Console.WriteLine(s);
 		}
 	}
+	public string firsts(string tofind){
+		return literals.SingleOrDefault( s => s == tofind);
+	}
 	public override string ToString(){
 		StringBuilder sb = new StringBuilder();
 		foreach (Part p in parts){
@@ -98,16 +121,17 @@ public class PartedString {
 				case PartT.Plain: // string delimited c times.
 					for (int i=p.b; i>0; --i){
 						sb.Append(literals[p.a]);
-						if (p.c>0 && i!=1) sb.Append((p.d==-1) ? literals[p.c] : literals[p.c][p.d].ToString());
+						if (p.c>0 && i!=1) sb.Append((p.d>=0) ? literals[p.c] : literals[p.c][p.d].ToString());
 					}
 					break;
 				case PartT.RandomPool: // RANA-DELIMIT-RANA..
 					int l = literals[p.a].Length;
+					//for (i=p.d; i-->0;)
 					for (int i=p.d; i>0; --i){
 						for (int j=p.b; j>0; --j){
 							sb.Append(literals[p.a][r.Next(l)]);
 						}
-						if (p.c!=-1 && i!=1) sb.Append(literals[p.c]);
+						if (p.c>0 && i!=1) sb.Append(literals[p.c]);
 					}
 					break;
 				case PartT.SubStr: // substring
@@ -116,6 +140,9 @@ public class PartedString {
 				case PartT.RandomN:
 					sb.Append(r.Next(p.a,p.b));
 					break;
+				//case PartT.NSeries: // is not possible to implement
+				//	sb.Append(p.d); // without changing foreach
+
 			}
 		}
 		return sb.ToString();
