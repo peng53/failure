@@ -6,25 +6,24 @@
  */
 
 #include "wordbank.h"
+#include "../srstrgen_pm/st.h"
 #include <iostream>
+#include <sstream>
 
 int main(){
 	WordBank ws;
-	std::string t  = "bar";
-	ws.add_word(std::string("bar"));
-	t  = "bat";
-	ws.add_word(t);
-	ws.add_word("cat");
-	if (ws.prefix_exists(t)){
-		std::cout<<"bar exists\n";
-	} else {
-		std::cout<<"bar dn exists\n";
-	}
-	t = "ball";
-	if (ws.prefix_exists(t)){
-		std::cout<<"ball exists\n";
-	} else {
-		std::cout<<"ball dn exists\n";
-	}
+	PartedString ps;
+	ps << "ABCD";
+	ps << "1234567890";
+	ps << "z";
+	ps.add_part(0,3);
+	ps.add_part(2);
+	ps.add_part(1,3,2,2);
+	//std::cout << ps;
+	std::ostringstream out;
+	out << ps;
+	string s = out.str();
+	ws << s;
+	std::cout << ws;
 	return 0;
 }
