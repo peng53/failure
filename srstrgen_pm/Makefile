@@ -5,8 +5,7 @@ CSC=csc
 srstrgen: main.o ste.o b_inc.o
 	$(CXX) $(CXXFLAGS) main.o ste.o b_inc.o -o srstrgen
 main.o: main.cpp ste.h b_inc.h
-	$(CXX) -c $(CXXFLAGS) main.cpp
-#main.o: ste.h b_inc.h
+	$(CXX) -c $(CXXFLAGS) -std=c++11 main.cpp
 ste.o: ste.cpp ste.h
 	$(CXX) -c $(CXXFLAGS) -std=c++11 ste.cpp
 b_inc.o: b_inc.cpp b_inc.h
