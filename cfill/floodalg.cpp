@@ -12,6 +12,7 @@
 using std::queue;
 
 unsigned expand_sl_right(char *B,unsigned width,unsigned coord_y,unsigned coord_x,char color_match){
+	/* Given a cell (y,x), return the furtherest to the right cell with same contigous color */
 	if (coord_x==width-1){
 		return coord_x;
 	}
@@ -25,6 +26,7 @@ unsigned expand_sl_right(char *B,unsigned width,unsigned coord_y,unsigned coord_
 	return coord_x;
 }
 unsigned expand_sl_left(char *B,unsigned width,unsigned coord_y,unsigned coord_x,char color_match){
+	/* Given a cell (y,x), return the furtherest to the left cell with same contigous color */
 	if (coord_x==0){
 		return coord_x;
 	}
@@ -49,41 +51,50 @@ unsigned expand_sl_left_naive(char *B,unsigned width,unsigned coord_y,unsigned c
 }
 
 void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,unsigned x0,unsigned x1,std::function<void (unsigned,unsigned,unsigned,int)> snitch){
-	queue<unsigned> q;
-	q.emplace(y);
+	queue<unsigned> q; // Create a queue to hold ordered values of (y.x0,x)
+	q.emplace(y); // put the initial line to be processed
 	q.emplace(x0);
 	q.emplace(x1);
 	bool has_upper = 0, has_lower = 0;
+	// these bools stores whether current line has either a top or bottom line
 	int upper_x0, upper_x1, lower_x0, lower_x1;
+	// these track lines either above or below the current one
 	unsigned y_max = height-1;
+	// store the maximum y so I don't do the subtraction everytime
 	size_t a = y*width+x0;
+	// a is 1d position calculated from the shape
 	char oldcol = B[a];
+	// the character at that position
 	while (!q.empty()){
+		// for each 3 numbers in the queue..
 		y = q.front();
 		q.pop();
 		x0 = q.front();
 		q.pop();
 		x1 = q.front();
-		q.pop();
-		a = y*width+x0;
-		if (B[a]!=oldcol){
+		q.pop(); // get all three, store 'em
+		a = y*width+x0; // calculate the 'a'
+		if (B[a]!=oldcol){ // this position has already been looked at
 			DEBUG("REPEAT");
 			continue;
 		}
-		if (snitch){
+		if (snitch){ // 'snitch' whats happening if possible
 			snitch(y,x0,x1,newcol);
 		}
-		DEBUG("G(" << y << ',' << x0 << ',' << x1 << ") ");
-		for (;x0<=x1;++x0){
-			B[a] = newcol;
+		DEBUG("G(" << y << ',' << x0 << ',' << x1 << ") "); // should be replaced by snitch?
+		for (;x0<=x1;++x0){ // loop left to right on the current line
+			B[a] = newcol; // change the color to new color
 			//if (y>0 && B[(y-1)*width+x0]==oldcol){
-			if (y>0 && B[a-width]==oldcol){
-				if (!has_upper){
+			// HAS UPPER??
+			if (y>0 && B[a-width]==oldcol){ // if top adj cell exists and match old col
+				if (!has_upper){ // store upper line if not available
 					has_upper = 1;
 					upper_x0 = upper_x1 = x0;
 				} else if (upper_x1+1==x0){
+					// otherwise, it adj cell continues previous upper line, further it
 					upper_x1++;
-				} else {
+				} else { // otherwise its not a continuation, meaning a break took place
+					// so push the upper line currently stored and start a new upper line
 					q.emplace(y-1);
 					q.emplace(expand_sl_left(B,width,y-1,upper_x0,oldcol));
 					q.emplace(upper_x1);
@@ -91,7 +102,8 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 				}
 			}
 			//if (y<y_max && B[(y+1)*width+x0]==oldcol){
-			if (y<y_max && B[a+width]==oldcol){
+			// HAS LOWER?
+			if (y<y_max && B[a+width]==oldcol){ // see (HAS UPPER??) but for lower lines
 				if (!has_lower){
 					has_lower = 1;
 					lower_x0 = lower_x1 = x0;
@@ -104,15 +116,17 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 					lower_x0 = lower_x1 = x0;
 				}
 			}
-			a++;
+			a++; // move to the right (adj cell)
 		}
-		if (has_upper){
+		if (has_upper){ // obvious meaning
+			// this pushes the upper lines since it wasn't already push at
+			// the end of the previous loop
 			q.emplace(y-1);
 			q.emplace(expand_sl_left(B,width,y-1,upper_x0,oldcol));
 			q.emplace(expand_sl_right(B,width,y-1,upper_x1,oldcol));
 			has_upper = 0;
 		}
-		if (has_lower){
+		if (has_lower){ // ditto.
 			q.emplace(y+1);
 			q.emplace(expand_sl_left(B,width,y+1,lower_x0,oldcol));
 			q.emplace(expand_sl_right(B,width,y+1,lower_x1,oldcol));
@@ -121,10 +135,13 @@ void rscanline2(char *B,unsigned width,unsigned height,char newcol,unsigned y,un
 	}
 }
 int scanlinefill_new(char* board,unsigned width,unsigned height,char newchar,std::function<void (unsigned,unsigned,unsigned,int)> snitch){
+	// Given a position and a color, flood fill to new color.
 	char oldchar = board[0];
 	if (newchar==oldchar) return 0;
 	unsigned b_max = expand_sl_right(board,width,0,0,oldchar);
+	// gets a scanline from initial position
 	rscanline2(board,width,height,newchar,0,0,b_max,snitch);
+	// start a fill with this line
 	return 0;
 }
 void rscanline(char *B,unsigned width,size_t bsize,char newcol,unsigned a,unsigned b,std::function<void (unsigned,unsigned,int)> snitch){
