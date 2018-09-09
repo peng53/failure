@@ -65,9 +65,7 @@ struct PartedString::IMPL {
 		lits.push_back(make_unique<string>(s));
 	}
 };
-PartedString::PartedString(){
-	M = new IMPL();
-}
+PartedString::PartedString() : M(new IMPL){}
 PartedString::~PartedString(){
 	delete M;
 }

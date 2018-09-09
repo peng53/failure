@@ -12,12 +12,11 @@ class BInc {
 		string s;
 	public:
 		BInc(){}
-		BInc(const char* I);
+		BInc(const string& I);
 		const string& rep(){
 			return s;
 		}
 		void rem(char* E);
-		//void add(const char* A);
 		void add(const string& A);
 };
 #endif

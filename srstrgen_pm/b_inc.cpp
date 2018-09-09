@@ -1,6 +1,6 @@
 #include "b_inc.h"
 
-static const char *C[]= {
+static const string C[] = {
 	"abcdefghijklmnopqrstuvwxyz",
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 	"0123456789",
@@ -8,19 +8,16 @@ static const char *C[]= {
 	"\"',./:;?\\|",
 	" ()<>[]{}"
 };
-static const size_t C_L[] = {26,26,10,14,11,9};
 
-BInc::BInc(const char* I){
+BInc::BInc(const string& I){
 	size_t c_len = 0;
 	for (size_t i=0;i<6;++i){
-		if (I[i]=='1') c_len += C_L[i];
+		if (I[i]=='1') c_len += C[i].length();
 	}
-	if (c_len==0){
-		s = " ";
-	} else {
+	if (c_len!=0){
 		s.reserve(c_len);
 		for (size_t i=0;i<6;++i){
-			if (I[i]=='1') s.insert(s.end(),C[i],C[i]+C_L[i]);
+			if (I[i]=='1') s += C[i];
 		}
 	}
 }

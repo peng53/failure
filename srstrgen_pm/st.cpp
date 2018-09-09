@@ -5,11 +5,9 @@
 std::mt19937 RNG(time(0));
 
 struct CPart : Part {
-	string* s;
-	string* d = nullptr;
-	size_t r = 1;
-	CPart(string* _s) : s(_s){}
-	CPart(string* _s,string* _d,size_t _r) : s(_s),d(_d),r(_r){}
+	const string *s, *d;
+	const size_t r;
+	CPart(const string* _s,const string* _d=nullptr,const size_t _r=1) : s(_s),d(_d),r(_r){}
 	void out(ostream& sout) const {
 		for (size_t i=r;i>0;--i){
 			sout<<*s;
@@ -18,12 +16,10 @@ struct CPart : Part {
 	}
 };
 struct RPart : Part {
-	string* c;
-	size_t l;
-	string* d = nullptr;
-	size_t t = 1;
-	RPart(string* _c,size_t _l) : c(_c),l(_l){};
-	RPart(string* _c,size_t _l,string* _d,size_t _t) : c(_c),l(_l),d(_d),t(_t){};
+	const string *c, *d;
+	const size_t l, t;
+	RPart(const string* _c,size_t _l,const string* _d=nullptr,const size_t _t=1) :
+		c(_c),l(_l),d(_d),t(_t){}
 	void out(ostream& sout) const {
 		std::uniform_int_distribution<size_t> r(0,c->length()-1);
 		for (size_t i=t;i>0;--i){
