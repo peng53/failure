@@ -1,0 +1,35 @@
+prim peusdo code
+
+2d int array holds block opening.
+
+keep a count of blocks unvisited:
+	initially should be L*W-1.
+
+start with walls adjacent to 'start' position:
+	add these to a vector along with their direction of entry.
+
+keep a 'length/size' variable to seperate available and unavailable
+edges. (used will be moved to the back)
+
+count = L*W-1
+possible_edges = [start adj walls]
+edge_count = |start adj walls|
+while edge_count>0:
+	n = random(0,edge_count-1)
+	if block corresponding to possible_edges[n] is still possible
+		(e.g. if block has all walls closed):
+	then
+		take possible_edges[n] by direction
+		swap possible_edges[n] and possible_edges[edge_count-1]
+		decrement edge_count by 1
+		decrement count by 1
+		for each adjacent block to the previously changed edge (store that beforehand):
+			if block is not explored:
+			 insert into possible_edges at index possible_edges with direction
+			 increment edge_count by 1
+		end for
+	else
+		swap possible_edges[n] with possible_edges[edge_count-1]
+		decrement edge_count by 1
+	end if
+end while
