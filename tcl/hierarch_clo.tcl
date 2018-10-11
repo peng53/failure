@@ -336,6 +336,38 @@ proc import_json {fname} {
 	#}
 
 }
+
+proc auto_group {parent pattern new_parent {dry_run false}} {
+	# Where parent is the gid of the bookmarks.
+	# pattern is a matching regex,
+	# and new_parent to where to move matches to.
+	# if dry_run is true, no movement will occur.
+	if {!$DBConn::is_open} {
+		return -1
+	}
+	if {$parent == $new_parent} {
+		return -1
+	}
+	if {$parent != 0 && ![dict exists $DBConn::groups $parent]} {
+		return -1
+	}
+	if {$new_parent != 0 && ![dict exists $DBConn::groups $new_parent]} {
+		return -1
+	}
+	set new_mtime [clock format [clock seconds] -format {%Y-%m-%d %T.000}]
+	if {$dry_run} {
+		set to_move [conn eval {
+			SELECT rowid FROM data WHERE gid=:parent AND value REGEXP :pattern;
+		}]
+		return $to_move
+	} else {
+		conn eval {
+			UPDATE data SET gid=:new_parent WHERE gid=:parent AND value REGEXP :pattern
+		}
+	}
+	
+}
+
 proc testing_db {} {
 	set DBConn::is_open 1
 	sqlite3 conn :memory:

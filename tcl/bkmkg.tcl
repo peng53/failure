@@ -16,6 +16,7 @@ foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modif
 	.men add command -label $l -command $c -state disabled
 }
 .men add command -label Import -command firefox_bm
+.men add command -label {Auto Group} -command g_auto_grp
 . configure -menu .men
 set rootg_cb 0
 #pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
@@ -520,6 +521,29 @@ proc firefox_bm {} {
 			}
 		}
 	}
+}
+proc g_auto_grp {} {
+	global rootg_cb
+	sub_win {Auto group..}
+	pack [labelframe .sub.grp -text From:] -fill x
+	pack [ttk::combobox .sub.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
+	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command g_grp_root_onoff] -side left
+	pack [labelframe .sub.pattern -text Pattern:] -fill x	
+	pack [entry .sub.pattern.en] -fill x -expand 1 -side left
+	pack [labelframe .sub.to -text To:] -fill x
+	pack [ttk::combobox .sub.to.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
+	pack [frame .sub.b]
+	pack [button .sub.b.ok -text {Ok} -command p_auto_grp] -side left
+	pack [button .sub.b.exit -text {Exit} -command {destroy .sub}] -side left
+}
+proc p_auto_grp {} {
+	set pattern [.sub.pattern.en get]
+	if {[string length $pattern]==0} {
+		# complain and stop
+		puts {Please enter a pattern.}
+	} else {
+	}	
+	destroy .sub
 }
 
 bind . <Control-n> {
