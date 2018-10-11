@@ -538,11 +538,22 @@ proc g_auto_grp {} {
 }
 proc p_auto_grp {} {
 	set pattern [.sub.pattern.en get]
+	global rootg_cb
+	set t [lindex [dict keys $DBConn::groups] [.sub.to.cb current]]
+	if {$rootg_cb==1} {
+		set f 0
+	} else {
+		set f [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
+	}
 	if {[string length $pattern]==0} {
 		# complain and stop
 		puts {Please enter a pattern.}
 	} else {
-	}	
+		# output a search.
+		# if f == t, then only a dry_run is done
+		set to_move [auto_group $f $pattern $t true]
+		puts $to_move
+	}
 	destroy .sub
 }
 

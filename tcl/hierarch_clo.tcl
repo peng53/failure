@@ -343,26 +343,32 @@ proc auto_group {parent pattern new_parent {dry_run false}} {
 	# and new_parent to where to move matches to.
 	# if dry_run is true, no movement will occur.
 	if {!$DBConn::is_open} {
+		puts {DB is not open!}
 		return -1
 	}
-	if {$parent == $new_parent} {
+	if {$parent == $new_parent && !$dry_run} {
+		puts {From and to cannot match!}
 		return -1
 	}
 	if {$parent != 0 && ![dict exists $DBConn::groups $parent]} {
+		puts {Parent does not exist!}
 		return -1
 	}
-	if {$new_parent != 0 && ![dict exists $DBConn::groups $new_parent]} {
+	if {!$dry_run && $new_parent != 0 && ![dict exists $DBConn::groups $new_parent]} {
+		puts {New parent does not exist!}
 		return -1
 	}
+	conn function regexp -deterministic { regexp --}
 	set new_mtime [clock format [clock seconds] -format {%Y-%m-%d %T.000}]
 	if {$dry_run} {
+		puts {dry run}
 		set to_move [conn eval {
-			SELECT rowid FROM data WHERE gid=:parent AND value REGEXP :pattern;
+			SELECT rowid FROM data WHERE key REGEXP :pattern;
 		}]
 		return $to_move
 	} else {
 		conn eval {
-			UPDATE data SET gid=:new_parent WHERE gid=:parent AND value REGEXP :pattern
+			UPDATE data SET gid=:new_parent WHERE key REGEXP :pattern
 		}
 	}
 	
