@@ -346,6 +346,9 @@ proc auto_group {parent pattern new_parent {dry_run false}} {
 		puts {DB is not open!}
 		return -1
 	}
+	if {[string length $parent]==0} {
+		set parent 0
+	}
 	if {$parent == $new_parent && !$dry_run} {
 		puts {From and to cannot match!}
 		return -1
@@ -358,17 +361,18 @@ proc auto_group {parent pattern new_parent {dry_run false}} {
 		puts {New parent does not exist!}
 		return -1
 	}
+	puts "parent was $parent"
 	conn function regexp -deterministic { regexp --}
 	set new_mtime [clock format [clock seconds] -format {%Y-%m-%d %T.000}]
 	if {$dry_run} {
 		puts {dry run}
 		set to_move [conn eval {
-			SELECT rowid FROM data WHERE key REGEXP :pattern;
+			SELECT rowid FROM data WHERE gid=:parent AND key REGEXP :pattern;
 		}]
 		return $to_move
 	} else {
 		conn eval {
-			UPDATE data SET gid=:new_parent WHERE key REGEXP :pattern
+			UPDATE data SET gid=:new_parent WHERE gid=:parent AND key REGEXP :pattern
 		}
 	}
 	

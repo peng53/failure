@@ -1,6 +1,7 @@
 // Count word prog
 
 #include <iostream>
+#include <fstream>
 #include "wordbank.h"
 
 using std::cout;
@@ -45,5 +46,27 @@ int main(int argc, char** argv){
 	for (auto s : vc){
 		cout << s << '\n';
 	}
+
+	cout << "\n\n/* input test */\n\n";
+	std::ifstream f;
+	string line;
+	f.open("words.txt");
+	//int count = 0;
+	while (getline(f,line)){// && count<8000){
+		ws << line;
+		//++count;
+	}
+	f.close();
+	string my_prefix;
+	int wc;
+	do {
+		cout << "Type a prefix, or ! to quit: ";
+		std::cin >> my_prefix;
+		if (my_prefix[0]=='!'){ break; }
+		vs = ws.with_prefix(my_prefix);
+		for (size_t i=((vs.size()>=50) ? 50 : vs.size()); i>0; --i){
+			cout << my_prefix << vs[i-1] << '\n';
+		}
+	} while (my_prefix!="!");
 	return 0;
 }

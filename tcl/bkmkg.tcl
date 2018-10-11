@@ -535,6 +535,20 @@ proc g_auto_grp {} {
 	pack [frame .sub.b]
 	pack [button .sub.b.ok -text {Ok} -command p_auto_grp] -side left
 	pack [button .sub.b.exit -text {Exit} -command {destroy .sub}] -side left
+	if {$rootg_cb==1} {
+		set m select
+		set s disabled
+	} else {
+		set m deselect
+		set s normal
+		if {[.sub.grp.cb get]=={}} {
+			if {[dict size $DBConn::groups]>0} {
+				.sub.grp.cb current 0
+			}
+		}
+	}
+	.sub.grp.root $m
+	.sub.grp.cb configure -state $s
 }
 proc p_auto_grp {} {
 	set pattern [.sub.pattern.en get]
@@ -553,6 +567,7 @@ proc p_auto_grp {} {
 		# if f == t, then only a dry_run is done
 		set to_move [auto_group $f $pattern $t true]
 		puts $to_move
+		.tv_links selection set $to_move
 	}
 	destroy .sub
 }

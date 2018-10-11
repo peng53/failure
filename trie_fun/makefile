@@ -1,4 +1,4 @@
-CXXFLAGS=-pedantic -O2 -march=native
+CXXFLAGS=-pedantic -O2 -march=native -std=c++11
 CXX=clang++
 
 cnt_word.o: cnt_word.cpp wordbank.h
