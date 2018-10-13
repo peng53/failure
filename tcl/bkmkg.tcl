@@ -5,7 +5,7 @@ menu .men
 menu .men.mfile
 # Create the file menu options
 foreach {l c s} [list New init_db 1 Open g_open_db 1 {Save as} g_saveas 0 Save g_save_db 0 Close g_close_db 0 Quit exit_prog 1] {
-	.men.mfile add command -label $l -command $c -state [expr {($s==1) ? {normal} : {disabled}}]
+	.men.mfile add command -label $l -command $c -state [expr {$s ? {normal} : {disabled}}]
 }
 .men.mfile insert 6 separator
 .men.mfile insert 3 separator
@@ -218,6 +218,9 @@ proc grp_frame {} {
 	pack [labelframe .sub.grp -text Group] -fill x
 	pack [ttk::combobox .sub.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command g_grp_root_onoff] -side left
+	if {[dict size $DBConn::groups]>0} {
+		.sub.grp.cb current 0
+	}
 }
 proc switch_grp {} {
 	# Allows user to change the group of multiple
@@ -235,7 +238,7 @@ proc apply_g_chg {} {
 	# See switch_grp. The actually changes the 'gid' by
 	# calling procs in hierarch_clo.
 	global rootg_cb
-	if {$rootg_cb==1} {
+	if {$rootg_cb} {
 		set p 0
 		set k {}
 	} else {
@@ -293,7 +296,7 @@ proc save_grp {gid} {
 	# Save changes to group (gid is just an int)
 	set n [.sub.n.e get]
 	global rootg_cb
-	if {$rootg_cb==1} {
+	if {$rootg_cb} {
 		set p 0
 		set k {}
 	} else {
@@ -371,7 +374,7 @@ proc try_delete {} {
 }
 proc g_grp_root_onoff {} {
 	global rootg_cb
-	if {$rootg_cb==1} {
+	if {$rootg_cb} {
 		set m select
 		set s disabled
 	} else {
@@ -485,16 +488,16 @@ proc reorder_rows_q {bycol fp} {
 		incr i
 	}
 }
-proc sub_win {t {lf 0}} {
+proc sub_win {t {lf false}} {
 	# Creates the sub-window with default options and title.
-	if {$lf==0} {
+	if {$lf} {
+		pack [labelframe .sub -text $t]
+	} else {
 		toplevel .sub
 		grab set .sub
 		wm attributes .sub -topmost 1
 		wm resizable .sub 0 0
 		wm title .sub $t
-	} else {
-		pack [labelframe .sub -text $t]
 	}
 	bind .sub <Escape> {
 		destroy %W
@@ -533,19 +536,23 @@ proc g_auto_grp {} {
 	pack [labelframe .sub.to -text To:] -fill x
 	pack [ttk::combobox .sub.to.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	pack [frame .sub.b]
-	pack [button .sub.b.ok -text {Ok} -command p_auto_grp] -side left
-	pack [button .sub.b.exit -text {Exit} -command {destroy .sub}] -side left
-	if {$rootg_cb==1} {
+	pack [button .sub.b.ok -text Ok -command p_auto_grp] -side left
+	pack [button .sub.b.exit -text Exit -command {destroy .sub}] -side left
+	if {$rootg_cb} {
 		set m select
 		set s disabled
 	} else {
 		set m deselect
 		set s normal
-		if {[.sub.grp.cb get]=={}} {
+		# if group selection is empty, choose first one if possible
+		if {[string length [.sub.grp.cb get]]==0} {
 			if {[dict size $DBConn::groups]>0} {
 				.sub.grp.cb current 0
 			}
 		}
+	}
+	if {[dict size $DBConn::groups]>0} {
+		.sub.to.cb current 0
 	}
 	.sub.grp.root $m
 	.sub.grp.cb configure -state $s
@@ -554,11 +561,13 @@ proc p_auto_grp {} {
 	set pattern [.sub.pattern.en get]
 	global rootg_cb
 	set t [lindex [dict keys $DBConn::groups] [.sub.to.cb current]]
-	if {$rootg_cb==1} {
+	if {$rootg_cb} {
 		set f 0
 	} else {
 		set f [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
 	}
+	puts $f
+	puts $t
 	if {[string length $pattern]==0} {
 		# complain and stop
 		puts {Please enter a pattern.}
