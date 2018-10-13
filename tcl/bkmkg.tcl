@@ -4,19 +4,19 @@ source hierarch_clo.tcl
 menu .men
 menu .men.mfile
 # Create the file menu options
-foreach {l c s} [list New init_db 1 Open g_open_db 1 {Save as} g_saveas 0 Save g_save_db 0 Close g_close_db 0 Quit exit_prog 1] {
+foreach {l c s} [list New init_db 1 Open g_open_db 1 {Import sqlite} firefox_bm 1 {Save as} g_saveas 0 Save g_save_db 0 Close g_close_db 0 Quit exit_prog 1] {
 	.men.mfile add command -label $l -command $c -state [expr {$s ? {normal} : {disabled}}]
 }
-.men.mfile insert 6 separator
-.men.mfile insert 3 separator
+.men.mfile insert 7 separator
+.men.mfile insert 4 separator
 
 .men add cascade -label File -menu .men.mfile
 # Create operation bar options.
-foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url] {
+foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url {Auto Group} g_auto_grp] {
 	.men add command -label $l -command $c -state disabled
 }
-.men add command -label Import -command firefox_bm
-.men add command -label {Auto Group} -command g_auto_grp
+#.men add command -label Import -command firefox_bm
+#.men add command -label {Auto Group} -command g_auto_grp
 . configure -menu .men
 set rootg_cb 0
 #pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
@@ -284,7 +284,11 @@ proc modify_grp {gid} {
 				set q_grp [.tv_links parent $q_grp]
 			}
 			.sub.grp.root deselect
-			.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+			if {[string length $q_grp]>0} {
+				.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
+			} else {
+				.sub.grp.root select
+			}
 		}
 	}
 	g_grp_root_onoff
@@ -303,6 +307,10 @@ proc save_grp {gid} {
 		set k g[set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]]
 	}
 	if {$gid == -1} {
+		## remember selection of links
+		##set selected [.tv_links selection]
+		## ^^ above was supposed to move the selected links to the new
+		## group, but batch group does the same thing, with the user's click'
 		# a new group.
 		set gid [add_group $n $p]
 		.tv_links insert $k end -id g$gid -text $n
@@ -401,11 +409,11 @@ proc menu_is_open {} {
 	for {set i 2} {$i<8} {incr i} {
 		.men entryconfigure $i -state $nstate
 	}
-	.men.mfile entryconfigure 4 -state $nstate
-	# Save as
 	.men.mfile entryconfigure 5 -state $nstate
-	# Save
+	# Save as
 	.men.mfile entryconfigure 6 -state $nstate
+	# Save
+	.men.mfile entryconfigure 7 -state $nstate
 	# Close
 }
 proc entry_sel_all {e} {
@@ -536,6 +544,7 @@ proc g_auto_grp {} {
 	pack [labelframe .sub.to -text To:] -fill x
 	pack [ttk::combobox .sub.to.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	pack [frame .sub.b]
+	pack [button .sub.b.pre -text Preview -command {p_auto_grp true}] -side left
 	pack [button .sub.b.ok -text Ok -command p_auto_grp] -side left
 	pack [button .sub.b.exit -text Exit -command {destroy .sub}] -side left
 	if {$rootg_cb} {
@@ -556,8 +565,11 @@ proc g_auto_grp {} {
 	}
 	.sub.grp.root $m
 	.sub.grp.cb configure -state $s
+	bind .sub <Alt-a> {
+		.sub.pattern.en insert end .*
+	}
 }
-proc p_auto_grp {} {
+proc p_auto_grp {{preview false}} {
 	set pattern [.sub.pattern.en get]
 	global rootg_cb
 	set t [lindex [dict keys $DBConn::groups] [.sub.to.cb current]]
@@ -570,15 +582,22 @@ proc p_auto_grp {} {
 	puts $t
 	if {[string length $pattern]==0} {
 		# complain and stop
-		puts {Please enter a pattern.}
-	} else {
-		# output a search.
-		# if f == t, then only a dry_run is done
-		set to_move [auto_group $f $pattern $t true]
-		puts $to_move
-		.tv_links selection set $to_move
+		tk_messageBox -type ok -icon error -message {Please enter a pattern.}
+		return
 	}
-	destroy .sub
+	# output a search.
+	# if f == t, then only a dry_run is done
+	set to_move [auto_group $f $pattern $t true]
+	puts $to_move
+	if {$preview} {
+		.tv_links selection set $to_move
+	} else {
+		auto_group $f $pattern $t false
+		foreach r $to_move {
+			.tv_links move $r g$t end
+		}
+		destroy .sub	
+	}
 }
 
 bind . <Control-n> {

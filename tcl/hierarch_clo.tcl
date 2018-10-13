@@ -346,36 +346,46 @@ proc auto_group {parent pattern new_parent {dry_run false}} {
 		puts {DB is not open!}
 		return -1
 	}
-	if {[string length $parent]==0} {
-		set parent 0
-	}
 	if {$parent == $new_parent && !$dry_run} {
 		puts {From and to cannot match!}
 		return -1
 	}
-	if {$parent != 0 && ![dict exists $DBConn::groups $parent]} {
+	if {$parent!=0 && ![dict exists $DBConn::groups $parent]} {
 		puts {Parent does not exist!}
 		return -1
 	}
-	if {!$dry_run && $new_parent != 0 && ![dict exists $DBConn::groups $new_parent]} {
+	if {!$dry_run && ![dict exists $DBConn::groups $new_parent]} {
 		puts {New parent does not exist!}
 		return -1
 	}
 	puts "parent was $parent"
+	puts "new parent was $new_parent"
 	conn function regexp -deterministic { regexp --}
 	set new_mtime [clock format [clock seconds] -format {%Y-%m-%d %T.000}]
 	if {$dry_run} {
 		puts {dry run}
-		set to_move [conn eval {
+		if {$parent==0} {
+			puts {here}
+			set to_move [conn eval {
+			SELECT rowid FROM data WHERE gid is NULL AND key REGEXP :pattern;
+			}]
+		} else {
+			set to_move [conn eval {
 			SELECT rowid FROM data WHERE gid=:parent AND key REGEXP :pattern;
-		}]
+			}]
+		}
 		return $to_move
 	} else {
-		conn eval {
-			UPDATE data SET gid=:new_parent WHERE gid=:parent AND key REGEXP :pattern
+		if {$parent==0} {
+			conn eval {
+				UPDATE data SET gid=:new_parent,mtime=:new_mtime WHERE gid is NULL AND key REGEXP :pattern
+			}
+		} else {
+			conn eval {
+				UPDATE data SET gid=:new_parent,mtime=:new_mtime WHERE gid=:parent AND key REGEXP :pattern
+			}
 		}
 	}
-	
 }
 
 proc testing_db {} {
