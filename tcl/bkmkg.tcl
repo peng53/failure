@@ -12,7 +12,7 @@ foreach {l c s} [list New init_db 1 Open g_open_db 1 {Import sqlite} firefox_bm 
 
 .men add cascade -label File -menu .men.mfile
 # Create operation bar options.
-foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url {Search} g_search] {
+foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url {Search} g_search {Auto Group} g_auto_grp] {
 	.men add command -label $l -command $c -state disabled
 }
 #.men add command -label Import -command firefox_bm
@@ -157,30 +157,6 @@ proc modify_row {rownumber} {
 		lassign [.tv_links item $rownumber -values] t u
 		.sub.t.e insert 0 $t
 		.sub.u.e insert 0 $u
-		if {[set p [.tv_links parent $rownumber]]!={}} {
-			# Set selected group to that of row's
-			#.win_row_mod.grp.root deselect
-			set rootg_cb 0
-			.sub.grp.cb set [dict get $DBConn::groups [string range $p 1 end]]
-		} else {
-			# If the selected is a root key, check the button instead
-			.sub.grp.root select
-		}
-		g_grp_root_onoff
-	} else {
-		#otherwise, if something was selected in treeview, select the group here.
-		set q_grp [.tv_links selection]
-		if {[llength $q_grp]==1} {
-			if {[string index $q_grp 0]!={g}} {
-				set q_grp [.tv_links parent $q_grp]
-			}
-			if {[string length $q_grp]==0} {
-				.sub.grp.root select
-			} else {
-				.sub.grp.root deselect
-				.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
-			}
-		}
 	}
 }
 proc save_row {rownumber} {
@@ -219,9 +195,48 @@ proc grp_frame {} {
 	pack [labelframe .sub.grp -text Group] -fill x
 	pack [ttk::combobox .sub.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command g_grp_root_onoff] -side left
-	if {[dict size $DBConn::groups]>0} {
+	if {[llength [set grp [.tv_links selection]]]==0} {
+		set rootg_cb true
+	} else {
+		set grp [closest_parent $grp]
+		if {[string length $grp]==0} {
+			set rootg_cb true
+		} else {
+			.sub.grp.cb set [dict get $DBConn::groups [string range $grp 1 end]]
+			set rootg_cb false
+		}
+	}
+	if {$rootg_cb && [dict size $DBConn::groups]>0} {
 		.sub.grp.cb current 0
 	}
+	g_grp_root_onoff
+}
+proc closest_parent {items} {
+	# returns item id.
+	if {[llength $items]==0} {
+		return {}
+	}
+	if {[string equal [string index [set grp [lindex $items 0]] 0] g]} {
+		return $grp
+	} else {
+		return [.tv_links parent $grp]
+	}
+}
+
+proc g_grp_root_onoff {} {
+	global rootg_cb
+	if {$rootg_cb} {
+		set m select
+		set s disabled
+	} else {
+		set m deselect
+		set s normal
+		if {[string length [.sub.grp.cb get]]==0 && [dict size $DBConn::groups]>0} {
+			.sub.grp.cb current 0
+		}
+	}
+	.sub.grp.root $m
+	.sub.grp.cb configure -state $s
 }
 proc switch_grp {} {
 	# Allows user to change the group of multiple
@@ -266,33 +281,9 @@ proc modify_grp {gid} {
 	pack [frame .sub.b]
 	pack [button .sub.b.save -text Save -command "save_grp $gid"] -side left
 	pack [button .sub.b.cancel -text Cancel -command {destroy .sub}] -side left
-
-	if {$gid!=-1} {
-		# existing group
-		set p [.tv_links parent g$gid]
-		if {[string length $p]>0} {
-			.sub.grp.root deselect
-			.sub.grp.cb set [dict get $DBConn::groups [string range $p 1 end]]
-		} else {
-			.sub.grp.root select
-		}
+	if {$gid!=-1} {	# existing group
 		.sub.n.e insert 0 [dict get $DBConn::groups $gid]
-	} else {
-		# otherwise, if something was selected in treeview, select the group here.
-		set q_grp [.tv_links selection]
-		if {[llength $q_grp]==1} {
-			if {[string index $q_grp 0]!={g}} {
-				set q_grp [.tv_links parent $q_grp]
-			}
-			.sub.grp.root deselect
-			if {[string length $q_grp]>0} {
-				.sub.grp.cb set [dict get $DBConn::groups [string range $q_grp 1 end]]
-			} else {
-				.sub.grp.root select
-			}
-		}
-	}
-	g_grp_root_onoff
+	} 
 	bind .sub <Escape> {
 		destroy %W
 	}
@@ -308,17 +299,11 @@ proc save_grp {gid} {
 		set k g[set p [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]]
 	}
 	if {$gid == -1} {
-		## remember selection of links
-		##set selected [.tv_links selection]
-		## ^^ above was supposed to move the selected links to the new
-		## group, but batch group does the same thing, with the user's click'
-		# a new group.
-		set gid [add_group $n $p]
-		.tv_links insert $k end -id g$gid -text $n
+		.tv_links insert $k end -id g[add_group $n $p] -text $n
 	} else {
 		# need to check whether the parent is the child.
 		if {$gid==$p} {
-			# TODO: an error message
+			tk_messageBox -type ok -icon error -message {Group's parent cannot be itself!}
 			return
 		}
 		update_grp $gid $n
@@ -381,23 +366,6 @@ proc try_delete {} {
 		}
 	}
 }
-proc g_grp_root_onoff {} {
-	global rootg_cb
-	if {$rootg_cb} {
-		set m select
-		set s disabled
-	} else {
-		set m deselect
-		set s normal
-		if {[.sub.grp.cb get]=={}} {
-			if {[dict size $DBConn::groups]>0} {
-				.sub.grp.cb current 0
-			}
-		}
-	}
-	.sub.grp.root $m
-	.sub.grp.cb configure -state $s
-}
 proc exit_prog {} {
 	# Closes the database and then the program.
 	if {[string equal [tk_messageBox -icon question -message {Quit program?} -type yesno -title Prompt] no]} { return }
@@ -407,7 +375,7 @@ proc exit_prog {} {
 proc menu_is_open {} {
 	# Toggles menu options based on file state.
 	set nstate [expr {($DBConn::is_open) ? "normal" : "disabled"}]
-	for {set i 2} {$i<8} {incr i} {
+	for {set i 2} {$i<9} {incr i} {
 		.men entryconfigure $i -state $nstate
 	}
 	.men.mfile entryconfigure 5 -state $nstate
@@ -537,9 +505,7 @@ proc firefox_bm {} {
 proc g_auto_grp {} {
 	global rootg_cb
 	sub_win {Auto group..}
-	pack [labelframe .sub.grp -text From:] -fill x
-	pack [ttk::combobox .sub.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
-	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command g_grp_root_onoff] -side left
+	grp_frame
 	pack [labelframe .sub.pattern -text Pattern:] -fill x	
 	pack [entry .sub.pattern.en] -fill x -expand 1 -side left
 	pack [labelframe .sub.to -text To:] -fill x
@@ -548,24 +514,9 @@ proc g_auto_grp {} {
 	pack [button .sub.b.pre -text Preview -command {p_auto_grp true}] -side left
 	pack [button .sub.b.ok -text Ok -command p_auto_grp] -side left
 	pack [button .sub.b.exit -text Exit -command {destroy .sub}] -side left
-	if {$rootg_cb} {
-		set m select
-		set s disabled
-	} else {
-		set m deselect
-		set s normal
-		# if group selection is empty, choose first one if possible
-		if {[string length [.sub.grp.cb get]]==0} {
-			if {[dict size $DBConn::groups]>0} {
-				.sub.grp.cb current 0
-			}
-		}
-	}
 	if {[dict size $DBConn::groups]>0} {
 		.sub.to.cb current 0
 	}
-	.sub.grp.root $m
-	.sub.grp.cb configure -state $s
 	bind .sub <Alt-a> {
 		.sub.pattern.en insert end .*
 	}
@@ -573,26 +524,11 @@ proc g_auto_grp {} {
 		p_auto_grp true
 	}
 }
-
-proc closest_parent {items} {
-	# returns item id.
-	if {[llength $items]==0} {
-		return {}
-	}
-	set grp [lindex $items 0]
-	if {[string equal [string index $grp 0] g]} {
-		return $grp
-	} else {
-		.tv_links parent $grp
-	}
-}
 proc g_search {} {
 	sub_win {Search Data}
 	pack [labelframe .sub.pattern -text Pattern] -fill x
 	pack [entry .sub.pattern.en] -fill x -expand 1
-	global rootg_cb
-	global search_all
-	global s_area
+	global rootg_cb search_all s_area
 	grp_frame
 	pack [checkbutton .sub.grp.sall -text Any -variable search_all] -side left
 	pack [labelframe .sub.area -text Area] -fill x
@@ -602,28 +538,19 @@ proc g_search {} {
 	pack [frame .sub.b]
 	pack [button .sub.b.go -text Search -command p_search] -side left
 	pack [button .sub.b.exit -text Exit -command {destroy .sub}] -side left
-	# prefill group if possible
-	if {[llength [set grp [.tv_links selection]]]==0} {
-		set rootg_cb true
-	} else {
-		set grp [closest_parent $grp]
-		if {[string length $grp]==0} {
-			set rootg_cb true
-		} else {
-			.sub.grp.cb set [dict get $DBConn::groups [string range $grp 1 end]]
-			set rootg_cb false
-		}
+	bind .sub <Alt-a> {
+		.sub.pattern.en insert end .*
 	}
-	g_grp_root_onoff
+	bind .sub.pattern.en <Return> {
+		p_search
+	}
 }
 proc p_search {} {
 	if {[string length [set pattern [.sub.pattern.en get]]]==0} {
 		tk_messageBox -type ok -icon error -message {Please enter a pattern.}
 		return
 	}
-	global rootg_cb
-	global search_all
-	global s_area
+	global rootg_cb search_all s_area
 	if {$search_all} {
 		set parent {}
 	} elseif {$rootg_cb} {
