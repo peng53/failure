@@ -337,6 +337,35 @@ proc import_json {fname} {
 
 }
 
+proc search_data {pattern area {parent NULL}} {
+	# if parent is not in DBConn::groups, then do a full search
+	# area can be 'key'. 'value', or 'both'
+	set stmt [list {SELECT rowid FROM data WHERE }]
+	if {[string equal $parent NULL]} {
+		# the root group.
+		lappend stmt {gid is NULL AND}
+	} elseif {[dict exists $DBConn::groups $parent]} {
+		# a specific group.
+		lappend stmt {gid=:parent AND}
+	} else {
+		# all of data. do nothing.
+	}
+	switch $area {
+		key {
+			lappend stmt {key REGEXP :pattern}
+		}
+		value {
+			lappend stmt {value REGEXP :pattern}
+		}
+		both {
+			lappend stmt {key REGEXP :pattern OR value REGEXP :pattern}
+		}
+	}
+	conn function regexp -deterministic { regexp --}
+	set stmt_c [join $stmt { }]
+	return [conn eval $stmt_c]	
+}
+
 proc auto_group {parent pattern new_parent {dry_run false}} {
 	# Where parent is the gid of the bookmarks.
 	# pattern is a matching regex,

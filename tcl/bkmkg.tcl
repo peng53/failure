@@ -12,13 +12,14 @@ foreach {l c s} [list New init_db 1 Open g_open_db 1 {Import sqlite} firefox_bm 
 
 .men add cascade -label File -menu .men.mfile
 # Create operation bar options.
-foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url {Auto Group} g_auto_grp] {
+foreach {l c} [list {Add Group} {modify_grp -1} {Add Link} {modify_row -1} Modify try_modify {Batch Group} switch_grp Delete copy_url {Search} g_search] {
 	.men add command -label $l -command $c -state disabled
 }
 #.men add command -label Import -command firefox_bm
 #.men add command -label {Auto Group} -command g_auto_grp
 . configure -menu .men
-set rootg_cb 0
+set rootg_cb false
+set s_area key 
 #pack [label .statusbar -text Idle -anchor w] -side bottom -fill x
 pack [ttk::treeview .tv_links -columns {title url mtime} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
 pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
@@ -568,6 +569,72 @@ proc g_auto_grp {} {
 	bind .sub <Alt-a> {
 		.sub.pattern.en insert end .*
 	}
+	bind .sub.pattern.en <Return> {
+		p_auto_grp true
+	}
+}
+
+proc closest_parent {items} {
+	# returns item id.
+	if {[llength $items]==0} {
+		return {}
+	}
+	set grp [lindex $items 0]
+	if {[string equal [string index $grp 0] g]} {
+		return $grp
+	} else {
+		.tv_links parent $grp
+	}
+}
+proc g_search {} {
+	sub_win {Search Data}
+	pack [labelframe .sub.pattern -text Pattern] -fill x
+	pack [entry .sub.pattern.en] -fill x -expand 1
+	global rootg_cb
+	global search_all
+	global s_area
+	grp_frame
+	pack [checkbutton .sub.grp.sall -text Any -variable search_all] -side left
+	pack [labelframe .sub.area -text Area] -fill x
+	pack [radiobutton .sub.area.key -text Key -variable s_area -value key] -side left
+	pack [radiobutton .sub.area.value -text Value -variable s_area -value value] -side left
+	pack [radiobutton .sub.area.both -text Both -variable s_area -value both] -side left
+	pack [frame .sub.b]
+	pack [button .sub.b.go -text Search -command p_search] -side left
+	pack [button .sub.b.exit -text Exit -command {destroy .sub}] -side left
+	# prefill group if possible
+	if {[llength [set grp [.tv_links selection]]]==0} {
+		set rootg_cb true
+	} else {
+		set grp [closest_parent $grp]
+		if {[string length $grp]==0} {
+			set rootg_cb true
+		} else {
+			.sub.grp.cb set [dict get $DBConn::groups [string range $grp 1 end]]
+			set rootg_cb false
+		}
+	}
+	g_grp_root_onoff
+}
+proc p_search {} {
+	if {[string length [set pattern [.sub.pattern.en get]]]==0} {
+		tk_messageBox -type ok -icon error -message {Please enter a pattern.}
+		return
+	}
+	global rootg_cb
+	global search_all
+	global s_area
+	if {$search_all} {
+		set parent {}
+	} elseif {$rootg_cb} {
+		set parent NULL
+	} else {
+		set parent [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
+		if {[string length $parent]==0} return		
+	}
+	puts "Searched \'$pattern\' in group \'$parent\' with mode \'$s_area\'."
+	set found [search_data $pattern $s_area $parent]
+	.tv_links selection set $found	
 }
 proc p_auto_grp {{preview false}} {
 	set pattern [.sub.pattern.en get]
