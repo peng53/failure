@@ -337,84 +337,108 @@ proc import_json {fname} {
 
 }
 
-proc search_data {pattern area {parent NULL}} {
-	# if parent is not in DBConn::groups, then do a full search
-	# area can be 'key'. 'value', or 'both'
-	set stmt [list {SELECT rowid FROM data WHERE }]
+proc search_where {area parent} {
+	# builds the 'where' given an area and parent
+	set W [list]
 	if {[string equal $parent NULL]} {
 		# the root group.
-		lappend stmt {gid is NULL AND}
+		lappend W {gid is NULL AND}
 	} elseif {[dict exists $DBConn::groups $parent]} {
 		# a specific group.
-		lappend stmt {gid=:parent AND}
-	} else {
-		# all of data. do nothing.
+		lappend W {gid=:parent AND}
 	}
 	switch $area {
 		key {
-			lappend stmt {key REGEXP :pattern}
+			lappend W {(key REGEXP :pattern)}
 		}
 		value {
-			lappend stmt {value REGEXP :pattern}
+			lappend W {(value REGEXP :pattern)}
 		}
 		both {
-			lappend stmt {key REGEXP :pattern OR value REGEXP :pattern}
+			lappend W {(REGEXP(key,:pattern) OR REGEXP(value,:pattern))}
 		}
 	}
-	conn function regexp -deterministic { regexp --}
-	set stmt_c [join $stmt { }]
-	return [conn eval $stmt_c]	
+	return [join $W { }]
 }
-
-proc auto_group {parent pattern new_parent {dry_run false}} {
+proc search_data {pattern area {parent NULL}} {
+	# if parent is not in DBConn::groups, then do a full search
+	# area can be 'key'. 'value', or 'both'
+	if {!$DBConn::is_open} {
+		puts {DB is not open!}
+		return {}
+	}
+	puts "area is $area"
+	puts "gid is $parent"
+	puts "pattern is $pattern"
+	#set stmt [list {SELECT rowid FROM data WHERE}]
+	#if {[string equal $gid NULL]} {
+		## the root group.
+		#lappend stmt {gid is NULL AND}
+	#} elseif {[dict exists $DBConn::groups $gid]} {
+		## a specific group.
+		#lappend stmt {gid=:gid AND}
+	#}
+	#switch $area {
+		#key { lappend stmt {key REGEXP :pattern} }
+		#value {	lappend stmt {value REGEXP :pattern} }
+		#both { lappend stmt {(key REGEXP :pattern OR value REGEXP :pattern)} }
+	#}
+	conn function regexp -deterministic { regexp --}
+	set stmt_c [join [list {SELECT rowid,:pattern,:parent FROM data WHERE} [search_where $area $parent]] { }]
+	#set stmt_c [join $stmt { }]
+	puts $stmt_c
+	puts [conn eval {select :pattern,:area,:parent;}]
+	set rowid [conn eval $stmt_c]
+	puts $rowid
+	return $rowid
+}
+proc auto_group {gid ngid pattern} {
 	# Where parent is the gid of the bookmarks.
 	# pattern is a matching regex,
 	# and new_parent to where to move matches to.
 	# if dry_run is true, no movement will occur.
 	if {!$DBConn::is_open} {
 		puts {DB is not open!}
-		return -1
+		return {}
 	}
-	if {$parent == $new_parent && !$dry_run} {
-		puts {From and to cannot match!}
-		return -1
-	}
-	if {$parent!=0 && ![dict exists $DBConn::groups $parent]} {
+	if {$gid==$ngid} { return }
+	if {![string equal $gid NULL] && ![dict exists $DBConn::groups $gid]} {
 		puts {Parent does not exist!}
-		return -1
+		return {}
 	}
-	if {!$dry_run && ![dict exists $DBConn::groups $new_parent]} {
-		puts {New parent does not exist!}
-		return -1
+	if {![string equal $ngid NULL] && ![dict exists $DBConn::groups $ngid]} {
+		puts {New Parent does not exist!}
+		return {}
 	}
-	puts "parent was $parent"
-	puts "new parent was $new_parent"
-	conn function regexp -deterministic { regexp --}
+	set stmt "UPDATE data SET gid=:ngid, mtime=:new_mtime WHERE [search_where key $gid]"
 	set new_mtime [clock format [clock seconds] -format {%Y-%m-%d %T.000}]
-	if {$dry_run} {
-		puts {dry run}
-		if {$parent==0} {
-			puts {here}
-			set to_move [conn eval {
-			SELECT rowid FROM data WHERE gid is NULL AND key REGEXP :pattern;
-			}]
-		} else {
-			set to_move [conn eval {
-			SELECT rowid FROM data WHERE gid=:parent AND key REGEXP :pattern;
-			}]
-		}
-		return $to_move
-	} else {
-		if {$parent==0} {
-			conn eval {
-				UPDATE data SET gid=:new_parent,mtime=:new_mtime WHERE gid is NULL AND key REGEXP :pattern
-			}
-		} else {
-			conn eval {
-				UPDATE data SET gid=:new_parent,mtime=:new_mtime WHERE gid=:parent AND key REGEXP :pattern
-			}
-		}
-	}
+	conn function regexp -deterministic { regexp --}
+	puts $stmt
+	set rowid [conn eval $stmt]
+	return $rowid
+
+#	if {$dry_run} {
+#		if {$parent==0} {
+#			set to_move [conn eval {
+#			SELECT rowid FROM data WHERE gid is NULL AND key REGEXP :pattern;
+#			}]
+#		} else {
+#			set to_move [conn eval {
+#			SELECT rowid FROM data WHERE gid=:parent AND key REGEXP :pattern;
+#			}]
+#		}
+#		return $to_move
+#	} else {
+#		if {$parent==0} {
+			#conn eval {
+				#UPDATE data SET gid=:new_parent,mtime=:new_mtime WHERE gid is NULL AND key REGEXP :pattern
+			#}
+		#} else {
+			#conn eval {
+				#UPDATE data SET gid=:new_parent,mtime=:new_mtime WHERE gid=:parent AND key REGEXP :pattern
+			#}
+		#}
+	#}
 }
 
 proc testing_db {} {

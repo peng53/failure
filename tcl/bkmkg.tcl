@@ -150,7 +150,7 @@ proc modify_row {rownumber} {
 	set srn [expr {($rownumber>0) ? $rownumber : {NEW}}]
 	pack [label .sub.l -text "LINK #: $srn"]
 	pack [frame .sub.buttons] -side bottom
-	pack [button .sub.buttons.save -text Save -command "save_row $rownumber"] -side left
+	pack [button .sub.buttons.save -text Save -command "modify_row_proc $rownumber"] -side left
 	pack [button .sub.buttons.cancel -text Cancel -command {destroy .sub}] -side left
 	if {$rownumber != -1} {
 		# Prefill fields if possible.
@@ -159,7 +159,7 @@ proc modify_row {rownumber} {
 		.sub.u.e insert 0 $u
 	}
 }
-proc save_row {rownumber} {
+proc modify_row_proc {rownumber} {
 	# Takes properties from 'win_row_mod' window and
 	# saves them to both database & treeview with
 	# current time. A rownumber of -1 implies a new
@@ -194,7 +194,7 @@ proc grp_frame {} {
 	global rootg_cb
 	pack [labelframe .sub.grp -text Group] -fill x
 	pack [ttk::combobox .sub.grp.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
-	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command g_grp_root_onoff] -side left
+	pack [checkbutton .sub.grp.root -text Root -variable rootg_cb -command grp_frame_root] -side left
 	if {[llength [set grp [.tv_links selection]]]==0} {
 		set rootg_cb true
 	} else {
@@ -209,21 +209,20 @@ proc grp_frame {} {
 	if {$rootg_cb && [dict size $DBConn::groups]>0} {
 		.sub.grp.cb current 0
 	}
-	g_grp_root_onoff
+	grp_frame_root
 }
 proc closest_parent {items} {
 	# returns item id.
 	if {[llength $items]==0} {
 		return {}
-	}
-	if {[string equal [string index [set grp [lindex $items 0]] 0] g]} {
+	} elseif {[string equal [string index [set grp [lindex $items 0]] 0] g]} {
 		return $grp
 	} else {
 		return [.tv_links parent $grp]
 	}
 }
 
-proc g_grp_root_onoff {} {
+proc grp_frame_root {} {
 	global rootg_cb
 	if {$rootg_cb} {
 		set m select
@@ -247,10 +246,10 @@ proc switch_grp {} {
 	sub_win {Switch to group..}
 	grp_frame
 	pack [frame .sub.b]
-	pack [button .sub.b.apply -text Apply -command apply_g_chg] -side left
+	pack [button .sub.b.apply -text Apply -command switch_grp_proc] -side left
 	pack [button .sub.b.cancel -text Cancel -command {destroy .sub}] -side left
 }
-proc apply_g_chg {} {
+proc switch_grp_proc {} {
 	# See switch_grp. The actually changes the 'gid' by
 	# calling procs in hierarch_clo.
 	global rootg_cb
@@ -279,7 +278,7 @@ proc modify_grp {gid} {
 	pack [labelframe .sub.n -text Name]
 	pack [entry .sub.n.e -width 50]
 	pack [frame .sub.b]
-	pack [button .sub.b.save -text Save -command "save_grp $gid"] -side left
+	pack [button .sub.b.save -text Save -command "modify_grp_proc $gid"] -side left
 	pack [button .sub.b.cancel -text Cancel -command {destroy .sub}] -side left
 	if {$gid!=-1} {	# existing group
 		.sub.n.e insert 0 [dict get $DBConn::groups $gid]
@@ -288,7 +287,7 @@ proc modify_grp {gid} {
 		destroy %W
 	}
 }
-proc save_grp {gid} {
+proc modify_grp_proc {gid} {
 	# Save changes to group (gid is just an int)
 	set n [.sub.n.e get]
 	global rootg_cb
@@ -503,7 +502,8 @@ proc firefox_bm {} {
 	}
 }
 proc g_auto_grp {} {
-	global rootg_cb
+	global rootg_cb search_all
+	set search_all false
 	sub_win {Auto group..}
 	grp_frame
 	pack [labelframe .sub.pattern -text Pattern:] -fill x	
@@ -511,8 +511,8 @@ proc g_auto_grp {} {
 	pack [labelframe .sub.to -text To:] -fill x
 	pack [ttk::combobox .sub.to.cb -values [dict values $DBConn::groups] -state readonly] -fill x -expand 1 -side left
 	pack [frame .sub.b]
-	pack [button .sub.b.pre -text Preview -command {p_auto_grp true}] -side left
-	pack [button .sub.b.ok -text Ok -command p_auto_grp] -side left
+	pack [button .sub.b.pre -text Preview -command {g_search_proc}] -side left
+	pack [button .sub.b.ok -text Ok -command {g_auto_grp_proc}] -side left
 	pack [button .sub.b.exit -text Exit -command {destroy .sub}] -side left
 	if {[dict size $DBConn::groups]>0} {
 		.sub.to.cb current 0
@@ -521,7 +521,25 @@ proc g_auto_grp {} {
 		.sub.pattern.en insert end .*
 	}
 	bind .sub.pattern.en <Return> {
-		p_auto_grp true
+		g_auto_grp_proc true
+	}
+}
+proc g_auto_grp_proc {} {
+	if {[string length [set pattern [.sub.pattern.en get]]]==0} {
+		tk_messageBox -type ok -icon error -message {Please enter a pattern.}
+		return
+	}
+	global rootg_cb search_all
+	set f [expr {($rootg_cb) ? {NULL} : [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]}]
+	set t [lindex [dict keys $DBConn::groups] [.sub.to.cb current]]
+	# output a search.
+	# if f == t, then only a dry_run is done
+	
+	set to_move [search_data $pattern key $f]
+	puts $to_move
+	auto_group $f $t $pattern
+	foreach r $to_move {
+		.tv_links move $r g$t end
 	}
 }
 proc g_search {} {
@@ -536,16 +554,16 @@ proc g_search {} {
 	pack [radiobutton .sub.area.value -text Value -variable s_area -value value] -side left
 	pack [radiobutton .sub.area.both -text Both -variable s_area -value both] -side left
 	pack [frame .sub.b]
-	pack [button .sub.b.go -text Search -command p_search] -side left
+	pack [button .sub.b.go -text Search -command g_search_proc] -side left
 	pack [button .sub.b.exit -text Exit -command {destroy .sub}] -side left
 	bind .sub <Alt-a> {
 		.sub.pattern.en insert end .*
 	}
 	bind .sub.pattern.en <Return> {
-		p_search
+		g_search_proc
 	}
 }
-proc p_search {} {
+proc g_search_proc {} {
 	if {[string length [set pattern [.sub.pattern.en get]]]==0} {
 		tk_messageBox -type ok -icon error -message {Please enter a pattern.}
 		return
@@ -560,38 +578,7 @@ proc p_search {} {
 		if {[string length $parent]==0} return		
 	}
 	puts "Searched \'$pattern\' in group \'$parent\' with mode \'$s_area\'."
-	set found [search_data $pattern $s_area $parent]
-	.tv_links selection set $found	
-}
-proc p_auto_grp {{preview false}} {
-	set pattern [.sub.pattern.en get]
-	global rootg_cb
-	set t [lindex [dict keys $DBConn::groups] [.sub.to.cb current]]
-	if {$rootg_cb} {
-		set f 0
-	} else {
-		set f [lindex [dict keys $DBConn::groups] [.sub.grp.cb current]]
-	}
-	puts $f
-	puts $t
-	if {[string length $pattern]==0} {
-		# complain and stop
-		tk_messageBox -type ok -icon error -message {Please enter a pattern.}
-		return
-	}
-	# output a search.
-	# if f == t, then only a dry_run is done
-	set to_move [auto_group $f $pattern $t true]
-	puts $to_move
-	if {$preview} {
-		.tv_links selection set $to_move
-	} else {
-		auto_group $f $pattern $t false
-		foreach r $to_move {
-			.tv_links move $r g$t end
-		}
-		destroy .sub	
-	}
+	.tv_links selection set [search_data $pattern $s_area $parent]
 }
 
 bind . <Control-n> {
