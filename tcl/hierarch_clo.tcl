@@ -330,35 +330,51 @@ proc import_places {fname mtime} {
 	return $ngid
 }
 proc import_json {fname} {
-	#set fp [open $myfile r]
-	#set lines [split [read $fp] ","]
-	#foreach l $lines {
-	#}
-
+	set fp [open $fname r]
+	if {[string length fp]<0} {
+		puts {File read was unsuccessful.}
+		return -1
+	}
+	set lines [split [read $fp] {{,}}]
+	foreach l $lines {
+		if {[regexp {^"title"} $l]} {
+			set t [split $l {:}]
+			puts [lrange $t 1 end]
+		} elseif {[regexp {^"uri"} $l]} {
+			set u [split $l {:}]
+			puts [join [lrange $u 1 end] :]
+		} elseif {[regexp {^"children"} $l]} {
+			set c [split $l {:}]
+			puts $c
+		} elseif {[regexp {^"type"} $l]} {
+			set t [split $l {:}]
+			puts $t
+		}
+	}
 }
 
-proc search_where {area parent} {
+proc search_where {area parent prefix} {
 	# builds the 'where' given an area and parent
-	set W [list]
+	set s $prefix
 	if {[string equal $parent NULL]} {
 		# the root group.
-		lappend W {gid is NULL AND}
+		append s {gid IS NULL AND }
 	} elseif {[dict exists $DBConn::groups $parent]} {
 		# a specific group.
-		lappend W {gid=:parent AND}
+		append s {gid=:parent AND }
 	}
 	switch $area {
 		key {
-			lappend W {(key REGEXP :pattern)}
+			append s {key REGEXP :pattern}
 		}
 		value {
-			lappend W {(value REGEXP :pattern)}
+			append s {value REGEXP :pattern}
 		}
 		both {
-			lappend W {(REGEXP(key,:pattern) OR REGEXP(value,:pattern))}
+			append s {(key REGEXP :pattern OR value REGEXP:pattern)}
 		}
 	}
-	return [join $W { }]
+	return $s
 }
 proc search_data {pattern area {parent NULL}} {
 	# if parent is not in DBConn::groups, then do a full search
@@ -384,12 +400,30 @@ proc search_data {pattern area {parent NULL}} {
 		#both { lappend stmt {(key REGEXP :pattern OR value REGEXP :pattern)} }
 	#}
 	conn function regexp -deterministic { regexp --}
-	set stmt_c [join [list {SELECT rowid,:pattern,:parent FROM data WHERE} [search_where $area $parent]] { }]
 	#set stmt_c [join $stmt { }]
+	#set stmt_c [search_where $area $parent {SELECT rowid FROM data WHERE }]
+	set stmt_c {SELECT rowid FROM data WHERE }
+	if {[string equal $parent NULL]} {
+		# the root group.
+		append stmt_c {gid IS NULL AND }
+	} elseif {[dict exists $DBConn::groups $parent]} {
+		# a specific group.
+		append stmt_c {gid=:parent AND }
+	}
+	switch $area {
+		key {
+			append stmt_c {key REGEXP :pattern}
+		}
+		value {
+			append stmt_c {value REGEXP ':pattern'}
+		}
+		both {
+			append stmt_c {(key REGEXP ':pattern' OR value REGEXP ':pattern')}
+		}
+	}
+	
 	puts $stmt_c
-	puts [conn eval {select :pattern,:area,:parent;}]
 	set rowid [conn eval $stmt_c]
-	puts $rowid
 	return $rowid
 }
 proc auto_group {gid ngid pattern} {
