@@ -73,6 +73,29 @@ class ChunkReader {
 			}
 			return get_capture(s);
 		}
+		std::string capture_untils(bool square,bool double_q,bool q,bool curly,bool parenth){
+			std::string s;
+			start_capture();
+			while (!dead()){
+				if (
+					(square && chars[cur_index]==']') 
+					|| (double_q && chars[cur_index]=='"') 
+					|| (q && chars[cur_index]=='\'') 
+					|| (curly && chars[cur_index]=='}') 
+					|| (parenth && chars[cur_index]==')')
+				){
+					break;
+				}
+				if (cur_index+1==chunk_size){
+					get_capture(s);
+					start_capture();
+					feed();
+				} else {
+					++cur_index;
+				}
+			}
+			return get_capture(s);			
+		}
 		char operator*(){
 			if (cur_index==chunk_size){
 				feed();
@@ -98,6 +121,11 @@ int main(){
 	chk.until('"'); // skip to next " .. or EOF
 	*chk; // advance 1
 	s = chk.capture_until('"'); // get substr from this point until before next "
+	*chk;
+	std::cout << s << '\n';
+	chk.until('"');
+	*chk;
+	s = chk.capture_untils(0,1,0,0,0);
 	std::cout << s << '\n';
 	f.close();
 
