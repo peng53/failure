@@ -5,6 +5,17 @@
 const size_t CHUNK = 1024;
 enum NextString {TITLE, URI, CHILDREN, MORE, JUNK, DUNNO};
 
+enum class brack_bit : unsigned {
+	DOUBLEQ = 1,
+	CURLYB = 2,
+	SQUAREB = 4,
+	ALL = 7,
+};
+inline constexpr bool
+operator&(brack_bit x,brack_bit y){
+	return static_cast<bool>(static_cast<unsigned>(x) & static_cast<unsigned>(y));
+}
+
 class ChunkReader {
 	private:
 		std::ifstream& ifs;
@@ -52,6 +63,25 @@ class ChunkReader {
 					feed();
 				}
 			}
+		}
+		char untils(brack_bit bracks){
+			// the bits of bracks represent if the char is included.
+			// order is [{", with " being the first bit.
+			while (!dead()){
+				if (
+				((bracks & brack_bit::DOUBLEQ) && (chars[cur_index]=='"'))
+				|| ((bracks & brack_bit::CURLYB) && (chars[cur_index]=='{'))
+				|| ((bracks & brack_bit::SQUAREB) && (chars[cur_index]=='['))
+				){
+					break;
+				}
+				if (cur_index+1==chunk_size){
+					feed();
+				} else {
+					++cur_index;
+				}
+			}
+			return chars[cur_index];		
 		}
 		std::string capture_until(char c){
 			// starts at cur_index on current feed.
@@ -110,22 +140,19 @@ int main(){
 	std::ifstream f;
 	f.open("test.json",std::ifstream::in);	
 	ChunkReader chk = ChunkReader(f,1024);
-	chk.until('"'); // current sym is " or EOF
+	char c;
+	c = chk.untils(brack_bit::CURLYB);
+	if (c=='\0') return 0;
+	c = chk.untils(brack_bit::DOUBLEQ); // current sym is " or EOF
+	if (c=='\0') return 0;
 	*chk; // advance 1 char
-	chk.start_capture(); // set anchor point.
-	chk.until('"'); // skip to next "
-	std::string s = chk.get_capture(); // get substr from anchor point to current index
+	std::string s;
+	s = chk.capture_until('"'); // get first property
 	std::cout << s << '\n';
-	chk.until('"'); // skip to next " .. or EOF
-	*chk; // advance 1
-	chk.until('"'); // skip to next " .. or EOF
-	*chk; // advance 1
-	s = chk.capture_until('"'); // get substr from this point until before next "
 	*chk;
-	std::cout << s << '\n';
-	chk.until('"');
-	*chk;
-	s = chk.capture_untils(0,1,0,0,0);
+	c = chk.untils(brack_bit::DOUBLEQ); // current sym is " or EOF	
+	*chk; // advance 1
+	s = chk.capture_until('"'); // get value of first property, assuming its a string
 	std::cout << s << '\n';
 	f.close();
 
