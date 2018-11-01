@@ -9,11 +9,28 @@ enum class brack_bit : unsigned {
 	DOUBLEQ = 1,
 	CURLYB = 2,
 	SQUAREB = 4,
-	ALL = 7,
+	OPEN = 7,
+	CURLYR = 8,
+	SQUARER = 16,
+	CLOSE = 25,
+	BOTH = 31	
 };
 inline constexpr bool
 operator&(brack_bit x,brack_bit y){
 	return static_cast<bool>(static_cast<unsigned>(x) & static_cast<unsigned>(y));
+}
+inline constexpr brack_bit
+operator|(brack_bit x,brack_bit y){
+	return static_cast<brack_bit>(static_cast<unsigned>(x) & static_cast<unsigned>(y));
+}
+
+char right_of(char c){
+	switch (c){
+		case '{': return '}';
+		case '[': return ']';
+		case '"': return '"';
+	}
+	return c;		
 }
 
 class ChunkReader {
@@ -72,6 +89,8 @@ class ChunkReader {
 				((bracks & brack_bit::DOUBLEQ) && (chars[cur_index]=='"'))
 				|| ((bracks & brack_bit::CURLYB) && (chars[cur_index]=='{'))
 				|| ((bracks & brack_bit::SQUAREB) && (chars[cur_index]=='['))
+				|| ((bracks & brack_bit::CURLYR) && (chars[cur_index]=='}'))
+				|| ((bracks & brack_bit::SQUARER) && (chars[cur_index]==']'))
 				){
 					break;
 				}
@@ -103,16 +122,14 @@ class ChunkReader {
 			}
 			return get_capture(s);
 		}
-		std::string capture_untils(bool square,bool double_q,bool q,bool curly,bool parenth){
+		std::string capture_untils(brack_bit bracks){
 			std::string s;
 			start_capture();
 			while (!dead()){
 				if (
-					(square && chars[cur_index]==']') 
-					|| (double_q && chars[cur_index]=='"') 
-					|| (q && chars[cur_index]=='\'') 
-					|| (curly && chars[cur_index]=='}') 
-					|| (parenth && chars[cur_index]==')')
+				((bracks & brack_bit::DOUBLEQ) && (chars[cur_index]=='"'))
+				|| ((bracks & brack_bit::CURLYB) && (chars[cur_index]=='}'))
+				|| ((bracks & brack_bit::SQUAREB) && (chars[cur_index]==']'))
 				){
 					break;
 				}
@@ -134,27 +151,58 @@ class ChunkReader {
 			++cur_index;
 			return c;
 		}
+		std::string get_quotedstring(){
+			// returns all info until a double quote is encountered or EOF
+			// might delete this one.
+			return capture_untils(brack_bit::DOUBLEQ);
+		}
 };
 
 int main(){
 	std::ifstream f;
-	f.open("test.json",std::ifstream::in);	
+	f.open("test_json.json",std::ifstream::in);	
 	ChunkReader chk = ChunkReader(f,1024);
 	char c;
 	c = chk.untils(brack_bit::CURLYB);
 	if (c=='\0') return 0;
-	c = chk.untils(brack_bit::DOUBLEQ); // current sym is " or EOF
+	*chk;
+	c = chk.untils( brack_bit::OPEN);
+	*chk; // move along
+	// skip until the { is closed with } or another brack is opened.
+	std::string s;
+	switch (c){
+		case '"':
+			// found a " so lets get the property name.
+			
+			s = chk.capture_untils(brack_bit::DOUBLEQ);
+			break;
+		case '}':
+			// found a } so this is the end
+			return 0;
+			break;
+		// its possible to find other opens.. but that would be malformed
+	}
 	if (c=='\0') return 0;
 	*chk; // advance 1 char
-	std::string s;
-	s = chk.capture_until('"'); // get first property
-	std::cout << s << '\n';
+	std::cout << "property name was " << s;
+	// we don't know the property's type so, let's parse more.
+	c = chk.untils(brack_bit::OPEN);
+	if (c=='\0') return 0;
 	*chk;
-	c = chk.untils(brack_bit::DOUBLEQ); // current sym is " or EOF	
-	*chk; // advance 1
-	s = chk.capture_until('"'); // get value of first property, assuming its a string
-	std::cout << s << '\n';
+	switch (c){
+		case '"':
+			// it was a string. let's print it.
+			s = chk.capture_untils(brack_bit::DOUBLEQ);
+			// since we know its a string, we use DOUBLEQ instead of CLOSE.
+			std::cout << " whose value was " << s << '\n';
+			break;
+		case '[':
+			std::cout << " whose value was an array.\n";
+			break;
+		case '{':
+			std::cout << " whose value was an object.\n";
+			break;
+	}
 	f.close();
-
 	return 0;
 }
