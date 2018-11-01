@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <stack>
 
 const size_t CHUNK = 1024;
 enum NextString {TITLE, URI, CHILDREN, MORE, JUNK, DUNNO};
@@ -13,7 +14,8 @@ enum class brack_bit : unsigned {
 	CURLYR = 8,
 	SQUARER = 16,
 	CLOSE = 25,
-	BOTH = 31	
+	BOTH = 31,
+	DIGIT = 32
 };
 inline constexpr bool
 operator&(brack_bit x,brack_bit y){
@@ -21,7 +23,7 @@ operator&(brack_bit x,brack_bit y){
 }
 inline constexpr brack_bit
 operator|(brack_bit x,brack_bit y){
-	return static_cast<brack_bit>(static_cast<unsigned>(x) & static_cast<unsigned>(y));
+	return static_cast<brack_bit>(static_cast<unsigned>(x) | static_cast<unsigned>(y));
 }
 
 char right_of(char c){
@@ -31,6 +33,10 @@ char right_of(char c){
 		case '"': return '"';
 	}
 	return c;		
+}
+
+bool isdig(char c){
+	return ((c=='.') || (c>='0' && c<='9'));
 }
 
 class ChunkReader {
@@ -91,6 +97,7 @@ class ChunkReader {
 				|| ((bracks & brack_bit::SQUAREB) && (chars[cur_index]=='['))
 				|| ((bracks & brack_bit::CURLYR) && (chars[cur_index]=='}'))
 				|| ((bracks & brack_bit::SQUARER) && (chars[cur_index]==']'))
+				|| ((bracks & brack_bit::DIGIT) && isdig(chars[cur_index]))
 				){
 					break;
 				}
@@ -156,52 +163,117 @@ class ChunkReader {
 			// might delete this one.
 			return capture_untils(brack_bit::DOUBLEQ);
 		}
+		std::string get_number(){
+			// current position is a digit.
+			std::string s;
+			start_capture();
+			while (!dead()){
+				if (!isdig(chars[cur_index])){
+					break;
+				}
+				if (cur_index+1==chunk_size){
+					get_capture(s);
+					start_capture();
+					feed();
+				} else {
+					++cur_index;
+				}
+			}
+			get_capture(s);
+			if (!isdig(s.back())){
+				s.pop_back();
+			}
+			return s;
+		}
 };
 
+enum class JType {group, place};
+
+struct Context {
+	std::string title;
+	std::string uri;
+	JType type;
+	int id;	
+};
+
+
 int main(){
+	std::stack<Context> items;
+	Context current;
 	std::ifstream f;
-	f.open("test_json.json",std::ifstream::in);	
+	f.open("test.json",std::ifstream::in);	
 	ChunkReader chk = ChunkReader(f,1024);
 	char c;
 	c = chk.untils(brack_bit::CURLYB);
 	if (c=='\0') return 0;
 	*chk;
-	c = chk.untils( brack_bit::OPEN);
-	*chk; // move along
-	// skip until the { is closed with } or another brack is opened.
+	items.push(current);
 	std::string s;
-	switch (c){
-		case '"':
-			// found a " so lets get the property name.
-			
-			s = chk.capture_untils(brack_bit::DOUBLEQ);
-			break;
-		case '}':
-			// found a } so this is the end
-			return 0;
-			break;
-		// its possible to find other opens.. but that would be malformed
-	}
-	if (c=='\0') return 0;
-	*chk; // advance 1 char
-	std::cout << "property name was " << s;
-	// we don't know the property's type so, let's parse more.
-	c = chk.untils(brack_bit::OPEN);
-	if (c=='\0') return 0;
-	*chk;
-	switch (c){
-		case '"':
-			// it was a string. let's print it.
-			s = chk.capture_untils(brack_bit::DOUBLEQ);
-			// since we know its a string, we use DOUBLEQ instead of CLOSE.
-			std::cout << " whose value was " << s << '\n';
-			break;
-		case '[':
-			std::cout << " whose value was an array.\n";
-			break;
-		case '{':
-			std::cout << " whose value was an object.\n";
-			break;
+	while (!items.empty()){
+		// get a key. or end current context.
+		c = chk.untils(brack_bit::DOUBLEQ | brack_bit::CURLYR);
+		switch (c){
+			case '"':
+				// get start of key.
+				*chk;
+				s = chk.capture_untils(brack_bit::DOUBLEQ);
+				std::cout << s;
+				*chk;
+				c = chk.untils(brack_bit::OPEN | brack_bit::CURLYR | brack_bit::DIGIT);
+				switch (c){
+					case '}':
+						// no value?
+						return 0;
+						break;
+					case '{':
+						// an object..
+						// ignore for now.
+						std::cout << '\n';
+						chk.untils(brack_bit::CURLYB);
+						*chk;
+						break;
+					case '[':
+						// an array..
+						// ignore for now.
+						std::cout << '\n';
+						chk.untils(brack_bit::SQUARER);
+						*chk;
+						break;
+					case '"':
+						// a string
+						*chk;
+						s = chk.capture_untils(brack_bit::DOUBLEQ);
+						*chk;
+						std::cout << '=' << s << '\n';
+						break;
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9': // must be a digit.
+						// don't advance otherwise the first digit is discarded.
+						s = chk.get_number();
+						// don't advance otherwise the next symbol is discarded.
+						std::cout << '=' << s << '\n';
+						break;
+				}
+				break;
+			case '}':
+				// found end of object.
+				std::cout << items.top().title;
+				std::cout << items.top().id;
+				items.pop();
+				break;
+			default:
+				// key not found.
+				return 0;
+				break;
+		}
 	}
 	f.close();
 	return 0;
