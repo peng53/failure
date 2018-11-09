@@ -82,17 +82,32 @@ struct Jso {
 	}
 	void add_value(const string& v){
 		if (t==JType::Arr){
-			x.a->push_back(new Jso(v));
+			x.a->emplace_back(new Jso(v));
 		}
 	}
 	void add_value(const float v){
 		if (t==JType::Arr){
-			x.a->push_back(new Jso(v));
+			x.a->emplace_back(new Jso(v));
 		}
 	}
 	void add_value(JType vt){
 		if (t==JType::Arr){
-			x.a->push_back(new Jso(vt));
+			x.a->emplace_back(new Jso(vt));
+		}
+	}
+	void add_value(Jso* v){
+		if (t==JType::Arr){
+			x.a->emplace_back(v);
+		}
+	}
+	void set_value(float v){
+		if (t==JType::Num){
+			x.f = v;
+		}
+	}
+	void set_value(const string& v){
+		if (t==JType::Str){
+			*(x.s) = v;
 		}
 	}
 	friend std::ostream& operator<<(std::ostream& out,const Jso J){
@@ -147,6 +162,54 @@ struct Jso {
 				break;
 		}
 		return out;
+	}
+	void print_depth(ostream& O, stack<pair<string,Jso*>>& stk){
+		// should only be called on ARR or OBJ.
+		switch (t){
+			case JType::Num:
+			case JType::Str:
+				break;
+			case JType::Arr:
+				O << "[\n";
+				for (auto A : *(x.a)){
+					switch (A->t){
+						case JType::Num:
+							O << A->x.f << '\n';
+							break;
+						case JType::Str:
+							O << *(A->x.s) << '\n';
+							break;
+						case JType::Arr:
+							stk.emplace("",A);
+							break;
+						case JType::Obj:
+							stk.emplace("",A);
+							break;
+					}
+				}
+				O << "]\n";
+				break;
+			case JType::Obj:
+				O << "{\n";
+				for (auto A : *(x.m)){
+					switch (A.second->t){
+						case JType::Num:
+							O << A.first << " : " << A.second->x.f << '\n';
+							break;
+						case JType::Str:
+							O << A.first << " : " << *(A.second->x.s) << '\n';
+							break;
+						case JType::Arr:
+							stk.emplace(A.first,A.second);
+							break;
+						case JType::Obj:
+							stk.emplace(A.first,A.second);
+							break;
+					}
+				}
+				O << "}\n";
+				break;
+		}
 	}
 };
 
@@ -235,6 +298,19 @@ class JSON {
 	void key_value(const string& k,JType vt){
 		o->key_value(k,vt);
 	}
+	void all_out(ostream& O){
+		stack<pair<string,Jso*>> stk;
+		stk.emplace("",o);
+		string k;
+		Jso* v;
+		while (!stk.empty()){
+			k = stk.top().first;
+			v = stk.top().second;
+			stk.pop();
+			O << k;
+			v->print_depth(O,stk);
+		}
+	}
 };
 
 int main(){
@@ -252,5 +328,6 @@ int main(){
 	cout << my_array << '\n' << *my_array;
 	// I don't need to manually delete my_array
 	// because lv has it's address
+	lv.all_out(cout);
 	return 0;
 }
