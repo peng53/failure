@@ -9,6 +9,7 @@ using std::vector;
 using std::map;
 using std::queue;
 using std::stack;
+using std::pair;
 
 enum class JType { Obj, Arr, Str, Num};
 
@@ -24,7 +25,10 @@ struct Jso {
 	explicit Jso(float v): t(JType::Num){
 		x.f = v;
 	}
-	explicit Jso(string v): t(JType::Str){
+	/*explicit Jso(string v): t(JType::Str){
+		x.s = new string(v);
+	}*/
+	explicit Jso(const string& v): t(JType::Str){
 		x.s = new string(v);
 	}
 	explicit Jso(JType j): t(j){
@@ -41,6 +45,13 @@ struct Jso {
 			case JType::Str:
 				x.s = new string;
 				break;
+		}
+	}
+	void key_value(const string& v,Jso* o){
+		if (t==JType::Obj){
+			if (x.m->count(v)==0){
+				(*(x.m))[v] = o;
+			}
 		}
 	}
 };
@@ -77,28 +88,30 @@ class JSON {
 			}
 		}
 	}
-	JSON(const JSON& lhs): JSON(){
-		Jso* s = lhs.o;
+	JSON(const JSON& rhs): JSON(){
+		Jso* r = rhs.o;
+		Jso* l = o;
 		Jso* t;
-		stack<Jso*> stk;
-		stk.push(s);
+		stack<pair<Jso*,Jso*>> stk;
+		stk.emplace(r,l);
 		while (!stk.empty()){
-			s = stk.top();
+			r = stk.top().first;
+			l = stk.top().second;
 			stk.pop();
-			for (auto v : *(s->x.m)){
+			for (auto v : *(r->x.m)){
 				switch (v.second->t){
 					case JType::Str:
-						(*(s->x.m))[v.first] = new Jso(*(v.second->x.s));
+						(*(l->x.m))[v.first] = new Jso(*(v.second->x.s));
 						// Assign to map a new string:string
 						break;
 					case JType::Num:
-						(*(s->x.m))[v.first] = new Jso(v.second->x.f);
+						(*(l->x.m))[v.first] = new Jso(v.second->x.f);
 						// x.f is just a float, so no dereferencing needed.
 						break;
 					case JType::Obj:
 						t = new Jso(JType::Obj);
-						(*(s->x.m))[v.first] = t;
-						stk.push(t);
+						(*(l->x.m))[v.first] = t;
+						stk.emplace(v.second,t);
 						break;
 					case JType::Arr:
 						break;
@@ -106,4 +119,15 @@ class JSON {
 			}
 		}
 	}
+	void key_value(const string& v,Jso* n){
+		o->key_value(v,n);
+	}
 };
+
+int main(){
+	JSON lv;
+	Jso* p = new Jso("typer");
+	lv.key_value("first",p);
+	delete p;
+	return 0;
+}
