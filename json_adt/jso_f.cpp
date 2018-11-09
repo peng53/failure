@@ -80,6 +80,21 @@ struct Jso {
 			}
 		}
 	}
+	void add_value(const string& v){
+		if (t==JType::Arr){
+			x.a->push_back(new Jso(v));
+		}
+	}
+	void add_value(const float v){
+		if (t==JType::Arr){
+			x.a->push_back(new Jso(v));
+		}
+	}
+	void add_value(JType vt){
+		if (t==JType::Arr){
+			x.a->push_back(new Jso(vt));
+		}
+	}
 	friend std::ostream& operator<<(std::ostream& out,const Jso J){
 		switch (J.t){
 			case JType::Num:
@@ -113,7 +128,21 @@ struct Jso {
 			case JType::Arr:
 				out << "Array: " << (J.x.a) << "\nValues\n";
 				for (auto j : *(J.x.a)){
-					out << '\t' << j << '\n';
+					switch (j->t){
+						case JType::Str:
+							out << "  " << *(j->x.s);
+							break;
+						case JType::Num:
+							out << "  " << j->x.f;
+							break;
+						case JType::Obj:
+							out << "  " << "OBJ_" << j;
+							break;
+						case JType::Arr:
+							out << "  " << "ARR_" << j;
+							break;
+					}
+					out << '\n';
 				}
 				break;
 		}
@@ -156,6 +185,7 @@ class JSON {
 					delete d->x.a;
 					break;
 			}
+			delete d;
 		}
 	}
 	JSON(const JSON& rhs): JSON(){
@@ -209,10 +239,18 @@ class JSON {
 
 int main(){
 	JSON lv;
+	Jso* my_array = new Jso(JType::Arr);
+	cout << my_array << " array made\n";
+	my_array->add_value("hungry");
 	lv.key_value("str","typer");
 	lv.key_value("num",3.14);
 	lv.key_value("obj",JType::Obj);
-	lv.key_value("arr",JType::Arr);
-	cout << lv;
+	lv.key_value("arr",my_array);
+	cout << lv << '\n';
+	// two addresses will print out,
+	// the Jso* and underlying vector.
+	cout << my_array << '\n' << *my_array;
+	// I don't need to manually delete my_array
+	// because lv has it's address
 	return 0;
 }

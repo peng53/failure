@@ -6,7 +6,7 @@ using std::string;
 using std::ifstream;
 using std::map;
 
-class ChunkReader : public ifstream {
+class ChunkReader : ifstream {
 	size_t i, b;
 	const size_t S;
 	char* ch;
@@ -22,4 +22,6 @@ class ChunkReader : public ifstream {
 	char at();
 	void advance();
 	bool empty();
+	char until(char c);
+	string get(size_t n);
 };

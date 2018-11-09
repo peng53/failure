@@ -4,7 +4,8 @@
 #include <stack>
 
 const size_t CHUNK = 1024;
-enum NextString {TITLE, URI, CHILDREN, MORE, JUNK, DUNNO};
+
+enum class VType {STR, ARR, OBJ, DIG};
 
 enum class brack_bit : unsigned {
 	DOUBLEQ = 1,
@@ -32,7 +33,7 @@ char right_of(char c){
 		case '[': return ']';
 		case '"': return '"';
 	}
-	return c;		
+	return c;
 }
 
 bool isdig(char c){
@@ -50,6 +51,10 @@ class ChunkReader {
 		size_t cur_index;
 		char* chars;
 	public:
+		ChunkReader(const ChunkReader &cr): ifs(cr.ifs),chunk_size(cr.chunk_size),start_str(0),cur_index(0){
+			chars = new char[chunk_size];
+			ifs.get(chars,chunk_size);
+		}
 		ChunkReader(std::ifstream& f,size_t ccnt):ifs(f), chunk_size(ccnt),start_str(0), cur_index(0){
 			chars = new char[chunk_size];
 			ifs.get(chars,chunk_size);
@@ -189,29 +194,90 @@ class ChunkReader {
 
 enum class JType {group, place};
 
-struct Context {
-	std::string title;
-	std::string uri;
-	JType type;
-	int id;	
-};
 
+enum class Prop {title, uri, children, junk, eof};
+
+Prop get_next_prop(ChunkReader &cr){
+	char c = cr.untils(brack_bit::DOUBLEQ | brack_bit::CURLYR);
+	if (c=='}'){
+		return Prop::eof;
+	} else if (c=='"'){
+		*cr;
+		std::string s = cr.capture_untils(brack_bit::DOUBLEQ);
+		std::cout << s << '\n';
+		if (!cr.dead()){
+			if (s.compare("title")==0) return Prop::title;
+			else if (s.compare("uri")==0) return Prop::uri;
+			else if (s.compare("children")==0) return Prop::children;
+			return Prop::junk;
+		}
+	}
+	return Prop::eof;
+}
+void skip_next(ChunkReader &cr){
+	char c = cr.untils(brack_bit::OPEN | brack_bit::DIGIT);
+	if (isdig(c)){
+		cr.get_number();
+	} else {
+		
+	}
+}
 
 int main(){
-	std::stack<Context> items;
-	Context current;
 	std::ifstream f;
 	f.open("test.json",std::ifstream::in);	
 	ChunkReader chk = ChunkReader(f,1024);
+	std::string title;
+	int id = 0;
+	std::stack<int> groups;
+	char c;
+	while (!chk.dead()){
+		std::cout << groups.size() << '\n';
+		if (groups.empty()){
+			c = chk.untils(brack_bit::CURLYB);
+			if (c!='{') return 0;
+			*chk;
+			groups.emplace(++id);
+		} else {
+			switch (get_next_prop(chk)){
+				case Prop::junk:
+					skip_next(chk);
+					break;
+				case Prop::eof:
+					return 1;
+					break;
+				case Prop::uri:
+					std::cout << "URI :" << chk.capture_untils(brack_bit::DOUBLEQ) << '\n';
+					*chk;
+					break;
+				case Prop::title:
+					*chk;
+					title = chk.capture_untils(brack_bit::DOUBLEQ);
+					std::cout << "Group #" << id << '\n';
+					std::cout << "Title :" << title << '\n';
+					*chk;
+					break;
+				case Prop::children:
+					chk.untils(brack_bit::SQUAREB);
+					chk.untils(brack_bit::CURLYB);
+					*chk;
+					groups.emplace(++id);
+					break;
+			}
+		}
+	}
+	/*
+	std::stack<Context> items;
 	char c;
 	c = chk.untils(brack_bit::CURLYB);
 	if (c=='\0') return 0;
 	*chk;
-	items.push(current);
+	items.emplace();
 	std::string s;
+	VType v;
 	while (!items.empty()){
 		// get a key. or end current context.
-		c = chk.untils(brack_bit::DOUBLEQ | brack_bit::CURLYR);
+		c = chk.untils(brack_bit::BOTH);
 		switch (c){
 			case '"':
 				// get start of key.
@@ -221,30 +287,27 @@ int main(){
 				*chk;
 				c = chk.untils(brack_bit::OPEN | brack_bit::CURLYR | brack_bit::DIGIT);
 				switch (c){
-					case '}':
-						// no value?
-						return 0;
-						break;
 					case '{':
 						// an object..
-						// ignore for now.
-						std::cout << '\n';
-						chk.untils(brack_bit::CURLYB);
+						v = VType::OBJ;
+						std::cout << "OBJ = ";
+						items.emplace();						
 						*chk;
 						break;
 					case '[':
 						// an array..
-						// ignore for now.
-						std::cout << '\n';
-						chk.untils(brack_bit::SQUARER);
+						v = VType::ARR;
+						std::cout << "ARR = ";
+						items.emplace();
 						*chk;
 						break;
 					case '"':
 						// a string
 						*chk;
-						s = chk.capture_untils(brack_bit::DOUBLEQ);
-						*chk;
-						std::cout << '=' << s << '\n';
+						v = VType::STR;
+						std::cout << "STR = ";
+						//s = chk.capture_untils(brack_bit::DOUBLEQ);
+						//std::cout << '=' << s << '\n';
 						break;
 					case '0':
 					case '1':
@@ -257,13 +320,25 @@ int main(){
 					case '8':
 					case '9': // must be a digit.
 						// don't advance otherwise the first digit is discarded.
-						s = chk.get_number();
+						//s = chk.get_number();
 						// don't advance otherwise the next symbol is discarded.
-						std::cout << '=' << s << '\n';
+						//std::cout << '=' << s << '\n';
+						v = VType::DIG;;
+						std::cout << "DIG = ";
 						break;
 				}
 				break;
+			case '{':
+			case '[':
+				*chk;
+				break;
 			case '}':
+				// found end of object.
+				std::cout << items.top().title;
+				std::cout << items.top().id;
+				items.pop();
+				break;
+			case ']':
 				// found end of object.
 				std::cout << items.top().title;
 				std::cout << items.top().id;
@@ -274,7 +349,26 @@ int main(){
 				return 0;
 				break;
 		}
+		switch (v){
+			case VType::STR:
+					s = chk.capture_untils(brack_bit::DOUBLEQ);
+					*chk;
+					std::cout << s << '\n';
+					//items.top().title = s;
+
+				break;
+			case VType::DIG:
+				s = chk.get_number();
+				//don't advance otherwise the next symbol is discarded.
+				std::cout <<  s << '\n';
+				break;
+			case VType::OBJ:
+				break;
+			case VType::ARR:
+				break;
+		}
 	}
+	*/
 	f.close();
 	return 0;
 }

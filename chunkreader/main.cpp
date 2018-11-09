@@ -4,12 +4,11 @@
 using std::cout;
 
 int main(){
-	ChunkReader f("../test.json",1024);
-	char c;
-	while (!f.empty()){
-		c = f.at();
-		cout << c;
-		f.advance();
-	}
+	ChunkReader f("../test.json",24);
+	char l[45];
+	f.get(l,45);
+	cout << l << '\n';
+	f.get(l,45);
+	cout << l << '\n';
 	return 0;
 }
