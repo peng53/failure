@@ -3,6 +3,7 @@
 #include <map>
 #include <queue>
 #include <stack>
+#include <iostream>
 
 using std::string;
 using std::vector;
@@ -10,6 +11,8 @@ using std::map;
 using std::queue;
 using std::stack;
 using std::pair;
+using std::cout;
+using std::ostream;
 
 enum class JType { Obj, Arr, Str, Num};
 
@@ -54,11 +57,34 @@ struct Jso {
 			}
 		}
 	}
+	friend std::ostream& operator<<(std::ostream& out,const Jso J){
+		switch (J.t){
+			case JType::Num:
+				out << J.x.f;
+				break;
+			case JType::Str:
+				out << *(J.x.s);
+				break;
+			case JType::Obj:
+				out << "Object: " << (J.x.m) << "\nKey : Value\n";
+				for (auto j : *(J.x.m)){
+					out << '\t' << j.first << " : " << j.second << '\n';
+				}
+				break;
+			case JType::Arr:
+				out << "Array: " << (J.x.a) << "\nValues\n";
+				for (auto j : *(J.x.a)){
+					out << '\t' << j << '\n';
+				}					
+				break;
+		}
+		return out;
+	}
 };
 
 class JSON {
-	Jso* o;
 	public:
+	Jso* o;
 	JSON(): o(new Jso(JType::Obj)){}
 	~JSON(){
 		stack<Jso*> D;
@@ -126,8 +152,8 @@ class JSON {
 
 int main(){
 	JSON lv;
-	Jso* p = new Jso("typer");
-	lv.key_value("first",p);
-	delete p;
+	//Jso* p = new Jso("typer");
+	lv.key_value("first",new Jso("typer"));
+	cout << *(lv.o);
 	return 0;
 }
