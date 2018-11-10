@@ -1,3 +1,6 @@
+#ifndef CHKr
+#define CHKr
+
 #include <fstream>
 #include <string>
 #include <map>
@@ -25,3 +28,5 @@ class ChunkReader : ifstream {
 	char until(char c);
 	string get(size_t n);
 };
+
+#endif
