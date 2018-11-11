@@ -29,77 +29,40 @@ Jso::Jso(JType j): t(j){
 Jso::~Jso(){
 	// Only deletes its members; doesn't go further.
 	switch (t){
-		case JType::Num:
-			//cout << "deleted f\n";
-			break;
-		case JType::Str:
-			//cout << "deleted s  _" << x.s << '\n';
-			delete x.s;
-			break;
-		case JType::Arr:
-			//cout << "deleted  a _" << x.a << '\n';
-			delete x.a;
-			break;
-		case JType::Obj:
-			//cout << "deleted   m_" << x.m << '\n';
-			delete x.m;
-			break;
+		case JType::Num: break;
+		case JType::Str: delete x.s; break;
+		case JType::Arr: delete x.a; break;
+		case JType::Obj: delete x.m; break;
 	}
-	//cout << "Bye! " << this << '\n';
 }
 void Jso::key_value(const string& k,Jso* v){
 	// have to make that provide that object ptr yourself
-	if (t==JType::Obj && x.m->count(k)==0){
-		(*(x.m))[k] = v;
-	}
+	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = v; }
 }
 void Jso::key_value(const string& k,const string& v){
-	if (t==JType::Obj && x.m->count(k)==0){
-		(*(x.m))[k] = new Jso(v);
-	}
+	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(v); }
 }
 void Jso::key_value(const string& k,const float v){
-	if (t==JType::Obj && x.m->count(k)==0){
-		(*(x.m))[k] = new Jso(v);
-	}
+	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(v); }
 }
 void Jso::key_value(const string& k,JType vt){
 	// makes an empty obj or arr
-	if (t==JType::Obj && x.m->count(k)==0){
-		(*(x.m))[k] = new Jso(vt);
-	}
+	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(vt); }
 }
-/*
-void Jso::add_value(const Jso& v){
-	if (t==JType::Arr){
-		x.a->emplace_back(new Jso(v));
-	}
-}
-*/
 void Jso::add_value(const float v){
-	if (t==JType::Arr){
-		x.a->emplace_back(new Jso(v));
-	}
+	if (t==JType::Arr){ x.a->emplace_back(new Jso(v)); }
 }
 void Jso::add_value(const string& v){
-	if (t==JType::Arr){
-		x.a->emplace_back(new Jso(v));
-	}
+	if (t==JType::Arr){ x.a->emplace_back(new Jso(v)); }
 }
 void Jso::add_value(const JType vt){
-	if (t==JType::Arr){
-		x.a->emplace_back(new Jso(vt));
-	}
+	if (t==JType::Arr){ x.a->emplace_back(new Jso(vt)); }
 }
 void Jso::set_value(float v){
-	if (t==JType::Num){
-		x.f = v;
-	}
+	if (t==JType::Num){ x.f = v; }
 }
 void Jso::set_value(const string& v){
-	if (t==JType::Str){
-		*(x.s) = v;
-	}
+	if (t==JType::Str){ *(x.s) = v; }
 }
 std::ostream& operator<<(std::ostream& out,const Jso& J){
 	switch (J.t){
@@ -110,9 +73,12 @@ std::ostream& operator<<(std::ostream& out,const Jso& J){
 			out << *(J.x.s);
 			break;
 		case JType::Obj:
-			out << "Object: " << (J.x.m) << "\nKey : Value\n";
+			//out << "Object: " << (J.x.m) << "\nKey : Value\n";
+			out << "{\n";
 			for (auto j : *(J.x.m)){
-				out << "  " << j.first << " : ";
+				out << j.first << " : ";
+				out << *(j.second) << '\n';
+				/*
 				switch (j.second->t){
 					case JType::Str:
 						out << *(j.second->x.s);
@@ -128,11 +94,16 @@ std::ostream& operator<<(std::ostream& out,const Jso& J){
 						break;
 				}
 				out << '\n';
+				*/
 			}
+			out << "}\n";
 			break;
 		case JType::Arr:
-			out << "Array: " << (J.x.a) << "\nValues\n";
+			//out << "Array: " << (J.x.a) << "\nValues\n";
+			out << "[\n";			
 			for (auto j : *(J.x.a)){
+				out << *j << '\n';
+				/*
 				switch (j->t){
 					case JType::Str:
 						out << "  " << *(j->x.s);
@@ -148,157 +119,17 @@ std::ostream& operator<<(std::ostream& out,const Jso& J){
 						break;
 				}
 				out << '\n';
+			*/
 			}
+			out << "]\n";
 			break;
-	}
-	return out;
-}
-void Jso::print_depth(ostream& O, stack<pair<string,Jso*>>& stk){
-	// should only be called on ARR or OBJ.
-	switch (t){
-		case JType::Num:
-		case JType::Str:
-			break;
-		case JType::Arr:
-			O << "[\n";
-			for (auto A : *(x.a)){
-				switch (A->t){
-					case JType::Num:
-						O << A->x.f << '\n';
-						break;
-					case JType::Str:
-						O << *(A->x.s) << '\n';
-						break;
-					case JType::Arr:
-						stk.emplace("",A);
-						break;
-					case JType::Obj:
-						stk.emplace("",A);
-						break;
-				}
-			}
-			O << "]\n";
-			break;
-		case JType::Obj:
-			O << "{\n";
-			for (auto A : *(x.m)){
-				switch (A.second->t){
-					case JType::Num:
-						O << A.first << " : " << A.second->x.f << '\n';
-						break;
-					case JType::Str:
-						O << A.first << " : " << *(A.second->x.s) << '\n';
-						break;
-					case JType::Arr:
-						stk.emplace(A.first,A.second);
-						break;
-					case JType::Obj:
-						stk.emplace(A.first,A.second);
-						break;
-				}
-			}
-			O << "}\n";
-			break;
-	}
-}
-
-#include <iterator>
-using std::iterator;
-
-struct Jso_I {
-	JType t;
-	union ITR {
-		pair<map<string,Jso*>::iterator,map<string,Jso*>::iterator> m;
-		pair<vector<Jso*>::iterator,vector<Jso*>::iterator> a;
-		ITR(pair<vector<Jso*>::iterator,vector<Jso*>::iterator> j): a(j){}
-		ITR(pair<map<string,Jso*>::iterator,map<string,Jso*>::iterator> j): m(j){}
-	};
-	ITR i;
-	/*
-	Jso_I(vector<Jso*>* j):
-		t(JType::Arr),
-		i(make_pair(j->begin(),j->end())) {
-	}
-	Jso_I(map<string,Jso*>* j):
-		t(JType::Obj),
-		i(make_pair(j->begin(),j->end())) {
-	}
-	Jso_I(Jso_I& old,vector<Jso*>::iterator going):
-		t(JType::Arr),
-		i(make_pair(going,old.i.a.second)) {
-	}
-	Jso_I(Jso_I& old,map<string,Jso*>::iterator going):
-		t(JType::Obj),
-		i(make_pair(going,old.i.m.second)) {
-	}
-	*/
-	Jso_I(vector<Jso*>::iterator s,vector<Jso*>::iterator e):
-		t(JType::Arr),
-		i(make_pair(s,e)) {
-	}
-	Jso_I(map<string,Jso*>::iterator s,map<string,Jso*>::iterator e):
-		t(JType::Obj),
-		i(make_pair(s,e)) {
-	}
-};
-void spaceit(ostream& out,size_t t){
-	for (;t>1;--t){
-		out << ' ';
-	}
-}
-
-ostream& Jso::print_depth2(ostream& out){
-	// # of indentation determined by stk.size-1.
-	if (t==JType::Num || t==JType::Str) return out;
-	stack<Jso_I> stk;
-	if (t==JType::Arr) stk.emplace(x.a->begin(),x.a->end());
-	else if (t==JType::Obj) stk.emplace(x.m->begin(),x.m->end());
-	while (!stk.empty()){
-		Jso_I i_e = stk.top();
-		stk.pop();
-		switch (i_e.t){
-			case JType::Obj:
-				for (auto i=i_e.i.m.first,e=i_e.i.m.second; i!=e; ++i){
-					switch (i->second->t){
-						case JType::Num:
-						case JType::Str:
-							spaceit(out,stk.size());
-							out << *(i->second) << '\n';
-							break;
-						case JType::Arr:
-							break;
-							if (i!=e) stk.emplace(++i,e);
-							--i;
-							stk.emplace(i->second->x.a->begin(),i->second->x.a->end());
-							i = e;
-							break;
-						case JType::Obj:
-							break;
-							if (i!=e) stk.emplace(++i,e);
-							--i;
-							stk.emplace(i->second->x.m->begin(),i->second->x.m->end());
-							i = e;
-							break;
-					}
-					out << i->second << '\n';
-				}
-				break;
-			case JType::Arr:
-			case JType::Str:
-			case JType::Num:
-				break;
-		}
 	}
 	return out;
 }
 Jso* Jso::key_value(const string& k){
-	if (t==JType::Obj && x.m->count(k)==1){
-		return (*(x.m))[k];
-	}
-	return nullptr;
+	return ((t==JType::Obj && x.m->count(k)==1) ? (*(x.m))[k] : nullptr);
 }
 void dispose(Jso* j, stack<Jso*>& more,ostream& out){
-	//out << "Hi! " << j << '\n';
 	switch (j->t){
 		case JType::Num:
 		case JType::Str:
@@ -308,8 +139,6 @@ void dispose(Jso* j, stack<Jso*>& more,ostream& out){
 				switch (a->t){
 					case JType::Num:
 					case JType::Str:
-						//out << "deleted jso_" << a << '\n';
-						//out << "Hi! " << a << '\n';
 						delete a;
 						break;
 					default:
@@ -323,8 +152,6 @@ void dispose(Jso* j, stack<Jso*>& more,ostream& out){
 				switch (m.second->t){
 					case JType::Num:
 					case JType::Str:
-						//out << "deleted jso_" << m.second << '\n';
-						//out << "Hi! " << m.second << '\n';
 						delete m.second;
 						break;
 					default:
@@ -334,7 +161,6 @@ void dispose(Jso* j, stack<Jso*>& more,ostream& out){
 			}
 			break;
 	}
-	//out << "deleted jso_" << j << '\n';
 	delete j;
 }
 
@@ -397,54 +223,22 @@ void JSON::key_value(const string& k,JType vt){
 	o->key_value(k,vt);
 }
 Jso* JSON::key_value(const string& k){
-	if (o->x.m->count(k)==1){
-		return (*(o->x.m))[k];
-	}
-	return nullptr;
-}
-void JSON::all_out(ostream& O){
-	stack<pair<string,Jso*>> stk;
-	stk.emplace("",o);
-	string k;
-	Jso* v;
-	while (!stk.empty()){
-		k = stk.top().first;
-		v = stk.top().second;
-		stk.pop();
-		O << k;
-		v->print_depth(O,stk);
-	}
+	return ((o->x.m->count(k)==1) ? (*(o->x.m))[k] : nullptr);
 }
 
 int main(){
 	JSON lv; // # 0 obj
-	/*
-	Jso* my_array = new Jso(JType::Arr); // #1 arr
-	cout << my_array << " array made\n";
-	my_array->add_value(string("blah")); // #2 str
-	my_array->add_value(JType::Obj); // #3 obj
-	my_array->add_value(JType::Arr); // #4 arr
-	my_array->add_value(10); // # 5 num
-	lv.key_value("str","typer"); // #6 str
-	lv.key_value("num",3.14); // #7 num
-	lv.key_value("obj",JType::Obj); // #8 obj
-	lv.key_value("arr",my_array); // #9 arr
-	cout << lv << '\n';
-	// two addresses will print out,
-	// the Jso* and underlying vector.
-	cout << my_array << '\n' << *my_array;
-	// I don't need to manually delete my_array
-	// because lv has it's address
-	*/
 	lv.key_value("str","test"); // 1
 	lv.key_value("num",3.14); // 2
 	lv.key_value("arr",JType::Arr); // 3
 	lv.key_value("obj",JType::Obj); // 4
-	//cout << lv << '\n';
 	//cout << *(lv.key_value("str")) << '\n';
-	//(lv.key_value("arr"))->add_value(10);
+	(lv.key_value("arr"))->add_value(10);
+	(lv.key_value("arr"))->add_value(27);
+	(lv.key_value("arr"))->add_value("horse");
+	(lv.key_value("obj"))->key_value("horse","table");
+	(lv.key_value("obj"))->key_value("mouse",3.14);
 	//cout << *(lv.key_value("arr"));
-	
-	lv.o->print_depth2(cout);
+	cout << lv << '\n';
 	return 0;
 }
