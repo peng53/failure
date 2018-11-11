@@ -30,22 +30,22 @@ Jso::~Jso(){
 	// Only deletes its members; doesn't go further.
 	switch (t){
 		case JType::Num:
-			cout << "deleted f\n";
+			//cout << "deleted f\n";
 			break;
 		case JType::Str:
-			cout << "deleted s  _" << x.s << '\n';
+			//cout << "deleted s  _" << x.s << '\n';
 			delete x.s;
 			break;
 		case JType::Arr:
-			cout << "deleted  a _" << x.a << '\n';
+			//cout << "deleted  a _" << x.a << '\n';
 			delete x.a;
 			break;
 		case JType::Obj:
-			cout << "deleted   m_" << x.m << '\n';
+			//cout << "deleted   m_" << x.m << '\n';
 			delete x.m;
 			break;
 	}
-	cout << "Bye! " << this << '\n';
+	//cout << "Bye! " << this << '\n';
 }
 void Jso::key_value(const string& k,Jso* v){
 	// have to make that provide that object ptr yourself
@@ -104,7 +104,6 @@ void Jso::set_value(const string& v){
 std::ostream& operator<<(std::ostream& out,const Jso& J){
 	switch (J.t){
 		case JType::Num:
-			out << "number";
 			out << J.x.f;
 			break;
 		case JType::Str:
@@ -202,6 +201,96 @@ void Jso::print_depth(ostream& O, stack<pair<string,Jso*>>& stk){
 			break;
 	}
 }
+
+#include <iterator>
+using std::iterator;
+
+struct Jso_I {
+	JType t;
+	union ITR {
+		pair<map<string,Jso*>::iterator,map<string,Jso*>::iterator> m;
+		pair<vector<Jso*>::iterator,vector<Jso*>::iterator> a;
+		ITR(pair<vector<Jso*>::iterator,vector<Jso*>::iterator> j): a(j){}
+		ITR(pair<map<string,Jso*>::iterator,map<string,Jso*>::iterator> j): m(j){}
+	};
+	ITR i;
+	/*
+	Jso_I(vector<Jso*>* j):
+		t(JType::Arr),
+		i(make_pair(j->begin(),j->end())) {
+	}
+	Jso_I(map<string,Jso*>* j):
+		t(JType::Obj),
+		i(make_pair(j->begin(),j->end())) {
+	}
+	Jso_I(Jso_I& old,vector<Jso*>::iterator going):
+		t(JType::Arr),
+		i(make_pair(going,old.i.a.second)) {
+	}
+	Jso_I(Jso_I& old,map<string,Jso*>::iterator going):
+		t(JType::Obj),
+		i(make_pair(going,old.i.m.second)) {
+	}
+	*/
+	Jso_I(vector<Jso*>::iterator s,vector<Jso*>::iterator e):
+		t(JType::Arr),
+		i(make_pair(s,e)) {
+	}
+	Jso_I(map<string,Jso*>::iterator s,map<string,Jso*>::iterator e):
+		t(JType::Obj),
+		i(make_pair(s,e)) {
+	}
+};
+void spaceit(ostream& out,size_t t){
+	for (;t>1;--t){
+		out << ' ';
+	}
+}
+
+ostream& Jso::print_depth2(ostream& out){
+	// # of indentation determined by stk.size-1.
+	if (t==JType::Num || t==JType::Str) return out;
+	stack<Jso_I> stk;
+	if (t==JType::Arr) stk.emplace(x.a->begin(),x.a->end());
+	else if (t==JType::Obj) stk.emplace(x.m->begin(),x.m->end());
+	while (!stk.empty()){
+		Jso_I i_e = stk.top();
+		stk.pop();
+		switch (i_e.t){
+			case JType::Obj:
+				for (auto i=i_e.i.m.first,e=i_e.i.m.second; i!=e; ++i){
+					switch (i->second->t){
+						case JType::Num:
+						case JType::Str:
+							spaceit(out,stk.size());
+							out << *(i->second) << '\n';
+							break;
+						case JType::Arr:
+							break;
+							if (i!=e) stk.emplace(++i,e);
+							--i;
+							stk.emplace(i->second->x.a->begin(),i->second->x.a->end());
+							i = e;
+							break;
+						case JType::Obj:
+							break;
+							if (i!=e) stk.emplace(++i,e);
+							--i;
+							stk.emplace(i->second->x.m->begin(),i->second->x.m->end());
+							i = e;
+							break;
+					}
+					out << i->second << '\n';
+				}
+				break;
+			case JType::Arr:
+			case JType::Str:
+			case JType::Num:
+				break;
+		}
+	}
+	return out;
+}
 Jso* Jso::key_value(const string& k){
 	if (t==JType::Obj && x.m->count(k)==1){
 		return (*(x.m))[k];
@@ -209,7 +298,7 @@ Jso* Jso::key_value(const string& k){
 	return nullptr;
 }
 void dispose(Jso* j, stack<Jso*>& more,ostream& out){
-	out << "Hi! " << j << '\n';
+	//out << "Hi! " << j << '\n';
 	switch (j->t){
 		case JType::Num:
 		case JType::Str:
@@ -220,7 +309,7 @@ void dispose(Jso* j, stack<Jso*>& more,ostream& out){
 					case JType::Num:
 					case JType::Str:
 						//out << "deleted jso_" << a << '\n';
-						out << "Hi! " << a << '\n';
+						//out << "Hi! " << a << '\n';
 						delete a;
 						break;
 					default:
@@ -235,7 +324,7 @@ void dispose(Jso* j, stack<Jso*>& more,ostream& out){
 					case JType::Num:
 					case JType::Str:
 						//out << "deleted jso_" << m.second << '\n';
-						out << "Hi! " << m.second << '\n';
+						//out << "Hi! " << m.second << '\n';
 						delete m.second;
 						break;
 					default:
@@ -351,9 +440,11 @@ int main(){
 	lv.key_value("num",3.14); // 2
 	lv.key_value("arr",JType::Arr); // 3
 	lv.key_value("obj",JType::Obj); // 4
-	cout << lv << '\n';
-	cout << *(lv.key_value("str")) << '\n';
-	(lv.key_value("arr"))->add_value(10);
-	cout << *(lv.key_value("arr"));
+	//cout << lv << '\n';
+	//cout << *(lv.key_value("str")) << '\n';
+	//(lv.key_value("arr"))->add_value(10);
+	//cout << *(lv.key_value("arr"));
+	
+	lv.o->print_depth2(cout);
 	return 0;
 }

@@ -41,11 +41,12 @@ struct Jso {
 	void print_depth(ostream& O, stack<pair<string,Jso*>>& stk);
 	friend std::ostream& operator<<(std::ostream& out,const Jso& J);
 	Jso* key_value(const string& k);
+	ostream& print_depth2(ostream& out);
 };
 class JSON {
 	private:
-		Jso* o;
 	public:
+		Jso* o;
 		JSON();
 		JSON(const JSON& rhs);
 		~JSON();
