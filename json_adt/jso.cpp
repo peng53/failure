@@ -107,6 +107,22 @@ struct JsoItr {
 	JsoItr(vector<Jso*>::iterator s,vector<Jso*>::iterator e):
 		t(JType::Arr),
 		v(s,e) {}
+	bool eoo(){
+		switch (t){
+			case JType::Arr: return v.a.first == v.a.second; break;
+			case JType::Obj: return v.o.first == v.o.second; break;
+			default: return 1; break;
+		}
+		return 1;
+	}
+	JsoItr& operator++(){
+		switch (t){
+			case JType::Arr: ++v.a.first; break;
+			case JType::Obj: ++v.o.first; break;
+			default: break;
+		}
+		return *this;
+	}
 };
 
 void indent_it(size_t i, ostream& out){
@@ -203,5 +219,112 @@ void Jso::jso_out(ostream& out){
 		JsoItr itt = stk.top();
 		stk.pop();
 		adder(itt,stk,out,i);
+	}
+}
+
+enum class ObjOrArrE { OBJ,ARR};
+
+struct ObjOrArr {
+	union Itr {
+		struct {
+			vector<Jso*>::iterator I;
+			vector<Jso*>::iterator E;
+		} A;
+		struct {
+			map<string,Jso*>::iterator I;
+			map<string,Jso*>::iterator E;
+		} O;
+		Itr(vector<Jso*>* v){
+			A.I = v->begin();
+			A.E = v->end();
+		}
+		Itr(map<string,Jso*>* m){
+			O.I = m->begin();
+			O.E = m->end();
+		}
+	};
+	ObjOrArrE t;
+	Itr d;
+	ObjOrArr(vector<Jso*>* j):
+		t(ObjOrArrE::ARR),
+		d(j){}
+	ObjOrArr(map<string,Jso*>* j):
+		t(ObjOrArrE::OBJ),
+		d(j){}
+	ObjOrArr& operator++(){
+		switch (t){
+			case ObjOrArrE::OBJ: ++d.O.I; break;
+			case ObjOrArrE::ARR: ++d.A.I; break;
+		}
+		return *this;
+	}
+	bool END(){
+		return ((t==ObjOrArrE::OBJ) ? d.O.I==d.O.E : d.A.I==d.A.E);
+	}
+	Jso* operator*(){
+		return ((t==ObjOrArrE::OBJ) ? d.O.I->second : *(d.A.I));
+	}
+	const string& first(){
+		return d.O.I->first;
+	}
+};
+
+void adder2(stack<ObjOrArr>& stk,ostream& out){
+	if (stk.empty()) return;
+	ObjOrArr& T = stk.top();
+	if (T.END()) return;
+	switch (T.t){
+		case ObjOrArrE::ARR:
+			while (!T.END()){
+				switch ((*T)->t){
+					case JType::Arr:
+						out << "[\n";
+						stk.emplace((*T)->x.a);
+						++T;
+						return;
+						break;
+					case JType::Obj:
+						out << "{\n";
+						stk.emplace((*T)->x.m);
+						++T;
+						return;
+						break;
+					default: out << **T << '\n'; break;
+				}
+				++T;
+			}
+			out << "]\n";
+			if (!stk.empty()) stk.pop();
+			break;
+		case ObjOrArrE::OBJ:
+			while (!T.END()){
+				out << T.first() << " := ";
+				switch ((*T)->t){
+					case JType::Arr:
+						out << "[\n";
+						stk.emplace((*T)->x.a);
+						++T;
+						return;
+						break;
+					case JType::Obj:
+						out << "{\n";
+						stk.emplace((*T)->x.m);
+						++T;
+						return;
+						break;
+					default: out << **T << '\n'; break;
+				}
+				++T;
+			}
+			out << "}\n";
+			if (!stk.empty()) stk.pop();
+			break;
+	}
+}
+void all_out(Jso j,ostream& out){
+	stack<ObjOrArr> stk;
+	stk.emplace(j.x.m);
+	while (!stk.empty()){
+		adder2(stk,out);
 	}
 }
