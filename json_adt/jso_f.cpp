@@ -50,6 +50,7 @@ JSON::~JSON(){
 	}
 }
 JSON::JSON(const JSON& rhs): JSON(){
+	// deep copy constructor
 	Jso* r = rhs.o;
 	Jso* l = o;
 	Jso* t;
@@ -75,6 +76,9 @@ JSON::JSON(const JSON& rhs): JSON(){
 					stk.emplace(v.second,t);
 					break;
 				case JType::Arr:
+					t = new Jso(JType::Arr);
+					(*(l->x.m))[v.first] = t;
+					
 					break;
 			}
 		}
@@ -97,7 +101,9 @@ int main(){
 	j = (*lv)->key_value("obj");
 	j->key_value("horse","table");
 	j->key_value("mouse",3.14f);
-	cout << **lv << "\n------------\n";
+	//cout << **lv << "\n------------\n";
 	(*lv)->jso_out(cout);
+	cout << "\n----------\n";
+	//all_out(**lv,cout);
 	return 0;
 }

@@ -42,5 +42,5 @@ struct Jso {
 	Jso* key_value(const string& k);
 	void jso_out(ostream& out);
 };
-
+void all_out(Jso j,ostream& out);
 #endif
