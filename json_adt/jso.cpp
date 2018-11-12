@@ -63,10 +63,10 @@ void Jso::set_value(const string& v){
 ostream& operator<<(ostream& out,const Jso& J){
 	switch (J.t){
 		case JType::Num:
-			out << J.x.f;
+			out << J.x.f << 'f';
 			break;
 		case JType::Str:
-			out << *(J.x.s);
+			out << "s`" << *(J.x.s) << '`';
 			break;
 		case JType::Obj:
 			out << "{\n";
@@ -77,7 +77,7 @@ ostream& operator<<(ostream& out,const Jso& J){
 			out << "}\n";
 			break;
 		case JType::Arr:
-			out << "[\n";			
+			out << "[\n";
 			for (auto j : *(J.x.a)){
 				out << *j << '\n';
 			}
@@ -110,13 +110,13 @@ struct JsoItr {
 };
 
 void indent_it(size_t i, ostream& out){
-	while (i>0){
+	while (i>1){
 		out << ' ';
 		--i;
 	}
 }
 
-void adder(JsoItr& j,stack<JsoItr>& stk,ostream& out){
+void adder(JsoItr& j,stack<JsoItr>& stk,ostream& out,size_t& sp){
 	// prints if num or str, otherwise add to stack then return.
 	switch (j.t){
 		default: break;
@@ -125,55 +125,48 @@ void adder(JsoItr& j,stack<JsoItr>& stk,ostream& out){
 				switch ((*i)->t){
 					case JType::Arr:
 						out << "[\n";
-						//++i;
-						//if (i!=e){
-							stk.emplace(++i,e);
-						//}
+						stk.emplace(++i,e);
 						--i;
+						sp++;
 						stk.emplace((*i)->x.a->begin(),(*i)->x.a->end());
 						return;
 						break;
 					case JType::Obj:
 						out << "{\n";
-						//++i;
-						//if (i!=e){
-							stk.emplace(++i,e);
-						//}
+						stk.emplace(++i,e);
 						--i;
+						sp++;
 						stk.emplace((*i)->x.m->begin(),(*i)->x.m->end());
 						return;
 						break;
 					default:
-						indent_it(stk.size(),out);
-						out << **i << '\n';
+						indent_it(sp,out);
+						out << **i << ",\n";
 						break;
 				}
 			}
-			indent_it(stk.size(),out);
+			indent_it(sp,out);
+			sp--;
 			out << "]\n";
 			break;
 		case JType::Obj:
 			for (auto i=j.v.o.first, e=j.v.o.second; i!=e; ++i){
-				indent_it(stk.size(),out);
-				out << i->first << ':';
+				indent_it(sp,out);
+				out << i->first << " := ";
 				switch ((*i).second->t){
 					case JType::Arr:
 						out << "[\n";
-						//++i;
-						//if (i!=e){
-							stk.emplace(++i,e);
-						//}
+						stk.emplace(++i,e);
 						--i;
+						sp++;
 						stk.emplace((*i).second->x.a->begin(),(*i).second->x.a->end());
 						return;
 						break;
 					case JType::Obj:
 						out << "{\n";
-						//++i;
-						//if (i!=e){
-							stk.emplace(++i,e);
-						//}
+						stk.emplace(++i,e);
 						--i;
+						sp++;
 						stk.emplace((*i).second->x.m->begin(),(*i).second->x.m->end());
 						return;
 						break;
@@ -182,7 +175,8 @@ void adder(JsoItr& j,stack<JsoItr>& stk,ostream& out){
 						break;
 				}
 			}
-			indent_it(stk.size(),out);
+			indent_it(sp,out);
+			sp--;
 			out << "}\n";
 			break;
 	}
@@ -197,14 +191,17 @@ void Jso::jso_out(ostream& out){
 			break;
 		case JType::Arr:
 			stk.emplace(x.a->begin(),x.a->end());
+			out << "[\n";
 			break;
 		case JType::Obj:
 			stk.emplace(x.m->begin(),x.m->end());
+			out << "{\n";
 			break;
 	}
+	size_t i = 1;
 	while (!stk.empty()){
 		JsoItr itt = stk.top();
 		stk.pop();
-		adder(itt,stk,out);
+		adder(itt,stk,out,i);
 	}
 }
