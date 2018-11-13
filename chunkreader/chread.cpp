@@ -20,16 +20,6 @@ void ChunkReader::feed(){
 	ifstream::get(ch,S);
 	i = 0;
 }
-string ChunkReader::get(size_t n){
-	string s;
-	s.reserve(n);
-	while (!empty() && n>0){
-		s += at();
-		advance();
-		--n;
-	}
-	return s;
-}
 string ChunkReader::get_capture(){
 	return string(ch+b,ch+i);
 }
@@ -95,7 +85,7 @@ char ChunkReader::at(){
 }
 void ChunkReader::advance(){
 	++i;
-	if (i==S) feed();
+	if (i>=S) feed();
 }
 bool ChunkReader::empty(){
 	return at()=='\0' && eof();
@@ -105,4 +95,9 @@ char ChunkReader::until(char c){
 		advance();
 	}
 	return at();
+}
+ostream& operator<<(ostream& out,ChunkReader& chk){
+	out << chk.ch;
+	chk.feed();
+	return out;
 }

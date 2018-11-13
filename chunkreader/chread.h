@@ -4,10 +4,12 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <ostream>
 
 using std::string;
 using std::ifstream;
 using std::map;
+using std::ostream;
 
 class ChunkReader : ifstream {
 	size_t i, b;
@@ -26,7 +28,7 @@ class ChunkReader : ifstream {
 	void advance();
 	bool empty();
 	char until(char c);
-	string get(size_t n);
+	friend ostream& operator<<(ostream& out,ChunkReader& chk);
 };
 
 #endif
