@@ -1,15 +1,15 @@
 
 s = """
 { "hello world" : "test",
-  "some_num"    :  10.86,
-	"mouth" : [ 1, 2, 3 ],
+  "some_num"    :  1.2,
+	"mouth" : [ 13, 22, 33 ],
 	"obj" : {
-		"first": 1,
-		"second": 2
+		"first":1,
+		"second"  : 2
 	}
 }
 """
-
+"""
 class Jso:
 	def __init__(self):
 		self.special = None
@@ -64,7 +64,7 @@ j = r['obj']
 j['mice'] = 24
 r['arr'] = []
 print r
-
+"""
 def ex_str_value(s,i):
 	s_len = len(s)
 	j = i
@@ -99,7 +99,7 @@ def next_open_close(s,i):
 		j, c = next((j,c) for (j,c) in enumerate(s[i:]) if c in '{["1234567890')
 	except StopIteration:
 		print "No open symbols were found"
-	return (c,j)
+	return (j,c)
 
 def object_handler(my_stack, stack_types, s, i):
 	s_len = len(s)
@@ -116,10 +116,11 @@ def object_handler(my_stack, stack_types, s, i):
 				### getting property name ###
 				prop_name, j = ex_str_value(s,i+1)
 				if prop_name:
-					i = j + 1
+					i = j
 					j = skip_until(s,i,':')
 				try:
-					j, c = next((j,c) for (j,c) in enumerate(s[i:]) if c in '{["1234567890')
+					#j, c = next((j,c) for (j,c) in enumerate(s[i:]) if c in '{["1234567890')
+					j,c = next_open_close(s,i)
 				except StopIteration:
 					raise Exception
 				### getting object type ###
@@ -147,8 +148,50 @@ def object_handler(my_stack, stack_types, s, i):
 					raise Exception
 			else:
 				i += 1
+
+def array_handler(my_stack, stack_types, s, i):
+	s_len = len(s)
+	while my_stack:
+		while i<s_len:
+			if s[i]==']':
+				if len(my_stack)==1:
+					return (my_stack.pop(),i+1)
+				else:
+					my_stack.pop()
+					stack_types.pop()
+					return (None,i+1)
+			elif s[i]=='"': ### it was a str value
+				i += 1
+				str_value, j = ex_str_value(s,i)
+				my_stack[-1].append(str_value)
+				i = j+1
+			elif s[i]=='{': ### it was a dictionary/ key-value pairs
+				my_stack[-1].append({})
+				my_stack.append(my.stack[-1][-1])
+				stack_types.append('d')
+				return (None,i)
+			elif s[i]=='[': ### it was an array
+				my_stack[-1].append([])
+				my_stack.append(my.stack[-1][-1])
+				stack_types.append('l')
+				return (None,i)
+			elif s[i].isdigit(): ### it was a number
+				num_value, j = ex_num_value(s,i)
+				my_stack[-1].append(num_value)
+				i = j
+			else:
+				i += 1
 my_stack = [{}]
 stack_types = ['d']
-print object_handler(my_stack,stack_types,s,1)
-print my_stack
-print stack_types
+i = 1 ### this is the index after the first { or [
+print s
+while my_stack:
+	if stack_types[-1]=='d':
+		o,i = object_handler(my_stack,stack_types,s,i)
+	elif stack_types[-1]=='l':
+		o,i = array_handler(my_stack,stack_types,s,i)
+	else:
+		raise ValueError
+	if o:
+		print o
+		break
