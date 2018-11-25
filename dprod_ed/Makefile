@@ -1,12 +1,14 @@
-FLAGS=-pedantic -std=c++11 -O2 -march=native
+# Makefile for dprod_ed
+
+CXXFLAGS=-pedantic -std=c++11 -O2 -march=native
 
 build: main.o ui.o db.o
-	g++ $(FLAGS) main.o ui.o db.o -o dprod_ed -lsqlite3 -lmenu -lform -lncurses
+	$(CXX) $(CXXFLAGS) main.o ui.o db.o -o dprod_ed -lsqlite3 -lmenu -lform -lncurses
 main.o: ui.h main.cpp
-	g++ $(FLAGS) -c main.cpp
+
 ui.o: ui.cpp ui.h db.h
-	g++ $(FLAGS) -c ui.cpp
+
 db.o: db.cpp db.h
-	g++ $(FLAGS) -c db.cpp
+
 clean:
-	rm -I *.o *.gch dprod_ed
+	rm -I *.o dprod_ed

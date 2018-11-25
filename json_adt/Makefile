@@ -3,11 +3,14 @@
 CXXFLAGS=-pedantic -O2 -march=native
 OBJ=../objects
 
-build: $(OBJ)/jso.o $(OBJ)/jso_f.o main.o
-	$(CXX) $(CXXFLAGS) $(OBJ)/jso_f.o $(OBJ)/jso.o main.o -o jso_f
+build: $(OBJ)/jso.o $(OBJ)/jso_f.o main.o $(OBJ)/chread.o
+	$(CXX) $(CXXFLAGS) $(OBJ)/jso_f.o $(OBJ)/jso.o $(OBJ)/chread.o main.o -o jso_f
 
-$(OBJ)/%.o : %.cpp %.h
+$(OBJ)/%.o: %.cpp %.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(OBJ)/chread.o: ../chunkreader/chread.cpp ../chunkreader/chread.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:
-	rm jso_f $(OBJ)/jso.o $(OBJ)/jso_f.o main.o
+	rm jso_f $(OBJ)/jso.o $(OBJ)/jso_f.o main.o $(OBJ)/chread.o
