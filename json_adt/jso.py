@@ -183,7 +183,8 @@ def array_handler(my_stack, stack_types, s, i):
 				i = j
 			else:
 				i += 1
-my_stack = [{}]
+tree = {}
+my_stack = [tree]
 stack_types = ['d']
 i = 1 ### this is the index after the first { or [
 print s
@@ -200,3 +201,25 @@ while my_stack:
 		break
 
 print json.dumps(json.loads(s),indent=4)
+
+print "----------"
+print "With stack"
+print "----------"
+my_stack.append(('tree',tree,0))
+while my_stack:
+	l, o, i = my_stack.pop()
+	if l:
+		print '.'*i+l+':='
+	if type(o) is dict:
+		my_stack.append((None,'}',i-1))
+		print '.'*i+'{'
+		for k in o:
+			my_stack.append((k,o[k],i+1))
+	elif type(o) is list:
+		my_stack.append((None,']',i-1))
+		print '.'*i+'['
+		#print '='*i, '['
+		for v in o:
+			my_stack.append((None,v,i+1))
+	else:
+		print '%s%s' %('.'*(i+1),o)
