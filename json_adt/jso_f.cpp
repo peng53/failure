@@ -1,6 +1,5 @@
 #include "jso_f.h"
-
-using std::cout;
+#include "../chunkreader/chread.h"
 
 void dispose(Jso* j, stack<Jso*>& more){
 	switch (j->t){
@@ -85,24 +84,4 @@ JSON::JSON(const JSON& rhs): JSON(){
 }
 Jso* JSON::operator*(){
 	return o;
-}
-int main(){
-	JSON lv;
-	Jso* j = (*lv);
-	j->key_value("str","test");
-	j->key_value("num",27.2f);
-	j->key_value("arr",JType::Arr);
-	j->key_value("obj",JType::Obj);
-	j = (*lv)->key_value("arr");
-	j->add_value(5);
-	j->add_value(2);
-	j->add_value("horse");
-	j = (*lv)->key_value("obj");
-	j->key_value("horse","table");
-	j->key_value("mouse",3.14f);
-	//cout << **lv << "\n------------\n";
-	(*lv)->jso_out(cout);
-	cout << "\n----------\n";
-	//all_out(**lv,cout);
-	return 0;
 }

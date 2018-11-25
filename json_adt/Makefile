@@ -1,11 +1,13 @@
+# Makefile for json_adt
+
 CXXFLAGS=-pedantic -O2 -march=native
+OBJ=../objects
 
-build: jso.o jso_f.o
-	$(CXX) $(CXXFLAGS) jso_f.o jso.o -o jso_f
+build: $(OBJ)/jso.o $(OBJ)/jso_f.o main.o
+	$(CXX) $(CXXFLAGS) $(OBJ)/jso_f.o $(OBJ)/jso.o main.o -o jso_f
 
-jso.o:
-
-jso_f.o:
+$(OBJ)/%.o : %.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:
-	rm jso_f jso.o jso_f.o
+	rm jso_f $(OBJ)/jso.o $(OBJ)/jso_f.o main.o
