@@ -1,3 +1,4 @@
+import json
 
 s = """
 { "hello world" : "test",
@@ -9,6 +10,7 @@ s = """
 	}
 }
 """
+
 """
 class Jso:
 	def __init__(self):
@@ -193,5 +195,8 @@ while my_stack:
 	else:
 		raise ValueError
 	if o:
+		print json.dumps(o,indent=4)
 		print o
 		break
+
+print json.dumps(json.loads(s),indent=4)
