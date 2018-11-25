@@ -1,11 +1,13 @@
+# Makefile for chunkreader
+
 CXXFLAGS=-pedantic -O2 -march=native
+OBJ=../objects
 
-build: main.o chread.o
-	$(CXX) $(CXXFLAGS) main.o chread.o -o main
+build: main.o $(OBJ)/chread.o
+	$(CXX) $(CXXFLAGS) main.o $(OBJ)/chread.o -o main
 
-chread.o:
-
-main.o:
+$(OBJ)/%.o : %.cpp
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:
-	rm main.o chread.o
+	rm main.o $(OBJ)/chread.o
