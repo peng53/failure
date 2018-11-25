@@ -6,7 +6,7 @@ OBJ=../objects
 build: main.o $(OBJ)/chread.o
 	$(CXX) $(CXXFLAGS) main.o $(OBJ)/chread.o -o main
 
-$(OBJ)/%.o : %.cpp
+$(OBJ)/%.o : %.cpp %.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:

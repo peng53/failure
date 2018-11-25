@@ -6,7 +6,7 @@ OBJ=../objects
 build: $(OBJ)/jso.o $(OBJ)/jso_f.o main.o
 	$(CXX) $(CXXFLAGS) $(OBJ)/jso_f.o $(OBJ)/jso.o main.o -o jso_f
 
-$(OBJ)/%.o : %.cpp
+$(OBJ)/%.o : %.cpp %.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 clean:
