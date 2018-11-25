@@ -26,6 +26,8 @@ class ChunkReader : ifstream {
 	string& closure(string& s);
 	string closure();
 	void advance();
+	char get();
+	bool empty();
 };
 
 #endif

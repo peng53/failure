@@ -114,3 +114,9 @@ void ChunkReader::advance(){
 		feed();
 	}
 }
+char ChunkReader::get(){
+	return ch[I];
+}
+bool ChunkReader::empty(){
+	return (E==0 && ifstream::eof());
+}
