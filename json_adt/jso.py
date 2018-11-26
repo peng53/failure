@@ -1,6 +1,6 @@
 import json
 
-f = open('../test.json','r')
+f = open('test2.json','r')
 
 s = """
 { "hello world" : "test",
@@ -143,35 +143,62 @@ while my_stack and i<len(s):
 """
 print json.dumps(json.loads(s),indent=4)
 """
-print "----------"
-print "With stack"
-print "----------"
-labels = ['tree']
-objects = [tree]
-indents = [0]
-while labels:
-	l = labels.pop()
-	o = objects.pop()
-	i = indents.pop()
-	if l:
-		print '.'*i+l+':='
-	if type(o) is dict:
-		labels.append(None)
-		objects.append('}')
-		indents.append(i-1)
-		print '.'*i+'{'
-		for k in o:
-			labels.append(k)
-			objects.append(o[k])
-			indents.append(i+1)
-	elif type(o) is list:
-		labels.append(None)
-		objects.append(']')
-		indents.append(i-1)
-		print '.'*i+'['
-		for v in o:
+
+def jprint(tree):
+	print "----------"
+	print "With stack"
+	print "----------"
+	labels = ['tree']
+	objects = [tree]
+	indents = [0]
+	while labels:
+		l = labels.pop()
+		o = objects.pop()
+		i = indents.pop()
+		if l:
+			print '.'*i+l+':='
+		if type(o) is dict:
 			labels.append(None)
-			objects.append(v)
-			indents.append(i+1)
+			objects.append('}')
+			indents.append(i-1)
+			print '.'*i+'{'
+			for k in o:
+				labels.append(k)
+				objects.append(o[k])
+				indents.append(i+1)
+		elif type(o) is list:
+			labels.append(None)
+			objects.append(']')
+			indents.append(i-1)
+			print '.'*i+'['
+			for v in o:
+				labels.append(None)
+				objects.append(v)
+				indents.append(i+1)
+		else:
+			print '%s%s' %('.'*(i+1),o)
+
+tree_2 = json.loads(s)
+jprint(tree)
+jprint(tree_2)
+"""
+A = [tree]
+B = [tree_2]
+while A:
+	a = A.pop()
+	b = B.pop()
+	if type(a) is dict:
+		for k in a:
+			if k not in b:
+				print k
+			A.append(a[k])
+			B.append(b[k])
+	elif type(a) is list:
+		if len(a)!=len(b):
+			print len(a)
+			print len(b)
+			print "mismatch length"
 	else:
-		print '%s%s' %('.'*(i+1),o)
+		if a!=b:
+			print "unequal"
+"""
