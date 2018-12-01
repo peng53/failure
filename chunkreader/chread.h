@@ -16,6 +16,7 @@ class ChunkReader : ifstream {
 	const size_t M;
 	char* ch;
 	public:
+	using ifstream::is_open;
 	ChunkReader(const char* filename,const size_t csize);
 	~ChunkReader();
 	void feed();

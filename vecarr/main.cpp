@@ -12,7 +12,7 @@ class VecArr {
 		//std::vector<T*> wrap_arr;
 		T** wrap_arr;
 	public:
-		const size_t rows, cols, size;
+		const size_t size, cols, rows;
 		VecArr(const size_t col_count,const size_t row_count):size(col_count*row_count), cols(col_count), rows(row_count){
 			base_arr = new T[size];
 			wrap_arr = new T*[row_count];
