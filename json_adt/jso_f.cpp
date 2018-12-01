@@ -1,6 +1,26 @@
 #include "jso_f.h"
+#include <exception>
 
 using std::cout;
+
+class ExBadSymb : public std::exception {
+	virtual const char* what() const throw(){
+		return "Character not expected found";
+	}
+} BadSymbol;
+
+class ExEOF : public std::exception {
+	virtual const char* what() const throw(){
+		return "File ended prematurely.";
+	}
+} UnexceptedEOF;
+	
+class ExCloseBrace : public std::exception {
+	virtual const char* what() const throw(){
+		return "Close brace found without preceding open brace.";
+	}
+} ClosedButNotOpen;
+	
 
 void dispose(Jso* j, stack<Jso*>& more){
 	switch (j->t){
@@ -136,19 +156,50 @@ float get_a_number(ChunkReader& chr){
 	}
 	return std::stof(s);
 }
+string& get_a_string(ChunkReader& chr, string& s){
+	char c;
+	while (!chr.empty()){
+		c = chr.get();
+		switch (c){
+			case '"':
+				return s;
+				break;
+			case '\\':
+				chr.advance();
+				if (chr.get()=='"'){
+					s += '"';
+				} else {
+					s += '\\';
+					s += chr.get();
+				}
+				break;
+			default:
+				s += c;
+				break;
+		}
+		chr.advance();
+	}
+	throw UnexceptedEOF;
+	return s;
+}
+string get_a_string(ChunkReader& chr){
+	string str;
+	get_a_string(chr,str);
+	return str;
+}
 JType mk_key_value(ChunkReader& chr, string& s){
 	// Given a ChunkReader at '"' char, modify propname, and return a JType
 	s.clear();
 	chr.advance();
 	chr.capture_until(s,'"');
-	if (chr.get()!='"'){
-		throw 1; // put an specific exception here.
+	if (chr.get()!='"'){ // then it must be a '\0', e.g EOF
+		throw UnexceptedEOF;
 	}
 	if (s.length()==0){
-		throw 2; // put an specific exception here. (relating to 0len)
+		throw BadSymbol; // need more specific exception.
 	}
 	if (chr.until(':')!=':'){
-		throw 3; // put an specific exception here. (relating to missing :)
+		throw BadSymbol;
 	}
 	chr.advance();
 	switch (next_symplex(chr)){
@@ -168,7 +219,7 @@ JType mk_key_value(ChunkReader& chr, string& s){
 			return JType::Num;
 			break;
 		default:
-			throw 4; // exception: unexpected char.
+			throw ClosedButNotOpen;
 			break;
 	}
 	return JType::Str;
@@ -190,17 +241,16 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 					stk.top()->key_value(s,get_a_number(chr));
 					break;
 				case JType::Str:
-					stk.top()->key_value(s,chr.capture_until('"'));
+					stk.top()->key_value(s,get_a_string(chr));
 					if (chr.get()!='"'){
-						throw 1;
+						throw BadSymbol;
 					}
-					// NEED TO THROW IF " isn't found!
+					chr.advance();
 					break;
 				case JType::Obj:
 					j = new Jso(JType::Obj);
 					stk.top()->key_value(s,j);
 					stk.emplace(j);
-					return;
 					break;
 				case JType::Arr:
 					j = new Jso(JType::Arr);
@@ -209,11 +259,39 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 					return;
 					break;
 			}
-		} else {
-			throw 1;
+		} else { // it would be [{ or \0
+			std::cerr << c;
+			throw BadSymbol;
 		}
 	}
 }
 void array_handler(stack<Jso*>& stk, ChunkReader& chr){
-	
+	char c;
+	Jso* j;
+	while (!chr.empty() && !stk.empty()){
+		c = next_symplex(chr);
+		if (c==']'){
+			chr.advance();
+			stk.pop();
+			return;
+		} else if (c=='{'){
+			chr.advance();
+			j = new Jso(JType::Obj);
+			stk.top()->add_value(j);
+			stk.emplace(j);
+			return;
+		} else if (c=='['){
+			chr.advance();
+			j = new Jso(JType::Arr);
+			stk.top()->add_value(j);
+			stk.emplace(j);
+		} else if (c=='"'){
+			chr.advance();
+			stk.top()->add_value(get_a_string(chr));
+		} else if (c=='0'){
+			stk.top()->add_value(get_a_number(chr));
+		} else { // then it must be } or \0
+			throw BadSymbol;
+		}
+	}
 }

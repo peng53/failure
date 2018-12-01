@@ -36,6 +36,7 @@ struct Jso {
 	void add_value(const float v);
 	void add_value(const string& v);
 	void add_value(const JType vt);
+	void add_value(Jso* v);
 	void set_value(float v);
 	void set_value(const string& v);
 	friend std::ostream& operator<<(std::ostream& out,const Jso& J);
