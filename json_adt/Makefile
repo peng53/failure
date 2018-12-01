@@ -1,6 +1,6 @@
 # Makefile for json_adt
 
-CXXFLAGS=-pedantic -O2 -march=native
+CXXFLAGS=-pedantic -O2 -march=native -Wall -Werror
 OBJ=../objects
 
 build: $(OBJ)/jso.o $(OBJ)/jso_f.o main.o $(OBJ)/chread.o
