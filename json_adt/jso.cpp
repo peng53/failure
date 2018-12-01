@@ -54,6 +54,9 @@ void Jso::add_value(const string& v){
 void Jso::add_value(const JType vt){
 	if (t==JType::Arr){ x.a->emplace_back(new Jso(vt)); }
 }
+void Jso::add_value(Jso* v){
+	if (t==JType::Arr){ x.a->emplace_back(v); }
+}
 void Jso::set_value(float v){
 	if (t==JType::Num){ x.f = v; }
 }
