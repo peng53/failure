@@ -1,7 +1,9 @@
 #include "jso_f.h"
 #include <exception>
+#include <stdexcept>
 
 using std::cout;
+using std::pair;
 
 class ExBadSymb : public std::exception {
 	virtual const char* what() const throw(){
@@ -20,39 +22,20 @@ class ExCloseBrace : public std::exception {
 		return "Close brace found without preceding open brace.";
 	}
 } ClosedButNotOpen;
-	
 
 void dispose(Jso* j, stack<Jso*>& more){
 	switch (j->t){
-		case JType::Num:
-		case JType::Str:
-			break;
 		case JType::Arr:
-			for (auto a : *(j->x.a)){
-				switch (a->t){
-					case JType::Num:
-					case JType::Str:
-						delete a;
-						break;
-					default:
-						more.push(a);
-						break;
-				}
+			for (auto &a : *(j->x.a)){
+				more.emplace(a);
 			}
 			break;
 		case JType::Obj:
-			for (auto m : *(j->x.m)){
-				switch (m.second->t){
-					case JType::Num:
-					case JType::Str:
-						delete m.second;
-						break;
-					default:
-						more.push(m.second);
-						break;
-				}
+			for (auto &m : *(j->x.m)){
+				more.emplace(m.second);
 			}
 			break;
+		default: break;
 	}
 	delete j;
 }
@@ -132,27 +115,18 @@ char next_symplex(ChunkReader& chr){
 float get_a_number(ChunkReader& chr){
 	char c;
 	string s;
+	bool found_dot = false;
 	while (!chr.empty()){
 		c = chr.get();
-		if (c>='0' && c<='9'){
-			s += c;
-			chr.advance();
-		} else {
-			break;
-		}
-	}
-	if (c=='.'){
-		s += '.';
-		chr.advance();
-		while (!chr.empty()){
-			c = chr.get();
-			if (c>='0' && c<='9'){
-				s += c;
-				chr.advance();
+		if (c<'0' || c>'9'){
+			if (!found_dot && c=='.'){
+				found_dot = true;
 			} else {
 				break;
 			}
 		}
+		s += c;
+		chr.advance();
 	}
 	return std::stof(s);
 }
@@ -179,7 +153,8 @@ string& get_a_string(ChunkReader& chr, string& s){
 		}
 		chr.advance();
 	}
-	throw UnexceptedEOF;
+	throw std::runtime_error("File ended prematurely.");
+	//throw UnexceptedEOF;
 	return s;
 }
 string get_a_string(ChunkReader& chr){
@@ -201,6 +176,14 @@ JType mk_key_value(ChunkReader& chr, string& s){
 	if (chr.until(':')!=':'){
 		throw BadSymbol;
 	}
+	/*
+	const map<char,char> sym2obj = {
+	{'"',JType::Str},
+	{'{',JType::Obj},
+	{'[',JType::Arr},
+	{'0',JType::Num}
+	};
+	*/
 	chr.advance();
 	switch (next_symplex(chr)){
 		case '"':
@@ -218,15 +201,19 @@ JType mk_key_value(ChunkReader& chr, string& s){
 		case '0':
 			return JType::Num;
 			break;
+		case '\0':
+			throw std::runtime_error("File ended prematurely.");
+			break;
 		default:
 			throw ClosedButNotOpen;
 			break;
 	}
+	throw std::runtime_error("File ended prematurely.");
 	return JType::Str;
 }
 
 void object_handler(stack<Jso*>& stk, ChunkReader& chr){
-	string s;
+	string key;
 	char c;
 	Jso* j;
 	while (!chr.empty() && !stk.empty()){
@@ -236,12 +223,12 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 			stk.pop();
 			return;
 		} else if (c=='"'){
-			switch (mk_key_value(chr,s)){
+			switch (mk_key_value(chr,key)){
 				case JType::Num:
-					stk.top()->key_value(s,get_a_number(chr));
+					stk.top()->key_value(key,get_a_number(chr));
 					break;
 				case JType::Str:
-					stk.top()->key_value(s,get_a_string(chr));
+					stk.top()->key_value(key,get_a_string(chr));
 					if (chr.get()!='"'){
 						throw BadSymbol;
 					}
@@ -249,27 +236,28 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 					break;
 				case JType::Obj:
 					j = new Jso(JType::Obj);
-					stk.top()->key_value(s,j);
+					stk.top()->key_value(key,j);
 					stk.emplace(j);
 					break;
 				case JType::Arr:
 					j = new Jso(JType::Arr);
-					stk.top()->key_value(s,j);
+					stk.top()->key_value(key,j);
 					stk.emplace(j);
 					return;
 					break;
 			}
 		} else { // it would be [{ or \0
-			std::cerr << c;
 			throw BadSymbol;
 		}
 	}
+	throw std::runtime_error("File ended prematurely.");
 }
 void array_handler(stack<Jso*>& stk, ChunkReader& chr){
 	char c;
 	Jso* j;
 	while (!chr.empty() && !stk.empty()){
 		c = next_symplex(chr);
+		cout << c;
 		if (c==']'){
 			chr.advance();
 			stk.pop();
@@ -294,70 +282,9 @@ void array_handler(stack<Jso*>& stk, ChunkReader& chr){
 			throw BadSymbol;
 		}
 	}
+	throw std::runtime_error("File ended prematurely.");
 }
-struct PrintStackNode {
-	const string& label;
-	Jso* obj;
-	const unsigned ind;
-	PrintStackNode(const string& s,Jso* j,unsigned i):
-		label(s), obj(j), ind(i)
-		{}
-};
-
-void print_it(Jso* root,const string& label){
-	Jso arr_end = Jso("]");
-	Jso obj_end = Jso("}");
-	string blank_label;
-	unsigned ind;
-	Jso* j;
-	stack<PrintStackNode> stk;
-	stk.emplace(label,root,1);
-	while (!stk.empty()){
-		j = stk.top().obj;
-		ind = stk.top().ind;
-		indent_it(ind,cout);
-		if (stk.top().label.length()>0){
-			cout << stk.top().label << " : ";
-		}
-		stk.pop();
-		switch (j->t){
-			case JType::Str:
-				if (j==&arr_end){
-					cout << "]\n";
-				}	else if (j==&obj_end){
-					cout << "}\n";
-				} else {
-					cout << *j << '\n';
-				}
-				break;
-			case JType::Num:
-				cout << *j << '\n';
-				break;
-			case JType::Obj:
-				stk.emplace(blank_label,&obj_end,ind);
-				//indent_it(ind,cout);
-				cout << "{\n";
-				for (auto& kv : *(j->x.m)){
-					stk.emplace(kv.first,kv.second,ind+1);
-				}
-				break;
-			case JType::Arr:
-				stk.emplace(blank_label,&arr_end,ind);
-				//indent_it(ind,cout);
-				cout << "[\n";
-				for (auto& v : *(j->x.a)){
-					switch (v->t){
-						case JType::Num:
-						case JType::Str:
-							indent_it(ind+1,cout);
-							cout << *v << '\n';
-							break;
-						default:
-							stk.emplace(blank_label,v,ind+1);
-							break;
-					}
-				}
-				break;
-		}
-	}
+ostream& operator<<(ostream& out,const JSON& rhs){
+	rhs.o->rprint(out,"Object");
+	return out;
 }

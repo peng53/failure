@@ -2,6 +2,8 @@
 #define JSOn
 #include "jso.h"
 #include "../chunkreader/chread.h"
+#include <stack>
+using std::stack;
 class JSON {
 	private:
 		Jso* o;
@@ -10,9 +12,9 @@ class JSON {
 		JSON();
 		~JSON();
 		Jso* operator*();
+		friend ostream& operator<<(ostream& out,const JSON& rhs);
 };
 char next_symplex(ChunkReader& chr);
 void object_handler(stack<Jso*>& stk, ChunkReader& chr);
 void array_handler(stack<Jso*>& stk, ChunkReader& chr);
-void print_it(Jso* root,const string& label);
 #endif
