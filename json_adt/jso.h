@@ -44,4 +44,5 @@ struct Jso {
 	void jso_out(ostream& out);
 };
 void all_out(Jso j,ostream& out);
+void indent_it(size_t i,ostream& out);
 #endif

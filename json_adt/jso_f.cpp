@@ -295,3 +295,69 @@ void array_handler(stack<Jso*>& stk, ChunkReader& chr){
 		}
 	}
 }
+struct PrintStackNode {
+	const string& label;
+	Jso* obj;
+	const unsigned ind;
+	PrintStackNode(const string& s,Jso* j,unsigned i):
+		label(s), obj(j), ind(i)
+		{}
+};
+
+void print_it(Jso* root,const string& label){
+	Jso arr_end = Jso("]");
+	Jso obj_end = Jso("}");
+	string blank_label;
+	unsigned ind;
+	Jso* j;
+	stack<PrintStackNode> stk;
+	stk.emplace(label,root,1);
+	while (!stk.empty()){
+		j = stk.top().obj;
+		ind = stk.top().ind;
+		indent_it(ind,cout);
+		if (stk.top().label.length()>0){
+			cout << stk.top().label << " : ";
+		}
+		stk.pop();
+		switch (j->t){
+			case JType::Str:
+				if (j==&arr_end){
+					cout << "]\n";
+				}	else if (j==&obj_end){
+					cout << "}\n";
+				} else {
+					cout << *j << '\n';
+				}
+				break;
+			case JType::Num:
+				cout << *j << '\n';
+				break;
+			case JType::Obj:
+				stk.emplace(blank_label,&obj_end,ind);
+				//indent_it(ind,cout);
+				cout << "{\n";
+				for (auto& kv : *(j->x.m)){
+					stk.emplace(kv.first,kv.second,ind+1);
+				}
+				break;
+			case JType::Arr:
+				stk.emplace(blank_label,&arr_end,ind);
+				//indent_it(ind,cout);
+				cout << "[\n";
+				for (auto& v : *(j->x.a)){
+					switch (v->t){
+						case JType::Num:
+						case JType::Str:
+							indent_it(ind+1,cout);
+							cout << *v << '\n';
+							break;
+						default:
+							stk.emplace(blank_label,v,ind+1);
+							break;
+					}
+				}
+				break;
+		}
+	}
+}

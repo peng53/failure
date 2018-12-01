@@ -14,4 +14,5 @@ class JSON {
 char next_symplex(ChunkReader& chr);
 void object_handler(stack<Jso*>& stk, ChunkReader& chr);
 void array_handler(stack<Jso*>& stk, ChunkReader& chr);
+void print_it(Jso* root,const string& label);
 #endif
