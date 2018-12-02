@@ -105,6 +105,9 @@ char next_symplex(ChunkReader& chr){
 			case '}':
 				return c;
 				break;
+			case '\0':
+				throw std::runtime_error("File ended prematurely.");
+				break;
 			default:
 				chr.advance();
 				break;
