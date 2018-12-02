@@ -50,7 +50,7 @@ int main(int argc, char** argv){
 	cout << "\n\n/* input test */\n\n";
 	std::ifstream f;
 	string line;
-	f.open("words.txt");
+	f.open("../in_out/words.txt");
 	//int count = 0;
 	while (getline(f,line)){// && count<8000){
 		ws << line;
