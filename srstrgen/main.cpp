@@ -1,8 +1,8 @@
 #include <string>
 #include <cstring>
 #include <iostream>
-#include "b_inc.cpp"
-#include "st.cpp"
+#include "b_inc.h"
+#include "st.h"
 
 using std::cout;
 using std::string;
