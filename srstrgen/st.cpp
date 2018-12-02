@@ -28,6 +28,7 @@ void PartedString::add_literal(const string &s){
 }
 PartedString& PartedString::operator<<(const string &s){
 	add_literal(s);
+	return *this;
 }
 void PartedString::add_part(const string &s){
 	add_literal(s);

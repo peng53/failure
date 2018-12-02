@@ -1,12 +1,22 @@
-build:
-	g++ -pedantic -std=c++11 main.cpp -o srstrgen
-compile:
-	g++ -pedantic -std=c++11 -c st.cpp
-	g++ -pedantic -std=c++11 -c b_inc.cpp
-	g++ -pedantic -std=c++11 -c main.cpp
-lib_exo:
-	g++ -pedantic -std=c++11 -shared "exo.cpp" -o lib_exo.so
+# Makefile for srstrgen
+
+CXXFLAGS=-pedantic -O2 -march=native -Wall -Werror
+OBJ=../objects
+objects=$(OBJ)/b_inc.o $(OBJ)/st.o $(OBJ)/srstrgen_main.o
+
+build: $(objects)
+	$(CXX) $(CXXFLAGS) $(objects) -o ../bin/srstrgen
+
+$(OBJ)/%.o: %.cpp %.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(OBJ)/srstrgen_main.o: main.cpp st.h b_inc.h
+	$(CXX) -c $(CXXFLAGS) main.cpp -o $@
+
+lib_exo: $(OBJ)/exo.o $(OBJ)/b_inc.o $(OBJ)/st.o
+	$(CXX) $(CXXFLAGS) -shared $< -o ../bin/lib_exo.so
+
 test:
-	./srstrgen -c 3 -b 001000 abc - -s 0,4,1,2 " cool cat"
+	../bin/srstrgen -c 3 -b 001000 abc - -s 0,4,1,2 " cool cat"
 clean:
-	rm -I *.o *.gch srstrgen lib_exo.so
+	rm -I $(objects) ../bin/srstrgen ../bin/lib_exo.so
