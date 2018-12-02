@@ -1,27 +1,8 @@
 #include "jso_f.h"
-#include <exception>
 #include <stdexcept>
 
 using std::cout;
 using std::pair;
-
-class ExBadSymb : public std::exception {
-	virtual const char* what() const throw(){
-		return "Character not expected found";
-	}
-} BadSymbol;
-
-class ExEOF : public std::exception {
-	virtual const char* what() const throw(){
-		return "File ended prematurely.";
-	}
-} UnexceptedEOF;
-	
-class ExCloseBrace : public std::exception {
-	virtual const char* what() const throw(){
-		return "Close brace found without preceding open brace.";
-	}
-} ClosedButNotOpen;
 
 void dispose(Jso* j, stack<Jso*>& more){
 	switch (j->t){
@@ -106,7 +87,7 @@ char next_symplex(ChunkReader& chr){
 				return c;
 				break;
 			case '\0':
-				throw std::runtime_error("File ended prematurely.");
+				throw std::runtime_error("File ended prematurely. :<");
 				break;
 			default:
 				chr.advance();
@@ -157,7 +138,6 @@ string& get_a_string(ChunkReader& chr, string& s){
 		chr.advance();
 	}
 	throw std::runtime_error("File ended prematurely.");
-	//throw UnexceptedEOF;
 	return s;
 }
 string get_a_string(ChunkReader& chr){
@@ -171,13 +151,13 @@ JType mk_key_value(ChunkReader& chr, string& s){
 	chr.advance();
 	chr.capture_until(s,'"');
 	if (chr.get()!='"'){ // then it must be a '\0', e.g EOF
-		throw UnexceptedEOF;
+		throw std::runtime_error("File ended prematurely.");
 	}
 	if (s.length()==0){
-		throw BadSymbol; // need more specific exception.
+		throw std::runtime_error("Got 0-len key, which is not possible.");
 	}
 	if (chr.until(':')!=':'){
-		throw BadSymbol;
+		throw std::runtime_error("Following colon missing in key-value pair.");
 	}
 	/*
 	const map<char,char> sym2obj = {
@@ -204,11 +184,8 @@ JType mk_key_value(ChunkReader& chr, string& s){
 		case '0':
 			return JType::Num;
 			break;
-		case '\0':
-			throw std::runtime_error("File ended prematurely.");
-			break;
 		default:
-			throw ClosedButNotOpen;
+			throw std::runtime_error("File ended prematurely.");
 			break;
 	}
 	throw std::runtime_error("File ended prematurely.");
@@ -219,7 +196,7 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 	string key;
 	char c;
 	Jso* j;
-	while (!chr.empty() && !stk.empty()){
+	while (!chr.empty()){
 		c = next_symplex(chr);
 		if (c=='}'){
 			chr.advance();
@@ -233,7 +210,7 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 				case JType::Str:
 					stk.top()->key_value(key,get_a_string(chr));
 					if (chr.get()!='"'){
-						throw BadSymbol;
+						throw std::runtime_error("Closing double quote not found.");
 					}
 					chr.advance();
 					break;
@@ -250,7 +227,7 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 					break;
 			}
 		} else { // it would be [{ or \0
-			throw BadSymbol;
+			throw std::runtime_error("Unexpected symbol encountered.");
 		}
 	}
 	throw std::runtime_error("File ended prematurely.");
@@ -258,9 +235,9 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 void array_handler(stack<Jso*>& stk, ChunkReader& chr){
 	char c;
 	Jso* j;
-	while (!chr.empty() && !stk.empty()){
+	string s;
+	while (!chr.empty()){
 		c = next_symplex(chr);
-		cout << c;
 		if (c==']'){
 			chr.advance();
 			stk.pop();
@@ -278,11 +255,18 @@ void array_handler(stack<Jso*>& stk, ChunkReader& chr){
 			stk.emplace(j);
 		} else if (c=='"'){
 			chr.advance();
-			stk.top()->add_value(get_a_string(chr));
+			s.clear();
+			get_a_string(chr,s);
+			cout << "got array value: " << s << '\n';
+			stk.top()->add_value(s);
+			if (chr.get()!='"'){
+				throw std::runtime_error("Closing double quote not found.");
+			}
+			chr.advance();
 		} else if (c=='0'){
 			stk.top()->add_value(get_a_number(chr));
 		} else { // then it must be } or \0
-			throw BadSymbol;
+			throw std::runtime_error("Unexpected symbol encountered.");
 		}
 	}
 	throw std::runtime_error("File ended prematurely.");
