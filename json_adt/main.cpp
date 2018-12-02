@@ -10,10 +10,9 @@ int main(int argc, char** argv){
 		cerr << "missing input json file\n";
 		return 1;
 	}
-	//ChunkReader F("..in_out/bookmarks-2018-11-30.json",80);
 	ChunkReader F(argv[1],80);
 	if (!F.is_open()){
-		cerr << "file was not opened successfully\n";
+		cerr << "File was not opened successfully\n";
 		return 1;
 	}
 	if (next_symplex(F)!='{'){
@@ -33,14 +32,13 @@ int main(int argc, char** argv){
 				case JType::Arr:
 					array_handler(stk,F);
 					break;
-				default:
-					break;
+				default: break;
 			}
 		}
 	} catch (const std::runtime_error& e) {
-		cout << e.what();
-		cout << "\nStructure incomplete. Printing what was recieved:\n";
-		cout << lv;
+		cout << e.what()
+			<< "\nStructure incomplete. Printing what was recieved:\n"
+			<< lv;
 		return 1;
 	}
 	//(*lv)->rprint(cout,"tree");
