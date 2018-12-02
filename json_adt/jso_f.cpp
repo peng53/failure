@@ -61,7 +61,6 @@ JSON::JSON(const JSON& rhs): JSON(){
 				case JType::Arr:
 					t = new Jso(JType::Arr);
 					(*(l->x.m))[v.first] = t;
-					
 					break;
 			}
 		}
@@ -85,7 +84,6 @@ char next_symplex(ChunkReader& chr){
 			case ']':
 			case '}':
 				return c;
-				break;
 			case '\0':
 				throw std::runtime_error("File ended prematurely. :<");
 				break;
@@ -120,8 +118,8 @@ string& get_a_string(ChunkReader& chr, string& s){
 		c = chr.get();
 		switch (c){
 			case '"':
+				chr.advance();
 				return s;
-				break;
 			case '\\':
 				chr.advance();
 				if (chr.get()=='"'){
@@ -137,7 +135,7 @@ string& get_a_string(ChunkReader& chr, string& s){
 		}
 		chr.advance();
 	}
-	throw std::runtime_error("File ended prematurely.");
+	throw std::runtime_error("Closing double quote not found.");	
 	return s;
 }
 string get_a_string(ChunkReader& chr){
@@ -145,6 +143,7 @@ string get_a_string(ChunkReader& chr){
 	get_a_string(chr,str);
 	return str;
 }
+/*
 JType mk_key_value(ChunkReader& chr, string& s){
 	// Given a ChunkReader at '"' char, modify propname, and return a JType
 	s.clear();
@@ -159,14 +158,6 @@ JType mk_key_value(ChunkReader& chr, string& s){
 	if (chr.until(':')!=':'){
 		throw std::runtime_error("Following colon missing in key-value pair.");
 	}
-	/*
-	const map<char,char> sym2obj = {
-	{'"',JType::Str},
-	{'{',JType::Obj},
-	{'[',JType::Arr},
-	{'0',JType::Num}
-	};
-	*/
 	chr.advance();
 	switch (next_symplex(chr)){
 		case '"':
@@ -191,40 +182,80 @@ JType mk_key_value(ChunkReader& chr, string& s){
 	throw std::runtime_error("File ended prematurely.");
 	return JType::Str;
 }
-
+*/
+Jso* text2obj(ChunkReader& chr, JType t){
+	switch (t){
+		case JType::Num:
+			return new Jso(get_a_number(chr));
+		case JType::Str:
+			return new Jso(get_a_string(chr));
+		default:
+			return new Jso(t);
+	}
+}
+JType char2type(char c){
+	switch (c){
+		case '{': return JType::Obj;
+		case '[': return JType::Arr;
+		case '"': return JType::Str;
+		case '0': return JType::Num;
+	}
+	throw std::runtime_error("Got unexpected character for type.");
+}
+/*
+string& keyNcolon(ChunkReader& chr, string& key){
+	// Starting at first character (after '"')
+	// keys cannot contain escapes..otherwise we would use get a string?
+	key.clear();
+	chr.capture_until('"');
+	if (chr.get()!='"'){
+		throw std::runtime_error("File ended prematurely.");
+	}
+	if (key.length()==0){
+		throw std::runtime_error("Got 0-len key, which is not possible.");
+	}
+	// now to skip past the colon.
+	if (chr.until(':')!=':'){
+		throw std::runtime_error("Following colon missing in key-value pair.");
+	}
+	chr.advance();
+	return key;
+}
+*/
 void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 	string key;
 	char c;
 	Jso* j;
 	while (!chr.empty()){
 		c = next_symplex(chr);
+		chr.advance();
 		if (c=='}'){
-			chr.advance();
 			stk.pop();
 			return;
-		} else if (c=='"'){
-			switch (mk_key_value(chr,key)){
-				case JType::Num:
-					stk.top()->key_value(key,get_a_number(chr));
-					break;
-				case JType::Str:
-					stk.top()->key_value(key,get_a_string(chr));
-					if (chr.get()!='"'){
-						throw std::runtime_error("Closing double quote not found.");
-					}
-					chr.advance();
-					break;
-				case JType::Obj:
-					j = new Jso(JType::Obj);
-					stk.top()->key_value(key,j);
-					stk.emplace(j);
-					break;
-				case JType::Arr:
-					j = new Jso(JType::Arr);
-					stk.top()->key_value(key,j);
-					stk.emplace(j);
-					return;
-					break;
+		}
+		if (c=='"'){
+			//j = text2obj(chr,mk_key_value(chr,key));
+			key.clear();
+			get_a_string(chr,key);
+			if (key.length()==0){
+				throw std::runtime_error("Got 0-len key, which is not possible.");
+			}
+			if (chr.until(':')!=':'){
+				throw std::runtime_error("Following colon missing in key-value pair.");
+			}
+			chr.advance();
+			c = next_symplex(chr);
+			if (c!='0'){
+				chr.advance();
+			}
+			j = text2obj(chr,char2type(c)); // char2type will throw the exception.
+			stk.top()->key_value(key,j);
+			if (j->t==JType::Arr){
+				stk.emplace(j);
+				return;
+			}
+			if (j->t==JType::Obj){
+				 stk.emplace(j);
 			}
 		} else { // it would be [{ or \0
 			throw std::runtime_error("Unexpected symbol encountered.");
@@ -235,38 +266,22 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 void array_handler(stack<Jso*>& stk, ChunkReader& chr){
 	char c;
 	Jso* j;
-	string s;
 	while (!chr.empty()){
 		c = next_symplex(chr);
-		if (c==']'){
+		if (c!='0'){ // 0 would imply that char is significant
 			chr.advance();
+		}
+		if (c==']'){
 			stk.pop();
 			return;
-		} else if (c=='{'){
-			chr.advance();
-			j = new Jso(JType::Obj);
-			stk.top()->add_value(j);
+		}
+		j = text2obj(chr,char2type(c)); // char2type will throw the exception.
+		stk.top()->add_value(j);
+		if (j->t==JType::Arr){
+			stk.emplace(j);
+		} else if (j->t==JType::Obj){
 			stk.emplace(j);
 			return;
-		} else if (c=='['){
-			chr.advance();
-			j = new Jso(JType::Arr);
-			stk.top()->add_value(j);
-			stk.emplace(j);
-		} else if (c=='"'){
-			chr.advance();
-			s.clear();
-			get_a_string(chr,s);
-			cout << "got array value: " << s << '\n';
-			stk.top()->add_value(s);
-			if (chr.get()!='"'){
-				throw std::runtime_error("Closing double quote not found.");
-			}
-			chr.advance();
-		} else if (c=='0'){
-			stk.top()->add_value(get_a_number(chr));
-		} else { // then it must be } or \0
-			throw std::runtime_error("Unexpected symbol encountered.");
 		}
 	}
 	throw std::runtime_error("File ended prematurely.");
