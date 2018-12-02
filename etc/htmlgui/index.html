@@ -1,0 +1,118 @@
+<script>
+function testing_func(){
+	var t = document.getElementById("text1").value;
+	document.getElementById("text1").value = "success"+t;
+}
+function is_checked(s){
+	if (document.getElementById(s).checked==true){
+		document.getElementById("text1").value = "was checked";
+	} else {
+		document.getElementById("text1").value = "was not checked";
+	}
+}
+var op_name = ["NULL","PLUS","MINUS","TIMES","DIV"];
+var tvalue = null;
+var oppred = 0;
+var is_zero = true;
+function num_butt(n){
+	if (is_zero){
+		document.getElementById("calc").elements["dis"].value = n;
+		is_zero = false;
+	} else {
+		document.getElementById("calc").elements["dis"].value += n;
+	}
+}
+function go_op(a,b){
+	switch (oppred){
+		case 1:
+			return a+b;
+		case 2:
+			return a-b;
+		case 3:
+			return a*b;
+		case 4:
+			if (b!=0) return a/b;
+			else return 0;
+	}
+}
+function op_butt(o){
+	active_op_button(oppred,o);
+	oppred = o;
+	if (tvalue===null){
+		tvalue = Number(document.getElementById("calc").elements["dis"].value);
+		is_zero = true;
+		document.getElementById("calc").elements["dis"].value = 0;
+	} else {
+		try {
+			var t = Number(document.getElementById("calc").elements["dis"].value);
+			tvalue = go_op(tvalue,t);
+			document.getElementById("calc").elements["dis"].value = tvalue;
+			is_zero = true;
+		} catch (e){
+		}
+	}
+}
+function active_op_button(o_p,o){
+	if (o_p!=0) document.getElementById("calc").elements[op_name[o_p]].style.color="black";
+	document.getElementById("calc").elements[op_name[o]].style.color="red";
+}
+
+var n_completed = true;
+var bi_op = 0;
+var a_value = null;
+var b_value = null;
+function number_press(n){
+	if (n_completed===true){
+		document.getElementById("calc").elements["dis"].value = n;
+		n_completed = false;
+	} else {
+		document.getElementById("calc").elements["dis"].value += n;
+	}
+}
+function bi_op_do(){
+	var b_value = document.getElementById("calc").elements["dis"].value;
+	var t = document.getElementById("calc").elements["dis"];
+	switch (bi_op){
+		case 0: t.value= b_value; break;
+		case 1: t.value= a_value+b_value; break;
+		case 2: t.value= a_value-b_value; break;
+		case 3: t.value= a_value*b_value; break;
+		case 4: t.value= a_value/b_value; break;
+	}
+	//document.getElementById("calc").elements["dis"].value = t;
+}
+function bi_op_equals(){
+	document.getElementById("calc").elements["dis"].value = bi_op_do();
+}
+function bi_op_press(b_op){
+	//bi_op_equals();
+	bi_op_do();
+	n_completed = true;
+	bi_opp = b_op;
+}
+
+</script>
+
+<form id="calc">
+	<input type="text" name="dis" value="0">
+	<br>
+	<input type="button" name="7" value="7" onclick="number_press(7)">
+	<input type="button" name="8" value="8" onclick="number_press(8)">
+	<input type="button" name="9" value="9" onclick="number_press(9)">
+	<input type="button" name="DIV" value="/" onclick="bi_op_press(4)">
+	<br>
+	<input type="button" name="4" value="4" onclick="number_press(4)">
+	<input type="button" name="5" value="5" onclick="number_press(5)">
+	<input type="button" name="6" value="6" onclick="number_press(6)">
+	<input type="button" name="TIMES" value="x" onclick="bi_op_press(3)">
+	<br>
+	<input type="button" name="1" value="1" onclick="number_press(1)">
+	<input type="button" name="2" value="2" onclick="number_press(2)">
+	<input type="button" name="3" value="3" onclick="number_press(3)">
+	<input type="button" name="MINUS" value="-" onclick="bi_op_press(2)">
+	<br>
+	<input type="button" name="0" value="0" onclick="number_press(0)">
+	<input type="button" name="." value=".">
+	<input type="button" name="=" value="=" onclick="bi_op_do()">
+	<input type="button" name="PLUS" value="+" onclick="bi_op_press(1)">
+</form>
