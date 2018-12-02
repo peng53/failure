@@ -5,9 +5,13 @@
 using std::cout;
 using std::cerr;
 
-int main(){
-	//ChunkReader F("../bookmarks-2018-11-30.json",80);
-	ChunkReader F("eof.json",80);
+int main(int argc, char** argv){
+	if (argc<2){
+		cerr << "missing input json file\n";
+		return 1;
+	}
+	//ChunkReader F("..in_out/bookmarks-2018-11-30.json",80);
+	ChunkReader F(argv[1],80);
 	if (!F.is_open()){
 		cerr << "file was not opened successfully\n";
 		return 1;
@@ -35,6 +39,8 @@ int main(){
 		}
 	} catch (const std::runtime_error& e) {
 		cout << e.what();
+		cout << "\nStructure incomplete. Printing what was recieved:\n";
+		cout << lv;
 		return 1;
 	}
 	//(*lv)->rprint(cout,"tree");
