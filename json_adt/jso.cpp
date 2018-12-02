@@ -3,12 +3,6 @@
 
 using std::stack;
 
-Jso::Jso(float v): t(JType::Num){
-	x.f = v;
-}
-Jso::Jso(const string& v): t(JType::Str){
-	x.s = new string(v);
-}
 Jso::Jso(JType j): t(j){
 	switch (j){
 		case JType::Obj:
@@ -24,6 +18,12 @@ Jso::Jso(JType j): t(j){
 			x.s = new string;
 			break;
 	}
+}
+Jso::Jso(const string& v): Jso(JType::Str){
+	*(x.s) = v;
+}
+Jso::Jso(float v): Jso(JType::Num){
+	x.f = v;
 }
 Jso::~Jso(){
 	// Only deletes its members; doesn't go further.
@@ -76,7 +76,7 @@ ostream& operator<<(ostream& out,const Jso& J){
 			break;
 		case JType::Obj:
 			out << "{\n";
-			for (auto j : *(J.x.m)){
+			for (const auto& j : *(J.x.m)){
 				out << j.first << " : ";
 				out << *(j.second) << '\n';
 			}
@@ -84,7 +84,7 @@ ostream& operator<<(ostream& out,const Jso& J){
 			break;
 		case JType::Arr:
 			out << "[\n";
-			for (auto j : *(J.x.a)){
+			for (const auto& j : *(J.x.a)){
 				out << *j << '\n';
 			}
 			out << "]\n";

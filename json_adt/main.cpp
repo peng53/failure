@@ -1,5 +1,4 @@
-#include "../chunkreader/chread.h"
-#include "jso_f.h"
+#include "parser.h"
 #include <iostream>
 
 using std::cout;
@@ -7,7 +6,7 @@ using std::cerr;
 
 int main(int argc, char** argv){
 	if (argc<2){
-		cerr << "missing input json file\n";
+		cerr << "Missing input json file\n";
 		return 1;
 	}
 	ChunkReader F(argv[1],80);
@@ -21,27 +20,14 @@ int main(int argc, char** argv){
 	}
 	F.advance();
 	JSON lv;
-	stack<Jso*> stk;
-	stk.emplace(*lv);
 	try {
-		while (!F.empty() && !stk.empty()){
-			switch (stk.top()->t){
-				case JType::Obj:
-					object_handler(stk,F);
-					break;
-				case JType::Arr:
-					array_handler(stk,F);
-					break;
-				default: break;
-			}
-		}
+		parse_file(F,lv);
 	} catch (const std::runtime_error& e) {
-		cout << e.what()
+		cerr << e.what()
 			<< "\nStructure incomplete. Printing what was recieved:\n"
 			<< lv;
 		return 1;
 	}
-	//(*lv)->rprint(cout,"tree");
 	cout << lv;
 	return 0;
 }
