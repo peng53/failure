@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <ostream>
+#include <ios>
 
 using std::string;
 using std::ifstream;
