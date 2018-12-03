@@ -3,18 +3,33 @@
 */
 #include "stream_test.h"
 
-int main(){
-//	std::filebuf* f;
-//	std::ifstream myfile("../in_out/eof.json",std::ifstream::in);
-	std::stringbuf* f;
-	std::istringstream myfile;
-	std::string blah = "test";
-	myfile.str(blah);
-	f = myfile.rdbuf();
-	//std::cout << (char)f->sgetc();
+int main(int argc, char** argv){
+	std::streambuf* f;
+	std::ifstream my_file;
+	std::istringstream ins_str;
+	if (argc<2){
+		/* for string */
+		std::cout << "Using strings. Input something or return.\n";
+		std::string blah;
+		std::getline(std::cin,blah);
+		if (blah.length()==0){
+			blah = "testing string\n";
+		}
+		ins_str.str(blah);
+		f = ins_str.rdbuf();
+	}  else {
+		/* for file */
+		std::cout << "Using file: " << argv[1] << '\n';
+		my_file.open(argv[1],std::ifstream::in);
+		if (!my_file.is_open()){
+			std::cout << "Couldn't open file.\n";
+			return 1;
+		}
+		f = my_file.rdbuf();
+	}
 	Obj o2(f,64);
-	std::cout << o2.good << o2.has_data << '\n';
-	while (o2.has_data || o2.good){
+	std::cout << "*** Obj Status: good-" << o2.good << " hasdata-" << o2.has_data() << '\n';
+	while (o2.has_data() || o2.good){
 		std::cout << o2.get();
 		++o2;
 	}

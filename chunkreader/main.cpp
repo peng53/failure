@@ -4,16 +4,15 @@
 using std::cout;
 
 int main(){
-	//ChunkReader F("../test_json.json",80);
-	ChunkReader F("",80);
-	//cout << std::cin.rdbuf();
-	//F.rdbuf(std::cin.rdbuf());
+	ChunkReader F("../in_out/test_json.json",80);
+	if (!F.is_open()){
+		cout << "Couldn't open file.\n";
+		return 1;
+	}
 	string str;
-	//F.until('{');
-	//F.until('"');
-	//F.closure(str);
+	F.until('{');
+	F.until('"');
+	F.closure(str);
 	cout << str;
-	//cout << F;
-	//cout << F;
 	return 0;
 }
