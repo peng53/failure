@@ -17,3 +17,10 @@ $(OBJ)/chr_main.o: main.cpp chread.h
 
 clean:
 	rm $(OBJ)/main.o $(OBJ)/chread.o ../bin/chr
+
+test1: ../bin/stream_test
+	../bin/stream_test
+
+test: ../bin/chr
+	../bin/chr
+

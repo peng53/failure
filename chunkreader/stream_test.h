@@ -15,15 +15,14 @@ class Obj {
 		size_t I, E;
 		const size_t M;
 	public:
-		bool good, has_data;
+		bool good;
 		Obj(std::streambuf* sb,const size_t csize):
 			t(sb),
 			ch(new char[csize]),
 			I(0),
 			E(0),
 			M(csize),
-			good(true),
-			has_data(true)
+			good(true)
 		{
 			feed();
 		}
@@ -36,9 +35,6 @@ class Obj {
 				if (E<M-1){
 					good = false;
 				}
-				if (E==0){
-					has_data = false;
-				}
 			} else {
 				I = 0;
 				E = 0;
@@ -48,17 +44,15 @@ class Obj {
 			return ch[I];
 		}
 		Obj& operator++(){
-			if (has_data){
+			if (I+1<=E){
 				++I;
-				if (I>=E){
-					if (good){
-						feed();
-					} else {
-						has_data = false;
-					}
-				}
+			} else if (good){
+				feed();
 			}
 			return *this;
+		}
+		bool has_data(){
+			return I<E;
 		}
 };
 #endif
