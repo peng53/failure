@@ -3,11 +3,17 @@
 CXXFLAGS=-pedantic -O2 -march=native
 OBJ=../objects
 
-build: main.o $(OBJ)/chread.o
-	$(CXX) $(CXXFLAGS) main.o $(OBJ)/chread.o -o main
+build: $(OBJ)/chr_main.o $(OBJ)/chread.o
+	$(CXX) $(CXXFLAGS) $(OBJ)/chr_main.o $(OBJ)/chread.o -o ../bin/chr
+
+stream_test: $(OBJ)/stream_test.o
+	$(CXX) $(CXXFLAGS) $< -o ../bin/stream_test
 
 $(OBJ)/%.o : %.cpp %.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+$(OBJ)/chr_main.o: main.cpp chread.h
+	$(CXX) -c $(CXXFLAGS) main.cpp -o $@
+
 clean:
-	rm main.o $(OBJ)/chread.o
+	rm $(OBJ)/main.o $(OBJ)/chread.o ../bin/chr
