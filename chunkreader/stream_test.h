@@ -2,50 +2,28 @@
 #define STREAM_TEST
 #include <iostream>
 #include <fstream>
+#include <string>
 
-class Obj {
+using std::streambuf;
+using std::string;
+using std::ostream;
+
+class AReader {
 	private:
-		std::streambuf* t;
+		streambuf* t;
 		char *ch;
 		size_t I, E;
 		const size_t M;
-	public:
 		bool good;
-		Obj(std::streambuf* sb,const size_t csize):
-			t(sb),
-			ch(new char[csize]),
-			I(0),
-			E(0),
-			M(csize),
-			good(true)
-		{
-			feed();
-		}
-		void feed(){
-			if (good){
-				I = 0;
-				E = t->sgetn(ch,M-1);
-				ch[E] = '\0';
-				if (E<M-1){
-					good = false;
-				}
-			} else {
-				I = 0;
-				E = 0;
-			}
-		}
-		char get(){
-			return ch[I];
-		}
-		Obj& operator++(){
-			++I;
-			if (!has_data() && good){
-				feed();
-			}
-			return *this;
-		}
-		bool has_data(){
-			return I<E;
-		}
+	public:
+		AReader(streambuf* sb,const size_t csize); // constructs an AReader with a streambuf with data.
+		AReader& operator++(); // advances to next character.
+		~AReader(); // destructs AReader.
+		void feed(); // pulls data from streambuf.
+		char get(); // gets current character.
+		bool has_data(); // returns whether there is any new data, one should advance/feed if false.
+		char until(char c,string* str_ptr=nullptr);
+		// advances AReader until get is c. if provided string ptr, output to it.
 };
+ostream& operator<<(ostream& out,AReader& rhs); // posts data from AReader, then feeds.
 #endif
