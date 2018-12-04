@@ -2,11 +2,6 @@
 #define STREAM_TEST
 #include <iostream>
 #include <fstream>
-#include <sstream>
-#include <ios>
-#include <string>
-
-using std::ios_base;
 
 class Obj {
 	private:
@@ -30,7 +25,6 @@ class Obj {
 			if (good){
 				I = 0;
 				E = t->sgetn(ch,M-1);
-				//std::cout << "got : " << E << '\n';
 				ch[E] = '\0';
 				if (E<M-1){
 					good = false;
@@ -44,9 +38,8 @@ class Obj {
 			return ch[I];
 		}
 		Obj& operator++(){
-			if (I+1<=E){
-				++I;
-			} else if (good){
+			++I;
+			if (!has_data() && good){
 				feed();
 			}
 			return *this;
