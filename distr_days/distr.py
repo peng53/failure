@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import datetime
 import calendar
+import heapq
+
 input_year = 2019 # make it an argv.
 g = datetime.datetime(year=2018,month=12,day=5)
 working_days = [0]*12 # count per month.
@@ -31,4 +33,22 @@ for month in range(1,13):
 			cur_day_of_the_week = 0
 print("-"*20)
 for month in range(0,12):
-	print("{0} {1}({2})".format(calendar.month_abbr[month+1],working_days[month],len(days_off[month])))
+	print("{} {}({})".format(calendar.month_abbr[month+1],working_days[month],len(days_off[month])))
+
+free_days = 5*3 + 1
+#free_and_month = sorted(((working_days[m],m) for m in range(0,12)))
+#print(free_and_month)
+h = []
+for month,cnt in enumerate(working_days):
+	heapq.heappush(h,(-cnt,month))
+to_add = [0]*12
+for n in range(free_days):
+	cnt, mth = heapq.heappop(h)
+	#to_add.append(mth)
+	to_add[mth] += 1
+	working_days[mth] -= 1
+	heapq.heappush(h,(cnt+1,mth))
+
+print("-"*20)
+for month in range(0,12):
+	print("{} {}({}+{})".format(calendar.month_abbr[month+1],working_days[month],len(days_off[month]),to_add[month]))
