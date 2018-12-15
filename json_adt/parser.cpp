@@ -202,3 +202,71 @@ JSON& parse_file(ChunkReader& chr, JSON& lv){
 	}
 	return lv;
 }
+void skipNext(ChunkReader& chr, JType ft){
+	// Skips objects or arrays in ChunkReader. To skip strings or numbers,
+	// its best to use get_a_string/number ATM. chr's position should be
+	// after the opening bracket at time of call.
+	stack<JType> stk;
+	stk.emplace(ft);
+	char c;
+	while (!stk.empty() && !chr.empty()){
+		if (stk.top()==JType::Obj){
+			// then there's a key to ignore. get to opening quote.
+			if (chr.until('"')!='"'){
+				throw std::runtime_error("Unexpected symbol encountered.");
+			}
+			chr.advance();
+			// now to skip past it.
+			get_a_string(chr);
+			if (chr.until(':')!=':'){
+				throw std::runtime_error("Missing colon for key-value pair.");
+			}
+			chr.advance();
+		}
+		// now for the value.
+		c = next_symplex(chr);
+		if (c!='0'){
+			chr.advance();
+		}
+		switch (c){
+			/* Closing brackets were found. */
+			case ']':
+				if (stk.top()!=JType::Arr){
+					throw std::runtime_error("Unexpected symbol encountered.");
+				}
+				stk.pop();
+				break;
+			case '}':
+				if (stk.top()!=JType::Obj){
+					throw std::runtime_error("Unexpected symbol encountered.");
+				}
+				stk.pop();
+				break;
+			/* That's an EOF. */
+			case '\0':
+				throw std::runtime_error("File ended prematurely.");
+			/* An opening bracket, string, or number. */
+			default:
+				stk.emplace(char2type(c)); // char2type will throw the exception.
+				switch (stk.top()){
+					case JType::Str:
+						/*if (chr.until('"')!='"'){
+							throw std::runtime_error("Unexpected symbol encountered.");
+						}
+						chr.advance();
+						// above cannot handle escapes. */
+						get_a_string(chr);
+						stk.pop();
+						break;
+					case JType::Num:
+						get_a_number(chr); // get the number but discard it.
+						stk.pop();
+						break;
+					case JType::Arr:
+					case JType::Obj:
+						break;
+				}
+				break;
+		}
+	}
+}
