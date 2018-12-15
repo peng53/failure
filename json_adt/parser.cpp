@@ -6,6 +6,9 @@
 using std::stack;
 
 char next_symplex(ChunkReader& chr){
+	// Returns next JSON recognized symbol.
+	// If none is found, ChunkReader would have been read entirely, and a
+	// runtine_error would be thrown.
 	char c;
 	while (!chr.empty()){
 		c = chr.get();
@@ -27,6 +30,12 @@ char next_symplex(ChunkReader& chr){
 	throw std::runtime_error("File ended prematurely. :<");
 }
 float get_a_number(ChunkReader& chr){
+	// Grabs a floating point number from ChunkReader.
+	// chr's current position should already point to a valid digit
+	// at time of call. A decimal is allowed but numbers must start
+	// with a digit. The float is returned when non-digit/EOF/2nd
+	// decimal is encountered. ChunkReader's position is left at this
+	// invalid char.
 	char c;
 	string s;
 	bool found_dot = false;
@@ -45,6 +54,10 @@ float get_a_number(ChunkReader& chr){
 	return std::stof(s);
 }
 string& get_a_string(ChunkReader& chr, string& s){
+	// Grabs characters from ChunkReader until a " is encountered
+	// without a preceding \. If chr's position is " at call, this
+	// function returns after advancing once. If chr is consumed
+	// before finding a ", a runtine_error is thrown.
 	char c;
 	while (!chr.empty()){
 		c = chr.get();
@@ -70,11 +83,14 @@ string& get_a_string(ChunkReader& chr, string& s){
 	throw std::runtime_error("Closing double quote not found.");	
 }
 string get_a_string(ChunkReader& chr){
+	// Calls get_a_string without an output string.
 	string str;
 	get_a_string(chr,str);
 	return str;
 }
 Jso* text2obj(ChunkReader& chr, JType t){
+	// Returns a Jso* from data in ChunkReader given a JType.
+	// calls get_a_number/string for numbers/strings.
 	switch (t){
 		case JType::Num:
 			return new Jso(get_a_number(chr));
@@ -85,6 +101,9 @@ Jso* text2obj(ChunkReader& chr, JType t){
 	}
 }
 JType char2type(char c){
+	// Converts a char to a JType. Valid input characters are cases in
+	// next_symplex. If character is not an expected one, a runtime_error
+	// is thrown.
 	switch (c){
 		case '{': return JType::Obj;
 		case '[': return JType::Arr;
@@ -94,6 +113,11 @@ JType char2type(char c){
 	throw std::runtime_error("Got unexpected character for type.");
 }
 void object_handler(stack<Jso*>& stk, ChunkReader& chr){
+	// Handles data from ChunkReader while the 'current/top' object in 'scope'
+	// is an object. Usually it stops when '}' is found, or the top-object
+	// is a list. Throws if: a key with 0 chars is found, an expected colon is
+	// missing, a closing bracket other than '}' is found unexpectingly, or chr's
+	// data runs out before a closing '}' is found.
 	string key;
 	char c;
 	Jso* j;
@@ -135,6 +159,10 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 	throw std::runtime_error("File ended prematurely.");
 }
 void array_handler(stack<Jso*>& stk, ChunkReader& chr){
+	// Handles data from ChunkReader while the 'current/top' object in 'scope'
+	// is an array. Usually it stops when ']' is found, or the top-object
+	// is an object. Throws if: a a closing bracket other than ']' is found 
+	// unexpectingly, or chr's data runs out before a closing ']' is found.
 	char c;
 	Jso* j;
 	while (!chr.empty()){
