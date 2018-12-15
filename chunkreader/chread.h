@@ -20,8 +20,9 @@ class ChunkReader : ifstream {
 		ChunkReader(const char* filename,const size_t csize);
 		~ChunkReader();
 		void feed();
-		char until(char c,string* str_ptr=nullptr);
-		string capture_until(char c);
+		char until(const char c,string* str_ptr=nullptr);
+		char until_e(const char c,const bool int_escape=false,string* str_ptr=nullptr);
+		string capture_until(const char c);
 		friend ostream& operator<<(ostream& out,ChunkReader& rhs);
 		void advance();
 		char get();

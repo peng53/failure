@@ -33,7 +33,7 @@ void ChunkReader::feed(){
 		E = 0;
 	}
 }
-char ChunkReader::until(char c,string* str_ptr){
+char ChunkReader::until(const char c,string* str_ptr){
 	do {
 		if (get()==c){
 			return get();
@@ -45,8 +45,31 @@ char ChunkReader::until(char c,string* str_ptr){
 	} while (has_data() || good);
 	return '\0'; // this means no more data left.
 }
-
-string ChunkReader::capture_until(char c){
+char ChunkReader::until_e(const char end,const bool int_escape,string* str_ptr){
+	bool escape = false;
+	char c;
+	do {
+		if (escape){
+			escape = false;
+			if (str_ptr){
+				(*str_ptr) += get();
+			}
+		} else {
+			c = get();
+			if (int_escape && c=='\\'){
+				escape = true;
+			} else if (c==end){
+				return c;
+			}
+			if (str_ptr){
+				(*str_ptr) += get();
+			}
+		}
+		advance();
+	} while (has_data() || good);
+	return '\0';
+}
+string ChunkReader::capture_until(const char c){
 	string str;
 	until(c,&str);
 	return str;
