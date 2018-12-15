@@ -57,7 +57,7 @@ char AReader::until(char c,string* str_ptr){
 		if (str_ptr){
 			(*str_ptr) += get();
 		}
-		++(*this);		
+		++(*this);	
 	} while (has_data() || good);
 	return '\0'; // this means no more data left.
 }

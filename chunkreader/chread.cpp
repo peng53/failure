@@ -9,53 +9,50 @@ ChunkReader::ChunkReader(const char* filename,const size_t csize):
 	ifstream(filename,std::ifstream::in),
 	I(0),
 	E(0),
-	M(csize)
+	M(csize),
+	ch(new char[csize]),
+	good(true)
 {
-	ch = new char[M];
 	feed();
+	
 }
 ChunkReader::~ChunkReader(){
 	delete ch;
 	close();
 }
 void ChunkReader::feed(){
-	if (good()){
+	if (good){
 		read(ch,M-1);
 		I = 0;
 		E = gcount();
 		ch[E] = '\0';
+		if (E<M-1){
+			good = false;
+		}
 	} else {
 		I = 0;
 		E = 0;
 	}
 }
-char ChunkReader::until(char c){
-	while (E>0){
-		while (I<E){
-			if (ch[I]==c){
-				return ch[I];
-			}
-			++I;
+char ChunkReader::until(char c,string* str_ptr){
+	do {
+		if (get()==c){
+			return get();
 		}
-		feed();
-	}
-	std::cerr << "GOT TO EOF!\n";
-	return '\0';
+		if (str_ptr){
+			(*str_ptr) += get();
+		}
+		advance();
+	} while (has_data() || good);
+	return '\0'; // this means no more data left.
 }
+
 string ChunkReader::capture_until(char c){
 	string str;
-	return capture_until(str,c);
-}
-string& ChunkReader::capture_until(string& str,char c){
-	while (good() || I<E){
-		for (;I<E;++I){
-			if (ch[I]==c) return str;
-			str += ch[I];
-		}
-		if (good()) feed();
-	}
+	until(c,&str);
 	return str;
 }
+
 ostream& operator<<(ostream& out,ChunkReader& rhs){
 	if (rhs.E>0){
 		out << string(rhs.ch+rhs.I,rhs.E-rhs.I);
@@ -110,7 +107,7 @@ string ChunkReader::closure(){
 }
 void ChunkReader::advance(){
 	++I;
-	if (I>=E && good()){
+	if (!has_data() && good){
 		feed();
 	}
 }
@@ -119,4 +116,7 @@ char ChunkReader::get(){
 }
 bool ChunkReader::empty(){
 	return (E==0 && ifstream::eof());
+}
+bool ChunkReader::has_data(){
+	return I<E;
 }
