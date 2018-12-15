@@ -16,13 +16,13 @@ class ChunkReader : ifstream {
 	size_t I,E;
 	const size_t M;
 	char* ch;
+	bool good;
 	public:
 	using ifstream::is_open;
 	ChunkReader(const char* filename,const size_t csize);
 	~ChunkReader();
 	void feed();
-	char until(char c);
-	string& capture_until(string& str,char c);
+	char until(char c,string* str_ptr=nullptr);
 	string capture_until(char c);
 	friend ostream& operator<<(ostream& out,ChunkReader& rhs);
 	string& closure(string& s);
@@ -30,6 +30,7 @@ class ChunkReader : ifstream {
 	void advance();
 	char get();
 	bool empty();
+	bool has_data();
 };
 
 #endif
