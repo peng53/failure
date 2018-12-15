@@ -53,7 +53,7 @@ float get_a_number(ChunkReader& chr){
 	}
 	return std::stof(s);
 }
-string& get_a_string(ChunkReader& chr, string& s){
+string* get_a_string(ChunkReader& chr, string* s_ptr){
 	// Grabs characters from ChunkReader until a " is encountered
 	// without a preceding \. If chr's position is " at call, this
 	// function returns after advancing once. If chr is consumed
@@ -64,28 +64,53 @@ string& get_a_string(ChunkReader& chr, string& s){
 		switch (c){
 			case '"':
 				chr.advance();
-				return s;
+				return s_ptr;
 			case '\\':
 				chr.advance();
-				if (chr.get()=='"'){
-					s += '"';
-				} else {
-					s += '\\';
-					s += chr.get();
+				if (s_ptr){
+					if (chr.get()!='"'){
+						(*s_ptr) += '\\';
+					}
+					(*s_ptr) += chr.get();
 				}
 				break;
 			default:
-				s += c;
+				if (s_ptr){
+					(*s_ptr) += c;
+				}
 				break;
 		}
 		chr.advance();
 	}
 	throw std::runtime_error("Closing double quote not found.");	
 }
+string* get_a_string_q(ChunkReader& chr,const char q,string* s_ptr){
+	char c;
+	while (!chr.empty()){
+		c = chr.get();
+		chr.advance();
+		if (c==q){
+			return s_ptr;
+		} else if (c=='\\'){
+			if (s_ptr){
+				if (chr.get()!=q){
+					(*s_ptr) += '\\';
+				}
+				(*s_ptr) += chr.get();
+			}
+			chr.advance();
+		} else {
+			if (s_ptr){
+				(*s_ptr) += c;
+			}
+		}
+	}
+	throw std::runtime_error("Closing quote not found.");	
+}
 string get_a_string(ChunkReader& chr){
 	// Calls get_a_string without an output string.
 	string str;
-	get_a_string(chr,str);
+	get_a_string(chr,&str);
 	return str;
 }
 Jso* text2obj(ChunkReader& chr, JType t){
@@ -131,7 +156,7 @@ void object_handler(stack<Jso*>& stk, ChunkReader& chr){
 		if (c=='"'){
 			//j = text2obj(chr,mk_key_value(chr,key));
 			key.clear();
-			get_a_string(chr,key);
+			get_a_string(chr,&key);
 			if (key.length()==0){
 				throw std::runtime_error("Got 0-len key, which is not possible.");
 			}
