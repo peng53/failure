@@ -1,9 +1,9 @@
 #include "chread.h"
 #include <stack>
-#include <iostream>
-#include <stack>
+#include <map>
 
 using std::stack;
+using std::map;
 
 ChunkReader::ChunkReader(const char* filename,const size_t csize):
 	ifstream(filename,std::ifstream::in),
@@ -14,7 +14,6 @@ ChunkReader::ChunkReader(const char* filename,const size_t csize):
 	good(true)
 {
 	feed();
-	
 }
 ChunkReader::~ChunkReader(){
 	delete ch;
@@ -54,8 +53,8 @@ string ChunkReader::capture_until(char c){
 }
 
 ostream& operator<<(ostream& out,ChunkReader& rhs){
-	if (rhs.E>0){
-		out << string(rhs.ch+rhs.I,rhs.E-rhs.I);
+	if (rhs.has_data()){
+		out << rhs.ch+rhs.I;
 		rhs.feed();
 	}
 	return out;
@@ -71,33 +70,28 @@ string& ChunkReader::closure(string& s){
 	// Looks at current char, if its in BRACKETS,
 	// collects all characters to string until
 	// its counterpart is encountered.
-	char c = ch[I];
-	++I;
-	if (I==E){
-		feed();
-	}
+	char c = get();
 	if (BRACKETS.count(c)==0){
 		return s;
 	}
+	advance();
 	stack<char> stk;
 	stk.emplace(BRACKETS[c]);
-	while (E!=0 && !stk.empty()){
-		c = ch[I];
+	while (!stk.empty() && (has_data() || good)){
+		c = get();
 		if (BRACKETS.count(c)>0){
 			if (c==stk.top()){
-				stk.pop();
-				if (stk.empty()){
+				if (stk.size()<=1){
 					return s;
+				} else {
+					stk.pop();
 				}
 			} else {
 				stk.emplace(BRACKETS[c]);
 			}
 		}
 		s += c;
-		++I;
-		if (I==E){
-			feed();
-		}
+		advance();
 	}
 	return s;
 }
@@ -115,7 +109,7 @@ char ChunkReader::get(){
 	return ch[I];
 }
 bool ChunkReader::empty(){
-	return (E==0 && ifstream::eof());
+	return !(has_data() || good);
 }
 bool ChunkReader::has_data(){
 	return I<E;

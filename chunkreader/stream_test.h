@@ -24,6 +24,6 @@ class AReader {
 		bool has_data(); // returns whether there is any new data, one should advance/feed if false.
 		char until(char c,string* str_ptr=nullptr);
 		// advances AReader until get is c. if provided string ptr, output to it.
+		friend ostream& operator<<(ostream& out,AReader& rhs); // posts data from AReader, then feeds.
 };
-ostream& operator<<(ostream& out,AReader& rhs); // posts data from AReader, then feeds.
 #endif

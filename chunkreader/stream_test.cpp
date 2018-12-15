@@ -63,10 +63,7 @@ char AReader::until(char c,string* str_ptr){
 }
 ostream& operator<<(ostream& out,AReader& rhs){
 	if (rhs.has_data()){
-		while (rhs.has_data()){
-			out << rhs.get();
-			++rhs;
-		}
+		out << rhs.ch+rhs.I;
 		rhs.feed();
 	}
 	return out;
