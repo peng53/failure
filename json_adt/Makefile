@@ -19,6 +19,9 @@ $(OBJ)/chread.o: ../chunkreader/chread.cpp ../chunkreader/chread.h
 $(OBJ)/json_adt_main.o: main.cpp
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+$(OBJ)/sql_j.o: sql_j.cpp
+	$(CXX) -c $(CXXFLAGS) -lsqlite $< -o $@
+
 clean:
 	rm ../bin/jso_f $(OBJ)/jso.o $(OBJ)/jso_f.o $(OBJ)/json_adt_main.o $(OBJ)/chread.o $(OBJ)/parser.o
 
