@@ -6,6 +6,7 @@ int main(){
 	std::cout << "Made group:" << g << '\n';
 	g = b.create_group("dong",g);
 	std::cout << "Made child group:" << g << '\n';
+	b.delete_group(g);
 	b.print_groups();
 	return 0;
 }
