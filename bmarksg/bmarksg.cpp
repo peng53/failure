@@ -1,4 +1,6 @@
 #include "bmarksg.h"
+#include <vector>
+using std::vector;
 
 int prepare_helper(sqlite3 *db,sqlite3_stmt **s,const char* str){
 	// Helps prepare statements for an database.
@@ -126,26 +128,53 @@ bool DB_Connection::delete_group(const int gid){
 		"BEGIN TRANSACTION;",
 		0, 0, 0
 	);
-	sqlite3_stmt *delete_group, *delete_group_data, *delete_group_rel;
+	sqlite3_stmt *delete_group, *delete_group_data, *delete_group_rel, *get_child_group;
 	prepare_helper(db,&delete_group,
 		"DELETE FROM groups WHERE rowid=?1 LIMIT 1;");
+	prepare_helper(db,&delete_group_data,
+		"DELETE FROM data WHERE gid=?1;");
+	prepare_helper(db,&delete_group_rel,
+		"DELETE FROM rel WHERE gid=?1");
+	prepare_helper(db,&get_child_group,
+		"SELECT gid FROM rel WHERE pid=?1;");
+
 	sqlite3_bind_int(delete_group,1,gid);
 	if (!successful_stmt(delete_group)){
 		return 0;
 	}
-	prepare_helper(db,&delete_group_data,
-		"DELETE FROM data WHERE gid=?1;");
 	sqlite3_bind_int(delete_group_data,1,gid);
 	if (!successful_stmt(delete_group_data)){
 		return 0;
 	}
-
-	prepare_helper(db,&delete_group_rel,
-		"DELETE FROM rel WHERE gid=?1");
 	sqlite3_bind_int(delete_group_rel,1,gid);
 	if (!successful_stmt(delete_group_rel)){
 		return 0;
 	}
+
+	sqlite3_bind_int(get_child_group,1,gid);
+	for (
+		int R = sqlite3_step(get_child_group), sgid;
+		R==SQLITE_ROW;
+		R = sqlite3_step(get_child_group)
+	){
+		// Loop to delete subgroups.
+		//subgroups.emplace_back(sqlite3_column_int(get_child_group,0));
+		// First we get a subgroup's gid.
+		sgid = sqlite3_column_int(get_child_group,0);
+		// Second we bind it to the delete stmts.
+		sqlite3_bind_int(delete_group,1,sgid);
+		sqlite3_bind_int(delete_group_data,1,sgid);
+		sqlite3_bind_int(delete_group_rel,1,sgid);
+		// Last we run all stmts in sequence.
+		if (!successful_stmt(delete_group) ||
+			!successful_stmt(delete_group_data) ||
+			!successful_stmt(delete_group_rel)
+		){
+			// If any fails, it will short-circuit and return 0.
+			return 0;
+		}
+	}
+	sqlite3_reset(get_child_group);
 
 	sqlite3_exec(
 		db,
