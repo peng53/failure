@@ -16,7 +16,8 @@ class DB_Connection {
 		void create_tables();
 		void prepare_stmts();
 		void finalize_stmts();
-		int create_group(const string& name,int parent_gid=0);
+		int create_group(const string& name,const int parent_gid=0);
+		bool delete_group(const int gid);
 		void print_groups();
 };
 #endif
