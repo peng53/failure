@@ -33,37 +33,61 @@ DB_Connection::~DB_Connection(){
 }
 
 void DB_Connection::create_tables(){
-	// TODO check if db is already open before.
+	// groups.gid is an alias for groups.rowid
 	sqlite3_exec(
 		db,
-		"CREATE TABLE groups(rowid INTEGER primary key,name TEXT);"
-			"CREATE TABLE rel(rowid INTEGER primary key, gid INTEGER,pid INTEGER,depth INTEGER);"
+		"CREATE TABLE groups(gid INTEGER primary key,name TEXT);"
+			"CREATE TABLE rel(gid INTEGER,pid INTEGER,depth INTEGER);"
 			"CREATE TABLE data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);",
 		0, 0, 0
 	);
 }
 void DB_Connection::prepare_stmts(){
 	// Prepares all stmts used by the connection.
-	prepare_helper(db,&new_group,
+	prepare_helper(db,&new_grp,
 		"INSERT INTO groups (name) VALUES(?1);");
 	prepare_helper(db,&self_rel,
 		"INSERT INTO rel (gid,pid,depth) VALUES(?1,?1,0);");
-	prepare_helper(db,&root_group,
+	prepare_helper(db,&root_grp,
 		"INSERT INTO rel (gid,pid,depth) VALUES(?1,NULL,1);");
-	prepare_helper(db,&child_group,
-		"INSERT INTO rel SELECT NULL,?1,pid,depth+1 FROM rel WHERE rel.gid=?2 AND rel.pid IS NOT NULL;");
+	prepare_helper(db,&child_grp,
+		"INSERT INTO rel SELECT ?1,pid,depth+1 FROM rel WHERE rel.gid=?2 AND rel.pid IS NOT NULL;");
+	// For deleting groups
+	prepare_helper(db,&del_grp,
+		"DELETE FROM groups WHERE gid=?1 LIMIT 1;");
+	prepare_helper(db,&del_grp_data,
+		"DELETE FROM data WHERE gid=?1;");
+	prepare_helper(db,&del_grp_rel,
+		"DELETE FROM rel WHERE gid=?1");
+	prepare_helper(db,&get_child_grp,
+		"SELECT gid FROM rel WHERE pid=?1;");
+	// Transaction stmts
+	prepare_helper(db,&begin_trans,
+		"BEGIN TRANSACTION;");
+	prepare_helper(db,&end_trans,
+		"END TRANSACTION;");
 }
 void DB_Connection::finalize_stmts(){
-	sqlite3_finalize(new_group);
+	// For creating groups.
+	sqlite3_finalize(new_grp);
 	sqlite3_finalize(self_rel);
-	sqlite3_finalize(root_group);
-	sqlite3_finalize(child_group);
+	sqlite3_finalize(root_grp);
+	sqlite3_finalize(child_grp);
+	// For deleting groups.
+	sqlite3_finalize(del_grp);
+	sqlite3_finalize(del_grp_data);
+	sqlite3_finalize(del_grp_rel);
+	sqlite3_finalize(get_child_grp);
+	// Transaction stmts
+	sqlite3_finalize(begin_trans);
+	sqlite3_finalize(end_trans);
 }
 int DB_Connection::create_group(const string& name,const int parent_gid){
 	// Creates a group with name. If parent_gid is included, create under it.
 	// Returns gid of created group.
-	sqlite3_bind_text(new_group,1,name.c_str(),-1,SQLITE_STATIC); // STATIC is okay
-	if (!successful_stmt(new_group)){
+	trans_act('B');
+	sqlite3_bind_text(new_grp,1,name.c_str(),-1,SQLITE_STATIC); // STATIC is okay
+	if (!successful_stmt(new_grp)){
 		return 0;
 	}
 	int gid = sqlite3_last_insert_rowid(db);
@@ -74,23 +98,24 @@ int DB_Connection::create_group(const string& name,const int parent_gid){
 	int R;
 	if (parent_gid!=0){
 		// has a parent // not a root group.
-		sqlite3_bind_int(child_group,1,gid);
-		sqlite3_bind_int(child_group,2,parent_gid);
-		R = successful_stmt(child_group);
+		sqlite3_bind_int(child_grp,1,gid);
+		sqlite3_bind_int(child_grp,2,parent_gid);
+		R = successful_stmt(child_grp);
 	} else {
 		// a root group // no parent.
-		sqlite3_bind_int(root_group,1,gid);
-		R = successful_stmt(root_group);
+		sqlite3_bind_int(root_grp,1,gid);
+		R = successful_stmt(root_grp);
 	}
 	if (!R){
 		return 0;
 	}
+	trans_act('E');
 	return gid;
 }
 void DB_Connection::print_groups(){
 	sqlite3_stmt *groups;
 	prepare_helper(db,&groups,
-		"SELECT rowid,name FROM groups;");
+		"SELECT gid,name FROM groups;");
 	int R = sqlite3_step(groups);
 	while (R==SQLITE_ROW){
 		std::cout 
@@ -118,71 +143,51 @@ void DB_Connection::print_groups(){
 	}
 	sqlite3_finalize(relations);
 }
+
+bool DB_Connection::delete_group_helper(const int gid){
+	// Deletes a group from:
+	// the groups table,
+	// its data from the data table,
+	// and its relations from the rel table.
+	sqlite3_bind_int(del_grp,1,gid);
+	sqlite3_bind_int(del_grp_data,1,gid);
+	sqlite3_bind_int(del_grp_rel,1,gid);
+	if (!successful_stmt(del_grp) ||
+		!successful_stmt(del_grp_data) ||
+		!successful_stmt(del_grp_rel)
+	){
+		// If any fails, it will short-circuit and return 0.
+		return 0;
+	}
+	return 1;
+}
+
 bool DB_Connection::delete_group(const int gid){
 	// Deletes group with gid. If it doesn't exist,
 	// nothing will be deleted.
-	// These stmts will be moved later on to limit/
-	// widen scope. If this function returns 0, you should rollback.
-	sqlite3_exec(
-		db,
-		"BEGIN TRANSACTION;",
-		0, 0, 0
-	);
-	sqlite3_stmt *delete_group, *delete_group_data, *delete_group_rel, *get_child_group;
-	prepare_helper(db,&delete_group,
-		"DELETE FROM groups WHERE rowid=?1 LIMIT 1;");
-	prepare_helper(db,&delete_group_data,
-		"DELETE FROM data WHERE gid=?1;");
-	prepare_helper(db,&delete_group_rel,
-		"DELETE FROM rel WHERE gid=?1");
-	prepare_helper(db,&get_child_group,
-		"SELECT gid FROM rel WHERE pid=?1;");
-
-	sqlite3_bind_int(delete_group,1,gid);
-	if (!successful_stmt(delete_group)){
-		return 0;
-	}
-	sqlite3_bind_int(delete_group_data,1,gid);
-	if (!successful_stmt(delete_group_data)){
-		return 0;
-	}
-	sqlite3_bind_int(delete_group_rel,1,gid);
-	if (!successful_stmt(delete_group_rel)){
+	// If this function returns 0, you should rollback.
+	trans_act('B');
+	if (!delete_group_helper(gid)){
 		return 0;
 	}
 
-	sqlite3_bind_int(get_child_group,1,gid);
+	sqlite3_bind_int(get_child_grp,1,gid);
 	for (
-		int R = sqlite3_step(get_child_group), sgid;
+		int R = sqlite3_step(get_child_grp);
 		R==SQLITE_ROW;
-		R = sqlite3_step(get_child_group)
+		R = sqlite3_step(get_child_grp)
 	){
 		// Loop to delete subgroups.
-		//subgroups.emplace_back(sqlite3_column_int(get_child_group,0));
-		// First we get a subgroup's gid.
-		sgid = sqlite3_column_int(get_child_group,0);
-		// Second we bind it to the delete stmts.
-		sqlite3_bind_int(delete_group,1,sgid);
-		sqlite3_bind_int(delete_group_data,1,sgid);
-		sqlite3_bind_int(delete_group_rel,1,sgid);
-		// Last we run all stmts in sequence.
-		if (!successful_stmt(delete_group) ||
-			!successful_stmt(delete_group_data) ||
-			!successful_stmt(delete_group_rel)
-		){
-			// If any fails, it will short-circuit and return 0.
+		if (!delete_group_helper(sqlite3_column_int(get_child_grp,0))){
 			return 0;
 		}
 	}
-	sqlite3_reset(get_child_group);
-
-	sqlite3_exec(
-		db,
-		"END TRANSACTION;",
-		0, 0, 0
-	);
-	sqlite3_finalize(delete_group);
-	sqlite3_finalize(delete_group_data);
-	sqlite3_finalize(delete_group_rel);
+	sqlite3_reset(get_child_grp);
+	trans_act('E');
 	return 1;
+}
+void DB_Connection::trans_act(const char B_E){
+	sqlite3_stmt* s = ((B_E=='B') ? (begin_trans) : (end_trans));
+	sqlite3_step(s);
+	sqlite3_reset(s);
 }
