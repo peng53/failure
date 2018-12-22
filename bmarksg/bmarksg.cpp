@@ -1,6 +1,8 @@
 #include "bmarksg.h"
-#include <vector>
-using std::vector;
+#include <queue>
+
+using std::queue;
+using std::pair;
 
 int prepare_helper(sqlite3 *db,sqlite3_stmt **s,const char* str){
 	// Helps prepare statements for an database.
@@ -66,6 +68,19 @@ void DB_Connection::prepare_stmts(){
 		"BEGIN TRANSACTION;");
 	prepare_helper(db,&end_trans,
 		"END TRANSACTION;");
+	// Modify stmts
+	prepare_helper(db,&set_grp_name,
+		"UPDATE groups SET name=?1 WHERE gid=?2;");
+	prepare_helper(db,&childNparent,
+		"SELECT g.gid,p.pid FROM "
+			"(SELECT gid,pid FROM rel WHERE pid is not NULL AND depth=1) AS p "
+		"JOIN "
+			"(SELECT gid FROM rel WHERE pid=?1 AND depth>0 ORDER BY depth DESC) as g "
+		"ON g.gid=p.gid;");
+	// about childNparent..
+	// LHS returns all non root child-parents pairs.
+	// RHS returns all sub-groups of ?1 in breadth order.
+	// Joining them returns child-parent pairs of subgroups of gid in breadth order.
 }
 void DB_Connection::finalize_stmts(){
 	// For creating groups.
@@ -81,6 +96,27 @@ void DB_Connection::finalize_stmts(){
 	// Transaction stmts
 	sqlite3_finalize(begin_trans);
 	sqlite3_finalize(end_trans);
+	// Modify
+	sqlite3_finalize(set_grp_name);
+	sqlite3_finalize(childNparent);
+}
+bool DB_Connection::child_link(const int root,const int child){
+	// Links the 'child' group under 'root' group
+	if (root==0 || root==child || child==0){
+		// root and child cannot match nor be the NULL group
+		return 0;
+	}
+	// should check if root is subgroup of child before.
+	sqlite3_bind_int(child_grp,1,child);
+	sqlite3_bind_int(child_grp,2,root);
+	return successful_stmt(child_grp);
+}
+bool DB_Connection::unlink(const int gid){
+	// Deletes all rows in rel table with gid of gid.
+	// Since this includes the self relation, it recreates it.
+	sqlite3_bind_int(del_grp_rel,1,gid);
+	sqlite3_bind_int(self_rel,1,gid);
+	return (successful_stmt(del_grp_rel) && successful_stmt(self_rel));
 }
 int DB_Connection::create_group(const string& name,const int parent_gid){
 	// Creates a group with name. If parent_gid is included, create under it.
@@ -95,12 +131,10 @@ int DB_Connection::create_group(const string& name,const int parent_gid){
 	if (!successful_stmt(self_rel)){
 		return 0;
 	}
-	int R;
+	bool R;
 	if (parent_gid!=0){
 		// has a parent // not a root group.
-		sqlite3_bind_int(child_grp,1,gid);
-		sqlite3_bind_int(child_grp,2,parent_gid);
-		R = successful_stmt(child_grp);
+		R = child_link(parent_gid,gid);
 	} else {
 		// a root group // no parent.
 		sqlite3_bind_int(root_grp,1,gid);
@@ -117,6 +151,7 @@ void DB_Connection::print_groups(){
 	prepare_helper(db,&groups,
 		"SELECT gid,name FROM groups;");
 	int R = sqlite3_step(groups);
+	std::cout << "GID|NAME\n";
 	while (R==SQLITE_ROW){
 		std::cout 
 			<< sqlite3_column_int(groups,0)
@@ -190,4 +225,52 @@ void DB_Connection::trans_act(const char B_E){
 	sqlite3_stmt* s = ((B_E=='B') ? (begin_trans) : (end_trans));
 	sqlite3_step(s);
 	sqlite3_reset(s);
+}
+bool DB_Connection::rename_group(const int gid,const string& s){
+	sqlite3_bind_text(set_grp_name,1,s.c_str(),-1,SQLITE_STATIC);
+	sqlite3_bind_int(set_grp_name,2,gid);
+	return successful_stmt(set_grp_name);
+}
+bool DB_Connection::change_parent(const int gid,const int new_par){
+	trans_act('B');
+	if (new_par==0){
+		sqlite3_bind_int(root_grp,1,gid);
+		if (!unlink(gid) || successful_stmt(root_grp)){
+			return 0;
+		}
+	} else {
+		if (!unlink(gid) || !child_link(new_par,gid)){
+			return 0;
+		}
+	}
+	// Above we unlink gid from its current parent
+	// Then we create link to root OR new_par depending on new_par.
+	// Next we handle subgroups of gid.
+	queue<pair<int,int>> cp_pairs;
+	sqlite3_reset(childNparent);
+	std::cout << sqlite3_bind_int(childNparent,1,gid);
+	int R;
+	for (R = sqlite3_step(childNparent);
+		R == SQLITE_ROW;
+		R = sqlite3_step(childNparent)
+	){
+		cp_pairs.emplace(sqlite3_column_int(childNparent,0),
+			sqlite3_column_int(childNparent,1));
+	}
+	std::cout << "code was " << R << '\n';
+	if (R!=SQLITE_DONE){
+		return 0;
+	}
+	int c,p;
+	while (!cp_pairs.empty()){
+		c = cp_pairs.front().first;
+		p = cp_pairs.front().second;
+		cp_pairs.pop();
+		std::cout << "child-par: " << c << ',' << p << '\n';
+		if (!unlink(c) || !child_link(p,c)){
+			return 0;
+		}
+	}
+	trans_act('E');
+	return 1;
 }
