@@ -1,12 +1,13 @@
 #include "bmarksg.h"
 
 int main(){
-	DB_Connection b;
-	int g = b.create_group("test");
-	std::cout << "Made group:" << g << '\n';
-	int g2 = b.create_group("dong",g);
-	std::cout << "Made child group:" << g2 << '\n';
-	b.delete_group(g);
-	b.print_groups();
+	DB_Connection db;
+	int A = db.create_group("alpha");
+	int B = db.create_group("beta");
+	int C = db.create_group("charlie",A);
+	db.create_group("delta",C);
+	db.print_groups();
+	db.change_parent(C,B);
+	db.print_groups();
 	return 0;
 }
