@@ -25,6 +25,46 @@ proc build_tables {} {
 		CREATE TABLE data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);
 	}
 }
+# sql stmts BEG
+proc sql_self_rel {gid} {
+	# Creates a self relation row for gid.
+	conn eval {INSERT INTO rel VALUES(NULL,:gid,:gid,0);}
+}
+proc sql_root_rel {gid} {
+	# Creates relation that indicates a root group.
+	conn eval {INSERT INTO rel VALUES(NULL,:gid,NULL,1);}
+}
+proc sql_child_rel {gid pid} {
+	# Creates relations for gid under pid
+	conn eval {
+		INSERT INTO rel SELECT NULL,:gid,pid,depth+1 FROM rel
+			WHERE gid=:pid AND pid IS NOT NULL;
+	}
+}
+proc sql_del_grp_rel {gid} {
+	# Removes al relations of gid.
+	conn eval {DELETE FROM rel WHERE gid=:gid;}
+}
+proc sql_unlink {gid} { ## MACRO ##
+	# Removes all relations of gid, then recreates the self_rel.
+	sql_del_grp_rel $gid
+	sql_self_rel $gid
+}
+proc sql_cp_pairs {gid} {
+	# Returns list of child_parent pairs of gid.
+	set pairs [list]
+	conn eval {
+		SELECT g.gid as CHILD,p.pid as PARENT FROM
+			(SELECT gid,pid FROM rel WHERE pid is not NULL AND depth=1) AS p 
+		JOIN 
+			(SELECT gid FROM rel WHERE pid=:gid AND depth>0 ORDER BY depth DESC) as g 
+		ON g.gid=p.gid;
+	} {
+		lappend pairs $CHILD $PARENT
+	}
+	return $pairs
+}
+# sql stmts END
 proc add_group {name {parent 0}} {
 	# Add sub-group to DB.
 	# If parent is 0, assume root.
@@ -36,18 +76,11 @@ proc add_group {name {parent 0}} {
 		SELECT last_insert_rowid();
 	}]
 	dict set DBConn::groups $new_gid $name
-	conn eval {
-		INSERT INTO rel VALUES(NULL,:new_gid,:new_gid,0);
-	}
+	sql_self_rel $new_gid
 	if {$parent==0} {
-		conn eval {
-			INSERT INTO rel VALUES(NULL,:new_gid,NULL,1);
-		}
+		sql_root_rel $new_gid
 	} else {
-		conn eval {
-			INSERT INTO rel SELECT NULL,:new_gid,pid,depth+1 FROM rel
-				WHERE rel.gid=:parent AND rel.pid IS NOT NULL;
-		}
+		sql_child_rel $new_gid $parent
 	}
 	return $new_gid
 }
@@ -171,59 +204,28 @@ proc change_pgroup {gid {new_pid 0}} {
 	if {$new_pid==$gid} {
 		puts {Attempted to change parent to self}
 		return
-	} elseif {$new_pid==0} {
-		# Replace gid's relation with one to root
-		conn eval {
-			DELETE FROM rel WHERE gid=:gid AND depth>1;
-			UPDATE rel SET pid=NULL WHERE gid=:gid AND depth=1 LIMIT 1;
-		}
-	# Get subgroups whose relations should also change
-		set children [list]
-		conn eval {
-			SELECT gid AS c FROM rel WHERE pid=:gid AND depth>0 ORDER BY depth DESC;
-		} { lappend children $c }
-		# Delete while perserving relation.
-		# Rows with depth>1 ignore identity rows & NULL parent.
-		foreach c $children {
-			set p [conn eval {
-				SELECT pid FROM rel WHERE gid=:c AND depth=1 LIMIT 1;
-			}]
-			conn eval {
-				DELETE FROM rel WHERE gid=:c AND depth>1;
-				INSERT INTO rel
-					SELECT NULL,:c,pid,depth+1 FROM rel WHERE gid=:p AND depth>1;
-			}
-		}
+	}
+	if {$new_pid==0} {
+		sql_unlink $gid
+		sql_root_rel $gid
 	} elseif {[dict exists $DBConn::groups $new_pid]} {
-		# .. to new_pid.
 		if {[conn eval {
 				SELECT 1 FROM rel WHERE gid=:new_pid AND pid=:gid LIMIT 1;
 			}]==1} {
-			puts {Attempted to change parent to child}
+			puts {Attempted to change parent to child.}
 			return
 			# Can't change parent to child
 		}
-		conn eval {
-			DELETE FROM rel WHERE gid=:gid AND depth>1;
-			UPDATE rel SET pid=:new_pid WHERE gid=:gid AND depth=1 LIMIT 1;
-			INSERT INTO rel
-				SELECT NULL,:c,pid,depth+1 FROM rel WHERE gid=:new_pid AND
-					pid IS NOT NULL AND depth>0;
-		}
-		set children [list]
-		conn eval {
-			SELECT gid AS c FROM rel WHERE pid=:gid AND depth>0 ORDER BY depth DESC;
-		} { lappend children $c }
-		foreach c $children {
-			set p [conn eval {
-				SELECT pid FROM rel WHERE gid=:c AND depth=1 LIMIT 1;
-			}]
-			conn eval {
-				DELETE FROM rel WHERE gid=:c AND depth>0;
-				INSERT INTO rel
-					SELECT NULL,:c,pid,depth+1 FROM rel WHERE gid=:p AND pid IS NOT NULL;
-			}
-		}
+		sql_unlink $gid
+		sql_child_rel $gid $new_pid
+	} else {
+		puts {Attempted to change to invalid parent.}
+		return
+	}
+	set pair [sql_cp_pairs $gid]
+	foreach {CHD PAR} $pair {
+		sql_unlink $CHD
+		sql_child_rel $CHD $PAR
 	}
 }
 proc update_data {rowid key value mtime ngid} {
