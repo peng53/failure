@@ -45,6 +45,14 @@ proc sql_del_grp_rel {gid} {
 	# Removes al relations of gid.
 	conn eval {DELETE FROM rel WHERE gid=:gid;}
 }
+proc sql_del_grp_data {gid} {
+	# Removes data belonging to gid.
+	conn eval {DELETE FROM data WHERE gid=:gid;}
+}
+proc sql_del_grp {gid} {
+	# Remove group gid.
+	conn eval {DELETE FROM group WHERE rowid=:gid LIMIT 1;}
+}
 proc sql_unlink {gid} { ## MACRO ##
 	# Removes all relations of gid, then recreates the self_rel.
 	sql_del_grp_rel $gid
@@ -84,6 +92,12 @@ proc add_group {name {parent 0}} {
 	}
 	return $new_gid
 }
+proc del_group_helper {gid} {
+	# Wipes group from tables.
+	sql_del_grp_rel $gid
+	sql_del_grp $gid
+	sql_del_grp_data $gid
+}
 proc del_group {gid} {
 	# Deletes group matching gid.
 	# This also deletes:
@@ -93,10 +107,8 @@ proc del_group {gid} {
 		return
 	}
 	conn eval {BEGIN TRANSACTION;}
+	del_group_helper $gid
 	set subgroups [conn eval {
-		DELETE FROM groups WHERE rowid=:gid LIMIT 1;
-		DELETE FROM data WHERE gid=:gid;
-		DELETE FROM rel WHERE gid=:gid;
 		SELECT gid FROM rel WHERE pid=:gid;
 	}]
 	dict unset DBConn::groups $gid
@@ -104,11 +116,7 @@ proc del_group {gid} {
 	# First pass, delete group and its data,
 	# its relation to root and gets its subgroups
 	foreach s_gid $subgroups {
-		conn eval {
-			DELETE FROM data WHERE gid=:s_gid;
-			DELETE FROM groups WHERE rowid=:s_gid LIMIT 1;
-			DELETE FROM rel WHERE gid=:s_gid;
-		}
+		del_group_helper $s_gid
 	}
 	conn eval {END TRANSACTION;}
 	# Second pass, delete subgroups' data
@@ -140,8 +148,8 @@ proc del_group_alt {gid {new_parent {}}} {
 	} else {
 		conn eval {UPDATE data SET gid=:new_parent WHERE gid=:gid;}
 	}
+	sql_del_grp $gid
 	set children [list [conn eval {
-		DELETE FROM groups WHERE rowid=:gid;
 		SELECT gid FROM rel WHERE pid=:gid AND depth=1;
 	}]]
 	foreach c $children {
