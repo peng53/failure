@@ -46,6 +46,7 @@ void DB_Connection::create_tables(){
 }
 void DB_Connection::prepare_stmts(){
 	// Prepares all stmts used by the connection.
+	// For group creation
 	prepare_helper(db,&new_grp,
 		"INSERT INTO groups (name) VALUES(?1);");
 	prepare_helper(db,&self_rel,
@@ -81,6 +82,9 @@ void DB_Connection::prepare_stmts(){
 	// LHS returns all non root child-parents pairs.
 	// RHS returns all sub-groups of ?1 in breadth order.
 	// Joining them returns child-parent pairs of subgroups of gid in breadth order.
+	prepare_helper(db,&ins_data,
+		"INSERT INTO data (gid,key,value,mtime) VALUES (nullif(?1,0),?2,?3,?4);"
+	);
 }
 void DB_Connection::finalize_stmts(){
 	// For creating groups.
@@ -99,6 +103,7 @@ void DB_Connection::finalize_stmts(){
 	// Modify
 	sqlite3_finalize(set_grp_name);
 	sqlite3_finalize(childNparent);
+	sqlite3_finalize(ins_data);
 }
 bool DB_Connection::child_link(const int root,const int child){
 	// Links the 'child' group under 'root' group
@@ -273,4 +278,12 @@ bool DB_Connection::change_parent(const int gid,const int new_par){
 	}
 	trans_act('E');
 	return 1;
+}
+bool DB_Connection::add_data(const string& key, const string& value, const string& mtime, const int gid){
+	// Assumes NULL group unless otherwise stated.
+	sqlite3_bind_int(ins_data,1,gid);
+	sqlite3_bind_text(ins_data,2,key.c_str(),-1,SQLITE_STATIC);
+	sqlite3_bind_text(ins_data,3,value.c_str(),-1,SQLITE_STATIC);
+	sqlite3_bind_text(ins_data,4,mtime.c_str(),-1,SQLITE_STATIC);
+	return successful_stmt(ins_data);
 }

@@ -12,7 +12,7 @@ class DB_Connection {
 		sqlite3_stmt *new_grp, *self_rel, *root_grp, *child_grp,
 			*del_grp, *del_grp_data, *del_grp_rel, *get_child_grp,
 			*begin_trans, *end_trans,
-			*set_grp_name, *childNparent;
+			*set_grp_name, *childNparent, *ins_data;
 	public:
 		DB_Connection();
 		~DB_Connection();
@@ -28,5 +28,6 @@ class DB_Connection {
 		void trans_act(const char B_E);
 		bool rename_group(const int gid,const string& s);
 		bool change_parent(const int gid,const int new_par=0);
+		bool add_data(const string& key,const string& value,const string& mtime,const int gid=0);
 };
 #endif

@@ -9,5 +9,7 @@ int main(){
 	db.print_groups();
 	db.change_parent(C,B);
 	db.print_groups();
+	db.add_data("key","value","sometime",C);
+	db.add_data("key2","value2","othertime");
 	return 0;
 }

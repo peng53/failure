@@ -111,8 +111,7 @@ proc del_group {gid} {
 	set subgroups [conn eval {
 		SELECT gid FROM rel WHERE pid=:gid;
 	}]
-	dict unset DBConn::groups $gid
-	dict unset DBConn::groups $subgroups
+	dict unset DBConn::groups $gid $subgroups
 	# First pass, delete group and its data,
 	# its relation to root and gets its subgroups
 	foreach s_gid $subgroups {
@@ -161,30 +160,18 @@ proc del_group_alt {gid {new_parent {}}} {
 proc add_data {key value mtime {gid 0}} {
 	# Adds a row to data table to group gid.
 	# If gid is 0, assume root.
-	if {$gid==0} {
-		conn eval {
-			INSERT INTO data VALUES(NULL,:key,:value,:mtime);
-		}
-	} elseif {[dict exists $DBConn::groups $gid]} {
-		conn eval {
-			INSERT INTO data VALUES(:gid,:key,:value,:mtime);
-		}
-	} else {
-		# how did we get here?
-		return 0
+	if {$gid==0 || [dict exists $DBConn::groups $gid]} {
+		return [conn eval {
+			INSERT INTO data (gid,key,value,mtime) VALUES(nullif(:gid,0),:key,:value,:mtime);
+			SELECT last_insert_rowid();
+		}]
 	}
-	return [conn eval {SELECT last_insert_rowid();}]
+	return 0
 }
 proc data_group {rowid {gid 0}} {
 	# Simplified version of update_data that only changes group
-	if {$gid==0} {
-		conn eval {
-			UPDATE data SET gid=NULL WHERE rowid=:rowid LIMIT 1;
-		}
-	} else {
-		conn eval {
-			UPDATE data SET gid=:gid WHERE rowid=:rowid LIMIT 1;
-		}
+	conn eval {
+		UPDATE data SET gid=nullif(:gid,0) WHERE rowid=:rowid LIMIT 1;
 	}
 }
 proc rm_data {rowid} {
@@ -241,12 +228,8 @@ proc update_data {rowid key value mtime ngid} {
 	conn eval {
 		UPDATE data SET key=:key, value=:value, mtime=:mtime WHERE rowid=:rowid LIMIT 1;
 	}
-	if {$ngid==0} {
-		conn eval { UPDATE data SET gid=NULL WHERE rowid=:rowid LIMIT 1; }
-	} elseif {[dict exists $DBConn::groups $ngid]} {
-		conn eval { UPDATE data SET gid=:ngid WHERE rowid=:rowid LIMIT 1; }
-	} else {
-		# ngid is not 0 or a group
+	if {$ngid==0 || [dict exists $DBConn::groups $ngid]} {
+		data_group $rowid $ngid
 	}
 }
 proc update_grp {gid name} {
