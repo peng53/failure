@@ -86,6 +86,8 @@ void DB_Connection::prepare_stmts(){
 		"INSERT INTO data (gid,key,value,mtime) VALUES (nullif(?1,0),?2,?3,?4);");
 	prepare_helper(db,&del_data,
 		"DELETE FROM data WHERE rowid=?1 LIMIT 1;");
+	prepare_helper(db,&attach_output,
+		"ATTACH DATABASE ?1 AS M;");
 }
 void DB_Connection::finalize_stmts(){
 	// For creating groups.
@@ -106,6 +108,7 @@ void DB_Connection::finalize_stmts(){
 	sqlite3_finalize(childNparent);
 	sqlite3_finalize(ins_data);
 	sqlite3_finalize(del_data);
+	sqlite3_finalize(attach_output);
 }
 bool DB_Connection::child_link(const int root,const int child){
 	// Links the 'child' group under 'root' group
@@ -293,4 +296,28 @@ bool DB_Connection::remove_data(const int rowid){
 	// Deletes a row from data with matching rowid.
 	sqlite3_bind_int(del_data,1,rowid);
 	return successful_stmt(del_data);
+}
+bool DB_Connection::export_memory(const string& filename){
+	// Exports tables to filename.
+	sqlite3_bind_text(attach_output,1,filename.c_str(),-1,SQLITE_STATIC);
+	if (!successful_stmt(attach_output)){
+		return 0;
+	}
+	return sqlite3_exec(
+		db,
+		"BEGIN TRANSACTION;"
+		"DROP TABLE IF EXISTS M.groups;"
+		"DROP TABLE IF EXISTS M.rel;"
+		"DROP TABLE IF EXISTS M.data;"
+		"CREATE TABLE M.groups(gid INTEGER primary key,name TEXT);"
+		"CREATE TABLE M.rel(gid INTEGER,pid INTEGER,depth INTEGER);"
+		"CREATE TABLE M.data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);"
+		"INSERT INTO M.groups SELECT * from groups;"
+		"INSERT INTO M.rel SELECT * from rel;"
+		"INSERT INTO M.data SELECT * from data;"
+		"END TRANSACTION;"
+		"PRAGMA M.optimize;"
+		"DETACH M;",
+		0, 0, 0
+	);
 }
