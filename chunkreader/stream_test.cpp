@@ -21,6 +21,9 @@ AReader::AReader(streambuf* sb,const size_t csize):
 	feed();
 }
 AReader& AReader::operator++(){
+	return advance();
+}
+AReader& AReader::advance(){
 	++I;
 	if (!has_data() && good){
 		feed();

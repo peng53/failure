@@ -306,5 +306,7 @@ void skipNext(T& chr, JType ft){
 	}
 }
 
-template char next_symplex<ChunkReader>(ChunkReader&);
-template JSON& parse_file<ChunkReader>(ChunkReader&, JSON&);
+//template char next_symplex<ChunkReader>(ChunkReader&);
+//template JSON& parse_file<ChunkReader>(ChunkReader&, JSON&);
+template char next_symplex<AReader>(AReader&);
+template JSON& parse_file<AReader>(AReader&, JSON&);
