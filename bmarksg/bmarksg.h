@@ -13,7 +13,7 @@ class DB_Connection {
 			*del_grp, *del_grp_data, *del_grp_rel, *get_child_grp,
 			*begin_trans, *end_trans,
 			*set_grp_name, *childNparent, *ins_data,
-			*del_data;
+			*del_data, *attach_output, *copy_to_m;
 		void create_tables();
 		void prepare_stmts();
 		void finalize_stmts();
@@ -31,5 +31,6 @@ class DB_Connection {
 		bool change_parent(const int gid,const int new_par=0);
 		bool add_data(const string& key,const string& value,const string& mtime,const int gid=0);
 		bool remove_data(const int rowid);
+		bool export_memory(const string& filename);
 };
 #endif

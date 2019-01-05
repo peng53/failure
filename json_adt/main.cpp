@@ -96,5 +96,6 @@ int main(int argc, char** argv){
 			cout << "Added data for: " << *s << '\n';
 		}
 	}
+	cout << my_db.export_memory("test.db");
 	return 0;
 }
