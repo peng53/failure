@@ -22,7 +22,7 @@ Jso::Jso(JType j): t(j){
 Jso::Jso(const string& v): Jso(JType::Str){
 	*(x.s) = v;
 }
-Jso::Jso(float v): Jso(JType::Num){
+Jso::Jso(double v): Jso(JType::Num){
 	x.f = v;
 }
 Jso::~Jso(){
@@ -41,14 +41,14 @@ void Jso::key_value(const string& k,Jso* v){
 void Jso::key_value(const string& k,const string& v){
 	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(v); }
 }
-void Jso::key_value(const string& k,const float v){
+void Jso::key_value(const string& k,const double v){
 	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(v); }
 }
 void Jso::key_value(const string& k,JType vt){
 	// makes an empty obj or arr
 	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(vt); }
 }
-void Jso::add_value(const float v){
+void Jso::add_value(const double v){
 	if (t==JType::Arr){ x.a->emplace_back(new Jso(v)); }
 }
 void Jso::add_value(const string& v){
@@ -60,7 +60,7 @@ void Jso::add_value(const JType vt){
 void Jso::add_value(Jso* v){
 	if (t==JType::Arr){ x.a->emplace_back(v); }
 }
-void Jso::set_value(float v){
+void Jso::set_value(double v){
 	if (t==JType::Num){ x.f = v; }
 }
 void Jso::set_value(const string& v){

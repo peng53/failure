@@ -31,11 +31,11 @@ char next_symplex(T& chr){
 	throw std::runtime_error("File ended prematurely. :<");
 }
 template <class T>
-float get_a_number(T& chr){
-	// Grabs a floating point number from ChunkReader.
+string get_a_number(T& chr){
+	// Grabs a doubleing point number from ChunkReader.
 	// chr's current position should already point to a valid digit
 	// at time of call. A decimal is allowed but numbers must start
-	// with a digit. The float is returned when non-digit/EOF/2nd
+	// with a digit. The double is returned when non-digit/EOF/2nd
 	// decimal is encountered. ChunkReader's position is left at this
 	// invalid char.
 	char c;
@@ -53,7 +53,8 @@ float get_a_number(T& chr){
 		s += c;
 		chr.advance();
 	}
-	return std::stof(s);
+	return s;
+	//return std::stod(s);
 }
 template <class T>
 string* get_a_string(T& chr, string* s_ptr){

@@ -71,6 +71,7 @@ int main(int argc, char** argv){
 	Jso* j;
 	int pid, gid;
 	string* s;
+	//string ms_epoch;
 	while (!stk.empty()){
 		j = stk.top().j;
 		pid = stk.top().gid;
@@ -92,7 +93,8 @@ int main(int argc, char** argv){
 		} else {
 			// It must be a link then.
 			// So we add the link.
-			my_db.add_data(*s,*(j->key_value("uri"))->x.s,"",gid);
+			//ms_epoch = std::to_string(j->key_value("lastModified")->x.f);
+			my_db.add_data(*s,*(j->key_value("uri")->x.s),*(j->key_value("lastModified")->x.s),gid);
 			cout << "Added data for: " << *s << '\n';
 		}
 	}
