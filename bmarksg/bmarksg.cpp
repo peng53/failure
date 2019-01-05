@@ -25,7 +25,7 @@ bool successful_stmt(sqlite3_stmt *s){
 }
 DB_Connection::DB_Connection(){
 	// will use :memory: in future.
-	sqlite3_open("/mnt/ramdisk/db.db",&db);
+	sqlite3_open(":memory:",&db);
 	create_tables();
 	prepare_stmts();
 }
@@ -83,8 +83,9 @@ void DB_Connection::prepare_stmts(){
 	// RHS returns all sub-groups of ?1 in breadth order.
 	// Joining them returns child-parent pairs of subgroups of gid in breadth order.
 	prepare_helper(db,&ins_data,
-		"INSERT INTO data (gid,key,value,mtime) VALUES (nullif(?1,0),?2,?3,?4);"
-	);
+		"INSERT INTO data (gid,key,value,mtime) VALUES (nullif(?1,0),?2,?3,?4);");
+	prepare_helper(db,&del_data,
+		"DELETE FROM data WHERE rowid=?1 LIMIT 1;");
 }
 void DB_Connection::finalize_stmts(){
 	// For creating groups.
@@ -104,6 +105,7 @@ void DB_Connection::finalize_stmts(){
 	sqlite3_finalize(set_grp_name);
 	sqlite3_finalize(childNparent);
 	sqlite3_finalize(ins_data);
+	sqlite3_finalize(del_data);
 }
 bool DB_Connection::child_link(const int root,const int child){
 	// Links the 'child' group under 'root' group
@@ -286,4 +288,9 @@ bool DB_Connection::add_data(const string& key, const string& value, const strin
 	sqlite3_bind_text(ins_data,3,value.c_str(),-1,SQLITE_STATIC);
 	sqlite3_bind_text(ins_data,4,mtime.c_str(),-1,SQLITE_STATIC);
 	return successful_stmt(ins_data);
+}
+bool DB_Connection::remove_data(const int rowid){
+	// Deletes a row from data with matching rowid.
+	sqlite3_bind_int(del_data,1,rowid);
+	return successful_stmt(del_data);
 }
