@@ -25,5 +25,6 @@ class AReader {
 		char until(char c,string* str_ptr=nullptr);
 		// advances AReader until get is c. if provided string ptr, output to it.
 		friend ostream& operator<<(ostream& out,AReader& rhs); // posts data from AReader, then feeds.
+		bool empty();
 };
 #endif
