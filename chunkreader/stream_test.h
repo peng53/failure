@@ -18,6 +18,7 @@ class AReader {
 	public:
 		AReader(streambuf* sb,const size_t csize); // constructs an AReader with a streambuf with data.
 		AReader& operator++(); // advances to next character.
+		AReader& advance();
 		~AReader(); // destructs AReader.
 		void feed(); // pulls data from streambuf.
 		char get(); // gets current character.

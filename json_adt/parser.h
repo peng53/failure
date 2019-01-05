@@ -1,7 +1,8 @@
 #ifndef PARSER
 #define PARSER
 #include "jso_f.h"
-#include "../chunkreader/chread.h"
+//#include "../chunkreader/chread.h"
+#include "../chunkreader/stream_test.h"
 
 template <class T>
 char next_symplex(T& chr); // advances ChunkReader to next valid symbol and returns it.
