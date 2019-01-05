@@ -86,7 +86,7 @@ string* get_a_string(T& chr, string* s_ptr){
 		}
 		chr.advance();
 	}
-	throw std::runtime_error("Closing double quote not found.");	
+	throw std::runtime_error("Closing double quote not found.");
 }
 template <class T>
 string* get_a_string_q(T& chr,const char q,string* s_ptr){
@@ -186,7 +186,8 @@ void object_handler(stack<Jso*>& stk, T& chr){
 				 stk.emplace(j);
 			}
 		} else { // it would be [{ or \0
-			throw std::runtime_error("Unexpected symbol encountered.");
+			std::cerr << "Got " << c << '\n';
+			throw std::runtime_error("Unexpected symbol encountered. Expected opening quote for key.");
 		}
 	}
 	throw std::runtime_error("File ended prematurely.");
@@ -249,6 +250,7 @@ void skipNext(T& chr, JType ft){
 		if (stk.top()==JType::Obj){
 			// then there's a key to ignore. get to opening quote.
 			if (chr.until('"')!='"'){
+				std::cerr << "Got " << chr.get() << '\n';
 				throw std::runtime_error("Unexpected symbol encountered.");
 			}
 			chr.advance();
@@ -268,12 +270,14 @@ void skipNext(T& chr, JType ft){
 			/* Closing brackets were found. */
 			case ']':
 				if (stk.top()!=JType::Arr){
+					std::cerr << "Got " << c << '\n';
 					throw std::runtime_error("Unexpected symbol encountered.");
 				}
 				stk.pop();
 				break;
 			case '}':
 				if (stk.top()!=JType::Obj){
+					std::cerr << "Got " << c << '\n';
 					throw std::runtime_error("Unexpected symbol encountered.");
 				}
 				stk.pop();
