@@ -95,7 +95,7 @@ int main(int argc, char** argv){
 			// So we add the link.
 			//ms_epoch = std::to_string(j->key_value("lastModified")->x.f);
 			// *(j->key_value("lastModified"))->x.s
-			my_db.add_data(*s,*(j->key_value("uri"))->x.s,"",gid);
+			my_db.add_data(*s,*(j->key_value("uri"))->x.s,*(j->key_value("id")->x.s),gid);
 			cout << "Added data for: " << *s << '\n';
 		}
 	}

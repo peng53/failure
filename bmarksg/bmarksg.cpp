@@ -309,15 +309,16 @@ bool DB_Connection::export_memory(const string& filename){
 		"DROP TABLE IF EXISTS M.groups;"
 		"DROP TABLE IF EXISTS M.rel;"
 		"DROP TABLE IF EXISTS M.data;"
-		"CREATE TABLE M.groups(gid INTEGER primary key,name TEXT);"
-		"CREATE TABLE M.rel(gid INTEGER,pid INTEGER,depth INTEGER);"
+		"CREATE TABLE M.groups(rowid INTEGER primary key,name TEXT);"
+		"CREATE TABLE M.rel(rowid INTEGER primary key, gid INTEGER,pid INTEGER,depth INTEGER);"
 		"CREATE TABLE M.data(gid INTEGER,key TEXT,value TEXT,mtime TEXT);"
-		"INSERT INTO M.groups SELECT * from groups;"
-		"INSERT INTO M.rel SELECT * from rel;"
-		"INSERT INTO M.data SELECT * from data;"
+		"INSERT INTO M.groups SELECT gid,name from groups;"
+		"INSERT INTO M.rel SELECT NULL,gid,pid,depth from rel;"
+		"INSERT INTO M.data SELECT gid,key,value,mtime from data;"
 		"END TRANSACTION;"
 		"PRAGMA M.optimize;"
 		"DETACH M;",
 		0, 0, 0
 	);
 }
+
