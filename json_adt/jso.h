@@ -38,6 +38,8 @@ struct Jso {
 	friend ostream& operator<<(ostream& out,const Jso& J);
 	Jso* key_value(const string& k);
 	void rprint(ostream& out, const string& label);
+	explicit operator const string&();
+	Jso* operator[](const string& k);
 };
 void indent_it(size_t i,ostream& out);
 #endif
