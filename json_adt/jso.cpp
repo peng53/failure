@@ -95,6 +95,9 @@ ostream& operator<<(ostream& out,const Jso& J){
 Jso* Jso::key_value(const string& k){
 	return ((t==JType::Obj && x.m->count(k)==1) ? (*(x.m))[k] : nullptr);
 }
+Jso* Jso::operator[](const string& k){
+	return key_value(k);
+}
 void indent_it(size_t i, ostream& out){
 	while (i>1){
 		out << ' ';
@@ -165,5 +168,13 @@ void Jso::rprint(ostream& out, const string& label){
 				}
 				break;
 		}
+	}
+}
+const string nonstring;
+Jso::operator const string&(){
+	if (t==JType::Str){
+		return *(x.s);
+	} else {
+		return nonstring;
 	}
 }

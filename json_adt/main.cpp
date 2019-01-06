@@ -86,8 +86,8 @@ int main(int argc, char** argv){
 				return 1;
 			}
 			// And since its a group, we queue( stack) up its children.
-			for (const auto& k : *(j->key_value("children")->x.a) ){
-				stk.emplace(k,gid,k->key_value("title")->x.s);
+			for (const auto& k : *((*j)["children"]->x.a) ){
+				stk.emplace(k,gid,(*k)["title"]->x.s);
 			}
 			cout << "Made a group: " << *s << '\n';
 		} else {
@@ -95,10 +95,14 @@ int main(int argc, char** argv){
 			// So we add the link.
 			//ms_epoch = std::to_string(j->key_value("lastModified")->x.f);
 			// *(j->key_value("lastModified"))->x.s
-			my_db.add_data(*s,*(j->key_value("uri"))->x.s,*(j->key_value("id")->x.s),gid);
+			//my_db.add_data(*s,*(j->key_value("uri"))->x.s,*(j->key_value("id")->x.s),gid);
+			my_db.add_data(*s,
+				static_cast<string>(*(*j)["uri"]),
+				static_cast<string>(*(*j)["id"]),
+				gid);
 			cout << "Added data for: " << *s << '\n';
 		}
 	}
-	cout << my_db.export_memory("test.db");
+	cout << my_db.export_memory("test.db") << '\n';
 	return 0;
 }
