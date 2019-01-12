@@ -11,24 +11,23 @@ using std::cout;
 using std::istringstream;
 
 AReader::AReader(streambuf* sb,const size_t csize):
+	IReader(csize),
 	t(sb),
 	ch(new char[csize]),
 	I(0),
-	E(0),
-	M(csize),
-	good(true)
+	E(0)
 {
 	feed();
 }
 AReader& AReader::operator++(){
-	return advance();
+	advance();
+	return *this;
 }
-AReader& AReader::advance(){
+void AReader::advance(){
 	++I;
 	if (!has_data() && good){
 		feed();
 	}
-	return *this;
 }
 AReader::~AReader(){
 	delete ch;

@@ -31,21 +31,24 @@ int main(int argc, char** argv){
 		}
 		f = &my_fb;
 	}
-	AReader o2(f,64);
+	IReader *o2 = new AReader(f,64);
+	//AReader o2(f,64);
 	//cout << "*** Obj Status: good-" << o2.good << " hasdata-" << o2.has_data() << '\n';
-	if (o2.until('{')!='{'){
+	if (o2->until('{')!='{'){
 		std::cerr << "Couldn't find a '{'!\n";
 		return 1;
 	}
-	++o2;
-	/*
+	cout << '{';
+	o2->advance();
+	
 	string rest;
-	o2.until('\0',&rest);
+	o2->until('\0',&rest);
 	cout << rest << '\n';
-	*/
-	cout << o2 << '\n';
+	
+	//cout << *o2 << '\n';
 	if (my_fb.is_open()){
 		my_fb.close();
 	}
+	delete o2;
 	return 0;
 }
