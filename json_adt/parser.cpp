@@ -5,14 +5,13 @@
 
 using std::stack;
 
-template <class T>
-char next_symplex(T& chr){
+char next_symplex(IReader* chr){
 	// Returns next JSON recognized symbol.
 	// If none is found, ChunkReader would have been read entirely, and a
 	// runtine_error would be thrown.
 	char c;
-	while (!chr.empty()){
-		c = chr.get();
+	while (!chr->empty()){
+		c = chr->get();
 		if (isdigit(c)){
 			return '0';
 		}
@@ -26,12 +25,12 @@ char next_symplex(T& chr){
 			case '\0':
 				throw std::runtime_error("File ended prematurely.");
 		}
-		chr.advance();
+		chr->advance();
 	}
 	throw std::runtime_error("File ended prematurely. :<");
 }
-template <class T>
-string get_a_number(T& chr){
+
+string get_a_number(IReader* chr){
 	// Grabs a doubleing point number from ChunkReader.
 	// chr's current position should already point to a valid digit
 	// at time of call. A decimal is allowed but numbers must start
@@ -41,8 +40,8 @@ string get_a_number(T& chr){
 	char c;
 	string s;
 	bool found_dot = false;
-	while (!chr.empty()){
-		c = chr.get();
+	while (!chr->empty()){
+		c = chr->get();
 		if (!isdigit(c)){
 			if (!found_dot && c=='.'){
 				found_dot = true;
@@ -51,31 +50,31 @@ string get_a_number(T& chr){
 			}
 		}
 		s += c;
-		chr.advance();
+		chr->advance();
 	}
 	return s;
 	//return std::stod(s);
 }
-template <class T>
-string* get_a_string(T& chr, string* s_ptr){
+
+string* get_a_string(IReader* chr, string* s_ptr){
 	// Grabs characters from ChunkReader until a " is encountered
 	// without a preceding \. If chr's position is " at call, this
 	// function returns after advancing once. If chr is consumed
 	// before finding a ", a runtine_error is thrown.
 	char c;
-	while (!chr.empty()){
-		c = chr.get();
+	while (!chr->empty()){
+		c = chr->get();
 		switch (c){
 			case '"':
-				chr.advance();
+				chr->advance();
 				return s_ptr;
 			case '\\':
-				chr.advance();
+				chr->advance();
 				if (s_ptr){
-					if (chr.get()!='"'){
+					if (chr->get()!='"'){
 						(*s_ptr) += '\\';
 					}
-					(*s_ptr) += chr.get();
+					(*s_ptr) += chr->get();
 				}
 				break;
 			default:
@@ -84,26 +83,26 @@ string* get_a_string(T& chr, string* s_ptr){
 				}
 				break;
 		}
-		chr.advance();
+		chr->advance();
 	}
 	throw std::runtime_error("Closing double quote not found.");
 }
-template <class T>
-string* get_a_string_q(T& chr,const char q,string* s_ptr){
+
+string* get_a_string_q(IReader* chr,const char q,string* s_ptr){
 	char c;
-	while (!chr.empty()){
-		c = chr.get();
-		chr.advance();
+	while (!chr->empty()){
+		c = chr->get();
+		chr->advance();
 		if (c==q){
 			return s_ptr;
 		} else if (c=='\\'){
 			if (s_ptr){
-				if (chr.get()!=q){
+				if (chr->get()!=q){
 					(*s_ptr) += '\\';
 				}
-				(*s_ptr) += chr.get();
+				(*s_ptr) += chr->get();
 			}
-			chr.advance();
+			chr->advance();
 		} else {
 			if (s_ptr){
 				(*s_ptr) += c;
@@ -112,15 +111,15 @@ string* get_a_string_q(T& chr,const char q,string* s_ptr){
 	}
 	throw std::runtime_error("Closing quote not found.");	
 }
-template <class T>
-string get_a_string(T& chr){
+
+string get_a_string(IReader* chr){
 	// Calls get_a_string without an output string.
 	string str;
 	get_a_string(chr,&str);
 	return str;
 }
-template <class T>
-Jso* text2obj(T& chr, JType t){
+
+Jso* text2obj(IReader* chr, JType t){
 	// Returns a Jso* from data in ChunkReader given a JType.
 	// calls get_a_number/string for numbers/strings.
 	switch (t){
@@ -144,8 +143,8 @@ JType char2type(char c){
 	}
 	throw std::runtime_error("Got unexpected character for type.");
 }
-template <class T>
-void object_handler(stack<Jso*>& stk, T& chr){
+
+void object_handler(stack<Jso*>& stk, IReader* chr){
 	// Handles data from ChunkReader while the 'current/top' object in 'scope'
 	// is an object. Usually it stops when '}' is found, or the top-object
 	// is a list. Throws if: a key with 0 chars is found, an expected colon is
@@ -154,9 +153,9 @@ void object_handler(stack<Jso*>& stk, T& chr){
 	string key;
 	char c;
 	Jso* j;
-	while (!chr.empty()){
+	while (!chr->empty()){
 		c = next_symplex(chr);
-		chr.advance();
+		chr->advance();
 		if (c=='}'){
 			stk.pop();
 			return;
@@ -168,13 +167,13 @@ void object_handler(stack<Jso*>& stk, T& chr){
 			if (key.length()==0){
 				throw std::runtime_error("Got 0-len key, which is not possible.");
 			}
-			if (chr.until(':')!=':'){
+			if (chr->until(':')!=':'){
 				throw std::runtime_error("Following colon missing in key-value pair.");
 			}
-			chr.advance();
+			chr->advance();
 			c = next_symplex(chr);
 			if (c!='0'){
-				chr.advance();
+				chr->advance();
 			}
 			j = text2obj(chr,char2type(c)); // char2type will throw the exception.
 			stk.top()->key_value(key,j);
@@ -192,18 +191,18 @@ void object_handler(stack<Jso*>& stk, T& chr){
 	}
 	throw std::runtime_error("File ended prematurely.");
 }
-template <class T>
-void array_handler(stack<Jso*>& stk, T& chr){
+
+void array_handler(stack<Jso*>& stk, IReader* chr){
 	// Handles data from ChunkReader while the 'current/top' object in 'scope'
 	// is an array. Usually it stops when ']' is found, or the top-object
 	// is an object. Throws if: a a closing bracket other than ']' is found 
 	// unexpectingly, or chr's data runs out before a closing ']' is found.
 	char c;
 	Jso* j;
-	while (!chr.empty()){
+	while (!chr->empty()){
 		c = next_symplex(chr);
 		if (c!='0'){ // 0 would imply that char is significant
-			chr.advance();
+			chr->advance();
 		}
 		if (c==']'){
 			stk.pop();
@@ -221,11 +220,11 @@ void array_handler(stack<Jso*>& stk, T& chr){
 	throw std::runtime_error("File ended prematurely.");
 }
 
-template <class T>
-JSON& parse_file(T& chr, JSON& lv){
+
+JSON& parse_file(IReader* chr, JSON& lv){
 	stack<Jso*> stk;
 	stk.emplace(*lv);
-	while (!chr.empty() && !stk.empty()){
+	while (!chr->empty() && !stk.empty()){
 		switch (stk.top()->t){
 			case JType::Obj:
 				object_handler(stk,chr);
@@ -238,33 +237,33 @@ JSON& parse_file(T& chr, JSON& lv){
 	}
 	return lv;
 }
-template <class T>
-void skipNext(T& chr, JType ft){
+
+void skipNext(IReader* chr, JType ft){
 	// Skips objects or arrays in ChunkReader. To skip strings or numbers,
 	// its best to use get_a_string/number ATM. chr's position should be
 	// after the opening bracket at time of call.
 	stack<JType> stk;
 	stk.emplace(ft);
 	char c;
-	while (!stk.empty() && !chr.empty()){
+	while (!stk.empty() && !chr->empty()){
 		if (stk.top()==JType::Obj){
 			// then there's a key to ignore. get to opening quote.
-			if (chr.until('"')!='"'){
-				std::cerr << "Got " << chr.get() << '\n';
+			if (chr->until('"')!='"'){
+				std::cerr << "Got " << chr->get() << '\n';
 				throw std::runtime_error("Unexpected symbol encountered.");
 			}
-			chr.advance();
+			chr->advance();
 			// now to skip past it.
 			get_a_string(chr);
-			if (chr.until(':')!=':'){
+			if (chr->until(':')!=':'){
 				throw std::runtime_error("Missing colon for key-value pair.");
 			}
-			chr.advance();
+			chr->advance();
 		}
 		// now for the value.
 		c = next_symplex(chr);
 		if (c!='0'){
-			chr.advance();
+			chr->advance();
 		}
 		switch (c){
 			/* Closing brackets were found. */
@@ -290,10 +289,10 @@ void skipNext(T& chr, JType ft){
 				stk.emplace(char2type(c)); // char2type will throw the exception.
 				switch (stk.top()){
 					case JType::Str:
-						/*if (chr.until('"')!='"'){
+						/*if (chr->until('"')!='"'){
 							throw std::runtime_error("Unexpected symbol encountered.");
 						}
-						chr.advance();
+						chr->advance();
 						// above cannot handle escapes. */
 						get_a_string(chr);
 						stk.pop();
@@ -313,5 +312,5 @@ void skipNext(T& chr, JType ft){
 
 //template char next_symplex<ChunkReader>(ChunkReader&);
 //template JSON& parse_file<ChunkReader>(ChunkReader&, JSON&);
-template char next_symplex<AReader>(AReader&);
-template JSON& parse_file<AReader>(AReader&, JSON&);
+//template char next_symplex<AReader>(AReader&);
+//template JSON& parse_file<AReader>(AReader&, JSON&);

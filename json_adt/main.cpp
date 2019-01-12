@@ -3,6 +3,7 @@
 #include <sstream>
 #include <stack>
 #include "../bmarksg/bmarksg.h"
+#include "../chunkreader/stream_test.h"
 
 using std::cout;
 using std::cerr;
@@ -45,12 +46,13 @@ int main(int argc, char** argv){
 		}
 		f = &my_fb;
 	}
-	AReader textChunk(f,1024);
+	IReader *textChunk = new AReader(f,1024);
+	//AReader textChunk(f,1024);
 	if (next_symplex(textChunk)!='{'){
 		cerr << "Could not find opening curly brace.\n";
 		return 1;
 	}
-	textChunk.advance();
+	textChunk->advance();
 	JSON jsonTree;
 	try {
 		parse_file(textChunk,jsonTree);
@@ -61,9 +63,11 @@ int main(int argc, char** argv){
 		return 1;
 	}
 	cout << jsonTree;
+	cout << "Closing file if open..\n";
 	if (my_fb.is_open()){
 		my_fb.close();
 	}
+	cout << "On to db..\n";
 	DB_Connection my_db;
 	stack<JsoNameGid> stk;
 	// Create a db group to hold what's going to be inserted.
@@ -104,5 +108,6 @@ int main(int argc, char** argv){
 		}
 	}
 	cout << my_db.export_memory("test.db") << '\n';
+	delete textChunk;
 	return 0;
 }

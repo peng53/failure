@@ -1,6 +1,7 @@
 #ifndef CHKr
 #define CHKr
 
+#include "ireader.h"
 #include <fstream>
 #include <string>
 #include <ostream>
@@ -9,25 +10,26 @@ using std::string;
 using std::ifstream;
 using std::ostream;
 
-class ChunkReader : ifstream {
+class ChunkReader : public IReader, ifstream {
 	private:
 		size_t I,E;
-		const size_t M;
 		char* ch;
-		bool good;
 	public:
 		using ifstream::is_open;
 		ChunkReader(const char* filename,const size_t csize);
-		~ChunkReader();
-		void feed();
-		char until(const char c,string* str_ptr=nullptr);
 		char until_e(const char c,const bool int_escape=false,string* str_ptr=nullptr);
 		string capture_until(const char c);
 		friend ostream& operator<<(ostream& out,ChunkReader& rhs);
-		void advance();
-		char get();
-		bool empty();
-		bool has_data();
+
+		~ChunkReader();
+		char until(const char c,string* str_ptr=nullptr) override;
+		void feed() override;
+		void advance() override;
+		ChunkReader& operator++() override;
+		char get() override;
+		bool empty() override;
+		bool has_data() override;
+
 		string& closure(string& s);
 		string closure();
 };
