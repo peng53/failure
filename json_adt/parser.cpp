@@ -21,6 +21,9 @@ char next_symplex(IReader* chr){
 			case '"':
 			case ']':
 			case '}':
+			case 'n':
+			case 't':
+			case 'f':
 				return c;
 			case '\0':
 				throw std::runtime_error("File ended prematurely.");
@@ -30,7 +33,7 @@ char next_symplex(IReader* chr){
 	throw std::runtime_error("File ended prematurely. :<");
 }
 
-string get_a_number(IReader* chr){
+static string get_a_number(IReader* chr){
 	// Grabs a doubleing point number from ChunkReader.
 	// chr's current position should already point to a valid digit
 	// at time of call. A decimal is allowed but numbers must start
@@ -56,7 +59,7 @@ string get_a_number(IReader* chr){
 	//return std::stod(s);
 }
 
-string* get_a_string(IReader* chr, string* s_ptr){
+static string* get_a_string(IReader* chr, string* s_ptr){
 	// Grabs characters from ChunkReader until a " is encountered
 	// without a preceding \. If chr's position is " at call, this
 	// function returns after advancing once. If chr is consumed
@@ -88,7 +91,7 @@ string* get_a_string(IReader* chr, string* s_ptr){
 	throw std::runtime_error("Closing double quote not found.");
 }
 
-string* get_a_string_q(IReader* chr,const char q,string* s_ptr){
+static string* get_a_string_q(IReader* chr,const char q,string* s_ptr){
 	char c;
 	while (!chr->empty()){
 		c = chr->get();
@@ -112,14 +115,26 @@ string* get_a_string_q(IReader* chr,const char q,string* s_ptr){
 	throw std::runtime_error("Closing quote not found.");	
 }
 
-string get_a_string(IReader* chr){
+static string get_a_string(IReader* chr){
 	// Calls get_a_string without an output string.
 	string str;
 	get_a_string(chr,&str);
 	return str;
 }
 
-Jso* text2obj(IReader* chr, JType t){
+static bool next_chars_are(IReader* buf, const string& chars){
+	// buf should start at chars[0]
+	for (auto c : chars){
+		if (buf->empty() || c!=buf->get()){
+			return false;
+		}
+		buf->advance();
+	}
+	// we got to the end of chars!
+	return true;
+}
+
+static Jso* text2obj(IReader* chr, JType t){
 	// Returns a Jso* from data in ChunkReader given a JType.
 	// calls get_a_number/string for numbers/strings.
 	switch (t){
@@ -127,11 +142,27 @@ Jso* text2obj(IReader* chr, JType t){
 			return new Jso(get_a_number(chr));
 		case JType::Str:
 			return new Jso(get_a_string(chr));
-		default:
+		case JType::Null:
+			if (next_chars_are(chr,"ull")){
+				return &(Jso::JSO_NULL);
+			}
+			break;
+		case JType::True:
+			if (next_chars_are(chr,"rue")){
+				return &(Jso::JSO_TRUE);
+			}
+			break;
+		case JType::False:
+			if (next_chars_are(chr,"alse")){
+				return &(Jso::JSO_FALSE);
+			}
+			break;
+		default: // for Obj or Arr
 			return new Jso(t);
 	}
+	throw std::runtime_error("Expected Json object.");
 }
-JType char2type(char c){
+static JType char2type(char c){
 	// Converts a char to a JType. Valid input characters are cases in
 	// next_symplex. If character is not an expected one, a runtime_error
 	// is thrown.
@@ -140,11 +171,14 @@ JType char2type(char c){
 		case '[': return JType::Arr;
 		case '"': return JType::Str;
 		case '0': return JType::Num;
+		case 'n': return JType::Null;
+		case 't': return JType::True;
+		case 'f': return JType::False;
 	}
 	throw std::runtime_error("Got unexpected character for type.");
 }
 
-void object_handler(stack<Jso*>& stk, IReader* chr){
+static void object_handler(stack<Jso*>& stk, IReader* chr){
 	// Handles data from ChunkReader while the 'current/top' object in 'scope'
 	// is an object. Usually it stops when '}' is found, or the top-object
 	// is a list. Throws if: a key with 0 chars is found, an expected colon is
@@ -192,7 +226,72 @@ void object_handler(stack<Jso*>& stk, IReader* chr){
 	throw std::runtime_error("File ended prematurely.");
 }
 
-void array_handler(stack<Jso*>& stk, IReader* chr){
+static Jso* get_next_prop(IReader* buf){
+	// returns a Jso* of the next object.
+	char c = next_symplex(buf);
+	if (c!='0'){
+		buf->advance();
+	}
+	return text2obj(buf,char2type(c));
+}
+
+static void xyz_handler(IReader* buf, JSON& tree){
+	stack<Jso*> stk;
+	stk.emplace(*tree);
+	char c;
+	Jso* j;
+	string key;
+	while (!stk.empty() && !buf->empty()){
+		// if Obj is on top, need to get key first.
+		if (stk.top()->t==JType::Obj){
+			c = next_symplex(buf);
+			buf->advance();
+			if (c=='}'){
+				stk.pop();
+				continue;
+			}
+			if (c=='"'){
+				key.clear();
+				get_a_string(buf,&key);
+				if (key.length()==0){
+					throw std::runtime_error("Got 0-len key, which is not possible.");
+				}
+				// got it! now for the colon!
+				if (buf->until(':')!=':'){
+					throw std::runtime_error("Following colon missing in key-value pair.");
+				}
+				buf->advance();
+			} else {
+				throw std::runtime_error("Missing opening \" for key.");
+			}
+		}
+		c = next_symplex(buf);
+		if (c==']'){
+			if (stk.top()->t==JType::Arr){
+				stk.pop();
+				continue;
+			} else {
+				throw std::runtime_error("Found closing ] without opening [");
+			}
+		}
+		// get a value
+		j = get_next_prop(buf);
+		if (stk.top()->t==JType::Obj){
+			stk.top()->key_value(key,j);
+		} else {
+			stk.top()->add_value(j);
+		}
+		if (j->t==JType::Arr || j->t==JType::Obj){
+			stk.emplace(j);
+		}
+
+	}
+	if (!stk.empty()){
+		throw std::runtime_error("File ended prematurely.");
+	}
+}
+
+static void array_handler(stack<Jso*>& stk, IReader* chr){
 	// Handles data from ChunkReader while the 'current/top' object in 'scope'
 	// is an array. Usually it stops when ']' is found, or the top-object
 	// is an object. Throws if: a a closing bracket other than ']' is found 
@@ -220,7 +319,6 @@ void array_handler(stack<Jso*>& stk, IReader* chr){
 	throw std::runtime_error("File ended prematurely.");
 }
 
-
 JSON& parse_file(IReader* chr, JSON& lv){
 	stack<Jso*> stk;
 	stk.emplace(*lv);
@@ -237,8 +335,8 @@ JSON& parse_file(IReader* chr, JSON& lv){
 	}
 	return lv;
 }
-
-void skipNext(IReader* chr, JType ft){
+/**
+static void skipNext(IReader* chr, JType ft){
 	// Skips objects or arrays in ChunkReader. To skip strings or numbers,
 	// its best to use get_a_string/number ATM. chr's position should be
 	// after the opening bracket at time of call.
@@ -266,7 +364,7 @@ void skipNext(IReader* chr, JType ft){
 			chr->advance();
 		}
 		switch (c){
-			/* Closing brackets were found. */
+			// Closing brackets were found.
 			case ']':
 				if (stk.top()!=JType::Arr){
 					std::cerr << "Got " << c << '\n';
@@ -281,19 +379,19 @@ void skipNext(IReader* chr, JType ft){
 				}
 				stk.pop();
 				break;
-			/* That's an EOF. */
+			// That's an EOF. //
 			case '\0':
 				throw std::runtime_error("File ended prematurely.");
-			/* An opening bracket, string, or number. */
+			// An opening bracket, string, or number. //
 			default:
 				stk.emplace(char2type(c)); // char2type will throw the exception.
 				switch (stk.top()){
 					case JType::Str:
-						/*if (chr->until('"')!='"'){
+						//if (chr->until('"')!='"'){
 							throw std::runtime_error("Unexpected symbol encountered.");
 						}
 						chr->advance();
-						// above cannot handle escapes. */
+						// above cannot handle escapes. //
 						get_a_string(chr);
 						stk.pop();
 						break;
@@ -309,7 +407,7 @@ void skipNext(IReader* chr, JType ft){
 		}
 	}
 }
-
+*/
 //template char next_symplex<ChunkReader>(ChunkReader&);
 //template JSON& parse_file<ChunkReader>(ChunkReader&, JSON&);
 //template char next_symplex<AReader>(AReader&);
