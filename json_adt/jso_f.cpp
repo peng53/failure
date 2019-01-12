@@ -36,49 +36,6 @@ JSON::~JSON(){
 		dispose(d,D);
 	}
 }
-JSON::JSON(const JSON& rhs): JSON(){
-	// deep copy constructor
-	Jso* r = rhs.o;
-	Jso* l = o;
-	Jso* t;
-	stack<pair<Jso*,Jso*>> stk;
-	stk.emplace(r,l);
-	while (!stk.empty()){
-		r = stk.top().first;
-		l = stk.top().second;
-		stk.pop();
-		for (auto& v : *(r->x.m)){
-			switch (v.second->t){
-				case JType::Str:
-					(*(l->x.m))[v.first] = new Jso(*(v.second->x.s));
-					// Assign to map a new string:string
-					break;
-				case JType::Num:
-					(*(l->x.m))[v.first] = new Jso(v.second->x.f);
-					// x.f is just a float, so no dereferencing needed.
-					break;
-				case JType::Obj:
-					t = new Jso(JType::Obj);
-					(*(l->x.m))[v.first] = t;
-					stk.emplace(v.second,t);
-					break;
-				case JType::Arr:
-					t = new Jso(JType::Arr);
-					(*(l->x.m))[v.first] = t;
-					break;
-				case JType::Null:
-					(*(l->x.m))[v.first] = &(Jso::JSO_NULL);
-					break;
-				case JType::True:
-					(*(l->x.m))[v.first] = &(Jso::JSO_TRUE);
-					break;
-				case JType::False:
-					(*(l->x.m))[v.first] = &(Jso::JSO_FALSE);
-					break;
-			}
-		}
-	}
-}
 Jso* JSON::operator*(){
 	return o;
 }

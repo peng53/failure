@@ -24,6 +24,7 @@ struct Jso {
 	explicit Jso(double v);
 	explicit Jso(const string& v);
 	explicit Jso(JType j);
+	explicit Jso(map<string,Jso*>* VAL);
 	~Jso();
 	void key_value(const string& k,Jso* v);
 	void key_value(const string& k,const string& v);

@@ -21,6 +21,9 @@ Jso::Jso(JType j): t(j){
 			break;
 	}
 }
+Jso::Jso(map<string,Jso*>* VAL): t(JType::Obj){
+	x.m = VAL;
+}
 Jso::Jso(const string& v): Jso(JType::Str){
 	*(x.s) = v;
 }
