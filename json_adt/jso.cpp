@@ -17,6 +17,8 @@ Jso::Jso(JType j): t(j){
 		case JType::Str:
 			x.s = new string;
 			break;
+		default:
+			break;
 	}
 }
 Jso::Jso(const string& v): Jso(JType::Str){
@@ -28,10 +30,10 @@ Jso::Jso(double v): Jso(JType::Num){
 Jso::~Jso(){
 	// Only deletes its members; doesn't go further.
 	switch (t){
-		case JType::Num: break;
 		case JType::Str: delete x.s; break;
 		case JType::Arr: delete x.a; break;
 		case JType::Obj: delete x.m; break;
+		default: break;
 	}
 }
 void Jso::key_value(const string& k,Jso* v){
@@ -89,6 +91,15 @@ ostream& operator<<(ostream& out,const Jso& J){
 			}
 			out << "]\n";
 			break;
+		case JType::Null:
+			out << "null\n";
+			break;
+		case JType::True:
+			out << "true\n";
+			break;
+		case JType::False:
+			out << "false\n";
+			break;
 	}
 	return out;
 }
@@ -130,6 +141,15 @@ void Jso::rprint(ostream& out, const string& label){
 		}
 		stk.pop();
 		switch (j->t){
+			case JType::Null:
+				out << "null\n";
+				break;
+			case JType::True:
+				out << "true\n";
+				break;
+			case JType::False:
+				out << "false\n";
+				break;
 			case JType::Str:
 				if (j==&arr_end){
 					out << "]\n";
@@ -178,3 +198,6 @@ Jso::operator const string&(){
 		return nonstring;
 	}
 }
+Jso Jso::JSO_NULL = Jso(JType::Null);
+Jso Jso::JSO_TRUE = Jso(JType::True);
+Jso Jso::JSO_FALSE = Jso(JType::False);

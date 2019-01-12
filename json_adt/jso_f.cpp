@@ -16,6 +16,10 @@ void dispose(Jso* j, stack<Jso*>& more){
 				more.emplace(m.second);
 			}
 			break;
+		case JType::Null:
+		case JType::True:
+		case JType::False:
+			return;
 		default: break;
 	}
 	delete j;
@@ -61,6 +65,15 @@ JSON::JSON(const JSON& rhs): JSON(){
 				case JType::Arr:
 					t = new Jso(JType::Arr);
 					(*(l->x.m))[v.first] = t;
+					break;
+				case JType::Null:
+					(*(l->x.m))[v.first] = &(Jso::JSO_NULL);
+					break;
+				case JType::True:
+					(*(l->x.m))[v.first] = &(Jso::JSO_TRUE);
+					break;
+				case JType::False:
+					(*(l->x.m))[v.first] = &(Jso::JSO_FALSE);
 					break;
 			}
 		}

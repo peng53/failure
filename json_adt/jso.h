@@ -11,7 +11,7 @@ using std::vector;
 using std::map;
 using std::ostream;
 
-enum class JType { Obj, Arr, Str, Num};
+enum class JType { Obj, Arr, Str, Num, Null, True, False};
 
 struct Jso {
 	JType t;
@@ -40,6 +40,7 @@ struct Jso {
 	void rprint(ostream& out, const string& label);
 	explicit operator const string&();
 	Jso* operator[](const string& k);
+	static Jso JSO_NULL, JSO_TRUE, JSO_FALSE;
 };
 void indent_it(size_t i,ostream& out);
 #endif
