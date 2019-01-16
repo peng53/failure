@@ -1,6 +1,5 @@
 #ifndef IREADER
 #define IREADER
-
 #include <string>
 
 using std::string;
@@ -9,7 +8,7 @@ class IReader {
 	protected:
 		bool good;
 		const size_t M;
-		explicit IReader(const int chars): good(true), M(chars){}
+		explicit IReader(const size_t chars): good(true), M(chars){}
 	public:
 		virtual ~IReader(){}
 		virtual IReader& operator++() = 0;
@@ -20,5 +19,4 @@ class IReader {
 		virtual char until(char c,string* str_ptr=nullptr) = 0;
 		virtual bool empty() = 0;
 };
-
 #endif

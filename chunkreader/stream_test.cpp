@@ -1,55 +1,31 @@
-/* istream ifstream tests
-
-*/
 #include "stream_test.h"
-#include <sstream>
-#include <ios>
 
-using std::filebuf;
-using std::ios_base;
-using std::cout;
-using std::istringstream;
+AReader::AReader(const string& input):
+	IReader(input.length()),
+	chars(input),
+	i(0)
+{}
 
-AReader::AReader(streambuf* sb,const size_t csize):
-	IReader(csize),
-	t(sb),
-	ch(new char[csize]),
-	I(0),
-	E(0)
-{
-	feed();
-}
 AReader& AReader::operator++(){
 	advance();
 	return *this;
 }
 void AReader::advance(){
-	++I;
-	if (!has_data() && good){
-		feed();
-	}
-}
-AReader::~AReader(){
-	delete ch;
-}
-void AReader::feed(){
-	if (good){
-		I = 0;
-		E = t->sgetn(ch,M-1);
-		ch[E] = '\0';
-		if (E<M-1){
-			good = false;
-		}
+	if (i<M){
+		++i;
 	} else {
-		I = 0;
-		E = 0;
+		good = false;
 	}
+}
+
+void AReader::feed(){
+	i = M;
 }
 char AReader::get(){
-	return ch[I];
+	return chars[i];
 }
 bool AReader::has_data(){
-	return I<E;
+	return i<M;
 }
 char AReader::until(char c,string* str_ptr){
 	do {
@@ -59,17 +35,11 @@ char AReader::until(char c,string* str_ptr){
 		if (str_ptr){
 			(*str_ptr) += get();
 		}
-		++(*this);	
+		++(*this);
 	} while (has_data() || good);
 	return '\0'; // this means no more data left.
-}
-ostream& operator<<(ostream& out,AReader& rhs){
-	if (rhs.has_data()){
-		out << rhs.ch+rhs.I;
-		rhs.feed();
-	}
-	return out;
 }
 bool AReader::empty(){
 	return !(has_data() || good);
 }
+
