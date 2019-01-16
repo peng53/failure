@@ -1,7 +1,6 @@
 #include "chread.h"
 #include <stack>
 #include <map>
-#include <iostream>
 
 using std::stack;
 using std::map;
@@ -16,7 +15,6 @@ ChunkReader::ChunkReader(const char* filename,const size_t csize):
 	feed();
 }
 ChunkReader::~ChunkReader(){
-	std::cout<< "deleting! stuff!\n";
 	delete ch;
 	close();
 }

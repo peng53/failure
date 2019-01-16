@@ -1,12 +1,9 @@
 #ifndef CHKr
 #define CHKr
-
 #include "ireader.h"
 #include <fstream>
-#include <string>
 #include <ostream>
 
-using std::string;
 using std::ifstream;
 using std::ostream;
 
