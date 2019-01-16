@@ -83,6 +83,9 @@ int main(int argc, char** argv){
 	if (my_fb.is_open()){
 		my_fb.close();
 	}
+
+
+
 	cout << "On to db..\n";
 	DB_Connection my_db;
 	stack<JsoNameGid> stk;
@@ -98,7 +101,9 @@ int main(int argc, char** argv){
 		s = stk.top().name;
 		stk.pop();
 		// If top item was a 'x-moz-place-container', it should have an array named children.
-		if (has_key_string_value(j,"type",&value)){
+		if (j->key_value("type")){
+			j->key_value("type")->Get(&value);
+//		if (has_key_string_value(j,"type",&value)){
 			if ((*value)=="text/x-moz-place-container"){
 				// So we create a group under the current parent.
 				gid = my_db.create_group(*s,pid);

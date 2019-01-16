@@ -9,8 +9,7 @@ char next_symplex(IReader* chr){
 	// Returns next JSON recognized symbol.
 	// If none is found, ChunkReader would have been read entirely, and a
 	// runtine_error would be thrown.
-	char c;
-	while (!chr->empty()){
+	for (char c; !chr->empty(); chr->advance()){
 		c = chr->get();
 		if (isdigit(c)){
 			return '0';
@@ -28,7 +27,6 @@ char next_symplex(IReader* chr){
 			case '\0':
 				throw std::runtime_error("File ended prematurely.");
 		}
-		chr->advance();
 	}
 	throw std::runtime_error("File ended prematurely. :<");
 }
@@ -40,10 +38,9 @@ static string get_a_number(IReader* chr){
 	// with a digit. The double is returned when non-digit/EOF/2nd
 	// decimal is encountered. ChunkReader's position is left at this
 	// invalid char.
-	char c;
 	string s;
 	bool found_dot = false;
-	while (!chr->empty()){
+	for (char c; !chr->empty(); chr->advance()){
 		c = chr->get();
 		if (!isdigit(c)){
 			if (!found_dot && c=='.'){
@@ -53,7 +50,6 @@ static string get_a_number(IReader* chr){
 			}
 		}
 		s += c;
-		chr->advance();
 	}
 	return s;
 	//return std::stod(s);
@@ -64,8 +60,7 @@ static string* get_a_string(IReader* chr, string* s_ptr){
 	// without a preceding \. If chr's position is " at call, this
 	// function returns after advancing once. If chr is consumed
 	// before finding a ", a runtine_error is thrown.
-	char c;
-	while (!chr->empty()){
+	for (char c; !chr->empty(); chr->advance()){
 		c = chr->get();
 		switch (c){
 			case '"':
@@ -86,7 +81,6 @@ static string* get_a_string(IReader* chr, string* s_ptr){
 				}
 				break;
 		}
-		chr->advance();
 	}
 	throw std::runtime_error("Closing double quote not found.");
 }
@@ -163,6 +157,18 @@ static Jso* get_next_prop(IReader* buf){
 	return text2obj(buf,char2type(c));
 }
 
+static void retrieve_next_as_key(IReader* buf, string& out){
+	get_a_string(buf,&out);
+	if (out.length()==0){
+		throw std::runtime_error("Got 0-len key, which is not possible.");
+	}
+	// got it! now for the colon!
+	if (buf->until(':')!=':'){
+		throw std::runtime_error("Following colon missing in key-value pair.");
+	}
+	buf->advance();
+}
+
 JSON& parse_file(IReader* buf, JSON& tree){
 	stack<Jso*> stk;
 	stk.emplace(*tree);
@@ -180,15 +186,7 @@ JSON& parse_file(IReader* buf, JSON& tree){
 			}
 			if (c=='"'){
 				key.clear();
-				get_a_string(buf,&key);
-				if (key.length()==0){
-					throw std::runtime_error("Got 0-len key, which is not possible.");
-				}
-				// got it! now for the colon!
-				if (buf->until(':')!=':'){
-					throw std::runtime_error("Following colon missing in key-value pair.");
-				}
-				buf->advance();
+				retrieve_next_as_key(buf,key);
 			} else {
 				throw std::runtime_error("Missing opening \" for key.");
 			}
@@ -206,9 +204,9 @@ JSON& parse_file(IReader* buf, JSON& tree){
 		// get a value
 		j = get_next_prop(buf);
 		if (stk.top()->t==JType::Obj){
-			stk.top()->key_value(key,j);
+			stk.top()->Append(key,j);
 		} else {
-			stk.top()->add_value(j);
+			stk.top()->Append(j);
 		}
 		if (j->t==JType::Arr || j->t==JType::Obj){
 			stk.emplace(j);

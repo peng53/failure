@@ -9,7 +9,7 @@ class IReader {
 	protected:
 		bool good;
 		const size_t M;
-		IReader(const int chars): good(true), M(chars){}
+		explicit IReader(const int chars): good(true), M(chars){}
 	public:
 		virtual ~IReader(){}
 		virtual IReader& operator++() = 0;

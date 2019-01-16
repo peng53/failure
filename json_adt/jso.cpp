@@ -39,69 +39,47 @@ Jso::~Jso(){
 		default: break;
 	}
 }
-void Jso::key_value(const string& k,Jso* v){
+void Jso::Append(const string& k,Jso* v){
 	// have to make that provide that object ptr yourself
-	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = v; }
+	if (t==JType::Obj &&
+		v!=nullptr &&
+		v!=this &&
+		x.m->count(k)==0
+	){
+		x.m->emplace(k,v);
+	}
 }
-void Jso::key_value(const string& k,const string& v){
-	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(v); }
+void Jso::Append(Jso* v){
+	if (t==JType::Arr &&
+		v!=nullptr &&
+		v!=this
+	){
+		x.a->emplace_back(v);
+	}
 }
-void Jso::key_value(const string& k,const double v){
-	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(v); }
-}
-void Jso::key_value(const string& k,JType vt){
-	// makes an empty obj or arr
-	if (t==JType::Obj && x.m->count(k)==0){ (*(x.m))[k] = new Jso(vt); }
-}
-void Jso::add_value(const double v){
-	if (t==JType::Arr){ x.a->emplace_back(new Jso(v)); }
-}
-void Jso::add_value(const string& v){
-	if (t==JType::Arr){ x.a->emplace_back(new Jso(v)); }
-}
-void Jso::add_value(const JType vt){
-	if (t==JType::Arr){ x.a->emplace_back(new Jso(vt)); }
-}
-void Jso::add_value(Jso* v){
-	if (t==JType::Arr){ x.a->emplace_back(v); }
-}
-void Jso::set_value(double v){
-	if (t==JType::Num){ x.f = v; }
-}
-void Jso::set_value(const string& v){
-	if (t==JType::Str){ *(x.s) = v; }
-}
+
 ostream& operator<<(ostream& out,const Jso& J){
 	switch (J.t){
 		case JType::Num:
-			out << J.x.f << 'f';
+			out << J.x.f;
 			break;
 		case JType::Str:
-			out << "s`" << *(J.x.s) << '`';
+			out << *(J.x.s);
 			break;
 		case JType::Obj:
-			out << "{\n";
-			for (const auto& j : *(J.x.m)){
-				out << j.first << " : ";
-				out << *(j.second) << '\n';
-			}
-			out << "}\n";
+			out << "Object{" << J.x.m->size() << '}';
 			break;
 		case JType::Arr:
-			out << "[\n";
-			for (const auto& j : *(J.x.a)){
-				out << *j << '\n';
-			}
-			out << "]\n";
+			out << "Array[" << J.x.a->size() << ']';
 			break;
 		case JType::Null:
-			out << "null\n";
+			out << "null";
 			break;
 		case JType::True:
-			out << "true\n";
+			out << "true";
 			break;
 		case JType::False:
-			out << "false\n";
+			out << "false";
 			break;
 	}
 	return out;
@@ -112,12 +90,18 @@ Jso* Jso::key_value(const string& k){
 Jso* Jso::operator[](const string& k){
 	return key_value(k);
 }
-void indent_it(size_t i, ostream& out){
-	while (i>1){
+
+struct Indentor {
+	const unsigned spaces;
+	Indentor(unsigned n): spaces(n){}
+};
+ostream& operator<<(ostream& out,const Indentor& ind){
+	for (unsigned i=ind.spaces;i>1;--i){
 		out << ' ';
-		--i;
 	}
+	return out;
 }
+
 struct PrintStackNode {
 	const string& label;
 	Jso* obj;
@@ -126,7 +110,6 @@ struct PrintStackNode {
 		label(s), obj(j), ind(i)
 		{}
 };
-
 void Jso::rprint(ostream& out, const string& label){
 	Jso arr_end = Jso("]");
 	Jso obj_end = Jso("}");
@@ -138,36 +121,14 @@ void Jso::rprint(ostream& out, const string& label){
 	while (!stk.empty()){
 		j = stk.top().obj;
 		ind = stk.top().ind;
-		indent_it(ind,out);
+		out << Indentor(ind);
 		if (stk.top().label.length()>0){
 			out << stk.top().label << " : ";
 		}
 		stk.pop();
 		switch (j->t){
-			case JType::Null:
-				out << "null\n";
-				break;
-			case JType::True:
-				out << "true\n";
-				break;
-			case JType::False:
-				out << "false\n";
-				break;
-			case JType::Str:
-				if (j==&arr_end){
-					out << "]\n";
-				}	else if (j==&obj_end){
-					out << "}\n";
-				} else {
-					out << *j << '\n';
-				}
-				break;
-			case JType::Num:
-				out << *j << '\n';
-				break;
 			case JType::Obj:
 				stk.emplace(blank_label,&obj_end,ind);
-				//indent_it(ind,cout);
 				out << "{\n";
 				for (auto& kv : *(j->x.m)){
 					stk.emplace(kv.first,kv.second,ind+1);
@@ -175,20 +136,17 @@ void Jso::rprint(ostream& out, const string& label){
 				break;
 			case JType::Arr:
 				stk.emplace(blank_label,&arr_end,ind);
-				//indent_it(ind,cout);
 				out << "[\n";
 				for (auto& v : *(j->x.a)){
-					switch (v->t){
-						case JType::Num:
-						case JType::Str:
-							indent_it(ind+1,out);
-							out << *v << '\n';
-							break;
-						default:
-							stk.emplace(blank_label,v,ind+1);
-							break;
-					}
+					stk.emplace(blank_label,v,ind+1);
 				}
+				break;
+			case JType::Null:
+			case JType::True:
+			case JType::False:
+			case JType::Num:
+			case JType::Str:
+				out << *j << '\n';
 				break;
 		}
 	}
@@ -204,3 +162,16 @@ Jso::operator const string&(){
 Jso Jso::JSO_NULL = Jso(JType::Null);
 Jso Jso::JSO_TRUE = Jso(JType::True);
 Jso Jso::JSO_FALSE = Jso(JType::False);
+
+void Jso::Get(string **outptr){
+	(*outptr) = ((t==JType::Str) ? x.s : nullptr);
+}
+void Jso::Get(double **outptr){
+	(*outptr) = ((t==JType::Num) ? &x.f : nullptr);
+}
+void Jso::Get(map<string,Jso*> **outptr){
+	(*outptr) = ((t==JType::Obj) ? x.m : nullptr);
+}
+void Jso::Get(vector<Jso*> **outptr){
+	(*outptr) = ((t==JType::Arr) ? x.a : nullptr);
+}
