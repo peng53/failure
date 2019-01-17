@@ -1,9 +1,8 @@
 #include "stream_test.h"
 
 AReader::AReader(const string& input):
-	IReader(input.length()),
 	chars(input),
-	i(0)
+	i(chars.begin())
 {}
 
 AReader& AReader::operator++(){
@@ -11,7 +10,7 @@ AReader& AReader::operator++(){
 	return *this;
 }
 void AReader::advance(){
-	if (i<M){
+	if (i<chars.end()){
 		++i;
 	} else {
 		good = false;
@@ -19,13 +18,13 @@ void AReader::advance(){
 }
 
 void AReader::feed(){
-	i = M;
+	i = chars.end();
 }
 char AReader::get(){
-	return chars[i];
+	return (*i);
 }
 bool AReader::has_data(){
-	return i<M;
+	return i<chars.end();
 }
 char AReader::until(char c,string* str_ptr){
 	do {
