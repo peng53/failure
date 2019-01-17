@@ -2,12 +2,13 @@
 #define IREADER_EXTF
 #include "ireader.h"
 #include <iostream>
-#include <map>
+#include <unordered_map>
 
-using std::map;
+using std::unordered_map;
 using std::ostream;
 
 void reader2stdout(IReader* reader,ostream& out);
-string& closure(IReader* reader,string& output);
+template <typename T>
+T& closure(IReader* reader,T& output,unordered_map<char,char>* match=nullptr);
 string closure(IReader* reader);
 #endif
