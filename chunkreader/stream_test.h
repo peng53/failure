@@ -8,7 +8,7 @@ using std::ostream;
 class AReader : public IReader {
 	private:
 		string chars;
-		size_t i;
+		string::iterator i;
 	public:
 		AReader(const string& input); // constructs an AReader with a streambuf with data.
 		AReader& operator++() override; // advances to next character.

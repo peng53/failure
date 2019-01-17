@@ -6,8 +6,8 @@ using std::stack;
 using std::map;
 
 ChunkReader::ChunkReader(const char* filename,const size_t csize):
-	IReader(csize),
 	ifstream(filename,std::ifstream::in),
+	M(csize),
 	I(0),
 	E(0),
 	ch(new char[csize])

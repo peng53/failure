@@ -7,8 +7,7 @@ using std::string;
 class IReader {
 	protected:
 		bool good;
-		const size_t M;
-		explicit IReader(const size_t chars): good(true), M(chars){}
+		explicit IReader(): good(true){}
 	public:
 		virtual ~IReader(){}
 		virtual IReader& operator++() = 0;

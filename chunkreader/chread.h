@@ -9,6 +9,7 @@ using std::ostream;
 
 class ChunkReader : public IReader, ifstream {
 	private:
+		const size_t M;
 		size_t I,E;
 		char* ch;
 	public:
