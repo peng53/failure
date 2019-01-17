@@ -10,13 +10,12 @@ class AReader : public IReader {
 		string chars;
 		string::iterator i;
 	public:
-		AReader(const string& input); // constructs an AReader with a streambuf with data.
 		AReader& operator++() override; // advances to next character.
 		void advance() override;
+		bool empty() override;
 		void feed() override;
 		char get() override; // gets current character.
-		bool has_data() override; // returns whether there is any new data, one should advance/feed if false.
-		bool empty() override;
+		void load(const string& input);
 		char until(char c,string* str_ptr=nullptr) override;
 		// advances AReader until get is c. if provided string ptr, output to it.
 };
