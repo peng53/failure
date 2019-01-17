@@ -14,22 +14,19 @@ class ChunkReader : public IReader, ifstream {
 		char* ch;
 	public:
 		using ifstream::is_open;
-		ChunkReader(const char* filename,const size_t csize);
-		char until_e(const char c,const bool int_escape=false,string* str_ptr=nullptr);
-		string capture_until(const char c);
-		friend ostream& operator<<(ostream& out,ChunkReader& rhs);
-
+		ChunkReader(const size_t csize);
+		ChunkReader(const string& filename,const size_t csize);
 		~ChunkReader();
-		char until(const char c,string* str_ptr=nullptr) override;
-		void feed() override;
-		void advance() override;
 		ChunkReader& operator++() override;
-		char get() override;
+		void advance() override;
 		bool empty() override;
-		bool has_data() override;
+		void feed() override;
+		char get() override;
+		bool has_data();
+		void load(const string& input) override;
+		char until(const char c,string* str_ptr=nullptr) override;
 
-		string& closure(string& s);
-		string closure();
+		friend ostream& operator<<(ostream& out,ChunkReader& rhs);
 };
 
 #endif

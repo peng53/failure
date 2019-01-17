@@ -1,19 +1,29 @@
 #include "chread.h"
-#include <stack>
-#include <map>
 
-using std::stack;
-using std::map;
-
-ChunkReader::ChunkReader(const char* filename,const size_t csize):
-	ifstream(filename,std::ifstream::in),
+ChunkReader::ChunkReader(const size_t csize):
+	ifstream(),
 	M(csize),
 	I(0),
 	E(0),
 	ch(new char[csize])
 {
+}
+
+ChunkReader::ChunkReader(const string& filename,const size_t csize):
+	ChunkReader(csize)
+{
+	load(filename);
+}
+
+void ChunkReader::load(const string& filename){
+	if (is_open()){
+		close();
+	}
+	ifstream::open(filename,std::ifstream::in);
+	IReader::good = true;
 	feed();
 }
+
 ChunkReader::~ChunkReader(){
 	delete ch;
 	close();
@@ -44,89 +54,6 @@ char ChunkReader::until(const char c,string* str_ptr){
 	} while (has_data() || IReader::good);
 	return '\0'; // this means no more data left.
 }
-char ChunkReader::until_e(const char end,const bool int_escape,string* str_ptr){
-	bool escape = false;
-	char c;
-	do {
-		if (escape){
-			escape = false;
-			if (str_ptr){
-				(*str_ptr) += get();
-			}
-		} else {
-			c = get();
-			if (int_escape && c=='\\'){
-				escape = true;
-			} else if (c==end){
-				return c;
-			}
-			if (str_ptr){
-				(*str_ptr) += get();
-			}
-		}
-		advance();
-	} while (has_data() || IReader::good);
-	return '\0';
-}
-string ChunkReader::capture_until(const char c){
-	string str;
-	until(c,&str);
-	return str;
-}
-
-ostream& operator<<(ostream& out,ChunkReader& rhs){
-	if (rhs.has_data()){
-		out << rhs.ch+rhs.I;
-		rhs.feed();
-	}
-	return out;
-}
-
-static map<char,char> BRACKETS = {
-	{'[',']'}, {']','['},
-	{'{','}'}, {'}','{'},
-	{'"','"'}, 
-};
-
-string& ChunkReader::closure(string& s){
-	// Looks at current char, if its in BRACKETS,
-	// collects all characters to string until
-	// its counterpart is encountered.
-	char c = get();
-	if (BRACKETS.count(c)==0){
-		return s;
-	}
-	advance();
-	stack<char> stk;
-	stk.emplace(BRACKETS[c]);
-	while (!stk.empty() && (has_data() || IReader::good)){
-		c = get();
-		if (BRACKETS.count(c)>0){
-			if (c==stk.top()){
-				if (stk.size()<=1){
-					return s;
-				} else {
-					stk.pop();
-				}
-			} else {
-				stk.emplace(BRACKETS[c]);
-			}
-		}
-		s += c;
-		advance();
-	}
-	return s;
-}
-string ChunkReader::closure(){
-	string str;
-	return closure(str);
-}
-void ChunkReader::advance(){
-	++I;
-	if (!has_data() && IReader::good){
-		feed();
-	}
-}
 ChunkReader& ChunkReader::operator++(){
 	advance();
 	return *this;
@@ -139,4 +66,17 @@ bool ChunkReader::empty(){
 }
 bool ChunkReader::has_data(){
 	return I<E;
+}
+ostream& operator<<(ostream& out,ChunkReader& rhs){
+	if (rhs.has_data()){
+		out << rhs.ch+rhs.I;
+		rhs.feed();
+	}
+	return out;
+}
+void ChunkReader::advance(){
+	++I;
+	if (!has_data() && IReader::good){
+		feed();
+	}
 }
