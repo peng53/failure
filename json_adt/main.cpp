@@ -1,17 +1,14 @@
 #include "parser.h"
 #include <iostream>
-#include <sstream>
 #include <stack>
+#include <exception>
 #include "../bmarksg/bmarksg.h"
 #include "../chunkreader/stream_test.h"
+#include "../chunkreader/chread.h"
 
 using std::cout;
 using std::cerr;
-using std::istringstream;
-using std::filebuf;
-using std::ios_base;
 using std::stack;
-using std::pair;
 
 struct JsoNameGid {
 	Jso* j;
@@ -37,56 +34,59 @@ bool has_property(Jso* j,const string& key){
 	return (j->t==JType::Obj && j->key_value(key)!=nullptr);
 }
 
+void treeFromChunk(IReader* chr, JSON& tree){
+	if (chr->empty()){
+		throw std::invalid_argument("No input or non-existent file.");
+	}
+	if (next_symplex(chr)!='{'){
+		std::out_of_range("Could not find opening curly brace.");
+	}
+	chr->advance();
+	parse_file(chr,tree);
+}
+
 int main(int argc, char** argv){
-	streambuf* f;
-	istringstream ins_str;
-	filebuf my_fb;
+	IReader *textChunk;
+	string userInput;
 	if (argc<2){
 		cout << "No input file. Taking input from stdin.\n";
-		string userInput;
 		getline(std::cin,userInput);
 		if (userInput.length()==0){
 			cout << "Nothing was entered.\nQuiting program.\n";
 			return 1;
 		}
-		ins_str.str(userInput);
-		f = ins_str.rdbuf();
+		textChunk = new AReader();
 	} else {
 		cout << "Using file: "
 			<< argv[1]
 			<< '\n';
-		my_fb.open(argv[1],ios_base::in);
-		if (!my_fb.is_open()){
-			cout << "Could not open file.\n";
-			return 1;
-		}
-		f = &my_fb;
+		textChunk = new ChunkReader(1024);
+		userInput = argv[1];
 	}
-	IReader *textChunk = new AReader(f,1024);
-	//AReader textChunk(f,1024);
-	if (next_symplex(textChunk)!='{'){
-		cerr << "Could not find opening curly brace.\n";
-		return 1;
-	}
-	textChunk->advance();
+	textChunk->load(userInput);
+
+	cout << "Begin Parse\n";
 	JSON jsonTree;
 	try {
-		parse_file(textChunk,jsonTree);
-	} catch (const std::runtime_error& e) {
+		treeFromChunk(textChunk,jsonTree);
+	}
+	catch (const std::runtime_error& e){
 		cerr << e.what()
 			<< "\nStructure incomplete. Printing what was recieved:\n"
 			<< jsonTree;
+		delete textChunk;
 		return 1;
 	}
-	cout << jsonTree;
-	cout << "Closing file if open..\n";
-	if (my_fb.is_open()){
-		my_fb.close();
+	catch (const std::exception& e){
+		cerr << e.what() << '\n';
+		delete textChunk;
+		return 1;
 	}
+	cout << "End Parse\n";
 
 
 
-	cout << "On to db..\n";
+	cout << "Begin Save\n";
 	DB_Connection my_db;
 	stack<JsoNameGid> stk;
 	// Create a db group to hold what's going to be inserted.
@@ -94,7 +94,7 @@ int main(int argc, char** argv){
 	Jso* j;
 	int pid, gid;
 	string *s, *value;
-	//string ms_epoch;
+
 	while (!stk.empty()){
 		j = stk.top().j;
 		pid = stk.top().gid;
@@ -134,7 +134,7 @@ int main(int argc, char** argv){
 			}
 		}
 	}
-	cout << my_db.export_memory("test.db") << '\n';
+	cout << my_db.export_memory("/mnt/ramdisk/test.db") << '\n';
 	delete textChunk;
 	return 0;
 }

@@ -2,9 +2,8 @@
 #include <stack>
 
 using std::stack;
-using std::pair;
 
-void dispose(Jso* j, stack<Jso*>& more){
+static void dispose(Jso* j, stack<Jso*>& more){
 	switch (j->t){
 		case JType::Arr:
 			for (auto &a : *(j->x.a)){
@@ -19,6 +18,7 @@ void dispose(Jso* j, stack<Jso*>& more){
 		case JType::Null:
 		case JType::True:
 		case JType::False:
+			std::cout << "Singleton: " << j << '\n';
 			return;
 		default: break;
 	}

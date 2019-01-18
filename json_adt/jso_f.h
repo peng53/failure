@@ -10,4 +10,5 @@ class JSON {
 		Jso* operator*();
 		friend ostream& operator<<(ostream& out,const JSON& rhs);
 };
+
 #endif

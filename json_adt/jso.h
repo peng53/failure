@@ -25,6 +25,8 @@ struct Jso {
 	explicit Jso(const string& v);
 	explicit Jso(JType j);
 	explicit Jso(map<string,Jso*>* VAL);
+	Jso(){}
+	static Jso* Null();
 	~Jso();
 	void Append(const string& k,Jso* v);
 
