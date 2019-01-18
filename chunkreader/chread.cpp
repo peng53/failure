@@ -38,6 +38,7 @@ void ChunkReader::feed(){
 		ch[E] = '\0';
 		if (E<M-1){
 			IReader::good = false;
+			close();
 		}
 	} else {
 		I = 0;
@@ -77,7 +78,9 @@ ostream& operator<<(ostream& out,ChunkReader& rhs){
 	return out;
 }
 void ChunkReader::advance(){
-	++I;
+	if (I<E){
+		++I;
+	}
 	if (!has_data() && IReader::good){
 		feed();
 	}
