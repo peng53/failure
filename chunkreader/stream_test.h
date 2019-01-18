@@ -1,9 +1,6 @@
 #ifndef STREAM_TEST
 #define STREAM_TEST
 #include "ireader.h"
-#include <ostream>
-
-using std::ostream;
 
 class AReader : public IReader {
 	private:
