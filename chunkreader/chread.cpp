@@ -1,4 +1,5 @@
 #include "chread.h"
+#include <iostream>
 
 ChunkReader::ChunkReader(const size_t csize):
 	ifstream(),
@@ -25,6 +26,7 @@ void ChunkReader::load(const string& filename){
 }
 
 ChunkReader::~ChunkReader(){
+	std::cout << "BOOM!\n";
 	delete ch;
 	close();
 }

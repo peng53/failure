@@ -114,7 +114,8 @@ static Jso* text2obj(IReader* chr, JType t){
 			return new Jso(get_a_string(chr));
 		case JType::Null:
 			if (next_chars_are(chr,"ull")){
-				return &(Jso::JSO_NULL);
+				//return &(Jso::JSO_NULL);
+				return Jso::Null();
 			}
 			break;
 		case JType::True:

@@ -175,3 +175,9 @@ void Jso::Get(map<string,Jso*> **outptr){
 void Jso::Get(vector<Jso*> **outptr){
 	(*outptr) = ((t==JType::Arr) ? x.a : nullptr);
 }
+Jso* Jso::Null(){
+	static Jso j = Jso();
+	j.t = JType::Null;
+	Jso* j_ptr = &j;
+	return j_ptr;
+}

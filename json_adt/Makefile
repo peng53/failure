@@ -3,8 +3,8 @@
 CXXFLAGS=-pedantic -O2 -march=native -Wall
 OBJ=../objects
 
-build: $(OBJ)/jso.o $(OBJ)/jso_f.o $(OBJ)/json_adt_main.o $(OBJ)/stream_test.o $(OBJ)/parser.o $(OBJ)/bmarksg.o
-	$(CXX) $(CXXFLAGS) $(OBJ)/jso_f.o $(OBJ)/jso.o $(OBJ)/stream_test.o $(OBJ)/parser.o $(OBJ)/json_adt_main.o $(OBJ)/bmarksg.o -o ../bin/jso_f -lsqlite3
+build: $(OBJ)/jso.o $(OBJ)/jso_f.o $(OBJ)/json_adt_main.o $(OBJ)/stream_test.o $(OBJ)/chread.o $(OBJ)/parser.o $(OBJ)/bmarksg.o
+	$(CXX) $(CXXFLAGS) $(OBJ)/jso_f.o $(OBJ)/jso.o $(OBJ)/stream_test.o $(OBJ)/chread.o $(OBJ)/parser.o $(OBJ)/json_adt_main.o $(OBJ)/bmarksg.o -o ../bin/jso_f -lsqlite3
 
 
 debug: CXXFLAGS += -DDEBUG -g
@@ -14,6 +14,9 @@ $(OBJ)/%.o: %.cpp %.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 $(OBJ)/stream_test.o: ../chunkreader/stream_test.cpp ../chunkreader/stream_test.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+$(OBJ)/chread.o: ../chunkreader/chread.cpp ../chunkreader/chread.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 $(OBJ)/bmarksg.o: ../bmarksg/bmarksg.cpp ../bmarksg/bmarksg.h
