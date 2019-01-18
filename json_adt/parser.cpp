@@ -104,32 +104,34 @@ static bool next_chars_are(IReader* buf, const string& chars){
 	return true;
 }
 
-static Jso* text2obj(IReader* chr, JType t){
+static Jso* text2obj(IReader* chr, JType t,JSON& tree){
 	// Returns a Jso* from data in ChunkReader given a JType.
 	// calls get_a_number/string for numbers/strings.
 	switch (t){
 		case JType::Num:
-			return new Jso(get_a_number(chr));
+			return tree.Str(get_a_number(chr));
+			// get a number actually returns a string.
 		case JType::Str:
-			return new Jso(get_a_string(chr));
+			return tree.Str(get_a_string(chr));
 		case JType::Null:
 			if (next_chars_are(chr,"ull")){
-				//return &(Jso::JSO_NULL);
-				return Jso::Null();
+				return tree.Null();
 			}
 			break;
 		case JType::True:
 			if (next_chars_are(chr,"rue")){
-				return &(Jso::JSO_TRUE);
+				return tree.True();
 			}
 			break;
 		case JType::False:
 			if (next_chars_are(chr,"alse")){
-				return &(Jso::JSO_FALSE);
+				return tree.False();
 			}
 			break;
-		default: // for Obj or Arr
-			return new Jso(t);
+		case JType::Obj:
+			return tree.Map();
+		case JType::Arr:
+			return tree.Arr();
 	}
 	throw std::runtime_error("Expected Json object.");
 }
@@ -149,13 +151,13 @@ static JType char2type(char c){
 	throw std::runtime_error("Got unexpected character for type.");
 }
 
-static Jso* get_next_prop(IReader* buf){
+static Jso* get_next_prop(IReader* buf,JSON& tree){
 	// returns a Jso* of the next object.
 	char c = next_symplex(buf);
 	if (c!='0'){
 		buf->advance();
 	}
-	return text2obj(buf,char2type(c));
+	return text2obj(buf,char2type(c),tree);
 }
 
 static void retrieve_next_as_key(IReader* buf, string& out){
@@ -203,7 +205,7 @@ JSON& parse_file(IReader* buf, JSON& tree){
 			}
 		}
 		// get a value
-		j = get_next_prop(buf);
+		j = get_next_prop(buf,tree);
 		if (stk.top()->t==JType::Obj){
 			stk.top()->Append(key,j);
 		} else {

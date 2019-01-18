@@ -9,6 +9,11 @@ class JSON {
 		~JSON();
 		Jso* operator*();
 		friend ostream& operator<<(ostream& out,const JSON& rhs);
+		static Jso *Null(), *True(), *False();
+		Jso* Num(const double v);
+		Jso* Str(const string& v);
+		Jso* Map();
+		Jso* Arr();
 };
 
 #endif
