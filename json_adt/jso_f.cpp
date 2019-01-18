@@ -25,7 +25,9 @@ static void dispose(Jso* j, stack<Jso*>& more){
 	delete j;
 }
 
-JSON::JSON(): o(new Jso(JType::Obj)){}
+JSON::JSON(): o(Map()){
+}
+
 JSON::~JSON(){
 	stack<Jso*> D;
 	Jso* d = o;
@@ -43,4 +45,47 @@ Jso* JSON::operator*(){
 ostream& operator<<(ostream& out,const JSON& rhs){
 	rhs.o->rprint(out,"Object");
 	return out;
+}
+
+Jso* JSON::Str(const string& v){
+	Jso* j = new Jso();
+	j->t = JType::Str;
+	j->x.s = new string(v);
+	return j;
+}
+Jso* JSON::Num(const double v){
+	Jso* j = new Jso();
+	j->t = JType::Num;
+	j->x.f = v;
+	return j;
+}
+Jso* JSON::Map(){
+	Jso* j = new Jso();
+	j->t = JType::Obj;
+	j->x.m = new map<string,Jso*>;
+	return j;
+}
+Jso* JSON::Arr(){
+	Jso* j = new Jso();
+	j->t = JType::Arr;
+	j->x.a = new vector<Jso*>;
+	return j;
+}
+Jso* JSON::Null(){
+	static Jso j = Jso();
+	j.t = JType::Null;
+	Jso* j_ptr = &j;
+	return j_ptr;
+}
+Jso* JSON::True(){
+	static Jso j = Jso();
+	j.t = JType::True;
+	Jso* j_ptr = &j;
+	return j_ptr;
+}
+Jso* JSON::False(){
+	static Jso j = Jso();
+	j.t = JType::False;
+	Jso* j_ptr = &j;
+	return j_ptr;
 }

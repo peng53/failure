@@ -3,33 +3,6 @@
 
 using std::stack;
 
-Jso::Jso(JType j): t(j){
-	switch (j){
-		case JType::Obj:
-			x.m = new map<string,Jso*>;
-			break;
-		case JType::Arr:
-			x.a = new vector<Jso*>;
-			break;
-		case JType::Num:
-			x.f = 0;
-			break;
-		case JType::Str:
-			x.s = new string;
-			break;
-		default:
-			break;
-	}
-}
-Jso::Jso(map<string,Jso*>* VAL): t(JType::Obj){
-	x.m = VAL;
-}
-Jso::Jso(const string& v): Jso(JType::Str){
-	*(x.s) = v;
-}
-Jso::Jso(double v): Jso(JType::Num){
-	x.f = v;
-}
 Jso::~Jso(){
 	// Only deletes its members; doesn't go further.
 	switch (t){
@@ -111,8 +84,8 @@ struct PrintStackNode {
 		{}
 };
 void Jso::rprint(ostream& out, const string& label){
-	Jso arr_end = Jso("]");
-	Jso obj_end = Jso("}");
+	//Jso* arr_end = Str("]");
+	//Jso* obj_end = Str("}");
 	string blank_label;
 	unsigned ind;
 	Jso* j;
@@ -128,14 +101,14 @@ void Jso::rprint(ostream& out, const string& label){
 		stk.pop();
 		switch (j->t){
 			case JType::Obj:
-				stk.emplace(blank_label,&obj_end,ind);
+				//stk.emplace(blank_label,obj_end,ind);
 				out << "{\n";
 				for (auto& kv : *(j->x.m)){
 					stk.emplace(kv.first,kv.second,ind+1);
 				}
 				break;
 			case JType::Arr:
-				stk.emplace(blank_label,&arr_end,ind);
+				//stk.emplace(blank_label,arr_end,ind);
 				out << "[\n";
 				for (auto& v : *(j->x.a)){
 					stk.emplace(blank_label,v,ind+1);
@@ -150,6 +123,8 @@ void Jso::rprint(ostream& out, const string& label){
 				break;
 		}
 	}
+	//delete obj_end;
+	//delete arr_end;
 }
 const string nonstring;
 Jso::operator const string&(){
@@ -159,9 +134,6 @@ Jso::operator const string&(){
 		return nonstring;
 	}
 }
-Jso Jso::JSO_NULL = Jso(JType::Null);
-Jso Jso::JSO_TRUE = Jso(JType::True);
-Jso Jso::JSO_FALSE = Jso(JType::False);
 
 void Jso::Get(string **outptr){
 	(*outptr) = ((t==JType::Str) ? x.s : nullptr);
@@ -174,10 +146,4 @@ void Jso::Get(map<string,Jso*> **outptr){
 }
 void Jso::Get(vector<Jso*> **outptr){
 	(*outptr) = ((t==JType::Arr) ? x.a : nullptr);
-}
-Jso* Jso::Null(){
-	static Jso j = Jso();
-	j.t = JType::Null;
-	Jso* j_ptr = &j;
-	return j_ptr;
 }

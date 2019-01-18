@@ -3,8 +3,7 @@
 #include <stack>
 #include <exception>
 #include "../bmarksg/bmarksg.h"
-#include "../chunkreader/stream_test.h"
-#include "../chunkreader/chread.h"
+#include "../chunkreader/ireaderfactory.h"
 
 using std::cout;
 using std::cerr;
@@ -46,24 +45,21 @@ void treeFromChunk(IReader* chr, JSON& tree){
 }
 
 int main(int argc, char** argv){
+	IReaderFactory reader_maker;
 	IReader *textChunk;
-	string userInput;
 	if (argc<2){
 		cout << "No input file. Taking input from stdin.\n";
+		string userInput;
 		getline(std::cin,userInput);
 		if (userInput.length()==0){
-			cout << "Nothing was entered.\nQuiting program.\n";
+			cerr << "Nothing was entered.\nQuiting program.\n";
 			return 1;
 		}
-		textChunk = new AReader();
+		textChunk = reader_maker.ByInput(userInput);
 	} else {
-		cout << "Using file: "
-			<< argv[1]
-			<< '\n';
-		textChunk = new ChunkReader(1024);
-		userInput = argv[1];
+		cout << "Using file: " << argv[1] << '\n';
+		textChunk = reader_maker.ByFile(argv[1],1024);
 	}
-	textChunk->load(userInput);
 
 	cout << "Begin Parse\n";
 	JSON jsonTree;
@@ -74,12 +70,10 @@ int main(int argc, char** argv){
 		cerr << e.what()
 			<< "\nStructure incomplete. Printing what was recieved:\n"
 			<< jsonTree;
-		delete textChunk;
 		return 1;
 	}
 	catch (const std::exception& e){
 		cerr << e.what() << '\n';
-		delete textChunk;
 		return 1;
 	}
 	cout << "End Parse\n";
@@ -135,6 +129,5 @@ int main(int argc, char** argv){
 		}
 	}
 	cout << my_db.export_memory("/mnt/ramdisk/test.db") << '\n';
-	delete textChunk;
 	return 0;
 }
