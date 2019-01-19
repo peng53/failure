@@ -5,12 +5,7 @@ using std::stack;
 
 Jso::~Jso(){
 	// Only deletes its members; doesn't go further.
-	switch (t){
-		case JType::Str: delete x.s; break;
-		case JType::Arr: delete x.a; break;
-		case JType::Obj: delete x.m; break;
-		default: break;
-	}
+	SetVoid();
 }
 void Jso::Append(const string& k,Jso* v){
 	// have to make that provide that object ptr yourself
@@ -146,4 +141,22 @@ void Jso::Get(map<string,Jso*> **outptr){
 }
 void Jso::Get(vector<Jso*> **outptr){
 	(*outptr) = ((t==JType::Arr) ? x.a : nullptr);
+}
+void Jso::SetVoid(double v){
+	// All ptrs are lost, be sure to get them before hand!
+	switch (t){
+		case JType::Arr:
+			delete x.a;
+			break;
+		case JType::Str:
+			delete x.s;
+			break;
+		case JType::Obj:
+			delete x.m;
+			break;
+		default:
+			break;
+	}
+	t = JType::Num;
+	x.f = v;
 }

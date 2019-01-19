@@ -21,7 +21,6 @@ struct Jso {
 		vector<Jso*>* a;
 		map<string,Jso*>* m;
 	} x;
-	Jso(){}
 	~Jso();
 
 	void Append(const string& k,Jso* v);
@@ -37,6 +36,7 @@ struct Jso {
 	void Get(double **outptr);
 	void Get(map<string,Jso*> **outptr);
 	void Get(vector<Jso*> **outptr);
+	void SetVoid(double v=0);
 };
 
 #endif
