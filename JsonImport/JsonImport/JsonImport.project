@@ -18,6 +18,11 @@
     <File Name="../../chunkreader/chread.h"/>
     <File Name="../../chunkreader/stream_test.cpp"/>
     <File Name="../../chunkreader/stream_test.h"/>
+    <File Name="../../chunkreader/ireader.h"/>
+    <File Name="../../chunkreader/ireader_extf.cpp"/>
+    <File Name="../../chunkreader/ireader_extf.h"/>
+    <File Name="../../chunkreader/ireaderfactory.cpp"/>
+    <File Name="../../chunkreader/ireaderfactory.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="bmarksg">
     <File Name="../../bmarksg/bmarksg.cpp"/>
