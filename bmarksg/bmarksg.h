@@ -17,13 +17,13 @@ class DB_Connection {
 		void create_tables();
 		void prepare_stmts();
 		void finalize_stmts();
+		bool delete_group_helper(const int gid);
+		bool child_link(const int root,const int child);
+		bool unlink(const int gid);
 	public:
 		DB_Connection();
 		~DB_Connection();
-		bool child_link(const int root,const int child);
-		bool unlink(const int gid);
 		int create_group(const string& name,const int parent_gid=0);
-		bool delete_group_helper(const int gid);
 		bool delete_group(const int gid);
 		void print_groups();
 		void trans_act(const char B_E);

@@ -4,7 +4,7 @@
 using std::queue;
 using std::pair;
 
-int prepare_helper(sqlite3 *db,sqlite3_stmt **s,const char* str){
+static int prepare_helper(sqlite3 *db,sqlite3_stmt **s,const char* str){
 	// Helps prepare statements for an database.
 	// Basically, it uses the full string without a ptr
 	// to remaining chars (of which they are not.)
@@ -13,7 +13,7 @@ int prepare_helper(sqlite3 *db,sqlite3_stmt **s,const char* str){
 	);
 }
 
-bool successful_stmt(sqlite3_stmt *s){
+static bool successful_stmt(sqlite3_stmt *s){
 	// Given a statement (with no intended output), repeat
 	// step until 'done'. Then it resets the statement.
 	int R;

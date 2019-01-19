@@ -16,11 +16,25 @@ static void dispose(Jso* j, stack<Jso*>& more){
 			}
 			break;
 		case JType::Null:
+			if (j==JSON::Null()){
+				std::cout << "null: " << j << '\n';
+				return;
+			}
+			break;
 		case JType::True:
+			if (j==JSON::True()){
+				std::cout << "true: " << j << '\n';
+				return;
+			}
+			break;
 		case JType::False:
-			std::cout << "Singleton: " << j << '\n';
-			return;
-		default: break;
+			if (j==JSON::False()){
+				std::cout << "false: " << j << '\n';
+				return;
+			}
+			break;
+		case JType::Num:
+			break;
 	}
 	delete j;
 }
