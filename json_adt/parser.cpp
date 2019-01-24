@@ -2,60 +2,80 @@
 #include <stdexcept>
 #include <cctype>
 #include <stack>
+#include <cctype>
+//#include <iostream>
 
+//using std::cout;
 using std::stack;
+using std::pair;
 
-char next_symplex(IReader* chr){
-	// Returns next JSON recognized symbol.
-	// If none is found, ChunkReader would have been read entirely, and a
-	// runtine_error would be thrown.
-	for (char c; !chr->empty(); chr->advance()){
-		c = chr->get();
-		if (isdigit(c)){
-			return '0';
-		}
-		switch (c){
-			case '{':
-			case '[':
-			case '"':
-			case ']':
-			case '}':
-			case 'n':
-			case 't':
-			case 'f':
-				return c;
-			case '\0':
-				throw std::runtime_error("File ended prematurely.");
-		}
+char nextNonWS(IReader* buf){
+	while (!buf->empty() && isspace(buf->get())){
+		buf->advance();
+	}
+	return buf->get();
+}
+
+char verifySymbol(char c){
+	// Checks whether c is notable char.
+	// Returning it or the group.
+	// If check fails, an exception is thrown.
+	if (isdigit(c)){
+		return '0';
+	}
+	switch (c){
+		case 'n': case 't': case 'f':
+		case '{': case '}':
+		case '[': case ']':
+		case '"':
+			return c;
+
+		case '-': return '0';
+		case '\0': throw std::runtime_error("File ended prematurely.");
 	}
 	throw std::runtime_error("File ended prematurely. :<");
 }
 
-static string get_a_number(IReader* chr){
-	// Grabs a doubleing point number from ChunkReader.
-	// chr's current position should already point to a valid digit
-	// at time of call. A decimal is allowed but numbers must start
-	// with a digit. The double is returned when non-digit/EOF/2nd
-	// decimal is encountered. ChunkReader's position is left at this
-	// invalid char.
-	string s;
-	bool found_dot = false;
-	for (char c; !chr->empty(); chr->advance()){
-		c = chr->get();
+static void notNullAppend(string* out, char c){
+	if (out){
+		(*out) += c;
+	}
+}
+
+static void parseDigits(IReader* buf, bool decimal, string* out=nullptr){
+	// Grabs a decimal point number from IReader putting them into
+	// out. buf's inital state should be at a character while its
+	// final state will be preceding the last character.
+	if (buf->empty()){
+		return;
+	}
+	char c = buf->get();
+	if (!(isdigit(c) || c=='-')){
+		return;
+	}
+	notNullAppend(out,c);
+	buf->advance();
+	while (!buf->empty()){
+		c = buf->get();
 		if (!isdigit(c)){
-			if (!found_dot && c=='.'){
-				found_dot = true;
+			if (c=='.' && decimal){
+				decimal = false;
+			} else if (c=='e'){
+				notNullAppend(out,'e');
+				buf->advance();
+				// belows parses only the 'e' part as int.
+				return parseDigits(buf,false,out);
 			} else {
+				// end of number.
 				break;
 			}
 		}
-		s += c;
+		notNullAppend(out,c);
+		buf->advance();
 	}
-	return s;
-	//return std::stod(s);
 }
 
-static string* get_a_string(IReader* chr, string* s_ptr){
+static void get_a_string(IReader* chr, string* s_ptr){
 	// Grabs characters from ChunkReader until a " is encountered
 	// without a preceding \. If chr's position is " at call, this
 	// function returns after advancing once. If chr is consumed
@@ -65,31 +85,20 @@ static string* get_a_string(IReader* chr, string* s_ptr){
 		switch (c){
 			case '"':
 				chr->advance();
-				return s_ptr;
+				return;
 			case '\\':
 				chr->advance();
-				if (s_ptr){
-					if (chr->get()!='"'){
-						(*s_ptr) += '\\';
-					}
-					(*s_ptr) += chr->get();
+				if (chr->get()!='"'){
+					notNullAppend(s_ptr,'\\');
 				}
+				notNullAppend(s_ptr,c);
 				break;
 			default:
-				if (s_ptr){
-					(*s_ptr) += c;
-				}
+				notNullAppend(s_ptr,c);
 				break;
 		}
 	}
 	throw std::runtime_error("Closing double quote not found.");
-}
-
-static string get_a_string(IReader* chr){
-	// Calls get_a_string without an output string.
-	string str;
-	get_a_string(chr,&str);
-	return str;
 }
 
 static bool next_chars_are(IReader* buf, const string& chars){
@@ -107,12 +116,15 @@ static bool next_chars_are(IReader* buf, const string& chars){
 static Jso* text2obj(IReader* chr, JType t,JSON& tree){
 	// Returns a Jso* from data in ChunkReader given a JType.
 	// calls get_a_number/string for numbers/strings.
+	string tmp;
 	switch (t){
 		case JType::Num:
-			return tree.Str(get_a_number(chr));
+			parseDigits(chr,true,&tmp);
+			return tree.Str(tmp);
 			// get a number actually returns a string.
 		case JType::Str:
-			return tree.Str(get_a_string(chr));
+			get_a_string(chr,&tmp);
+			return tree.Str(tmp);
 		case JType::Null:
 			if (next_chars_are(chr,"ull")){
 				return tree.Null();
@@ -148,73 +160,112 @@ static JType char2type(char c){
 		case 't': return JType::True;
 		case 'f': return JType::False;
 	}
+	//cout << c;
 	throw std::runtime_error("Got unexpected character for type.");
 }
 
-static Jso* get_next_prop(IReader* buf,JSON& tree){
-	// returns a Jso* of the next object.
-	char c = next_symplex(buf);
+Jso* valueFromReader(IReader* buf, JSON& builder){
+	// Parses input for next value.
+	// buf's initial state should be at first character of value.
+	char c = verifySymbol(buf->get());
 	if (c!='0'){
 		buf->advance();
 	}
-	return text2obj(buf,char2type(c),tree);
+	return text2obj(buf, char2type(c), builder);
 }
-
-static void retrieve_next_as_key(IReader* buf, string& out){
-	get_a_string(buf,&out);
-	if (out.length()==0){
+pair<string, Jso*> keyValueFromReader(IReader* buf, JSON& builder){
+	// Parses input for next key-value.
+	// buf's initial state should be at the '"'.
+	pair<string, Jso*> R;
+	if (buf->get()!='"'){
+		//cout << buf->get();
+		throw std::logic_error("Expected opening double quote but got different.");
+	}
+	buf->advance();
+	get_a_string(buf,&(R.first));
+	if (R.first.length()==0){
 		throw std::runtime_error("Got 0-len key, which is not possible.");
 	}
-	// got it! now for the colon!
-	if (buf->until(':')!=':'){
+	//cout << R.first << '\n';
+	//buf->advance();
+	if (nextNonWS(buf)!=':'){
+		//cout << buf->get();
 		throw std::runtime_error("Following colon missing in key-value pair.");
 	}
 	buf->advance();
+	R.second = valueFromReader(buf,builder);
+	if (!R.second){
+		throw std::runtime_error("Did not get value from reader.");
+	}
+	return R;
+}
+static bool closing_match(JType TYPE, char c){
+	if (TYPE==JType::Arr){
+		return c==']';
+	} else if (TYPE==JType::Obj){
+		return c=='}';
+	}
+	return false;
 }
 
-JSON& parse_file(IReader* buf, JSON& tree){
+/*
+static bool matches_type(IReader* buf,JType TYPE){
+	string to_check;
+	if (t==JType::Null){
+		to_check = "ull";
+	} else if (t==JType::True){
+		to_check = "rue";
+	} else if (t==JType::False){
+		to_check = "alse";
+	} else {
+		return false;
+	}
+	return next_chars_are(buf, to_check);
+}
+
+*/
+JSON& parse_file_comma(IReader* buf, JSON& tree){
 	stack<Jso*> stk;
 	stk.emplace(*tree);
 	char c;
-	Jso* j;
-	string key;
+	pair<string,Jso*> key_value;
+	bool expects_comma = false;
 	while (!stk.empty() && !buf->empty()){
 		// if Obj is on top, need to get key first.
-		if (stk.top()->t==JType::Obj){
-			c = next_symplex(buf);
+		c = nextNonWS(buf);
+		if (closing_match(stk.top()->t,c)){
+			expects_comma = true;
 			buf->advance();
-			if (c=='}'){
-				stk.pop();
-				continue;
-			}
-			if (c=='"'){
-				key.clear();
-				retrieve_next_as_key(buf,key);
-			} else {
-				throw std::runtime_error("Missing opening \" for key.");
-			}
+			stk.pop();
+			continue;
 		}
-		c = next_symplex(buf);
-		if (c==']'){
-			if (stk.top()->t==JType::Arr){
-				stk.pop();
-				buf->advance();
-				continue;
-			} else {
-				throw std::runtime_error("Found closing ] without opening [");
+		if (expects_comma){
+			if (c!=','){
+				throw std::logic_error("Missing comma after value.");
 			}
+			expects_comma = false;
+			buf->advance();
+			c = nextNonWS(buf);
 		}
-		// get a value
-		j = get_next_prop(buf,tree);
 		if (stk.top()->t==JType::Obj){
-			stk.top()->Append(key,j);
+			key_value = keyValueFromReader(buf,tree);
+			if (key_value.second){
+				stk.top()->Append(key_value);
+			}
+		} else if (stk.top()->t==JType::Arr){
+			key_value.second = valueFromReader(buf,tree);
+			if (key_value.second){
+				stk.top()->Append(key_value.second);
+			}
 		} else {
-			stk.top()->Append(j);
+			
 		}
-		if (j->t==JType::Arr || j->t==JType::Obj){
-			stk.emplace(j);
+		if (key_value.second->t==JType::Obj || key_value.second->t==JType::Arr){
+			stk.emplace(key_value.second);
+			continue;
 		}
-
+		// Has a following value.
+		expects_comma = true;
 	}
 	if (!stk.empty()){
 		throw std::runtime_error("File ended prematurely.");

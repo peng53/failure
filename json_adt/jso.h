@@ -10,6 +10,7 @@ using std::string;
 using std::vector;
 using std::map;
 using std::ostream;
+using std::pair;
 
 enum class JType { Obj, Arr, Str, Num, Null, True, False};
 
@@ -21,9 +22,11 @@ struct Jso {
 		vector<Jso*>* a;
 		map<string,Jso*>* m;
 	} x;
+	explicit Jso(JType);
 	~Jso();
 
 	void Append(const string& k,Jso* v);
+	void Append(const pair<string,Jso*>& kv);
 	void Append(Jso* v);
 
 	friend ostream& operator<<(ostream& out,const Jso& J);

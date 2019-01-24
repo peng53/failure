@@ -33,6 +33,7 @@ static void dispose(Jso* j, stack<Jso*>& more){
 				return;
 			}
 			break;
+		case JType::Str:
 		case JType::Num:
 			break;
 	}
@@ -62,44 +63,37 @@ ostream& operator<<(ostream& out,const JSON& rhs){
 }
 
 Jso* JSON::Str(const string& v){
-	Jso* j = new Jso();
-	j->t = JType::Str;
+	Jso* j = new Jso(JType::Str);
 	j->x.s = new string(v);
 	return j;
 }
 Jso* JSON::Num(const double v){
-	Jso* j = new Jso();
-	j->t = JType::Num;
+	Jso* j = new Jso(JType::Num);
 	j->x.f = v;
 	return j;
 }
 Jso* JSON::Map(){
-	Jso* j = new Jso();
-	j->t = JType::Obj;
+	Jso* j = new Jso(JType::Obj);
 	j->x.m = new map<string,Jso*>;
 	return j;
 }
 Jso* JSON::Arr(){
-	Jso* j = new Jso();
-	j->t = JType::Arr;
+	Jso* j = new Jso(JType::Arr);
 	j->x.a = new vector<Jso*>;
 	return j;
 }
 Jso* JSON::Null(){
-	static Jso j = Jso();
-	j.t = JType::Null;
+	static Jso j = Jso(JType::Null);
 	Jso* j_ptr = &j;
 	return j_ptr;
 }
 Jso* JSON::True(){
-	static Jso j = Jso();
-	j.t = JType::True;
+	static Jso j = Jso(JType::True);
 	Jso* j_ptr = &j;
 	return j_ptr;
 }
 Jso* JSON::False(){
-	static Jso j = Jso();
-	j.t = JType::False;
+	static Jso j = Jso(JType::False);
 	Jso* j_ptr = &j;
 	return j_ptr;
 }
