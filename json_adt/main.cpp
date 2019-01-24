@@ -37,11 +37,11 @@ void treeFromChunk(IReader* chr, JSON& tree){
 	if (chr->empty()){
 		throw std::invalid_argument("No input or non-existent file.");
 	}
-	if (next_symplex(chr)!='{'){
+	if (nextNonWS(chr)!='{'){
 		std::out_of_range("Could not find opening curly brace.");
 	}
 	chr->advance();
-	parse_file(chr,tree);
+	parse_file_comma(chr,tree);
 }
 
 int main(int argc, char** argv){
@@ -78,7 +78,7 @@ int main(int argc, char** argv){
 	}
 	cout << "End Parse\n";
 
-
+	cout << "****Imported data START****\n" << jsonTree << "\n****Imported data END****\n";
 
 	cout << "Begin Save\n";
 	DB_Connection my_db;

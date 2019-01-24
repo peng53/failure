@@ -3,6 +3,8 @@
 
 using std::stack;
 
+Jso::Jso(JType jt): t(jt){}
+
 Jso::~Jso(){
 	// Only deletes its members; doesn't go further.
 	SetVoid();
@@ -159,4 +161,7 @@ void Jso::SetVoid(double v){
 	}
 	t = JType::Num;
 	x.f = v;
+}
+void Jso::Append(const pair<string, Jso*>& kv){
+	Append(kv.first,kv.second);
 }
