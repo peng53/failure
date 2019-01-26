@@ -1,0 +1,15 @@
+{
+	"null" : null,
+	"true" : true,
+	"false" : false,
+	"2nduse" : [
+		null,
+		true,
+		false,
+		[
+			null,
+			true,
+			false
+		]
+	]
+}

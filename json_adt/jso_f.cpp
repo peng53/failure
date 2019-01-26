@@ -84,28 +84,21 @@ Jso* JSON::Arr(){
 }
 Jso* JSON::Null(){
 	static Jso j = Jso(JType::Null);
-	Jso* j_ptr = &j;
-	return j_ptr;
+	return &(j);
 }
 Jso* JSON::True(){
 	static Jso j = Jso(JType::True);
-	Jso* j_ptr = &j;
-	return j_ptr;
+	return &(j);
 }
 Jso* JSON::False(){
 	static Jso j = Jso(JType::False);
-	Jso* j_ptr = &j;
-	return j_ptr;
+	return &(j);
 }
 Jso* JSON::Single(JType t){
 	switch (t){
-		case JType::Null:
-			return Null();
-		case JType::True:
-			return True();
-		case JType::False:
-			return False();
-		default:
-			return nullptr;
+		case JType::Null: return Null();
+		case JType::True: return True();
+		case JType::False: return False();
+		default: return nullptr;
 	}
 }
