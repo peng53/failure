@@ -121,8 +121,9 @@ int main(int argc, char** argv){
 				// *(j->key_value("lastModified"))->x.s
 				//my_db.add_data(*s,*(j->key_value("uri"))->x.s,*(j->key_value("id")->x.s),gid);
 				if (has_property(j,"uri")){
+					(*j)["uri"]->Get(&value);
 					my_db.add_data(*s,
-						static_cast<string>(*(*j)["uri"]),
+						*value,
 						"",
 						gid);
 					cout << "Added data for: " << *s << '\n';

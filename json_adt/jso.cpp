@@ -34,7 +34,7 @@ ostream& operator<<(ostream& out,const Jso& J){
 			out << J.x.f;
 			break;
 		case JType::Str:
-			out << *(J.x.s);
+			out << '"' << *(J.x.s) << '"';
 			break;
 		case JType::Obj:
 			out << "Object{" << J.x.m->size() << '}';
@@ -72,63 +72,73 @@ ostream& operator<<(ostream& out,const Indentor& ind){
 	return out;
 }
 
-struct PrintStackNode {
-	const string& label;
-	Jso* obj;
-	const unsigned ind;
-	PrintStackNode(const string& s,Jso* j,unsigned i):
-		label(s), obj(j), ind(i)
-		{}
+struct Pnode {
+	Jso* o;
+	const unsigned i;
+	const string& s;
+	Pnode(Jso* j,unsigned ind,const string& label=""):
+		o(j), i(ind), s(label){}
 };
-void Jso::rprint(ostream& out, const string& label){
-	//Jso* arr_end = Str("]");
-	//Jso* obj_end = Str("}");
-	string blank_label;
-	unsigned ind;
-	Jso* j;
-	stack<PrintStackNode> stk;
-	stk.emplace(label,this,1);
-	while (!stk.empty()){
-		j = stk.top().obj;
-		ind = stk.top().ind;
-		out << Indentor(ind);
-		if (stk.top().label.length()>0){
-			out << stk.top().label << " : ";
+
+void tprint(ostream& out, Jso* root){
+	stack<JType> last;
+	stack<Pnode> to_print;
+	last.emplace(root->t);
+	unsigned layer = 1;
+	to_print.emplace(root,layer);
+	Jso* current;
+	while (!to_print.empty()){
+		current = to_print.top().o;
+		if (layer>to_print.top().i){
+			out << Indentor(to_print.top().i);
+			if (last.top()==JType::Obj){
+				out << "}\n";
+			} else {
+				out << "]\n";
+			}
+			last.pop();
 		}
-		stk.pop();
-		switch (j->t){
-			case JType::Obj:
-				//stk.emplace(blank_label,obj_end,ind);
-				out << "{\n";
-				for (auto& kv : *(j->x.m)){
-					stk.emplace(kv.first,kv.second,ind+1);
-				}
-				break;
-			case JType::Arr:
-				//stk.emplace(blank_label,arr_end,ind);
-				out << "[\n";
-				for (auto& v : *(j->x.a)){
-					stk.emplace(blank_label,v,ind+1);
-				}
-				break;
+		layer = to_print.top().i;
+		out << Indentor(layer);
+		if (to_print.top().s!=""){
+			out << '"' << to_print.top().s << "\" : ";
+		}
+		to_print.pop();
+		switch (current->t){
 			case JType::Null:
 			case JType::True:
 			case JType::False:
 			case JType::Num:
 			case JType::Str:
-				out << *j << '\n';
+				out << *current;
+				if (!to_print.empty() && to_print.top().i==layer){
+					out << ',';
+				}
+				out << '\n';
+				break;
+			case JType::Arr:
+				out << "[\n";
+				last.emplace(JType::Arr);
+				for (auto& j : *(current->x.a)){
+					to_print.emplace(j,layer+1);
+				}
+				break;
+			case JType::Obj:
+				out << "{\n";
+				last.emplace(JType::Obj);
+				for (const auto& kv : *(current->x.m)){
+					to_print.emplace(kv.second,layer+1,kv.first);
+				}
 				break;
 		}
 	}
-	//delete obj_end;
-	//delete arr_end;
-}
-const string nonstring;
-Jso::operator const string&(){
-	if (t==JType::Str){
-		return *(x.s);
-	} else {
-		return nonstring;
+	if (!last.empty()){
+		last.pop();
+		if (last.top()==JType::Obj){
+			out << "}\n";
+		} else {
+			out << "]\n";
+		}
 	}
 }
 

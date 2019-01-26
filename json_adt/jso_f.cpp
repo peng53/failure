@@ -58,7 +58,8 @@ Jso* JSON::operator*(){
 }
 
 ostream& operator<<(ostream& out,const JSON& rhs){
-	rhs.o->rprint(out,"Object");
+	//rhs.o->rprint(out,"Object");
+	tprint(out,rhs.o);
 	return out;
 }
 
