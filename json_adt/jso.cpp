@@ -147,6 +147,11 @@ void Jso::Get(vector<Jso*> **outptr){
 void Jso::SetVoid(double v){
 	// All ptrs are lost, be sure to get them before hand!
 	switch (t){
+		case JType::Null:
+		case JType::True:
+		case JType::False:
+			// Should NOT be modifying these.
+			return;
 		case JType::Arr:
 			delete x.a;
 			break;

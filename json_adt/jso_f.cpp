@@ -16,19 +16,19 @@ static void dispose(Jso* j, stack<Jso*>& more){
 			}
 			break;
 		case JType::Null:
-			if (j==JSON::Null()){
+			if (j==&JSON::Null){
 				std::cout << "null: " << j << '\n';
 				return;
 			}
 			break;
 		case JType::True:
-			if (j==JSON::True()){
+			if (j==&JSON::True){
 				std::cout << "true: " << j << '\n';
 				return;
 			}
 			break;
 		case JType::False:
-			if (j==JSON::False()){
+			if (j==&JSON::False){
 				std::cout << "false: " << j << '\n';
 				return;
 			}
@@ -82,23 +82,15 @@ Jso* JSON::Arr(){
 	j->x.a = new vector<Jso*>;
 	return j;
 }
-Jso* JSON::Null(){
-	static Jso j = Jso(JType::Null);
-	return &(j);
-}
-Jso* JSON::True(){
-	static Jso j = Jso(JType::True);
-	return &(j);
-}
-Jso* JSON::False(){
-	static Jso j = Jso(JType::False);
-	return &(j);
-}
 Jso* JSON::Single(JType t){
 	switch (t){
-		case JType::Null: return Null();
-		case JType::True: return True();
-		case JType::False: return False();
-		default: return nullptr;
+		case JType::Null: return &Null;
+		case JType::True: return &True;
+		case JType::False: return &False;
+		default:
+			return nullptr;
 	}
 }
+Jso JSON::Null = Jso(JType::Null);
+Jso JSON::True = Jso(JType::True);
+Jso JSON::False = Jso(JType::False);
