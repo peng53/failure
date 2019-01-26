@@ -3,9 +3,9 @@
 #include <cctype>
 #include <stack>
 #include <cctype>
-//#include <iostream>
+#include <iostream>
 
-//using std::cout;
+using std::cout;
 using std::stack;
 using std::pair;
 
@@ -33,6 +33,7 @@ char verifySymbol(char c){
 		case '-': return '0';
 		case '\0': throw std::runtime_error("File ended prematurely.");
 	}
+	//cout << c;
 	throw std::runtime_error("File ended prematurely. :<");
 }
 
@@ -113,6 +114,15 @@ static bool next_chars_are(IReader* buf, const string& chars){
 	return true;
 }
 
+static bool matches_type(IReader* buf,JType TYPE){
+	const char* to_check;
+	//string to_check;
+	if (TYPE==JType::Null){ to_check = "ull"; }
+	else if (TYPE==JType::True){ to_check = "rue"; }
+	else if (TYPE==JType::False){ to_check = "alse"; }
+	else { return false; }
+	return next_chars_are(buf, to_check);
+}
 static Jso* text2obj(IReader* chr, JType t,JSON& tree){
 	// Returns a Jso* from data in ChunkReader given a JType.
 	// calls get_a_number/string for numbers/strings.
@@ -125,28 +135,20 @@ static Jso* text2obj(IReader* chr, JType t,JSON& tree){
 		case JType::Str:
 			get_a_string(chr,&tmp);
 			return tree.Str(tmp);
-		case JType::Null:
-			if (next_chars_are(chr,"ull")){
-				return tree.Null();
-			}
-			break;
-		case JType::True:
-			if (next_chars_are(chr,"rue")){
-				return tree.True();
-			}
-			break;
-		case JType::False:
-			if (next_chars_are(chr,"alse")){
-				return tree.False();
-			}
-			break;
 		case JType::Obj:
 			return tree.Map();
 		case JType::Arr:
 			return tree.Arr();
+		default:
+			if (matches_type(chr,t)){
+				return tree.Single(t);
+			}
+			break;
 	}
 	throw std::runtime_error("Expected Json object.");
 }
+
+
 static JType char2type(char c){
 	// Converts a char to a JType. Valid input characters are cases in
 	// next_symplex. If character is not an expected one, a runtime_error
@@ -193,6 +195,7 @@ pair<string, Jso*> keyValueFromReader(IReader* buf, JSON& builder){
 		throw std::runtime_error("Following colon missing in key-value pair.");
 	}
 	buf->advance();
+	nextNonWS(buf);
 	R.second = valueFromReader(buf,builder);
 	if (!R.second){
 		throw std::runtime_error("Did not get value from reader.");
@@ -208,22 +211,6 @@ static bool closing_match(JType TYPE, char c){
 	return false;
 }
 
-/*
-static bool matches_type(IReader* buf,JType TYPE){
-	string to_check;
-	if (t==JType::Null){
-		to_check = "ull";
-	} else if (t==JType::True){
-		to_check = "rue";
-	} else if (t==JType::False){
-		to_check = "alse";
-	} else {
-		return false;
-	}
-	return next_chars_are(buf, to_check);
-}
-
-*/
 JSON& parse_file_comma(IReader* buf, JSON& tree){
 	stack<Jso*> stk;
 	stk.emplace(*tree);
@@ -233,6 +220,7 @@ JSON& parse_file_comma(IReader* buf, JSON& tree){
 	while (!stk.empty() && !buf->empty()){
 		// if Obj is on top, need to get key first.
 		c = nextNonWS(buf);
+		//cout << c;
 		if (closing_match(stk.top()->t,c)){
 			expects_comma = true;
 			buf->advance();
@@ -241,7 +229,7 @@ JSON& parse_file_comma(IReader* buf, JSON& tree){
 		}
 		if (expects_comma){
 			if (c!=','){
-				throw std::logic_error("Missing comma after value.");
+				throw std::runtime_error("Missing comma after value.");
 			}
 			expects_comma = false;
 			buf->advance();

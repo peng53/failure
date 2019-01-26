@@ -97,3 +97,15 @@ Jso* JSON::False(){
 	Jso* j_ptr = &j;
 	return j_ptr;
 }
+Jso* JSON::Single(JType t){
+	switch (t){
+		case JType::Null:
+			return Null();
+		case JType::True:
+			return True();
+		case JType::False:
+			return False();
+		default:
+			return nullptr;
+	}
+}

@@ -14,6 +14,7 @@ class JSON {
 		Jso* Str(const string& v);
 		Jso* Map();
 		Jso* Arr();
+		Jso* Single(JType t);
 };
 
 #endif
