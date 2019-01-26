@@ -31,8 +31,8 @@ struct Jso {
 
 	friend ostream& operator<<(ostream& out,const Jso& J);
 	Jso* key_value(const string& k);
-	void rprint(ostream& out, const string& label);
-	explicit operator const string&();
+	//void rprint(ostream& out, const string& label);
+	//explicit operator const string&();
 	Jso* operator[](const string& k);
 
 	void Get(string **outptr);
@@ -41,5 +41,5 @@ struct Jso {
 	void Get(vector<Jso*> **outptr);
 	void SetVoid(double v=0);
 };
-
+void tprint(ostream& out, Jso* root);
 #endif
