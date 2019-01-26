@@ -123,31 +123,30 @@ static bool matches_type(IReader* buf,JType TYPE){
 	else { return false; }
 	return next_chars_are(buf, to_check);
 }
-static Jso* text2obj(IReader* chr, JType t,JSON& tree){
+static Jso* text2obj(IReader* chr, JType t){
 	// Returns a Jso* from data in ChunkReader given a JType.
 	// calls get_a_number/string for numbers/strings.
 	string tmp;
 	switch (t){
 		case JType::Num:
 			parseDigits(chr,true,&tmp);
-			return tree.Str(tmp);
+			return JSON::Str(tmp);
 			// get a number actually returns a string.
 		case JType::Str:
 			get_a_string(chr,&tmp);
-			return tree.Str(tmp);
+			return JSON::Str(tmp);
 		case JType::Obj:
-			return tree.Map();
+			return JSON::Map();
 		case JType::Arr:
-			return tree.Arr();
+			return JSON::Arr();
 		default:
 			if (matches_type(chr,t)){
-				return tree.Single(t);
+				return JSON::Single(t);
 			}
 			break;
 	}
 	throw std::runtime_error("Expected Json object.");
 }
-
 
 static JType char2type(char c){
 	// Converts a char to a JType. Valid input characters are cases in
@@ -166,16 +165,16 @@ static JType char2type(char c){
 	throw std::runtime_error("Got unexpected character for type.");
 }
 
-Jso* valueFromReader(IReader* buf, JSON& builder){
+Jso* valueFromReader(IReader* buf){
 	// Parses input for next value.
 	// buf's initial state should be at first character of value.
 	char c = verifySymbol(buf->get());
 	if (c!='0'){
 		buf->advance();
 	}
-	return text2obj(buf, char2type(c), builder);
+	return text2obj(buf, char2type(c));
 }
-pair<string, Jso*> keyValueFromReader(IReader* buf, JSON& builder){
+pair<string, Jso*> keyValueFromReader(IReader* buf){
 	// Parses input for next key-value.
 	// buf's initial state should be at the '"'.
 	pair<string, Jso*> R;
@@ -189,14 +188,13 @@ pair<string, Jso*> keyValueFromReader(IReader* buf, JSON& builder){
 		throw std::runtime_error("Got 0-len key, which is not possible.");
 	}
 	//cout << R.first << '\n';
-	//buf->advance();
 	if (nextNonWS(buf)!=':'){
 		//cout << buf->get();
 		throw std::runtime_error("Following colon missing in key-value pair.");
 	}
 	buf->advance();
 	nextNonWS(buf);
-	R.second = valueFromReader(buf,builder);
+	R.second = valueFromReader(buf);
 	if (!R.second){
 		throw std::runtime_error("Did not get value from reader.");
 	}
@@ -236,12 +234,12 @@ JSON& parse_file_comma(IReader* buf, JSON& tree){
 			c = nextNonWS(buf);
 		}
 		if (stk.top()->t==JType::Obj){
-			key_value = keyValueFromReader(buf,tree);
+			key_value = keyValueFromReader(buf);
 			if (key_value.second){
 				stk.top()->Append(key_value);
 			}
 		} else if (stk.top()->t==JType::Arr){
-			key_value.second = valueFromReader(buf,tree);
+			key_value.second = valueFromReader(buf);
 			if (key_value.second){
 				stk.top()->Append(key_value.second);
 			}
