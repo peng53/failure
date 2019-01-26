@@ -79,7 +79,9 @@ int main(int argc, char** argv){
 	cout << "End Parse\n";
 
 	cout << "****Imported data START****\n" << jsonTree << "\n****Imported data END****\n";
-
+	if (!(*jsonTree)->key_value("title")){
+		return 0;
+	}
 	cout << "Begin Save\n";
 	DB_Connection my_db;
 	stack<JsoNameGid> stk;
