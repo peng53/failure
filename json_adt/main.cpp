@@ -47,22 +47,40 @@ void treeFromChunk(IReader* chr, JSON& tree){
 string* keyString(Jso* j){
 	return ((j) ? j->Str() : nullptr);
 }
+ulong asULong(Jso* j){
+	if (j){
+		const char *s = j->Str()->c_str();
+		if (s){
+			return strtoul(s,NULL,0);
+		}
+	}
+	return 0;
+}
 
 struct Bookmark {
-	string *url, *title, *mtime;
+	string *url, *title;
+	string mtime;
 	bool validFill(Jso* j){
 		if (!j){
 			return false;
 		}
 		title = keyString(j->key_value("title"));
 		url = keyString(j->key_value("uri"));
-		mtime = keyString(j->key_value("lastModified"));
-		return (title && url && mtime);
+		mtime = std::to_string(asULong(j->key_value("lastModified"))/1000000);
+		// since it was stored in microseconds.
+		return (title && url && mtime.length());
 	}
 	void insert2DB(DB_Connection &db, int gid){
-		db.add_data(*title,*url,*mtime,gid);
+		db.add_data(*title,*url,mtime,gid);
 	}
 };
+
+void abridgedOut(ostream& out,const string& s,unsigned cnt){
+	cnt = ((cnt<=s.length()) ? cnt : s.length()) ;
+	for (unsigned i=0;i<cnt;++i){
+		out << s[i];
+	}
+}
 
 int main(int argc, char** argv){
 	IReaderFactory reader_maker;
@@ -98,8 +116,8 @@ int main(int argc, char** argv){
 	}
 	cout << "End Parse\n";
 
-	cout << "****Imported data START****\n" << jsonTree << "\n****Imported data END****\n";
 	if (!(*jsonTree)->key_value("title")){
+		cout << "****Imported data START****\n" << jsonTree << "\n****Imported data END****\n";
 		return 0;
 	}
 	cout << "Begin Save\n";
@@ -120,7 +138,6 @@ int main(int argc, char** argv){
 		// If top item was a 'x-moz-place-container', it should have an array named children.
 		if (j->key_value("type")){
 			j->key_value("type")->Get(&value);
-//		if (has_key_string_value(j,"type",&value)){
 			if ((*value)=="text/x-moz-place-container"){
 				// So we create a group under the current parent.
 				gid = my_db.create_group(*s,pid);
@@ -139,6 +156,9 @@ int main(int argc, char** argv){
 				// It must be a link then.
 				if (link.validFill(j)){
 					link.insert2DB(my_db,gid);
+					cout << "Inserted link: ";
+					abridgedOut(cout,*link.title,36);
+					cout << '\n';
 				}
 			}
 		}
