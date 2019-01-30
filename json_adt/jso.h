@@ -40,6 +40,7 @@ struct Jso {
 	void Get(map<string,Jso*> **outptr);
 	void Get(vector<Jso*> **outptr);
 	void SetVoid(double v=0);
+	string* Str();
 };
 void tprint(ostream& out, Jso* root);
 #endif

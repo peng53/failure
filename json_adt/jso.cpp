@@ -180,3 +180,8 @@ void Jso::SetVoid(double v){
 void Jso::Append(const pair<string, Jso*>& kv){
 	Append(kv.first,kv.second);
 }
+string* Jso::Str(){
+	// returns the string ptr of this.
+	// if this isn't a str, return nullptr.
+	return ((t==JType::Str) ? x.s : nullptr);
+}
