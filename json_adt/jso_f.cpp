@@ -15,26 +15,13 @@ static void dispose(Jso* j, stack<Jso*>& more){
 				more.emplace(m.second);
 			}
 			break;
-		case JType::Null:
-			if (j==&JSON::Null){
-				std::cout << "null: " << j << '\n';
-				return;
-			}
-			break;
-		case JType::True:
-			if (j==&JSON::True){
-				std::cout << "true: " << j << '\n';
-				return;
-			}
-			break;
-		case JType::False:
-			if (j==&JSON::False){
-				std::cout << "false: " << j << '\n';
-				return;
-			}
-			break;
 		case JType::Str:
 		case JType::Num:
+			break;
+		default:
+			if (j==JSON::Single(j->t)){
+				return;
+			}
 			break;
 	}
 	delete j;
