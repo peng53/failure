@@ -44,6 +44,26 @@ void treeFromChunk(IReader* chr, JSON& tree){
 	parse_file_comma(chr,tree);
 }
 
+string* keyString(Jso* j){
+	return ((j) ? j->Str() : nullptr);
+}
+
+struct Bookmark {
+	string *url, *title, *mtime;
+	bool validFill(Jso* j){
+		if (!j){
+			return false;
+		}
+		title = keyString(j->key_value("title"));
+		url = keyString(j->key_value("uri"));
+		mtime = keyString(j->key_value("lastModified"));
+		return (title && url && mtime);
+	}
+	void insert2DB(DB_Connection &db, int gid){
+		db.add_data(*title,*url,*mtime,gid);
+	}
+};
+
 int main(int argc, char** argv){
 	IReaderFactory reader_maker;
 	IReader *textChunk;
@@ -84,6 +104,7 @@ int main(int argc, char** argv){
 	}
 	cout << "Begin Save\n";
 	DB_Connection my_db;
+	Bookmark link;
 	stack<JsoNameGid> stk;
 	// Create a db group to hold what's going to be inserted.
 	stk.emplace((*jsonTree),my_db.create_group("group #1"),(*jsonTree)->key_value("title")->x.s);
@@ -116,17 +137,8 @@ int main(int argc, char** argv){
 				}
 			} else if ((*value)=="text/x-moz-place"){
 				// It must be a link then.
-				// So we add the link.
-				//ms_epoch = std::to_string(j->key_value("lastModified")->x.f);
-				// *(j->key_value("lastModified"))->x.s
-				//my_db.add_data(*s,*(j->key_value("uri"))->x.s,*(j->key_value("id")->x.s),gid);
-				if (has_property(j,"uri")){
-					(*j)["uri"]->Get(&value);
-					my_db.add_data(*s,
-						*value,
-						"",
-						gid);
-					cout << "Added data for: " << *s << '\n';
+				if (link.validFill(j)){
+					link.insert2DB(my_db,gid);
 				}
 			}
 		}
