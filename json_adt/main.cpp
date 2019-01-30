@@ -1,39 +1,15 @@
 #include "parser.h"
+#include "../bmarksg/bmarksg.h"
+#include "../chunkreader/ireaderfactory.h"
 #include <iostream>
 #include <stack>
 #include <exception>
-#include "../bmarksg/bmarksg.h"
-#include "../chunkreader/ireaderfactory.h"
 
 using std::cout;
 using std::cerr;
 using std::stack;
 
-struct JsoNameGid {
-	Jso* j;
-	const int gid;
-	string* name;
-	JsoNameGid(Jso* obj, const int n, string* label):
-		j(obj), gid(n), name(label) {}
-};
-
-bool has_key_string_value(Jso* j,const string& key,string** out){
-	// if j is a JType::Obj and has the key then:
-	// set out to point to it and return true.
-	if (j->t==JType::Obj){
-		Jso* v = j->key_value(key);
-		if (v!=nullptr){
-			*out = v->x.s;
-			return true;
-		}
-	}
-	return false;
-}
-bool has_property(Jso* j,const string& key){
-	return (j->t==JType::Obj && j->key_value(key)!=nullptr);
-}
-
-void treeFromChunk(IReader* chr, JSON& tree){
+static void treeFromChunk(IReader* chr, JSON& tree){
 	if (chr->empty()){
 		throw std::invalid_argument("No input or non-existent file.");
 	}
@@ -44,10 +20,10 @@ void treeFromChunk(IReader* chr, JSON& tree){
 	parse_file_comma(chr,tree);
 }
 
-string* keyString(Jso* j){
+static string* keyString(Jso* j){
 	return ((j) ? j->Str() : nullptr);
 }
-ulong asULong(Jso* j){
+static ulong asULong(Jso* j){
 	if (j){
 		const char *s = j->Str()->c_str();
 		if (s){
@@ -57,30 +33,47 @@ ulong asULong(Jso* j){
 	return 0;
 }
 
-struct Bookmark {
-	string *url, *title;
-	string mtime;
-	bool validFill(Jso* j){
-		if (!j){
-			return false;
-		}
-		title = keyString(j->key_value("title"));
-		url = keyString(j->key_value("uri"));
-		mtime = std::to_string(asULong(j->key_value("lastModified"))/1000000);
-		// since it was stored in microseconds.
-		return (title && url && mtime.length());
-	}
-	void insert2DB(DB_Connection &db, int gid){
-		db.add_data(*title,*url,mtime,gid);
-	}
-};
-
-void abridgedOut(ostream& out,const string& s,unsigned cnt){
+static void abridgedOut(ostream& out,const string& s,unsigned cnt){
 	cnt = ((cnt<=s.length()) ? cnt : s.length()) ;
 	for (unsigned i=0;i<cnt;++i){
 		out << s[i];
 	}
 }
+
+enum class DBE { Group, Link, Invalid};
+
+struct DB_Entry {
+	string *title, *url;
+	string mtime;
+	DBE classify(Jso* j){
+		DBE r = DBE::Invalid;
+		if (!j || !keyString(j->key_value("type"))){
+			// do nothing.
+		} else if (*(keyString(j->key_value("type")))=="text/x-moz-place-container"){
+			if (j->key_value("children")){
+				r = DBE::Group;
+			}
+		} else if (*(keyString(j->key_value("type")))=="text/x-moz-place"){
+			r = DBE::Link;
+		}
+		if (r!=DBE::Invalid){
+			title = keyString(j->key_value("title"));
+		}
+		return r;
+	}
+	bool linkValid(Jso* j){
+		url = keyString(j->key_value("uri"));
+		mtime = std::to_string(asULong(j->key_value("lastModified"))/1000000);
+		// since it was stored in microseconds.
+		return (title && url && mtime.length());
+	}
+	void linkInsert(DB_Connection &db, int gid){
+		db.add_data(*title,*url,mtime,gid);
+	}
+	int groupInsert(DB_Connection &db, int gid){
+		return db.create_group(*title,gid);
+	}
+};
 
 int main(int argc, char** argv){
 	IReaderFactory reader_maker;
@@ -122,47 +115,43 @@ int main(int argc, char** argv){
 	}
 	cout << "Begin Save\n";
 	DB_Connection my_db;
-	Bookmark link;
-	stack<JsoNameGid> stk;
+	DB_Entry entry;
+	stack<pair<Jso*,int>> stk;
 	// Create a db group to hold what's going to be inserted.
-	stk.emplace((*jsonTree),my_db.create_group("group #1"),(*jsonTree)->key_value("title")->x.s);
+	int pid;
+	int gid = my_db.create_group("group #1");
+	stk.emplace(*jsonTree,gid);
 	Jso* j;
-	int pid, gid;
-	string *s, *value;
 
 	while (!stk.empty()){
-		j = stk.top().j;
-		pid = stk.top().gid;
-		s = stk.top().name;
+		j = stk.top().first;
+		pid = stk.top().second;
 		stk.pop();
-		// If top item was a 'x-moz-place-container', it should have an array named children.
-		if (j->key_value("type")){
-			j->key_value("type")->Get(&value);
-			if ((*value)=="text/x-moz-place-container"){
-				// So we create a group under the current parent.
-				gid = my_db.create_group(*s,pid);
+		switch (entry.classify(j)){
+			case DBE::Group:
+				gid = entry.groupInsert(my_db,pid);
 				if (gid==0){
 					cerr << "Could not create a group.\n";
 					return 1;
 				}
-				// And since its a group, we queue( stack) up its children.
-				if (has_property(j,"children") && (*j)["children"]->t==JType::Arr){
-					for (const auto& k : *((*j)["children"]->x.a) ){
-						stk.emplace(k,gid,(*k)["title"]->x.s);
-					}
-					cout << "Made a group: " << *s << '\n';
+				cout << "Created group: " << *entry.title << '\n';
+				for (const auto& k : *(j->key_value("children")->x.a)){
+					stk.emplace(k,gid);
 				}
-			} else if ((*value)=="text/x-moz-place"){
-				// It must be a link then.
-				if (link.validFill(j)){
-					link.insert2DB(my_db,gid);
+				break;
+			case DBE::Link:
+				if (entry.linkValid(j)){
+					entry.linkInsert(my_db,gid);
 					cout << "Inserted link: ";
-					abridgedOut(cout,*link.title,36);
+					abridgedOut(cout,*entry.title,36);
 					cout << '\n';
 				}
-			}
+				break;
+			default:
+				break;
 		}
 	}
-	cout << my_db.export_memory("/mnt/ramdisk/test.db") << '\n';
+	my_db.export_memory("/mnt/ramdisk/test.db");
+	cout << "End Save\n";
 	return 0;
 }
