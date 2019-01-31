@@ -26,7 +26,6 @@ void ChunkReader::load(const string& filename){
 }
 
 ChunkReader::~ChunkReader(){
-	std::cout << "BOOM!\n";
 	delete ch;
 	close();
 }
