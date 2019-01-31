@@ -3,12 +3,12 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <iostream>
 
 using std::string;
 using std::vector;
-using std::map;
+using std::unordered_map;
 using std::ostream;
 using std::pair;
 
@@ -20,7 +20,7 @@ struct Jso {
 		string* s;
 		double f;
 		vector<Jso*>* a;
-		map<string,Jso*>* m;
+		unordered_map<string,Jso*>* m;
 	} x;
 	explicit Jso(JType);
 	~Jso();
@@ -29,7 +29,6 @@ struct Jso {
 	void Append(const pair<string,Jso*>& kv);
 	void Append(Jso* v);
 
-	friend ostream& operator<<(ostream& out,const Jso& J);
 	Jso* key_value(const string& k);
 	//void rprint(ostream& out, const string& label);
 	//explicit operator const string&();
@@ -37,10 +36,11 @@ struct Jso {
 
 	void Get(string **outptr);
 	void Get(double **outptr);
-	void Get(map<string,Jso*> **outptr);
+	void Get(unordered_map<string,Jso*> **outptr);
 	void Get(vector<Jso*> **outptr);
 	void SetVoid(double v=0);
 	string* Str();
 };
+ostream& operator<<(ostream& out,const Jso& J);
 void tprint(ostream& out, Jso* root);
 #endif

@@ -62,10 +62,11 @@ struct DB_Entry {
 		// since it was stored in microseconds.
 		return (title && url && mtime.length());
 	}
-	void linkInsert(DB_Connection &db, int gid){
+	void linkInsert(DB_Connection &db, int gid) const {
 		db.add_data(*title,*url,mtime,gid);
 	}
-	int groupInsert(DB_Connection &db, int gid){
+	int groupInsert(DB_Connection &db, int gid) const {
+		//return ((title->length()>0) ? db.create_group(*title,gid) : gid);
 		return db.create_group(*title,gid);
 	}
 };
@@ -94,7 +95,7 @@ int main(int argc, char** argv){
 	}
 	catch (const std::runtime_error& e){
 		cerr << e.what()
-			<< "\nStructure incomplete. Printing what was recieved:\n"
+			<< "Structure incomplete. Printing what was recieved:\n"
 			<< jsonTree;
 		return 1;
 	}

@@ -44,9 +44,9 @@ Jso* JSON::operator*(){
 	return o;
 }
 
-ostream& operator<<(ostream& out,const JSON& rhs){
+ostream& operator<<(ostream& out,JSON& rhs){
 	//rhs.o->rprint(out,"Object");
-	tprint(out,rhs.o);
+	tprint(out,*rhs);
 	return out;
 }
 
@@ -62,7 +62,7 @@ Jso* JSON::Num(const double v){
 }
 Jso* JSON::Map(){
 	Jso* j = new Jso(JType::Obj);
-	j->x.m = new map<string,Jso*>;
+	j->x.m = new unordered_map<string,Jso*>;
 	return j;
 }
 Jso* JSON::Arr(){
