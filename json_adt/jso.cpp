@@ -36,12 +36,6 @@ ostream& operator<<(ostream& out,const Jso& J){
 		case JType::Str:
 			out << '"' << *(J.x.s) << '"';
 			break;
-		case JType::Obj:
-			out << "Object{" << J.x.m->size() << '}';
-			break;
-		case JType::Arr:
-			out << "Array[" << J.x.a->size() << ']';
-			break;
 		case JType::Null:
 			out << "null";
 			break;
@@ -50,6 +44,12 @@ ostream& operator<<(ostream& out,const Jso& J){
 			break;
 		case JType::False:
 			out << "false";
+			break;
+		case JType::Obj:
+			out << "Object{" << J.x.m->size() << '}';
+			break;
+		case JType::Arr:
+			out << "Array[" << J.x.a->size() << ']';
 			break;
 	}
 	return out;
@@ -148,7 +148,7 @@ void Jso::Get(string **outptr){
 void Jso::Get(double **outptr){
 	(*outptr) = ((t==JType::Num) ? &x.f : nullptr);
 }
-void Jso::Get(map<string,Jso*> **outptr){
+void Jso::Get(unordered_map<string,Jso*> **outptr){
 	(*outptr) = ((t==JType::Obj) ? x.m : nullptr);
 }
 void Jso::Get(vector<Jso*> **outptr){

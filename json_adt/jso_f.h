@@ -8,12 +8,12 @@ class JSON {
 		JSON();
 		~JSON();
 		Jso* operator*();
-		friend ostream& operator<<(ostream& out,const JSON& rhs);
 		static Jso *Map(), *Arr();
 		static Jso* Num(const double v);
 		static Jso* Str(const string& v);
 		static Jso* Single(JType t);
 		static Jso Null, True, False;
 };
+ostream& operator<<(ostream& out,JSON& rhs);
 
 #endif
