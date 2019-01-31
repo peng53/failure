@@ -14,7 +14,7 @@ static void treeFromChunk(IReader* chr, JSON& tree){
 		throw std::invalid_argument("No input or non-existent file.");
 	}
 	if (nextNonWS(chr)!='{'){
-		std::out_of_range("Could not find opening curly brace.");
+		throw std::out_of_range("Could not find opening curly brace.");
 	}
 	chr->advance();
 	parse_file_comma(chr,tree);
@@ -24,13 +24,8 @@ static string* keyString(Jso* j){
 	return ((j) ? j->Str() : nullptr);
 }
 static ulong asULong(Jso* j){
-	if (j){
-		const char *s = j->Str()->c_str();
-		if (s){
-			return strtoul(s,NULL,0);
-		}
-	}
-	return 0;
+	const string *s = keyString(j);
+	return ((s) ? strtoul(s->c_str(),NULL,0) : 0);
 }
 
 static void abridgedOut(ostream& out,const string& s,unsigned cnt){
@@ -88,11 +83,11 @@ int main(int argc, char** argv){
 		}
 		textChunk = reader_maker.ByInput(userInput);
 	} else {
-		cout << "Using file: " << argv[1] << '\n';
+		cout << "Using file: " << argv[1];
 		textChunk = reader_maker.ByFile(argv[1],1024);
 	}
 
-	cout << "Begin Parse\n";
+	cout << "\nBegin Parse / ";
 	JSON jsonTree;
 	try {
 		treeFromChunk(textChunk,jsonTree);
@@ -113,13 +108,17 @@ int main(int argc, char** argv){
 		cout << "****Imported data START****\n" << jsonTree << "\n****Imported data END****\n";
 		return 0;
 	}
-	cout << "Begin Save\n";
+	cout << "Begin Save / ";
 	DB_Connection my_db;
 	DB_Entry entry;
 	stack<pair<Jso*,int>> stk;
 	// Create a db group to hold what's going to be inserted.
 	int pid;
 	int gid = my_db.create_group("group #1");
+	if (gid==0){
+		cerr << "Could not create a group.\n";
+		return 1;
+	}
 	stk.emplace(*jsonTree,gid);
 	Jso* j;
 
@@ -134,7 +133,7 @@ int main(int argc, char** argv){
 					cerr << "Could not create a group.\n";
 					return 1;
 				}
-				cout << "Created group: " << *entry.title << '\n';
+				cout << "\nCRT group #" << gid << ':' << *entry.title;
 				for (const auto& k : *(j->key_value("children")->x.a)){
 					stk.emplace(k,gid);
 				}
@@ -142,9 +141,8 @@ int main(int argc, char** argv){
 			case DBE::Link:
 				if (entry.linkValid(j)){
 					entry.linkInsert(my_db,gid);
-					cout << "Inserted link: ";
+					cout << "\nINS link: ";
 					abridgedOut(cout,*entry.title,36);
-					cout << '\n';
 				}
 				break;
 			default:
@@ -152,6 +150,6 @@ int main(int argc, char** argv){
 		}
 	}
 	my_db.export_memory("/mnt/ramdisk/test.db");
-	cout << "End Save\n";
+	cout << "\nEnd Save\n";
 	return 0;
 }
