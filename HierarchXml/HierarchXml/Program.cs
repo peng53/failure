@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Collections.Generic;
 using Mono.Data.Sqlite;
 
 namespace HierarchXml
@@ -21,6 +22,7 @@ namespace HierarchXml
 	{
 		public static void Main (string [] args)
 		{
+            var bookmarks = new Bookmarks();
 			using (var dbConn = new Mono.Data.Sqlite.SqliteConnection ("Data Source=/mnt/ramdisk/test.db"))
 			{
 				dbConn.Open ();
@@ -30,20 +32,23 @@ namespace HierarchXml
 
 				using (IDataReader reader = dbConnRead.ExecuteReader ()) 
                 {
-
 					const string for_each_group = "SELECT key,value FROM data WHERE gid=@GID";
 					var dbConnEachGroup = dbConn.CreateCommand ();
 					dbConnEachGroup.CommandText = for_each_group;
 
-					while (reader.Read ()) 
-                    {
-						Console.WriteLine ($"{reader.GetInt32 (0)} {reader.GetString (1)}");
-						dbConnEachGroup.Parameters.AddWithValue ("@GID", reader.GetInt32 (0));
-						using (IDataReader data_reader = dbConnEachGroup.ExecuteReader ()) 
-                        {
+					while (reader.Read ())
+					{
+                        int gid = reader.GetInt32(0);
+                        string name = reader.GetString(1);
+                        bookmarks.GroupAdd(gid, new Group { Id = gid, Name = name });
+                        Console.WriteLine ($"{gid} {name}");
+						dbConnEachGroup.Parameters.AddWithValue ("@GID", gid);
+						using (IDataReader data_reader = dbConnEachGroup.ExecuteReader ())
+						{
 							while (data_reader.Read ()) 
-                            {
-								Console.WriteLine ($"{string.Format ("{0,-24}", data_reader.GetString (0).Abridged (24))} - {data_reader.GetString (1).Abridged (48)}");
+							{
+                                bookmarks.LinkAdd(gid, new LinkItem { Title = data_reader.GetString(0), Target = data_reader.GetString(1) });
+                                Console.WriteLine ($"{string.Format ("{0,-24}", data_reader.GetString (0).Abridged (24))} - {data_reader.GetString (1).Abridged (48)}");
 							}
 						}
 					}
