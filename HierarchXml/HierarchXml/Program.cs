@@ -2,6 +2,8 @@
 using System.Data;
 using System.Collections.Generic;
 using Mono.Data.Sqlite;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace HierarchXml
 {
@@ -22,9 +24,12 @@ namespace HierarchXml
     {
         public static void ApplyRow(IDataReader data, Action<IDataReader> action)
         {
-            while (data.Read())
+            if (action != null)
             {
-                action(data);
+                while (data.Read())
+                {
+                    action(data);
+                }
             }
         }
         public static void Main(string[] args)
@@ -47,7 +52,10 @@ namespace HierarchXml
                     ApplyRow(rows, (r) => bookmarks.LinkAdd(r.GetInt32(0), new LinkItem { Title = r.GetString(1), Target = r.GetString(2) }));
                 }
             }
-
+            var document = new XDocument();
+            document.Add(bookmarks.ToXml());
+            document.Save("test.xml");
+            /*
             foreach (var group in bookmarks.Groups)
             {
                 Console.WriteLine($"{group.Key} = {group.Value.Id} | {group.Value.Name} / {group.Value.Pid}"); 
@@ -60,6 +68,7 @@ namespace HierarchXml
                     Console.WriteLine($"\t{link.Title} {link.Target.Abridged(48)}");
                 }
             }
+            */
         }
     }
 }
