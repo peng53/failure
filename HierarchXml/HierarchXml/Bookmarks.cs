@@ -22,31 +22,59 @@ namespace HierarchXml
                 Groups.Add(gid, group);
             }
         }
-        /* Might delete this
-        public void LinkAdd(int gid, string title, string target)
-        {
-            if (Groups.ContainsKey(gid))
-            {
-                Groups[gid].Element.Add(
-                    new XElement("Link",
-                        new XAttribute("Title", title),
-                        new XAttribute("Target", target)
-                    )
-                );
-            }
-            else
-            {
-                throw new InvalidOperationException("Cannot add link to non-existent group.");
-            }
-        }
-        */
         public void LinkAdd(int gid, LinkItem linkItem)
         {
+            if (gid != 0 && Groups.ContainsKey(gid) == false)
+            {
+                throw new KeyNotFoundException("No group with matching GID");
+            }
             if (Links.ContainsKey(gid) == false)
             {
                 Links.Add(gid, new List<LinkItem>());
             }
             Links[gid].Add(linkItem);
+        }
+        public bool Enclosed()
+        {
+            foreach (var group in Links)
+            {
+                if (Groups.ContainsKey(group.Key) == false)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        public XElement ToXml()
+        {
+            var bookmarks = new XElement("Bookmarks");
+            var elements = new Dictionary<int, XElement>();
+            foreach (var group in Groups)
+            {
+                var xGroup = group.Value.GetXElement();
+                if (Links.ContainsKey(group.Key))
+                {
+                    foreach (var link in Links[group.Key])
+                    {
+                        xGroup.Add(link.GetXElement());
+                    }
+                }
+                if (group.Value.Pid == 0)
+                {
+                    bookmarks.Add(xGroup);
+                }
+                elements.Add(group.Key, xGroup);
+
+            }
+            foreach (var group in elements)
+            {
+                var pid = Groups[group.Key].Pid;
+                if (pid != 0 && elements.ContainsKey(pid))
+                {
+                    elements[pid].Add(group.Value);
+                }
+            }
+            return bookmarks;
         }
 		public Dictionary<int, Group> Groups;
         public Dictionary<int, List<LinkItem>> Links;
