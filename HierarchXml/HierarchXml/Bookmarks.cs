@@ -59,13 +59,11 @@ namespace HierarchXml
                 }
                 else
                 {
-                    GroupAdd(gid, new Group { Id = gid });
+                    GroupAdd(gid, new Group { Id = gid, Pid = 0 });
+
                 }
             }
-            else
-            {
-                groups[gid].LinkAdd(linkItem);
-            }
+            groups[gid].LinkAdd(linkItem);
         }
         public XElement ToXml()
         {
