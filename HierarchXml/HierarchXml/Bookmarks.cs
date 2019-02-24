@@ -14,22 +14,36 @@ namespace HierarchXml
                 { 0, new Group { Id = 0, Name = "Root", Pid = 0 } }
             };
         }
-        public void GroupAdd(int gid, Group group)
+        public void GroupAdd(int gid, Group group, bool overwrite=false)
         {
             if (groups.ContainsKey(gid))
             {
-                throw new InvalidOperationException("Cannot add duplicate gid");
+                if (!overwrite)
+                {
+                    throw new InvalidOperationException("Cannot add duplicate gid");
+                }
+                else
+                {
+                    groups[gid].Overwrite(group);
+                }
             }
             else
             {
                 groups.Add(gid, group);
             }
         }
-        public void LinkAdd(int gid, LinkItem linkItem)
+        public void LinkAdd(int gid, LinkItem linkItem, bool force=false)
         {
             if (groups.ContainsKey(gid) == false)
             {
-                throw new KeyNotFoundException("No group with matching GID");
+                if (!force)
+                {
+                    throw new KeyNotFoundException("No group with matching GID");
+                }
+                else
+                {
+                    GroupAdd(gid, new Group { Id = gid });
+                }
             }
             else
             {
