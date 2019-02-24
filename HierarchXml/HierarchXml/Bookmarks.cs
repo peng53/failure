@@ -48,7 +48,7 @@ namespace HierarchXml
             }
             Links[gid].Add(linkItem);
         }
-		Dictionary<int, Group> Groups;
-        Dictionary<int, List<LinkItem>> Links;
+		public Dictionary<int, Group> Groups;
+        public Dictionary<int, List<LinkItem>> Links;
 	}
 }
