@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Xml.Linq;
+using System.Linq;
 
 namespace HierarchXml
 {
@@ -8,75 +9,59 @@ namespace HierarchXml
 	{
 		public Bookmarks()
 		{
-			Groups = new Dictionary<int, Group>();
-            Links = new Dictionary<int, List<LinkItem>>();
-		}
+            groups = new Dictionary<int, Group>
+            {
+                { 0, new Group { Id = 0, Name = "Root", Pid = 0 } }
+            };
+        }
         public void GroupAdd(int gid, Group group)
         {
-            if (Groups.ContainsKey(gid))
+            if (groups.ContainsKey(gid))
             {
                 throw new InvalidOperationException("Cannot add duplicate gid");
             }
             else
             {
-                Groups.Add(gid, group);
+                groups.Add(gid, group);
             }
         }
         public void LinkAdd(int gid, LinkItem linkItem)
         {
-            if (gid != 0 && Groups.ContainsKey(gid) == false)
+            if (groups.ContainsKey(gid) == false)
             {
                 throw new KeyNotFoundException("No group with matching GID");
             }
-            if (Links.ContainsKey(gid) == false)
+            else
             {
-                Links.Add(gid, new List<LinkItem>());
+                groups[gid].LinkAdd(linkItem);
             }
-            Links[gid].Add(linkItem);
-        }
-        public bool Enclosed()
-        {
-            foreach (var group in Links)
-            {
-                if (Groups.ContainsKey(group.Key) == false)
-                {
-                    return false;
-                }
-            }
-            return true;
         }
         public XElement ToXml()
         {
-            var bookmarks = new XElement("Bookmarks");
+            var xBookmarks = new XElement("Bookmarks");
             var elements = new Dictionary<int, XElement>();
-            foreach (var group in Groups)
+            foreach (var group in groups)
             {
-                var xGroup = group.Value.GetXElement();
-                if (Links.ContainsKey(group.Key))
-                {
-                    foreach (var link in Links[group.Key])
-                    {
-                        xGroup.Add(link.GetXElement());
-                    }
-                }
-                if (group.Value.Pid == 0)
-                {
-                    bookmarks.Add(xGroup);
-                }
-                elements.Add(group.Key, xGroup);
-
+                elements.Add(group.Key, group.Value.GetXElement());
             }
             foreach (var group in elements)
             {
-                var pid = Groups[group.Key].Pid;
-                if (pid != 0 && elements.ContainsKey(pid))
+                var pid = groups[group.Key].Pid;
+                if (pid == 0)
+                {
+                    xBookmarks.Add(group.Value);
+                }
+                else if (elements.ContainsKey(pid))
                 {
                     elements[pid].Add(group.Value);
                 }
+                else
+                {
+                    throw new KeyNotFoundException();
+                }
             }
-            return bookmarks;
+            return xBookmarks;
         }
-		public Dictionary<int, Group> Groups;
-        public Dictionary<int, List<LinkItem>> Links;
-	}
+		Dictionary<int, Group> groups;
+    }
 }
