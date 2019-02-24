@@ -5,6 +5,11 @@ using System.Linq;
 
 namespace HierarchXml
 {
+    public struct BookmarkStats
+    {
+        public int Groups;
+        public int Links;
+    }
 	public class Bookmarks
 	{
 		public Bookmarks()
@@ -30,6 +35,18 @@ namespace HierarchXml
             else
             {
                 groups.Add(gid, group);
+            }
+        }
+
+        public Stats GetStats(int gid)
+        {
+            if (groups.ContainsKey(gid))
+            {
+                return groups[gid].GetStats();
+            }
+            else
+            {
+                return Stats.Empty;
             }
         }
         public void LinkAdd(int gid, LinkItem linkItem, bool force=false)
@@ -75,6 +92,22 @@ namespace HierarchXml
                 }
             }
             return xBookmarks;
+        }
+        public BookmarkStats Counts
+        {
+            get
+            {
+                int gCount = 0, lCount = 0;
+                foreach (var group in groups)
+                {
+                    ++gCount;
+                    if (group.Key != 0)
+                    {
+                        lCount += group.Value.GetStats().Count;
+                    }
+                }
+                return new BookmarkStats { Groups = gCount, Links = lCount };
+            }
         }
 		Dictionary<int, Group> groups;
     }

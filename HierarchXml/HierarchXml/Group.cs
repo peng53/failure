@@ -4,6 +4,16 @@ using System.Xml.Linq;
 
 namespace HierarchXml
 {
+    public struct Stats
+    {
+        public string Name;
+        public int Id;
+        public int Count;
+        public static Stats Empty
+        {
+            get { return new Stats { Name = "", Id = int.MinValue, Count = 0 }; }
+        }
+    }
     public class Group
     {
         public Group()
@@ -20,7 +30,7 @@ namespace HierarchXml
         }
         public XElement GetXElement()
         {
-            var xGroup = new XElement("Group", new XAttribute("NAME", Name), new XAttribute("Id", Id));
+            var xGroup = new XElement("Group", new XAttribute("NAME", Name), new XAttribute("id", Id));
             if (links != null)
             {
                 foreach (var link in links)
@@ -47,9 +57,11 @@ namespace HierarchXml
                 }
             }
         }
+        public Stats GetStats() => new Stats { Name = Name, Count = links?.Count ?? 0, Id = Id };
         public string Name;
         public int Id;
         public int Pid;
         List<LinkItem> links;
     }
 }
+
