@@ -18,42 +18,48 @@ namespace HierarchXml
 		}
 	}
 
-	class MainClass
-	{
-		public static void Main (string [] args)
-		{
+    class MainClass
+    {
+        public static void ApplyRow(IDataReader data, Action<IDataReader> action)
+        {
+            while (data.Read())
+            {
+                action(data);
+            }
+        }
+        public static void Main(string[] args)
+        {
             var bookmarks = new Bookmarks();
-			using (var dbConn = new Mono.Data.Sqlite.SqliteConnection ("Data Source=/mnt/ramdisk/test.db"))
-			{
-				dbConn.Open ();
-				const string dbConnReadSql = "SELECT rowid, name FROM groups";
-				var dbConnRead = dbConn.CreateCommand ();
-				dbConnRead.CommandText = dbConnReadSql;
+            using (var dbConn = new Mono.Data.Sqlite.SqliteConnection("Data Source=/mnt/ramdisk/test.db"))
+            {
+                dbConn.Open();
 
-				using (IDataReader reader = dbConnRead.ExecuteReader ()) 
+                var cmdGetGroups = dbConn.CreateCommand();
+                cmdGetGroups.CommandText = "SELECT gid, name, IFNULL(pid,0) FROM rel JOIN groups ON rel.gid=groups.rowid WHERE depth=1";
+                using (IDataReader groups = cmdGetGroups.ExecuteReader())
                 {
-					const string for_each_group = "SELECT key,value FROM data WHERE gid=@GID";
-					var dbConnEachGroup = dbConn.CreateCommand ();
-					dbConnEachGroup.CommandText = for_each_group;
+                    ApplyRow(groups, (g) => bookmarks.GroupAdd(g.GetInt32(0), new Group { Id = g.GetInt32(0), Name = g.GetString(1), Pid = g.GetInt32(2) }));
+                }
+                var cmdGetRows = dbConn.CreateCommand();
+                cmdGetRows.CommandText = "SELECT IFNULL(gid,0), key, value FROM data";
+                using (IDataReader rows = cmdGetRows.ExecuteReader())
+                {
+                    ApplyRow(rows, (r) => bookmarks.LinkAdd(r.GetInt32(0), new LinkItem { Title = r.GetString(1), Target = r.GetString(2) }));
+                }
+            }
 
-					while (reader.Read ())
-					{
-                        int gid = reader.GetInt32(0);
-                        string name = reader.GetString(1);
-                        bookmarks.GroupAdd(gid, new Group { Id = gid, Name = name });
-                        Console.WriteLine ($"{gid} {name}");
-						dbConnEachGroup.Parameters.AddWithValue ("@GID", gid);
-						using (IDataReader data_reader = dbConnEachGroup.ExecuteReader ())
-						{
-							while (data_reader.Read ()) 
-							{
-                                bookmarks.LinkAdd(gid, new LinkItem { Title = data_reader.GetString(0), Target = data_reader.GetString(1) });
-                                Console.WriteLine ($"{string.Format ("{0,-24}", data_reader.GetString (0).Abridged (24))} - {data_reader.GetString (1).Abridged (48)}");
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+            foreach (var group in bookmarks.Groups)
+            {
+                Console.WriteLine($"{group.Key} = {group.Value.Id} | {group.Value.Name} / {group.Value.Pid}"); 
+            }
+            foreach (var group in bookmarks.Links)
+            {
+                Console.WriteLine(group.Key);
+                foreach (var link in group.Value)
+                {
+                    Console.WriteLine($"\t{link.Title} {link.Target.Abridged(48)}");
+                }
+            }
+        }
+    }
 }
