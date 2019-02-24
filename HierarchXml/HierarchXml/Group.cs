@@ -30,6 +30,23 @@ namespace HierarchXml
             }
             return xGroup;
         }
+        public void Overwrite(Group group)
+        {
+            if (group != this)
+            {
+                Name = group.Name;
+                Id = group.Id;
+                Pid = group.Pid;
+                if (links == null)
+                {
+                    links = group.links;
+                }
+                else if (group.links != null)
+                {
+                    links.AddRange(group.links);
+                }
+            }
+        }
         public string Name;
         public int Id;
         public int Pid;
