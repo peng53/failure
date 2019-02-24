@@ -38,5 +38,37 @@ namespace HierarchXml
             Assert.AreEqual(2, counts.Groups);
             Assert.AreEqual(30, counts.Links);
         }
+        [Test()]
+        public void Overwrites()
+        {
+            var bookmarks = new Bookmarks();
+            bookmarks.LinkAdd(523, new LinkItem { Title = "VIP", Target = "123 Land" }, force:true);
+            var counts = bookmarks.Counts;
+            Assert.AreEqual(2, counts.Groups);
+            Assert.AreEqual(1, counts.Links);
+            bookmarks.GroupAdd(523, new Group { Id = 523, Name = "Milli", Pid = 0 }, overwrite:true);
+            counts = bookmarks.Counts;
+            Assert.AreEqual(2, counts.Groups);
+            Assert.AreEqual(1, counts.Links);
+        }
+        [Test()]
+        public void OverwriteSelf()
+        {
+            var group = new Group { };
+            group.Overwrite(group);
+        }
+        [Test()]
+        public void OverwriteAppend()
+        {
+            var group = new Group { };
+            group.LinkAdd(new LinkItem { Title = "A", Target = "A" });
+            group.LinkAdd(new LinkItem { Title = "B", Target = "B" });
+            var group_z = new Group { };
+            group_z.LinkAdd(new LinkItem { Title = "Z", Target = "Z" });
+            group_z.LinkAdd(new LinkItem { Title = "X", Target = "X" });
+            group.Overwrite(group_z);
+            var stats = group.GetStats();
+            Assert.AreEqual(4, stats.Count);
+        }
     }
 }

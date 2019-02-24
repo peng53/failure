@@ -55,20 +55,6 @@ namespace HierarchXml
             var document = new XDocument();
             document.Add(bookmarks.ToXml());
             document.Save("test.xml");
-            /*
-            foreach (var group in bookmarks.Groups)
-            {
-                Console.WriteLine($"{group.Key} = {group.Value.Id} | {group.Value.Name} / {group.Value.Pid}"); 
-            }
-            foreach (var group in bookmarks.Links)
-            {
-                Console.WriteLine(group.Key);
-                foreach (var link in group.Value)
-                {
-                    Console.WriteLine($"\t{link.Title} {link.Target.Abridged(48)}");
-                }
-            }
-            */
         }
     }
 }
