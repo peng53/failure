@@ -67,8 +67,17 @@ namespace HierarchXml
             group_z.LinkAdd(new LinkItem { Title = "Z", Target = "Z" });
             group_z.LinkAdd(new LinkItem { Title = "X", Target = "X" });
             group.Overwrite(group_z);
-            var stats = group.GetStats();
+            var stats = group.GetStats;
             Assert.AreEqual(4, stats.Count);
+        }
+        [Test()]
+        public void EmptyNullStat()
+        {
+            var bookmarks = new Bookmarks();
+            var stats = bookmarks.GetStats(101);
+            var stats_2 = bookmarks.GetStats(102);
+            Assert.AreEqual(0, stats.Count);
+            Assert.AreSame(stats, stats_2);
         }
     }
 }

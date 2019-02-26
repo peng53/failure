@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace HierarchXml
 {
-    public struct BookmarkStats
+    public class BookmarkStats
     {
         public int Groups;
         public int Links;
@@ -42,7 +42,7 @@ namespace HierarchXml
         {
             if (groups.ContainsKey(gid))
             {
-                return groups[gid].GetStats();
+                return groups[gid].GetStats;
             }
             else
             {
@@ -101,7 +101,7 @@ namespace HierarchXml
                     ++gCount;
                     if (group.Key != 0)
                     {
-                        lCount += group.Value.GetStats().Count;
+                        lCount += group.Value.GetStats.Count;
                     }
                 }
                 return new BookmarkStats { Groups = gCount, Links = lCount };
