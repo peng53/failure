@@ -10,6 +10,9 @@ namespace BMarksgXmlView
     {
         public static void Main(string[] args)
         {
+            Application.Init();
+            MainWindow win = new MainWindow();
+
             var document = XDocument.Load("../../../../in_out/test.xml");
             Queue<XElement> xes = new Queue<XElement>();
 
@@ -30,18 +33,16 @@ namespace BMarksgXmlView
                     }
                     else
                     {
+                        win.AddLink(link.Attribute("NAME").Value, link.Attribute("URL").Value);
                         Console.WriteLine($"\t{link}");
                     }
 
                 }
             }
 
-            /*
-            Application.Init();
-            MainWindow win = new MainWindow();
             win.Show();
             Application.Run();
-            */
+
         }
     }
 }
