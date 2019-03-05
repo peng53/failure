@@ -16,9 +16,10 @@ namespace BMarksgXmlView
             var document = XDocument.Load("../../../../in_out/test.xml");
             Queue<XElement> xes = new Queue<XElement>();
 
-            foreach (var node in document.Elements("Bookmarks").Elements("Group"))
+            foreach (XElement node in document.Elements("Bookmarks").Elements("Group"))
             {
                 xes.Enqueue(node);
+                win.AddGroup(node.Attribute("NAME").Value, node.Attribute("Id").Value);
             }
             while (xes.Count > 0)
             {
@@ -30,10 +31,11 @@ namespace BMarksgXmlView
                     if (link.Name == "Group")
                     {
                         xes.Enqueue(link);
+                        win.AddGroup(link.Attribute("NAME").Value, link.Attribute("Id").Value, link.Parent.Attribute("Id").Value);
                     }
                     else
                     {
-                        win.AddLink(link.Attribute("NAME").Value, link.Attribute("URL").Value);
+                        win.AddLink(link.Attribute("NAME").Value, link.Attribute("URL").Value, link.Parent.Attribute("Id").Value);
                         Console.WriteLine($"\t{link}");
                     }
 
