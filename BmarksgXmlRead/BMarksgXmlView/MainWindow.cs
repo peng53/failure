@@ -1,6 +1,8 @@
 ﻿using System;
 using Gtk;
 using System.Collections.Generic;
+using System.Xml.Linq;
+using System.Xml;
 
 public partial class MainWindow : Gtk.Window
 {
@@ -23,19 +25,13 @@ public partial class MainWindow : Gtk.Window
     }
     private void PrepareTreeView()
     {
-        treeStore = new TreeStore(typeof(string), typeof(string));
-        columnName = new TreeViewColumn { Title = "Name" };
-        columnUrl = new TreeViewColumn { Title = "URL" };
-        rendererTextName = new CellRendererText();
-        rendererTextUrl = new CellRendererText();
-        columnName.PackStart(rendererTextName, true);
-        columnUrl.PackStart(rendererTextUrl, true);
-        treeview1.AppendColumn(columnName);
-        treeview1.AppendColumn(columnUrl);
-        columnName.AddAttribute(rendererTextName, "text", 0);
-        columnUrl.AddAttribute(rendererTextUrl, "text", 1);
+        treeStore = new TreeStore(typeof (string), typeof(string));
         groupIters = new Dictionary<string, TreeIter>();
+
+        treeview1.AppendColumn("Name", new CellRendererText(), "text", 0);
+        treeview1.AppendColumn("URL", new CellRendererText(), "text", 1);
         treeview1.Model = treeStore;
+
     }
     public void AddGroup(string name, string id, string pid=null)
     {
@@ -63,8 +59,6 @@ public partial class MainWindow : Gtk.Window
         }
     }
     TreeStore treeStore;
-    TreeViewColumn columnName, columnUrl;
-    CellRendererText rendererTextName, rendererTextUrl;
     Dictionary<string, TreeIter> groupIters;
 
 }
