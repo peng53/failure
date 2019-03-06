@@ -11,6 +11,9 @@ public partial class MainWindow : Gtk.Window
         Build();
         PrepareTreeView();
         QuitAction.Activated += QuitAction_Activated;
+        add_button.Clicked += (o,e) => GetEntry();
+        name_entry.Activated += (o, e) => url_entry.GrabFocus();
+        url_entry.Activated += (o, e) => GetEntry();
     }
 
     private void QuitAction_Activated(object sender, EventArgs e)
@@ -49,14 +52,14 @@ public partial class MainWindow : Gtk.Window
     }
     public void AddLink(string name, string url, string id)
     {
-        if (treeStore != null)
+        if (treeStore != null && groupIters.ContainsKey(id))
         {
-            if (groupIters.ContainsKey(id))
-            {
-                treeStore.AppendValues(groupIters[id], name, url);
-                //treeStore.AppendValues(name, url);
-            }
+            treeStore.AppendValues(groupIters[id], name, url);
         }
+    }
+    public void GetEntry()
+    {
+        Console.WriteLine($"{name_entry.Text}, {url_entry.Text}");
     }
     TreeStore treeStore;
     Dictionary<string, TreeIter> groupIters;
