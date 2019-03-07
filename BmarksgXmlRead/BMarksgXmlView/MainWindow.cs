@@ -29,7 +29,8 @@ public partial class MainWindow : Gtk.Window
     private void PrepareTreeView()
     {
         treeStore = new TreeStore(typeof (string), typeof(string));
-        groupIters = new Dictionary<string, TreeIter>();
+        //groupIters = new Dictionary<string, TreeIter>();
+        groupPaths = new Dictionary<string, TreePath>();
 
         treeview1.AppendColumn("Name", new CellRendererText(), "text", 0);
         treeview1.AppendColumn("URL", new CellRendererText(), "text", 1);
@@ -40,28 +41,36 @@ public partial class MainWindow : Gtk.Window
     {
         if (pid == null)
         {
-            groupIters.Add(id, treeStore.AppendValues(name, id));
+            groupPaths.Add(id, treeStore.GetPath(treeStore.AppendValues(name, id)));
         }
         else
         {
-            if (groupIters.ContainsKey(id) == false && groupIters.ContainsKey(pid))
+            if (groupPaths.ContainsKey(id) == false && groupPaths.ContainsKey(pid))
             {
-                groupIters.Add(id, treeStore.AppendValues(groupIters[pid], name+id, id));
+                treeStore.GetIter(out TreeIter iter, groupPaths[pid]);
+                groupPaths.Add(id, 
+                    treeStore.GetPath(
+                        treeStore.AppendValues(iter, name + id, id)
+                        ));
             }
         }
     }
     public void AddLink(string name, string url, string id)
     {
-        if (treeStore != null && groupIters.ContainsKey(id))
+        if (treeStore != null && groupPaths.ContainsKey(id))
         {
-            treeStore.AppendValues(groupIters[id], name, url);
+            treeStore.GetIter(out TreeIter iter, groupPaths[id]);
+            treeStore.AppendValues(iter, name, url);
         }
     }
     public void GetEntry()
     {
         Console.WriteLine($"{name_entry.Text}, {url_entry.Text}");
     }
+    private void AddNewDialog()
+    {
+    }
     TreeStore treeStore;
-    Dictionary<string, TreeIter> groupIters;
+    Dictionary<string, TreePath> groupPaths;
 
 }
