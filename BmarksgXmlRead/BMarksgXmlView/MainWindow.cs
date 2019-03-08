@@ -4,73 +4,59 @@ using System.Collections.Generic;
 using System.Xml.Linq;
 using System.Xml;
 
+using BMarksgXmlView;
+
 public partial class MainWindow : Gtk.Window
 {
     public MainWindow() : base(Gtk.WindowType.Toplevel)
     {
         Build();
-        PrepareTreeView();
         QuitAction.Activated += QuitAction_Activated;
-        add_button.Clicked += (o,e) => GetEntry();
         name_entry.Activated += (o, e) => url_entry.GrabFocus();
         url_entry.Activated += (o, e) => GetEntry();
-    }
+        data = new NodeStore(typeof(LinkNode));
+        nodeview1.NodeStore = data;
+        nodeview1.AppendColumn("Group", new CellRendererText(), "text", 0).Resizable = true;
+        nodeview1.AppendColumn("Name", new CellRendererText(), "text",1).Resizable = true;
+        nodeview1.AppendColumn("URL", new CellRendererText(), "text",2).Resizable = true;
 
+    }
     private void QuitAction_Activated(object sender, EventArgs e)
     {
         Application.Quit();
     }
-
     protected void OnDeleteEvent(object sender, DeleteEventArgs a)
     {
         Application.Quit();
         a.RetVal = true;
     }
-    private void PrepareTreeView()
+    public void AddLink(XElement link)
     {
-        treeStore = new TreeStore(typeof (string), typeof(string));
-        //groupIters = new Dictionary<string, TreeIter>();
-        groupPaths = new Dictionary<string, TreePath>();
-
-        treeview1.AppendColumn("Name", new CellRendererText(), "text", 0);
-        treeview1.AppendColumn("URL", new CellRendererText(), "text", 1);
-        treeview1.Model = treeStore;
-
+        data.AddNode(new LinkNode(link));
     }
-    public void AddGroup(string name, string id, string pid=null)
+    public void AddGroup(XElement mgroup)
     {
-        if (pid == null)
+        var xes = new Queue<XElement>();
+        xes.Enqueue(mgroup);
+        while (xes.Count > 0)
         {
-            groupPaths.Add(id, treeStore.GetPath(treeStore.AppendValues(name, id)));
-        }
-        else
-        {
-            if (groupPaths.ContainsKey(id) == false && groupPaths.ContainsKey(pid))
+            var group = xes.Dequeue();
+            foreach (var link in group.Elements())
             {
-                treeStore.GetIter(out TreeIter iter, groupPaths[pid]);
-                groupPaths.Add(id, 
-                    treeStore.GetPath(
-                        treeStore.AppendValues(iter, name + id, id)
-                        ));
+                if (link.Name == "Group")
+                {
+                    xes.Enqueue(link);
+                }
+                else
+                {
+                    AddLink(link);
+                }
             }
         }
     }
-    public void AddLink(string name, string url, string id)
-    {
-        if (treeStore != null && groupPaths.ContainsKey(id))
-        {
-            treeStore.GetIter(out TreeIter iter, groupPaths[id]);
-            treeStore.AppendValues(iter, name, url);
-        }
-    }
-    public void GetEntry()
+    private void GetEntry()
     {
         Console.WriteLine($"{name_entry.Text}, {url_entry.Text}");
     }
-    private void AddNewDialog()
-    {
-    }
-    TreeStore treeStore;
-    Dictionary<string, TreePath> groupPaths;
-
+    NodeStore data;
 }
