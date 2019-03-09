@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.421
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrapperKeeper", "TrapperKeeper\TrapperKeeper.csproj", "{723CAD55-368E-468E-90B2-1FEDC6C155C3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{723CAD55-368E-468E-90B2-1FEDC6C155C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{723CAD55-368E-468E-90B2-1FEDC6C155C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{723CAD55-368E-468E-90B2-1FEDC6C155C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{723CAD55-368E-468E-90B2-1FEDC6C155C3}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {22E1F9B3-1345-49F2-8539-42414E87FC51}
+	EndGlobalSection
+EndGlobal
