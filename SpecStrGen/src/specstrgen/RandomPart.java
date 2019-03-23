@@ -5,7 +5,6 @@
  */
 package specstrgen;
 
-import java.util.Collections;
 import java.util.Random;
 /**
  *
@@ -30,6 +29,6 @@ public class RandomPart implements Part {
         }
     }    
     char[] alphabet;
-    int length;
-    Random gen;
+    protected int length;
+    protected Random gen;
 }

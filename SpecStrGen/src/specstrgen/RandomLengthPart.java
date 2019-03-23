@@ -11,25 +11,15 @@ import java.util.Random;
  *
  * @author lm
  */
-public class RandomLengthPart implements Part {
+public class RandomLengthPart extends RandomPart {
     public RandomLengthPart(char[] symbols, int max, Random rand) {
-        this.alphabet = symbols;
+        super(symbols,0,rand);
         this.max = max+1;
-        this.rand = rand;
-    }
-    @Override
-    public String out() {
-        StringBuilder sb = new StringBuilder(max);
-        this.out(sb);
-        return sb.toString();
     }
     @Override
     public void out(StringBuilder sb) {
-        for (int i = rand.nextInt(max); i>0; --i){
-            sb.append(alphabet[rand.nextInt(alphabet.length)]);
-        }
+        length = gen.nextInt(max);
+        super.out(sb);
     }
-    char[] alphabet;
     int max;
-    Random rand;
 }
