@@ -7,7 +7,7 @@ package specstrgen;
 
 import java.util.LinkedList;
 import java.util.List;
-
+import stringincludes.StringIncludes;
 /**
  *
  * @author lm
@@ -20,6 +20,12 @@ public class SpecStrGen {
     public static void main(String[] args) {
         PartBuilder builder = new PartBuilder();
         List<Part> parts = new LinkedList<Part>();
+        StringIncludes si = new StringIncludes();
+        si.addChars('A','B','C');
+        Part grade = builder.MakeRandomLengthPart(si.toCharArray(), 1);
+        // might not have grade at all.
+        parts.add(builder.MakeAlignedPart(grade, true, 2, ' '));
+        StringBuilder sb = new StringBuilder();
         parts.add(builder.MakeColorPart(
                 new String[] {
                     "hector",
@@ -28,9 +34,14 @@ public class SpecStrGen {
                     "robert"
                 }
         ));
-        parts.add(builder.MakePlainPart("_"));
+        Part underscore = builder.MakePlainPart("_");
+        parts.add(underscore);
         parts.add(builder.MakeRandomPartDigits(3));
-        parts.add(builder.MakeRandomLengthPart(builder.digits, 2));
+        parts.add(builder.MakeRandomLengthPart(StringIncludes.DIGITS, 2));
+        parts.add(underscore);
+        si.clear();
+        si.addChars('x','r','t');
+        parts.add(builder.MakeRandomLengthPart(si.toCharArray(), 3));
         parts.add(builder.MakePlainPart("@"));
         parts.add(builder.MakeColorPart(
                 new String[] {
@@ -41,7 +52,6 @@ public class SpecStrGen {
                 }
         ));
         parts.add(builder.MakePlainPart(".com"));
-        StringBuilder sb = new StringBuilder();
         for (int c = 10; c > 0; --c){
             for (Part p : parts){
                 p.out(sb);
@@ -50,5 +60,4 @@ public class SpecStrGen {
         }
         System.out.println(sb.toString());
     }
-    
 }
