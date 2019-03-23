@@ -14,7 +14,7 @@ import java.util.Random;
 public class RandomLengthPart implements Part {
     public RandomLengthPart(char[] symbols, int max, Random rand) {
         this.alphabet = symbols;
-        this.max = max;
+        this.max = max+1;
         this.rand = rand;
     }
     @Override
@@ -25,7 +25,7 @@ public class RandomLengthPart implements Part {
     }
     @Override
     public void out(StringBuilder sb) {
-        for (int i = rand.nextInt(max)+1; i>0; --i){
+        for (int i = rand.nextInt(max); i>0; --i){
             sb.append(alphabet[rand.nextInt(alphabet.length)]);
         }
     }
