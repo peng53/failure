@@ -1,5 +1,6 @@
-import stringtoos.BIncString;
-import stringtoos.PartedString;
+package SrStrGen;
+import SrStrGen.BIncString;
+import SrStrGen.PartedString;
 import java.util.ArrayList;
 
 public class SrStrGen {

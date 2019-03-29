@@ -1,4 +1,4 @@
-package stringtoos;
+package SrStrGen.BIncString;
 
 import java.util.Arrays;
 
