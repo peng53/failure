@@ -24,16 +24,19 @@ public partial class MainWindow : Gtk.Window
         nodeview1.AppendColumn("Name", new CellRendererText(), "text",1).Resizable = true;
         nodeview1.AppendColumn("URL", new CellRendererText(), "text",2).Resizable = true;
         nodeview1.NodeSelection.Changed += Cwout;
-
+        store = new ListStore(typeof(LinkNode));
+        nodeview1.Model = store;
     }
     private void Cwout(object sender, EventArgs e)
     {
+        /*
         var selection = (NodeSelection)sender;
         foreach (var sel in selection.SelectedNodes)
         {
             var link = (LinkNode)sel;
             Console.WriteLine($"{link.Group},{link.Title},{link.Url}");
         }
+        */
     }
     private void QuitAction_Activated(object sender, EventArgs e)
     {
@@ -46,7 +49,8 @@ public partial class MainWindow : Gtk.Window
     }
     public void AddLink(XElement link)
     {
-        data.AddNode(new LinkNode(link));
+        //data.AddNode(new LinkNode(link));
+        store.AppendValues(new LinkNode(link));
     }
     public void AddGroup(XElement mgroup)
     {
@@ -75,4 +79,5 @@ public partial class MainWindow : Gtk.Window
         Console.WriteLine($"{name_entry.Text}, {url_entry.Text}");
     }
     NodeStore data;
+    ListStore store;
 }
