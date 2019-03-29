@@ -10,6 +10,10 @@ using std::stack;
 using std::pair;
 
 char nextNonWS(IReader* buf){
+	/**
+	 * Advancese the IReader the current character fails 'isspace' or
+	 * fully consumed. Returns last character encountered.
+	 */
 	while (!buf->empty() && isspace(buf->get())){
 		buf->advance();
 	}
@@ -17,9 +21,11 @@ char nextNonWS(IReader* buf){
 }
 
 char verifySymbol(char c){
-	// Checks whether c is notable char.
-	// Returning it or the group.
-	// If check fails, an exception is thrown.
+	/**
+	 * Checks whether c is notable char.
+	 * Returning it or the group.
+	 * If check fails, an exception is thrown.
+	 */
 	if (isdigit(c)){
 		return '0';
 	}
@@ -29,7 +35,6 @@ char verifySymbol(char c){
 		case '[': case ']':
 		case '"':
 			return c;
-
 		case '-': return '0';
 		case '\0': throw std::runtime_error("File ended prematurely.");
 	}
@@ -38,15 +43,20 @@ char verifySymbol(char c){
 }
 
 static void notNullAppend(string* out, char c){
+	/**
+	 * Appends character to string if ptr was non-null.
+	 */
 	if (out){
 		(*out) += c;
 	}
 }
 
 static void parseDigits(IReader* buf, bool decimal, string* out=nullptr){
-	// Grabs a decimal point number from IReader putting them into
-	// out. buf's inital state should be at a character while its
-	// final state will be preceding the last character.
+	/**
+	 * Parses decimal point number from IReader to string. Initially
+	 * the IReader should be a valid 'digit' char. At completion IReader
+	 * will be at the last character seen.
+	 */
 	if (buf->empty()){
 		return;
 	}
@@ -77,10 +87,12 @@ static void parseDigits(IReader* buf, bool decimal, string* out=nullptr){
 }
 
 static void get_a_string(IReader* chr, string* s_ptr){
-	// Grabs characters from ChunkReader until a " is encountered
-	// without a preceding \. If chr's position is " at call, this
-	// function returns after advancing once. If chr is consumed
-	// before finding a ", a runtine_error is thrown.
+	/**
+	 * Grabs characters from ChunkReader until a " is encountered
+	 * without a preceding \. If chr's position is " at call, this
+	 * function returns after advancing once. If chr is consumed
+	 * before finding a ", a runtine_error is thrown.
+	 */
 	for (char c; !chr->empty(); chr->advance()){
 		c = chr->get();
 		switch (c){
@@ -103,7 +115,11 @@ static void get_a_string(IReader* chr, string* s_ptr){
 }
 
 static bool next_chars_are(IReader* buf, const string& chars){
-	// buf should start at chars[0]
+	/**
+	 * Returns whether the next characters in IReader match exactly.
+	 * If IReader is consumed without consuming characters, it will return false.
+	 * IReader's initial character will be matched with the string's first.
+	 */
 	for (auto c : chars){
 		if (buf->empty() || c!=buf->get()){
 			return false;
@@ -115,8 +131,12 @@ static bool next_chars_are(IReader* buf, const string& chars){
 }
 
 static bool matches_type(IReader* buf,JType TYPE){
+	/**
+	 * Checks if IReader's next string of character matches specified Jso JType.
+	 * This function is usually used after encountering a letter while seeking a
+	 * starting delimiter.
+	 */
 	const char* to_check;
-	//string to_check;
 	if (TYPE==JType::Null){ to_check = "ull"; }
 	else if (TYPE==JType::True){ to_check = "rue"; }
 	else if (TYPE==JType::False){ to_check = "alse"; }
@@ -124,8 +144,10 @@ static bool matches_type(IReader* buf,JType TYPE){
 	return next_chars_are(buf, to_check);
 }
 static Jso* text2obj(IReader* chr, JType t){
-	// Returns a Jso* from data in ChunkReader given a JType.
-	// calls get_a_number/string for numbers/strings.
+	/**
+	 * Returns a Jso* from data in ChunkReader given a JType.
+	 * calls get_a_number/string for numbers/strings.
+	 */
 	string tmp;
 	switch (t){
 		case JType::Num:
@@ -149,9 +171,11 @@ static Jso* text2obj(IReader* chr, JType t){
 }
 
 static JType char2type(char c){
-	// Converts a char to a JType. Valid input characters are cases in
-	// next_symplex. If character is not an expected one, a runtime_error
-	// is thrown.
+	/**
+	 * Converts a char to a JType. Valid input characters are cases in
+	 * next_symplex. If character is not an expected one, a runtime_error
+	 * is thrown.
+	 */
 	switch (c){
 		case '{': return JType::Obj;
 		case '[': return JType::Arr;
@@ -166,8 +190,10 @@ static JType char2type(char c){
 }
 
 Jso* valueFromReader(IReader* buf){
-	// Parses input for next value.
-	// buf's initial state should be at first character of value.
+	/**
+	 * Parses input for next value.
+	 * buf's initial state should be at first character of value.
+	 */
 	char c = verifySymbol(buf->get());
 	if (c!='0'){
 		buf->advance();
@@ -175,8 +201,10 @@ Jso* valueFromReader(IReader* buf){
 	return text2obj(buf, char2type(c));
 }
 pair<string, Jso*> keyValueFromReader(IReader* buf){
-	// Parses input for next key-value.
-	// buf's initial state should be at the '"'.
+	/**
+	 * Parses input for next key-value.
+	 * buf's initial state should be at the '"'.
+	 */
 	pair<string, Jso*> R;
 	if (buf->get()!='"'){
 		//cout << buf->get();
