@@ -111,21 +111,19 @@ int main(int argc, char** argv){
 	}
 	cout << "Begin Save / ";
 	DB_Connection my_db;
-	DB_Entry entry;
-	stack<pair<Jso*,int>> stk;
 	// Create a db group to hold what's going to be inserted.
-	int pid;
 	int gid = my_db.create_group("group #1");
 	if (gid==0){
 		cerr << "Could not create a group.\n";
 		return 1;
 	}
+	DB_Entry entry;
+	stack<pair<Jso*,int>> stk;
 	stk.emplace(*jsonTree,gid);
+	int pid;
 	Jso* j;
-
 	while (!stk.empty()){
-		j = stk.top().first;
-		pid = stk.top().second;
+		std::tie(j,pid) = stk.top();
 		stk.pop();
 		switch (entry.classify(j)){
 			case DBE::Group:

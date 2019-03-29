@@ -1,4 +1,4 @@
-package stringtoos;
+package SrStrGen.PartedString;
 
 import java.util.ArrayList;
 import java.util.Random;
