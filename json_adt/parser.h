@@ -4,6 +4,7 @@
 #include "../chunkreader/ireader.h"
 
 char nextNonWS(IReader* buf);
-// parses IReader, creating the structure in JSON lv.
+// Returns the next character from IReader that isn't considered whitespace.
 JSON& parse_file_comma(IReader* buf, JSON& tree);
+// Parses IReader for JSON data.
 #endif
