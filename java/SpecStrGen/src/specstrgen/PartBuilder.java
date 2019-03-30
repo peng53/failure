@@ -6,6 +6,7 @@
 package specstrgen;
 
 import java.util.Random;
+import java.util.List;
 import stringincludes.StringIncludes;
 
 /**
@@ -43,8 +44,8 @@ public class PartBuilder {
     public Part MakePlainPart(String str){
         return new PlainPart(str);
     }
-    public Part MakeColorPart(String[] strs){
-        if (strs.length==0){
+    public Part MakeColorPart(List<String> strs){
+        if (strs.size()==0){
             throw new IllegalArgumentException("Cannot have ColorPart without colors.");
         }
         return new ColorPart(strs,rand);
