@@ -98,6 +98,19 @@ public class Argument {
 		currentStr = s;
 		product.addStr(currentStr);
 	}
+	public void SFlag(String del, String list){
+		// Adds new delimited literals.
+		if (del.length()<1){
+			return;
+		}
+		String[] strs = list.split(del);
+		for (String str : strs){
+			product.addStr(str);
+		}
+		if (strs.length > 0){
+			currentStr = strs[strs.length-1];
+		}
+	}
 	
 	
 	public CompositePartString product;
