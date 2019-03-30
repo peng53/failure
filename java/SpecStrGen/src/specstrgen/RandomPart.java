@@ -11,7 +11,7 @@ import java.util.Random;
  * @author lm
  */
 public class RandomPart implements Part {
-    public RandomPart(char[] alphabet, int length, Random rand){
+    public RandomPart(String alphabet, int length, Random rand){
         this.alphabet = alphabet;
         this.length = length;
         this.gen = rand;
@@ -25,10 +25,10 @@ public class RandomPart implements Part {
     @Override
     public void out(StringBuilder sb) {
         for (int i = length; i>0; --i){
-            sb.append(alphabet[gen.nextInt(alphabet.length)]);
+            sb.append(alphabet.charAt(gen.nextInt(alphabet.length())));
         }
     }    
-    char[] alphabet;
+    String alphabet;
     protected int length;
     protected Random gen;
 }

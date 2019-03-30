@@ -12,7 +12,7 @@ import java.util.Random;
  * @author lm
  */
 public class RandomLengthPart extends RandomPart {
-    public RandomLengthPart(char[] symbols, int max, Random rand) {
+    public RandomLengthPart(String symbols, int max, Random rand) {
         super(symbols,0,rand);
         this.max = max+1;
     }
