@@ -6,6 +6,7 @@
 package specstrgen;
 
 import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import stringincludes.StringIncludes;
 /**
@@ -18,11 +19,13 @@ public class SpecStrGen {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+		Argument amk = new Argument();
+		System.out.println(amk.intArgs("12,20,50,hello",2));
         PartBuilder builder = new PartBuilder();
         List<Part> parts = new LinkedList<Part>();
         StringIncludes si = new StringIncludes();
-        si.addChars('A','B','C');
-        Part grade = builder.MakeRandomLengthPart(si.toCharArray(), 1);
+        si.addChars("ABC");
+        Part grade = builder.MakeRandomLengthPart(si.toString(), 1);
         // might not have grade at all.
         parts.add(builder.MakeAlignedPart(grade, true, 2, ' '));
         StringBuilder sb = new StringBuilder();
@@ -40,8 +43,8 @@ public class SpecStrGen {
         parts.add(builder.MakeRandomLengthPart(StringIncludes.DIGITS, 2));
         parts.add(underscore);
         si.clear();
-        si.addChars('x','r','t');
-        parts.add(builder.MakeRandomLengthPart(si.toCharArray(), 3));
+        si.addChars("XRT");
+        parts.add(builder.MakeRandomLengthPart(si.toString(), 3));
         parts.add(builder.MakePlainPart("@"));
         parts.add(builder.MakeColorPart(
                 new String[] {
@@ -60,4 +63,6 @@ public class SpecStrGen {
         }
         System.out.println(sb.toString());
     }
+    List<String> literals;
+	List<Part> parts;
 }

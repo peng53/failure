@@ -16,8 +16,8 @@ public class PartBuilder {
     public PartBuilder(){
         rand = new Random();
     }
-    public Part MakeRandomPartWithSymbols(char[] symbols, int count){
-        if (symbols.length == 0 || count == 0){
+    public Part MakeRandomPartWithSymbols(String symbols, int count){
+        if (symbols.length() == 0 || count == 0){
             throw new IllegalArgumentException("Cannot make random part without length or symbols.");
         }
         return new RandomPart(symbols, count, rand);
@@ -49,7 +49,7 @@ public class PartBuilder {
         }
         return new ColorPart(strs,rand);
     }
-    public Part MakeRandomLengthPart(char[] symbols, int count){
+    public Part MakeRandomLengthPart(String symbols, int count){
         if (count<1){
             throw new IllegalArgumentException("Can't make random length part with count less than 1.");
         }

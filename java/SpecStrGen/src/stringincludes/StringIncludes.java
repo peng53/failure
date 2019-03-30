@@ -15,8 +15,8 @@ public class StringIncludes {
     public StringIncludes(){
         alphabet = new HashSet<Character>();
     }
-    public void addChars(char... cs){
-        for (char c : cs){
+    public void addChars(String s){
+        for (char c : s.toCharArray()){
             alphabet.add(c);
         }
     }
@@ -68,11 +68,11 @@ public class StringIncludes {
         alphabet.clear();
     }
 
-    public static final char[] LALPHA = "abcdefghijklmnopqrstuvwxyz".toCharArray();
-    public static final char[] UALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
-    public static final char[] DIGITS = "01234567890".toCharArray();
-    public static final char[] SYMBOLS = "!@#$%^&*()-=_+".toCharArray();
-    public static final char[] WHITESPACE = " \t\n".toCharArray();
+    public static final String LALPHA = "abcdefghijklmnopqrstuvwxyz";
+    public static final String UALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    public static final String DIGITS = "01234567890";
+    public static final String SYMBOLS = "!@#$%^&*()-=_+";
+    public static final String WHITESPACE = " \t\n";
     HashSet<Character> alphabet;
     
     /*
