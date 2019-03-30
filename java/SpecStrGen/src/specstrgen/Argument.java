@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import stringincludes.StringIncludes;
+import stringincludes.CharSet;
 
-public class Argument {
+class Argument {
 	public Argument(){
 		product = new CompositePartString();
 		builder = new PartBuilder();
+		si = new StringIncludes();
 	}
 	public Integer intArg(String s){
 		// Returns first whole number from string.
@@ -24,52 +27,75 @@ public class Argument {
 		return ints;
 	}
 	
-	public void lFlag(String s){
+	public int lFlag(String s){
 		// Sets currentStr.
 		Integer i = intArg(s);
-		if (i != null || product.hasStr(i)){
+		if (i == null){
+			return 0;
+		}
+		if (product.hasStr(i)){
 			currentStr = product.getStr(i);
 		}
+		return 1;
 	}
-	public void pFlag(){
+	public int pFlag(){
 		// Plain part of last/current str.
-		if (currentStr == null){
-			return;
+		if (currentStr != null){
+			product.addPart(builder.MakePlainPart(currentStr));
 		}
-		product.addPart(builder.MakePlainPart(currentStr));
+		return 0;
 	}
-	public void pFlag(String s){
+	public int pFlag(String s){
 		// Plain part of nth string.
 		Integer i = intArg(s);
-		if (i == null || !product.hasStr(i)){
+		if (i == null){
+			pFlag();
+			return 0;
+		} else if (!product.hasStr(i)){
 			pFlag();
 		} else {
 			product.addPart(builder.MakePlainPart(product.getStr(i)));
-		}		
+		}
+		return 1;
+	}
+	public int PFlag(String s){
+		// Creates a literal and plain part.
+		// Equal to '-s ABC -p'
+		sFlag(s);
+		pFlag();
+		return 1;
 	}
 
-	public void rFlag(String s){
+	public int rFlag(String s){
 		// Random part of last/current str with length n
 		if (currentStr == null){
-			return;
+			return 0;
 		}
 		Integer i = intArg(s);
+		if (i == null){
+			return 0;
+		}
 		if (i > 0){
 			product.addPart(builder.MakeRandomPartWithSymbols(currentStr, i));
 		}
+		return 1;
 	}
-	public void RFlag(String s){
+	public int RFlag(String s){
 		// Random part of last/current str with length upto n
 		if (currentStr == null){
-			return;
+			return 0;
 		}
 		Integer i = intArg(s);
+		if (i == null){
+			return 0;
+		}
 		if (i > 0){
 			product.addPart(builder.MakeRandomLengthPart(currentStr, i));
 		}
+		return 1;
 	}
-	
-	public void cFlag(String s){
+
+	public int cFlag(String s){
 		// Color part.
 		List<Integer> ints = intArgs(s,10); // can be more but 10 ATM.
 		List<String> colors = new ArrayList<>();
@@ -78,30 +104,50 @@ public class Argument {
 				colors.add(product.getStr(i));
 			}
 		}
-		if (colors.size() > 0){
+		if (colors.size() > 1){
 			product.addPart(builder.MakeColorPart(colors));
-			currentStr = colors.get(colors.size()-1);
+		}
+		return 1;
+	}
+	public int CFlag(String del, String list){
+		// Delimited Color part.
+		// Equal to -S / A/B/C -c 1,2,3
+		int i = product.literalsCount();
+		if (SFlag(del, list) == 2){
+			List<String> colors = new ArrayList<>();
+			while (i < product.literalsCount()){
+				colors.add(product.getStr(i));
+				++i;
+			}
+			product.addPart(builder.MakeColorPart(colors));
+			return 2;
+		} else {
+			return 0;
 		}
 	}
-	
-	public void CFlag(String s){
+		
+
+	public int xxCFlag(String s){
 		// Creates copy of nth literal.
 		Integer i = intArg(s);
 		if (product.hasStr(i)){
 			currentStr = product.getStr(i);
 			product.addStr(currentStr);
+			return 1;
 		}
+		return 0;
 	}
 	
-	public void sFlag(String s){
+	public int sFlag(String s){
 		// Adds new literal.
 		currentStr = s;
 		product.addStr(currentStr);
+		return 1;
 	}
-	public void SFlag(String del, String list){
+	public int SFlag(String del, String list){
 		// Adds new delimited literals.
 		if (del.length()<1){
-			return;
+			return 0;
 		}
 		String[] strs = list.split(del);
 		for (String str : strs){
@@ -110,11 +156,42 @@ public class Argument {
 		if (strs.length > 0){
 			currentStr = strs[strs.length-1];
 		}
+		return 2;
+	}
+	
+	public int gFlag(String s){
+		// Generates a literal based on 4 len bool
+		// Extra chars are appended.
+		if (s.length() < 4){
+			return 0;
+		}
+		if (s.charAt(0)=='1'){
+			si.add(CharSet.LOWER);
+		}
+		if (s.charAt(1)=='1'){
+			si.add(CharSet.UPPER);
+		}
+		if (s.charAt(2)=='1'){
+			si.add(CharSet.DIGITS);
+		}
+		if (s.charAt(3)=='1'){
+			si.add(CharSet.SYMBOLS);
+		}
+		if (s.length() > 4){
+			si.addChars(s.substring(4));
+		}
+		if (!si.isEmpty()){
+			currentStr = si.toString();
+			product.addStr(currentStr);	
+			si.clear();
+		}
+		return 1;
 	}
 	
 	
 	public CompositePartString product;
 	PartBuilder builder;
 	String currentStr;
+	StringIncludes si;
 	Pattern digit = Pattern.compile("\\d+");
 }

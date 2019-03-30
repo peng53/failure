@@ -5,48 +5,36 @@
  */
 package specstrgen;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.ArrayList;
-import java.util.List;
 import stringincludes.StringIncludes;
 /**
  *
  * @author lm
  */
 public class SpecStrGen {
-
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
 		Argument amk = new Argument();
 		/**
-		"-s ABC -s hector -s mike -s tony -s robert -c 1,2,3,4 -s _ -p"
-		"-s 1234567890 -r 3 -s XRT -R 3 -s @ -p -s hmail -s coldmail -s hooray"
-		"-s hmx -c 9,10,11,12 -s .com -p"
+		"-s ABC -C / hector/mike/tony/robert -P _"
+		"-g 0010 -r 3 -s XRT -R 3 -P @ -C / hmail/coldmail/hooray/hmx
+		"-P .com"
 		* Would produce: 
 		*/
 		amk.sFlag("ABC"); // 0
 		//amk.RFlag("1");
-		amk.SFlag(",","hector,mike,tony,robert"); // 1 - 4
-		amk.cFlag("1,2,3,4");
-		amk.sFlag("_"); // 5
-		amk.pFlag();
-		amk.sFlag(StringIncludes.DIGITS); // 6
+		amk.CFlag("/", "hector/mike/tony/robert"); // 1 - 4
+		amk.PFlag("_"); // 5
+		amk.gFlag("0010"); // 6
 		amk.rFlag("3");
 		amk.sFlag("XRT"); // 7
 		amk.RFlag("3");
-		amk.sFlag("@"); // 8
-		amk.pFlag();
-		amk.SFlag(",", "hmail,coldmail,hooray,hmx"); // 9 - 12
-		amk.cFlag("9,10,11,12");
-		amk.sFlag(".com"); // 13
-		amk.pFlag();
+		amk.PFlag("@"); // 8
+		amk.CFlag("/", "hmail/coldmail/hooray/hmx"); // 9 - 12
+		amk.PFlag(".com"); // 13
 		for (int c = 10; c>0; --c){
 			System.out.println(amk.product);
 		}
     }
-    List<String> literals;
-	List<Part> parts;
 }
