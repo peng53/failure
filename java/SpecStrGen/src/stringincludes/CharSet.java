@@ -9,7 +9,7 @@ package stringincludes;
  *
  * @author lm
  */
-enum CharSet {
+public enum CharSet {
     LOWER,
     UPPER,
     DIGITS,

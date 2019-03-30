@@ -67,6 +67,9 @@ public class StringIncludes {
     public void clear(){
         alphabet.clear();
     }
+    public boolean isEmpty(){
+		return alphabet.size()==0;
+	}
 
     public static final String LALPHA = "abcdefghijklmnopqrstuvwxyz";
     public static final String UALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
