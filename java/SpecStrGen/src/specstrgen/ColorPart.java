@@ -13,7 +13,7 @@ import java.util.Random;
  * @author lm
  */
 public class ColorPart implements Part {
-    public ColorPart(String[] colors, Random rand) {
+    public ColorPart(List<String> colors, Random rand) {
         this.colors = colors;
         this.rand = rand;
     }
@@ -26,8 +26,8 @@ public class ColorPart implements Part {
 
     @Override
     public void out(StringBuilder sb) {
-        sb.append(colors[rand.nextInt(colors.length)]);
+        sb.append(colors.get(rand.nextInt(colors.size())));
     }
-    String[] colors;
+    List<String> colors;
     Random rand;
 }
