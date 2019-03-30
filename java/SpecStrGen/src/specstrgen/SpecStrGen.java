@@ -29,10 +29,7 @@ public class SpecStrGen {
 		*/
 		amk.sFlag("ABC"); // 0
 		//amk.RFlag("1");
-		amk.sFlag("hector"); // 1
-		amk.sFlag("mike"); // 2
-		amk.sFlag("tony"); // 3
-		amk.sFlag("robert"); // 4
+		amk.SFlag(",","hector,mike,tony,robert"); // 1 - 4
 		amk.cFlag("1,2,3,4");
 		amk.sFlag("_"); // 5
 		amk.pFlag();
@@ -42,10 +39,7 @@ public class SpecStrGen {
 		amk.RFlag("3");
 		amk.sFlag("@"); // 8
 		amk.pFlag();
-		amk.sFlag("hmail"); // 9
-		amk.sFlag("coldmail"); // 10
-		amk.sFlag("hooray"); // 11
-		amk.sFlag("hmx"); // 12
+		amk.SFlag(",", "hmail,coldmail,hooray,hmx"); // 9 - 12
 		amk.cFlag("9,10,11,12");
 		amk.sFlag(".com"); // 13
 		amk.pFlag();
