@@ -1,5 +1,6 @@
 package specstrgen;
 
+import argumenter.Argumenter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -65,6 +66,20 @@ class Argument {
 	return 1;
     }
 
+    public void pFlag(Argumenter<String> arg){
+	// Plain part of nth string.
+	Integer i = intArg(arg.get(0));
+	if (i == null) {
+	    pFlag();
+	} else if (!product.hasStr(i)) {
+	    pFlag();
+	    arg.next(1);
+	} else {
+	    product.addPart(builder.MakePlainPart(product.getStr(i)));
+	    arg.next(1);
+	}
+    }
+    
     public int PFlag(String s) {
 	// Creates a literal and plain part.
 	// Equal to '-s ABC -p'
