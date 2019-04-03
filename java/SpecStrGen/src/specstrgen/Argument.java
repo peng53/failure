@@ -32,38 +32,23 @@ class Argument {
 	return ints;
     }
 
-    public int lFlag(String s) {
+    public void lFlag(Argumenter<String> arg) {
 	// Sets currentStr.
-	Integer i = intArg(s);
+	Integer i = intArg(arg.get(0));
 	if (i == null) {
-	    return 0;
+	    return;
 	}
 	if (product.hasStr(i)) {
 	    currentStr = product.getStr(i);
 	}
-	return 1;
+	arg.next(1);
     }
 
-    public int pFlag() {
+    public void pFlag() {
 	// Plain part of last/current str.
 	if (currentStr != null) {
 	    product.addPart(builder.MakePlainPart(currentStr));
 	}
-	return 0;
-    }
-
-    public int pFlag(String s) {
-	// Plain part of nth string.
-	Integer i = intArg(s);
-	if (i == null) {
-	    pFlag();
-	    return 0;
-	} else if (!product.hasStr(i)) {
-	    pFlag();
-	} else {
-	    product.addPart(builder.MakePlainPart(product.getStr(i)));
-	}
-	return 1;
     }
 
     public void pFlag(Argumenter<String> arg){
@@ -71,56 +56,56 @@ class Argument {
 	Integer i = intArg(arg.get(0));
 	if (i == null) {
 	    pFlag();
-	} else if (!product.hasStr(i)) {
-	    pFlag();
-	    arg.next(1);
 	} else {
-	    product.addPart(builder.MakePlainPart(product.getStr(i)));
+	    if (!product.hasStr(i)) {
+		pFlag();
+	    } else {
+		product.addPart(builder.MakePlainPart(product.getStr(i)));
+	    }
 	    arg.next(1);
 	}
     }
     
-    public int PFlag(String s) {
+    public void PFlag(Argumenter<String> arg) {
 	// Creates a literal and plain part.
 	// Equal to '-s ABC -p'
-	sFlag(s);
+	sFlag(arg);
 	pFlag();
-	return 1;
     }
 
-    public int rFlag(String s) {
+    public void rFlag(Argumenter<String> arg) {
 	// Random part of last/current str with length n
 	if (currentStr == null) {
-	    return 0;
+	    return;
 	}
-	Integer i = intArg(s);
+	Integer i = intArg(arg.get(0));
 	if (i == null) {
-	    return 0;
+	    return;
 	}
 	if (i > 0) {
 	    product.addPart(builder.MakeRandomPartWithSymbols(currentStr, i));
 	}
-	return 1;
+	arg.next(1);
     }
 
-    public int RFlag(String s) {
+    public void RFlag(Argumenter<String> arg) {
 	// Random part of last/current str with length upto n
 	if (currentStr == null) {
-	    return 0;
+	    return;
 	}
-	Integer i = intArg(s);
+	Integer i = intArg(arg.get(0));
 	if (i == null) {
-	    return 0;
+	    return;
 	}
 	if (i > 0) {
 	    product.addPart(builder.MakeRandomLengthPart(currentStr, i));
 	}
-	return 1;
+	arg.next(1);
     }
 
-    public int cFlag(String s) {
+    public void cFlag(Argumenter<String> arg) {
 	// Color part.
-	List<Integer> ints = intArgs(s, 10); // can be more but 10 ATM.
+	List<Integer> ints = intArgs(arg.get(0), 10); // can be more but 10 ATM.
 	List<String> colors = new ArrayList<>();
 	for (int i : ints) {
 	    if (product.hasStr(i)) {
@@ -130,49 +115,47 @@ class Argument {
 	if (colors.size() > 1) {
 	    product.addPart(builder.MakeColorPart(colors));
 	}
-	return 1;
+	arg.next(1);
     }
 
-    public int CFlag(String del, String list) {
+    public void CFlag(Argumenter<String> arg) {
 	// Delimited Color part.
 	// Equal to -S / A/B/C -c 1,2,3
 	int i = product.literalsCount();
-	if (SFlag(del, list) == 2) {
+	if (SFlag(arg)) {
 	    List<String> colors = new ArrayList<>();
 	    while (i < product.literalsCount()) {
 		colors.add(product.getStr(i));
 		++i;
 	    }
 	    product.addPart(builder.MakeColorPart(colors));
-	    return 2;
-	} else {
-	    return 0;
 	}
     }
 
-    public int xxCFlag(String s) {
+    public void xxCFlag(Argumenter<String> arg) {
 	// Creates copy of nth literal.
-	Integer i = intArg(s);
+	Integer i = intArg(arg.get(0));
 	if (product.hasStr(i)) {
 	    currentStr = product.getStr(i);
 	    product.addStr(currentStr);
-	    return 1;
+	    arg.next(1);
 	}
-	return 0;
     }
 
-    public int sFlag(String s) {
+    public void sFlag(Argumenter<String> arg) {
 	// Adds new literal.
-	currentStr = s;
+	currentStr = arg.get(0);
 	product.addStr(currentStr);
-	return 1;
+	arg.next(1);
     }
 
-    public int SFlag(String del, String list) {
+    public boolean SFlag(Argumenter<String> arg) {
 	// Adds new delimited literals.
+	String del = arg.get(0);
 	if (del.length() < 1) {
-	    return 0;
+	    return false;
 	}
+	String list = arg.get(1);
 	String[] strs = list.split(del);
 	for (String str : strs) {
 	    product.addStr(str);
@@ -180,36 +163,38 @@ class Argument {
 	if (strs.length > 0) {
 	    currentStr = strs[strs.length - 1];
 	}
-	return 2;
+	arg.next(2);
+	return true;
     }
 
-    public int gFlag(String s) {
+    public void gFlag(Argumenter<String> arg) {
 	// Generates a literal based on 4 len bool
 	// Extra chars are appended.
-	if (s.length() < 4) {
-	    return 0;
+	String b = arg.get(0);
+	if (b.length() < 4) {
+	    return;
 	}
-	if (s.charAt(0) == '1') {
+	if (b.charAt(0) == '1') {
 	    si.add(CharSet.LOWER);
 	}
-	if (s.charAt(1) == '1') {
+	if (b.charAt(1) == '1') {
 	    si.add(CharSet.UPPER);
 	}
-	if (s.charAt(2) == '1') {
+	if (b.charAt(2) == '1') {
 	    si.add(CharSet.DIGITS);
 	}
-	if (s.charAt(3) == '1') {
+	if (b.charAt(3) == '1') {
 	    si.add(CharSet.SYMBOLS);
 	}
-	if (s.length() > 4) {
-	    si.addChars(s.substring(4));
+	if (b.length() > 4) {
+	    si.addChars(b.substring(4));
 	}
 	if (!si.isEmpty()) {
 	    currentStr = si.toString();
 	    product.addStr(currentStr);
 	    si.clear();
 	}
-	return 1;
+	arg.next(1);
     }
 
     public CompositePartString product;
