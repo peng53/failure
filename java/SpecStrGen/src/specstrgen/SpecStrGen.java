@@ -9,8 +9,6 @@ import argumenter.Argumenter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.function.Function;
-
 /**
  *
  * @author lm
@@ -86,6 +84,5 @@ public class SpecStrGen {
 	for (int c = 5; c > 0; --c) {
 	    System.out.println(amk.product);
 	}
-
     }
 }

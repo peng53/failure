@@ -14,7 +14,7 @@ import stringincludes.StringIncludes;
  * @author lm
  */
 public class PartBuilder {
-    public Part MakeRandomPartWithSymbols(String symbols, int count){
+    public static Part MakeRandomPartWithSymbols(String symbols, int count){
         if (symbols.length() == 0 || count == 0){
             throw new IllegalArgumentException("Cannot make random part without length or symbols.");
         }
