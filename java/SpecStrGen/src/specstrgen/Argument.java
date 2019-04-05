@@ -12,7 +12,6 @@ class Argument {
 
     public Argument() {
 	product = new CompositePartString();
-	builder = new PartBuilder();
 	si = new StringIncludes();
 	numberMatcher = Pattern.compile("\\d+").matcher("");
     }
@@ -47,7 +46,7 @@ class Argument {
     public void pFlag() {
 	// Plain part of last/current str.
 	if (currentStr != null) {
-	    product.addPart(builder.MakePlainPart(currentStr));
+	    product.addPart(PartBuilder.MakePlainPart(currentStr));
 	}
     }
 
@@ -60,7 +59,7 @@ class Argument {
 	    if (!product.hasStr(i)) {
 		pFlag();
 	    } else {
-		product.addPart(builder.MakePlainPart(product.getStr(i)));
+		product.addPart(PartBuilder.MakePlainPart(product.getStr(i)));
 	    }
 	    arg.next(1);
 	}
@@ -83,7 +82,7 @@ class Argument {
 	    return;
 	}
 	if (i > 0) {
-	    product.addPart(builder.MakeRandomPartWithSymbols(currentStr, i));
+	    product.addPart(PartBuilder.MakeRandomPartWithSymbols(currentStr, i));
 	}
 	arg.next(1);
     }
@@ -98,7 +97,7 @@ class Argument {
 	    return;
 	}
 	if (i > 0) {
-	    product.addPart(builder.MakeRandomLengthPart(currentStr, i));
+	    product.addPart(PartBuilder.MakeRandomLengthPart(currentStr, i));
 	}
 	arg.next(1);
     }
@@ -113,7 +112,7 @@ class Argument {
 	    }
 	}
 	if (colors.size() > 1) {
-	    product.addPart(builder.MakeColorPart(colors));
+	    product.addPart(PartBuilder.MakeColorPart(colors));
 	}
 	arg.next(1);
     }
@@ -128,7 +127,7 @@ class Argument {
 		colors.add(product.getStr(i));
 		++i;
 	    }
-	    product.addPart(builder.MakeColorPart(colors));
+	    product.addPart(PartBuilder.MakeColorPart(colors));
 	}
     }
 
@@ -198,7 +197,6 @@ class Argument {
     }
 
     public CompositePartString product;
-    PartBuilder builder;
     String currentStr;
     StringIncludes si;
     Matcher numberMatcher;
