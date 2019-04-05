@@ -14,53 +14,50 @@ import stringincludes.StringIncludes;
  * @author lm
  */
 public class PartBuilder {
-    public PartBuilder(){
-        rand = new Random();
-    }
     public Part MakeRandomPartWithSymbols(String symbols, int count){
         if (symbols.length() == 0 || count == 0){
             throw new IllegalArgumentException("Cannot make random part without length or symbols.");
         }
         return new RandomPart(symbols, count, rand);
     }
-    public Part MakeRandomPartLowerAlpha(int count){
+    public static Part MakeRandomPartLowerAlpha(int count){
         if (count == 0){
             throw new IllegalArgumentException("Cannot make random part without length.");
         }
         return new RandomPart(StringIncludes.LALPHA, count, rand);
     }
-    public Part MakeRandomPartUpperAlpha(int count){
+    public static Part MakeRandomPartUpperAlpha(int count){
         if (count == 0){
             throw new IllegalArgumentException("Cannot make random part without length.");
         }        
         return new RandomPart(StringIncludes.UALPHA, count, rand);
     }
-    public Part MakeRandomPartDigits(int count){
+    public static Part MakeRandomPartDigits(int count){
         if (count == 0){
             throw new IllegalArgumentException("Cannot make random part without length.");
         }
         return new RandomPart(StringIncludes.DIGITS, count, rand);
     }
-    public Part MakePlainPart(String str){
+    public static Part MakePlainPart(String str){
         return new PlainPart(str);
     }
-    public Part MakeColorPart(List<String> strs){
+    public static Part MakeColorPart(List<String> strs){
         if (strs.size()==0){
             throw new IllegalArgumentException("Cannot have ColorPart without colors.");
         }
         return new ColorPart(strs,rand);
     }
-    public Part MakeRandomLengthPart(String symbols, int count){
+    public static Part MakeRandomLengthPart(String symbols, int count){
         if (count<1){
             throw new IllegalArgumentException("Can't make random length part with count less than 1.");
         }
         return new RandomLengthPart(symbols, count, rand);
     }
-    public Part MakeAlignedPart(Part part, boolean leftAlign, int length, char fillChar){
+    public static Part MakeAlignedPart(Part part, boolean leftAlign, int length, char fillChar){
         if (length<1){
             throw new IllegalArgumentException("Can't make alignment with no length.");
         }
         return new SpacedPart(part,leftAlign,length,fillChar);
     }
-    Random rand;
+    static Random rand = new Random();
 }
