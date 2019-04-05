@@ -35,6 +35,9 @@ public class Argumenter <T> {
     public boolean atEnd(){
 	return index>=args.size();
     }
+    public int remaining(){
+	return args.size()-1-index;
+    }
     
     final List<T> args;
     int index;
