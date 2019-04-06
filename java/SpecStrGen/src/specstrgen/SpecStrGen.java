@@ -38,49 +38,9 @@ public class SpecStrGen {
 		args.length==0 ? testArgs : Arrays.asList(args)
 	);
 	Argument amk = new Argument();
-	while (!arm.atEnd()) {
-	    String flag = arm.get(0);
-	    arm.next(1);
-	    if (flag.length() != 2) {
-		System.out.println("ignored");
-		System.out.println(flag);
-		continue;
-	    }
-	    char c = flag.charAt(1);
-	    switch (c) {
-		case 'l':
-		    amk.lFlag(arm);
-		    break;
-		case 'p':
-		    amk.pFlag(arm);
-		    break;
-		case 'P':
-		    amk.PFlag(arm);
-		    break;
-		case 's':
-		    amk.sFlag(arm);
-		    break;
-		case 'S':
-		    amk.SFlag(arm);
-		    break;
-		case 'R':
-		    amk.RFlag(arm);
-		    break;
-		case 'r':
-		    amk.rFlag(arm);
-		    break;
-		case 'C':
-		    amk.CFlag(arm);
-		    break;
-		case 'g':
-		    amk.gFlag(arm);
-		    break;
-		default:
-		    System.out.println("need case for ");
-		    System.out.println(c);
-	    }
+	while (!arm.atEnd()){
+	    amk.process(arm);
 	}
-
 	for (int c = 5; c > 0; --c) {
 	    System.out.println(amk.product);
 	}
