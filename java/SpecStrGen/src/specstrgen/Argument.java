@@ -16,6 +16,64 @@ class Argument {
 	numberMatcher = Pattern.compile("\\d+").matcher("");
     }
 
+    public void process(Argumenter<String> arg) {
+	if (arg.atEnd()) {
+	    return;
+	}
+	String f = arg.get(0);
+	// Currently only processes short flags.
+	if (f.length() != 2) {
+	    // take it as if -s was before it.
+	    sFlag(arg);
+	    return;
+	}
+	arg.next(1);
+	int r = arg.remaining();
+	if (r < 1) {
+	    // All flags ATM require atleast 1 extra arg.
+	    return;
+	}
+	char c = f.charAt(1);
+	switch (c) {
+	    case 'l':
+		lFlag(arg);
+		break;
+	    case 'p':
+		pFlag(arg);
+		break;
+	    case 'P':
+		PFlag(arg);
+		break;
+	    case 's':
+		sFlag(arg);
+		break;
+	    case 'S': // needs 2 args.
+		if (r >= 2) {
+		    SFlag(arg);
+		}
+		break;
+	    case 'R':
+		RFlag(arg);
+		break;
+	    case 'r':
+		rFlag(arg);
+		break;
+	    case 'C': // needs 2 args
+		if (r >= 2) {
+		    CFlag(arg);
+		}
+		break;
+	    case 'g':
+		gFlag(arg);
+		break;
+	    default:
+		System.err.printf("%c isn't implemented as a flag.", c);
+		arg.next(-1);
+		sFlag(arg);
+		break;
+	}
+    }
+
     public Integer intArg(String s) {
 	// Returns first whole number from string.
 	numberMatcher.reset(s);
@@ -50,7 +108,7 @@ class Argument {
 	}
     }
 
-    public void pFlag(Argumenter<String> arg){
+    public void pFlag(Argumenter<String> arg) {
 	// Plain part of nth string.
 	Integer i = intArg(arg.get(0));
 	if (i == null) {
@@ -64,7 +122,7 @@ class Argument {
 	    arg.next(1);
 	}
     }
-    
+
     public void PFlag(Argumenter<String> arg) {
 	// Creates a literal and plain part.
 	// Equal to '-s ABC -p'

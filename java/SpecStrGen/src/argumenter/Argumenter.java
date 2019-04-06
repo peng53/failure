@@ -36,7 +36,7 @@ public class Argumenter <T> {
 	return index>=args.size();
     }
     public int remaining(){
-	return args.size()-1-index;
+	return args.size()-index;
     }
     
     final List<T> args;
