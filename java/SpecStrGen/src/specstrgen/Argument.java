@@ -19,13 +19,16 @@ import stringincludes.CharSet;
  */
 public class Argument {
     
+    /**
+     * Contructs an Argument.
+     */
     public Argument() {
 	product = new CompositePartString();
 	si = new StringIncludes();
 	numberMatcher = Pattern.compile("\\d+").matcher("");
     }
     /**
-     * 
+     * Processes Argumenter. The output is stored in member 'product'.
      * @param arg Arguments to be processed.
      */
     public void process(Argumenter<String> arg) {
@@ -86,7 +89,7 @@ public class Argument {
 	}
     }
     /**
-     * 
+     * Extracts a number from a string.
      * @param s String to extract a number from.
      * @return A (integer) number or null.
      */
@@ -96,7 +99,7 @@ public class Argument {
 	return (numberMatcher.find() ? Integer.parseInt(numberMatcher.group()) : null);
     }
     /**
-     * 
+     * Extracts numbers from a string.
      * @param s String to extract (up to max) numbers from.
      * @param max Maximum numbers to get from String.
      * @return A list of Integer of size max or less.
@@ -125,6 +128,9 @@ public class Argument {
 	arg.next(1);
     }
 
+    /**
+     * Creates a 'plain' part from user's last literal.
+     */
     public void pFlag() {
 	// Plain part of last/current str.
 	if (currentStr != null) {
@@ -132,6 +138,10 @@ public class Argument {
 	}
     }
 
+    /**
+     * Creates a 'plain' part from nth literal defined.
+     * @param arg Argument container.
+     */
     public void pFlag(Argumenter<String> arg) {
 	// Plain part of nth string.
 	Integer i = intArg(arg.get(0));
@@ -147,6 +157,10 @@ public class Argument {
 	}
     }
 
+    /**
+     * Defines literal and creates a 'plain' part from it.
+     * @param arg Argument container.
+     */
     public void PFlag(Argumenter<String> arg) {
 	// Creates a literal and plain part.
 	// Equal to '-s ABC -p'
@@ -154,6 +168,10 @@ public class Argument {
 	pFlag();
     }
 
+    /**
+     * Creates a 'random' part.
+     * @param arg Argument container.
+     */
     public void rFlag(Argumenter<String> arg) {
 	// Random part of last/current str with length n
 	if (currentStr == null) {
@@ -169,6 +187,10 @@ public class Argument {
 	arg.next(1);
     }
 
+    /**
+     * Creates a 'random' part with varying length.
+     * @param arg Argument container.
+     */
     public void RFlag(Argumenter<String> arg) {
 	// Random part of last/current str with length upto n
 	if (currentStr == null) {
@@ -184,6 +206,10 @@ public class Argument {
 	arg.next(1);
     }
 
+    /**
+     * Creates a 'color' part from indexed literals.
+     * @param arg Argument container.
+     */
     public void cFlag(Argumenter<String> arg) {
 	// Color part.
 	List<Integer> ints = intArgs(arg.get(0), 10); // can be more but 10 ATM.
@@ -199,6 +225,10 @@ public class Argument {
 	arg.next(1);
     }
 
+    /**
+     * Defines delimited literals and creates a 'color' part from them.
+     * @param arg Argument container.
+     */
     public void CFlag(Argumenter<String> arg) {
 	// Delimited Color part.
 	// Equal to -S / A/B/C -c 1,2,3
@@ -213,7 +243,11 @@ public class Argument {
 	}
     }
 
-    public void xxCFlag(Argumenter<String> arg) {
+    /**
+     * Not used ATM.
+     * @param arg Argument container.
+     */
+    private void xxCFlag(Argumenter<String> arg) {
 	// Creates copy of nth literal.
 	Integer i = intArg(arg.get(0));
 	if (product.hasStr(i)) {
@@ -223,6 +257,10 @@ public class Argument {
 	}
     }
 
+    /**
+     * Defines a literal.
+     * @param arg Argument container.
+     */
     public void sFlag(Argumenter<String> arg) {
 	// Adds new literal.
 	currentStr = arg.get(0);
@@ -230,6 +268,11 @@ public class Argument {
 	arg.next(1);
     }
 
+    /**
+     * Defines delimited literals.
+     * @param arg Argument container.
+     * @return success
+     */
     public boolean SFlag(Argumenter<String> arg) {
 	// Adds new delimited literals.
 	String del = arg.get(0);
@@ -248,6 +291,10 @@ public class Argument {
 	return true;
     }
 
+    /**
+     * Defines a 'generated' literal.
+     * @param arg Argument container.
+     */
     public void gFlag(Argumenter<String> arg) {
 	// Generates a literal based on 4 len bool
 	// Extra chars are appended.
@@ -278,6 +325,9 @@ public class Argument {
 	arg.next(1);
     }
 
+    /**
+     *
+     */
     public CompositePartString product;
     String currentStr;
     StringIncludes si;
