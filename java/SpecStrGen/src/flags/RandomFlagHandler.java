@@ -24,6 +24,7 @@ public class RandomFlagHandler implements FlagHandler {
 	Integer i = arg.getInt(0);
 	if (i != null && i > 0){
 	    cs.add(PartBuilder.MakeRandomPartWithSymbols(s, i));
+	    arg.next(1);
 	}
 	return 0;
     }

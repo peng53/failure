@@ -7,25 +7,25 @@ package flags;
 
 import argumenter.StandardArgumenter;
 import specstrgen.CompositeState;
+import specstrgen.PartBuilder;
 
 /**
  *
  * @author lm
  */
-public class PlainFlagHandlerSH implements FlagHandler {
-    public PlainFlagHandlerSH(PlainFlagHandler p, StringFlagHandler s){
-	this.s = s;
-	this.p = p;
-    }
-    
-    PlainFlagHandler p;
-    StringFlagHandler s;
+public class RandomLengthHandler implements FlagHandler {
 
     @Override
     public int handle(StandardArgumenter arg, CompositeState cs) {
-	s.handle(arg, cs);
-	p.handleNoArg(cs);
-	//p.handle(arg, cs);
+	String s = cs.getLast();
+	if (s == null){
+	    return 0;
+	}
+	Integer i = arg.getInt(0);
+	if (i != null && i > 0){
+	    cs.add(PartBuilder.MakeRandomLengthPart(s, i));
+	    arg.next(1);
+	}
 	return 0;
     }
     

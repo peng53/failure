@@ -9,7 +9,6 @@ import argumenter.StandardArgumenter;
 import java.util.ArrayList;
 import java.util.List;
 import specstrgen.CompositeState;
-import specstrgen.PartBuilder;
 
 /**
  *
