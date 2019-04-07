@@ -12,20 +12,14 @@ import specstrgen.CompositeState;
  *
  * @author lm
  */
-public class PlainFlagHandlerSH implements FlagHandler {
-    public PlainFlagHandlerSH(PlainFlagHandler p, StringFlagHandler s){
-	this.s = s;
-	this.p = p;
-    }
-    
-    PlainFlagHandler p;
-    StringFlagHandler s;
+public class SetStringHandler implements FlagHandler {
 
     @Override
     public int handle(StandardArgumenter arg, CompositeState cs) {
-	s.handle(arg, cs);
-	p.handleNoArg(cs);
-	//p.handle(arg, cs);
+	Integer i = arg.getInt(0);
+	if (i != null && i > 0){
+	    cs.chooseStr(i);
+	}
 	return 0;
     }
     

@@ -5,7 +5,6 @@
  */
 package flags;
 
-import argumenter.Argumenter;
 import argumenter.StandardArgumenter;
 import specstrgen.CompositeState;
 import specstrgen.PartBuilder;
@@ -32,7 +31,7 @@ public class PlainFlagHandler implements FlagHandler {
 	}
 	return 0;
     }
-    void handleNoArg(CompositeState cs){
+    public void handleNoArg(CompositeState cs){
 	String s = cs.getLast();
 	if (s != null){
 	    cs.add(PartBuilder.MakePlainPart(s));
