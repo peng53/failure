@@ -42,7 +42,7 @@ public class PartBuilder {
         return new PlainPart(str);
     }
     public static Part MakeColorPart(List<String> strs){
-        if (strs.size()==0){
+        if (strs.isEmpty()){
             throw new IllegalArgumentException("Cannot have ColorPart without colors.");
         }
         return new ColorPart(strs,rand);

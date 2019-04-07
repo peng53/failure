@@ -1,3 +1,8 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package specstrgen;
 
 import argumenter.Argumenter;
@@ -8,14 +13,21 @@ import java.util.regex.Pattern;
 import stringincludes.StringIncludes;
 import stringincludes.CharSet;
 
-class Argument {
-
+/**
+ *
+ * @author lm
+ */
+public class Argument {
+    
     public Argument() {
 	product = new CompositePartString();
 	si = new StringIncludes();
 	numberMatcher = Pattern.compile("\\d+").matcher("");
     }
-
+    /**
+     * 
+     * @param arg Arguments to be processed.
+     */
     public void process(Argumenter<String> arg) {
 	if (arg.atEnd()) {
 	    return;
@@ -73,13 +85,22 @@ class Argument {
 		break;
 	}
     }
-
+    /**
+     * 
+     * @param s String to extract a number from.
+     * @return A (integer) number or null.
+     */
     public Integer intArg(String s) {
 	// Returns first whole number from string.
 	numberMatcher.reset(s);
 	return (numberMatcher.find() ? Integer.parseInt(numberMatcher.group()) : null);
     }
-
+    /**
+     * 
+     * @param s String to extract (up to max) numbers from.
+     * @param max Maximum numbers to get from String.
+     * @return A list of Integer of size max or less.
+     */
     public List<Integer> intArgs(String s, int max) {
 	numberMatcher.reset(s);
 	List<Integer> ints = new ArrayList<>(max);
@@ -88,7 +109,10 @@ class Argument {
 	}
 	return ints;
     }
-
+    /**
+     * Used to set the current literal string to another previous one.
+     * @param arg Argument container.
+     */
     public void lFlag(Argumenter<String> arg) {
 	// Sets currentStr.
 	Integer i = intArg(arg.get(0));
