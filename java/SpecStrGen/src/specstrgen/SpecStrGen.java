@@ -11,6 +11,7 @@ import flags.DefaultFlagProcessor;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 /**
  *
  * @author lm
@@ -50,8 +51,8 @@ public class SpecStrGen {
 	StandardArgumenter stdArg = new StandardArgumenter(
 	    args.length==0 ? testArgs : Arrays.asList(args)
 	);
-	var cs = new CompositeState();
-	var fh = new DefaultFlagProcessor();
+	CompositeState cs = new CompositeState();
+	DefaultFlagProcessor fh = new DefaultFlagProcessor();
 	while (!stdArg.atEnd()){
 	    fh.process(stdArg, cs);
 	}

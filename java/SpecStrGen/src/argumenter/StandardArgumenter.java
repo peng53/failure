@@ -63,7 +63,7 @@ public class StandardArgumenter {
 	return args.size()-index;
     }
     
-    Matcher numberMatcher = Pattern.compile("\\d+").matcher("");
+    final Matcher numberMatcher = Pattern.compile("\\d+").matcher("");
     final List<String> args;
     int index;
 }

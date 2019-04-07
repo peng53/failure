@@ -12,9 +12,6 @@ import java.util.HashSet;
  * @author lm
  */
 public class StringIncludes {
-    public StringIncludes(){
-        alphabet = new HashSet<Character>();
-    }
     public void addChars(String s){
         for (char c : s.toCharArray()){
             alphabet.add(c);
@@ -76,7 +73,7 @@ public class StringIncludes {
     public static final String DIGITS = "01234567890";
     public static final String SYMBOLS = "!@#$%^&*()-=_+";
     public static final String WHITESPACE = " \t\n";
-    HashSet<Character> alphabet;
+    final HashSet<Character> alphabet = new HashSet<Character>();
     
     /*
     public static void main(String[] args){

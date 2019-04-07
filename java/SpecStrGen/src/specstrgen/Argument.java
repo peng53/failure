@@ -18,15 +18,6 @@ import stringincludes.CharSet;
  * @author lm
  */
 public class Argument {
-    
-    /**
-     * Contructs an Argument.
-     */
-    public Argument() {
-	product = new CompositePartString();
-	si = new StringIncludes();
-	numberMatcher = Pattern.compile("\\d+").matcher("");
-    }
     /**
      * Processes Argumenter. The output is stored in member 'product'.
      * @param arg Arguments to be processed.
@@ -328,8 +319,8 @@ public class Argument {
     /**
      *
      */
-    public CompositePartString product;
+    public final CompositePartString product = new CompositePartString();
     String currentStr;
-    StringIncludes si;
-    Matcher numberMatcher;
+    final StringIncludes si = new StringIncludes();
+    static final Matcher numberMatcher = Pattern.compile("\\d+").matcher("");
 }
