@@ -16,9 +16,7 @@ import specstrgen.CompositeState;
 public class DefaultFlagProcessor implements FlagProcessor {
 
     public DefaultFlagProcessor() {
-//	flags = new HashMap<>();
-
-	PlainFlagHandler p = new PlainFlagHandler();
+        PlainFlagHandler p = new PlainFlagHandler();
 	FLAGS.put('p', p);
 
 	StringFlagHandler s = new StringFlagHandler();
@@ -74,5 +72,5 @@ public class DefaultFlagProcessor implements FlagProcessor {
 	}
     }
 
-    static final HashMap<Character, FlagHandler> FLAGS = new HashMap<>();
+    final HashMap<Character, FlagHandler> FLAGS = new HashMap<>();
 }
