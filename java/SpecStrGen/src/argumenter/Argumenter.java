@@ -12,6 +12,7 @@ import java.util.List;
 /**
  *
  * @author lm
+ * @param <T> Type of data Argumenter contains and will yield.
  */
 public class Argumenter <T> {
     public Argumenter(List<T> args, int startIndex){
@@ -43,13 +44,11 @@ public class Argumenter <T> {
     int index;
     
     public static void main(String[] args){
-	List<String> listArgs = new ArrayList<String>(args.length);
-	for (String s : args){
-	    listArgs.add(s);
-	}
+	List<String> listArgs = new ArrayList<>(args.length);
+	listArgs.addAll(Arrays.asList(args));
 	listArgs.add("hello");
 	listArgs.add("world");
-	Argumenter argu = new Argumenter<String>(listArgs);
+	Argumenter argu = new Argumenter<>(listArgs);
 	while (!argu.atEnd()){
 	    System.out.println(argu.get(0));
 	    argu.next(1);
