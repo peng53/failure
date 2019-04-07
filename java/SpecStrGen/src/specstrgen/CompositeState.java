@@ -47,6 +47,15 @@ public class CompositeState {
 	    lastStr = i;
 	}
     }
+    @Override
+    public String toString() {
+	StringBuilder sb = new StringBuilder();
+	for (Part p : parts) {
+	    p.out(sb);
+	}
+	return sb.toString();
+    }
+
     Integer lastStr;
     List<Part> parts = new ArrayList<>();
     List<String> literals = new ArrayList<>();

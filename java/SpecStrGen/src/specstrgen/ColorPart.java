@@ -13,10 +13,21 @@ import java.util.Random;
  * @author lm
  */
 public class ColorPart implements Part {
+
+    /**
+     *
+     * @param colors List of strings to be used as 'colors'
+     * @param rand Random function.
+     */
     public ColorPart(List<String> colors, Random rand) {
         this.colors = colors;
         this.rand = rand;
     }
+
+    /**
+     *
+     * @return As a string.
+     */
     @Override
     public String out() {
         StringBuilder sb = new StringBuilder();
@@ -24,6 +35,10 @@ public class ColorPart implements Part {
         return sb.toString();        
     }
 
+    /**
+     *
+     * @param sb Where to output the part to.
+     */
     @Override
     public void out(StringBuilder sb) {
         sb.append(colors.get(rand.nextInt(colors.size())));
