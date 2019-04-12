@@ -64,25 +64,66 @@ class Collective:
 			if code in tray.codes:
 				out.add(tray.number)
 		return out
-	
+
+	def compare(self,other):
+		return CollectiveDifference(self,other)
+
 	def __len__(self):
 		return len(self.trays)
 	
 	def __repr__(self):
 		return "Collective of trays @ {}".format(self.location)
 
+class CollectiveDifference:
+	def __init__(self, lhs, rhs):
+		self.lhs_name = lhs.location
+		self.rhs_name = rhs.location
+		self.lhs_distinct = self.get_distinct(lhs,rhs)
+		self.rhs_distinct = self.get_distinct(rhs,lhs)
+	
+	def get_distinct(self, lhs, rhs):
+		distinct = {}
+		for tray in lhs.trays:
+			if tray in rhs.trays:
+				t = lhs.tray(tray).distinctFrom(rhs.tray(tray))
+				if t:
+					distinct[tray] = t
+			else:
+				distinct[tray] = set('*')
+		return distinct
+	
+	def __str__(self):
+		report = []
+		report.append("Distinct from {}".format(self.lhs_name))
+		report.append("--")
+		for tray in self.lhs_distinct:
+			report.append("Tray #{}".format(tray))
+			report.append('  '+"\n  ".join(str(c) for c in self.lhs_distinct[tray]))
+
+		report.append("--")
+		report.append("Distinct from {}".format(self.rhs_name))
+		report.append("--")
+		for tray in self.rhs_distinct:
+			report.append("Tray #{}".format(tray)) 
+			report.append('  '+"\n  ".join(str(c) for c in self.rhs_distinct[tray]))
+		
+		return '\n'.join(report)
+
 def main(argv : List[str] = []):
-	bbb = Collective("bed body and booty")
-	bbb.addTray(306)
+	# Adding tray dup code events
 	Tray.AddEvent_DuplicateFound(lambda l,n,c: print("DUP CODE %d AT %s #%d" %(c,l,n)))
 	duplicate_barn = []
 	Tray.AddEvent_DuplicateFound(lambda l,n,c: duplicate_barn.append((l,n,c)))
 	te = Tray_Err()
 	Tray.AddEvent_DuplicateFound(te.logError)
-	bbb.tray(306).add(10,3,10,3,555)
+
+	# Init bbb collective
+	bbb = Collective("bed body and booty")
+	bbb.addTray(123).add(*list(range(5005,5055)))
+	bbb.addTray(456).add(*list(range(6006,6023)))
+
+	# Init tspin collective
+	tsp = Collective("tspin's")
+	tsp.addTray(123).add(*list(range(5010,5070)))
 	
-	bbb.addTray(305).add(555, 201, 807)
-	print(bbb.trays)
-	print(duplicate_barn)
-	print(bbb.trackCode(10))
-	print(bbb.trackCode(555))
+	print(str(bbb.compare(tsp)))
