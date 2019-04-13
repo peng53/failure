@@ -18,13 +18,15 @@ public class ColorFlagHandler implements FlagHandler {
 
     @Override
     public int handle(StandardArgumenter arg, CompositeState cs) {
-	List<Integer> ints = arg.intArgs(0); // can be more but 10 ATM.
+	final List<Integer> ints = arg.intArgs(0); // can be more but 10 ATM.
 	List<String> colors = new ArrayList<>();
+	ints.stream().filter(cs::hasStr).forEach(i -> colors.add(cs.getStr(i)));
+	/*
 	for (int i : ints) {
 	    if (cs.hasStr(i)) {
 		colors.add(cs.getStr(i));
 	    }
-	}
+	}*/
 	arg.next(1);
 	return 0;
     }
