@@ -78,36 +78,43 @@ class CollectiveDifference:
 	def __init__(self, lhs, rhs):
 		self.lhs_name = lhs.location
 		self.rhs_name = rhs.location
-		self.lhs_distinct = self.get_distinct(lhs,rhs)
-		self.rhs_distinct = self.get_distinct(rhs,lhs)
+		self.lhs_distinct,self.lhs_item_count = self.get_distinct(lhs,rhs)
+		self.rhs_distinct,self.rhs_item_count = self.get_distinct(rhs,lhs)
 	
 	def get_distinct(self, lhs, rhs):
 		distinct = {}
-		for tray in lhs.trays:
-			if tray in rhs.trays:
-				t = lhs.tray(tray).distinctFrom(rhs.tray(tray))
+		count = 0
+		for number, tray in lhs.trays.items():
+			if number in rhs.trays:
+				t = tray.distinctFrom(rhs.tray(number))
 				if t:
-					distinct[tray] = t
+					distinct[number] = t
+					count += len(t)
 			else:
-				distinct[tray] = set('*')
-		return distinct
-	
-	def __str__(self):
-		report = []
-		report.append("Distinct from {}".format(self.lhs_name))
-		report.append("--")
-		for tray in self.lhs_distinct:
-			report.append("Tray #{}".format(tray))
-			report.append('  '+"\n  ".join(str(c) for c in self.lhs_distinct[tray]))
+				distinct[number] = '*'
+				count += len(tray.codes)
+				
+		return (distinct, count)
 
-		report.append("--")
-		report.append("Distinct from {}".format(self.rhs_name))
-		report.append("--")
-		for tray in self.rhs_distinct:
-			report.append("Tray #{}".format(tray)) 
-			report.append('  '+"\n  ".join(str(c) for c in self.rhs_distinct[tray]))
-		
-		return '\n'.join(report)
+	def genReport(self):
+		for name, dis, cnt in [(self.lhs_name, self.lhs_distinct, self.lhs_item_count),(self.rhs_name, self.rhs_distinct, self.rhs_item_count)]:
+			yield "Distinct from {}".format(name)
+			yield "----------"
+			for number, codes in dis.items():
+				yield "Tray #{}".format(number)
+				for code in codes:
+					yield "  {}".format(code)
+			yield "----------"
+			yield "Tray Count = {}".format(len(dis))
+			yield "Item Count = {}".format(cnt)
+			yield "__________"
+	
+	def __repr__(self):
+		return '\n'.join(self.genReport())
+	
+	def printOut(self, out = print):
+		for line in self.genReport():
+			out(line)
 
 def main(argv : List[str] = []):
 	# Adding tray dup code events
@@ -119,11 +126,12 @@ def main(argv : List[str] = []):
 
 	# Init bbb collective
 	bbb = Collective("bed body and booty")
-	bbb.addTray(123).add(*list(range(5005,5055)))
-	bbb.addTray(456).add(*list(range(6006,6023)))
+	bbb.addTray(123).add(*range(5005,5055))
+	bbb.addTray(456).add(*range(6006,6023))
 
 	# Init tspin collective
 	tsp = Collective("tspin's")
-	tsp.addTray(123).add(*list(range(5010,5070)))
+	tsp.addTray(123).add(*range(5010,5070))
 	
-	print(str(bbb.compare(tsp)))
+	#print(bbb.compare(tsp))
+	bbb.compare(tsp).printOut(print)
