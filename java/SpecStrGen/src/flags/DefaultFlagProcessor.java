@@ -45,7 +45,7 @@ public class DefaultFlagProcessor implements FlagProcessor {
 	}
 	String f = arg.get(0);
 	// Currently only processes short flags.
-	System.out.println(f);
+	// System.err.println(f); // debug only
 	if (f.length() != 2) {
 	    // take it as if -s was before it.
 	    FLAGS.get('s').handle(arg, cs);

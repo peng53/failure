@@ -22,42 +22,25 @@ public class SpecStrGen {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-	List<String> testArgs = new ArrayList<>(
-		Arrays.asList(new String[]{
-	    "-s", "ABC",
-	    "-C", "/", "hector/mike/tony/robert",
-	    "-P", "_",
-	    "-g", "0010",
-	    "-r", "3",
-	    "-s", "XRT",
-	    "-R", "3",
-	    "-P", "@",
-	    "-C", "/", "hmail/coldmail/hooray/hmx",
-	    "-P", ".com"
-	}
-		)
-	);
-	Argumenter<String> arm = new Argumenter<>(
-		args.length==0 ? testArgs : Arrays.asList(args)
-	);
-	Argument amk = new Argument();
-	while (!arm.atEnd()){
-	    amk.process(arm);
-	}
-	System.out.println("With 'Argument'.");
-	for (int c = 5; c > 0; --c) {
-	    System.out.println(amk.product);
-	}
 	StandardArgumenter stdArg = new StandardArgumenter(
-	    args.length==0 ? testArgs : Arrays.asList(args)
+	    Arrays.asList(args)
 	);
 	CompositeState cs = new CompositeState();
 	DefaultFlagProcessor fh = new DefaultFlagProcessor();
+	Integer times = 1;
+	if ("-t".equals(stdArg.get(0))){
+	    times = stdArg.getInt(1);
+	    if (times != null){
+		stdArg.next(2);
+	    } else {
+		times = 1;
+	    }
+	}
+	// System.out.printf("Will print %d times\n", times); // debug only
 	while (!stdArg.atEnd()){
 	    fh.process(stdArg, cs);
 	}
-	System.out.println("With 'FlagProcessor'.");
-	for (int c = 5; c > 0; --c) {
+	for (int c = times; c > 0; --c) {
 	    System.out.println(cs);
 	}
     }
