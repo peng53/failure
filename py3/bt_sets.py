@@ -1,6 +1,8 @@
 #!/bin/env python3
 from typing import List
+from typing import Dict
 from copy import deepcopy
+import json
 
 class Tray:
 	f_duplicate_found = []
@@ -40,9 +42,16 @@ class Tray_Err:
 		
 
 class Collective:
-	def __init__(self, location: str):
+	def __init__(self, location: str, trays: Dict = None):
 		self.location = location
-		self.trays = {}
+		self.trays = trays if trays else {}
+	
+	@classmethod
+	def fromJson(cls, filename):
+		with open(filename) as f:
+			j = json.load(f)
+			t = {number : set(codes) for number,codes, in j["trays"].items()}
+			return cls(location = j["location"], trays = t)
 	
 	def addTray(self, number):
 		if number in self.trays:
@@ -59,11 +68,12 @@ class Collective:
 	
 	def trackCode(self, code):
 		# Finds the tray(s) that contains this code.
-		out = set()
-		for tray in self.trays.values():
-			if code in tray.codes:
-				out.add(tray.number)
-		return out
+		#out = set()
+		#for tray in self.trays.values():
+		#	if code in tray.codes:
+		#		out.add(tray.number)
+		#out = filter((lambda tray: code in tray.codes), self.trays.values())
+		yield from filter((lambda number: code in self.trays[number].codes), self.trays.keys())
 
 	def compare(self,other):
 		return CollectiveDifference(self,other)
@@ -74,6 +84,17 @@ class Collective:
 	def __repr__(self):
 		return "Collective of trays @ {}".format(self.location)
 
+	def json(self, filename):
+		temp = {
+			"location" : self.location,
+			"trays" : {}
+		}
+		for number, tray in self.trays.items():
+			temp["trays"][number] = list(tray.codes)
+		with open(filename, 'w') as jout:
+			json.dump(temp, jout)
+		
+	
 class CollectiveDifference:
 	def __init__(self, lhs, rhs):
 		self.lhs_name = lhs.location
@@ -96,18 +117,28 @@ class CollectiveDifference:
 				
 		return (distinct, count)
 
+	def yieldReport(self, name, dis, cnt):
+		yield "Distinct from {}".format(name)
+		yield "----------"
+		for number, codes in dis.items():
+			yield "Tray #{}".format(number)
+			for code in codes:
+				yield "  {}".format(code)
+		yield "----------"
+		yield "Tray Count = {}".format(len(dis))
+		yield "Item Count = {}".format(cnt)
+		yield "__________"
+		yield ""
+	
+	def reportLeft(self):
+		yield from self.yieldReport(self.lhs_name, self.lhs_distinct, self.lhs_item_count)
+		
+	def reportRight(self):
+		yield from self.yieldReport(self.rhs_name, self.rhs_distinct, self.rhs_item_count)
+
 	def genReport(self):
-		for name, dis, cnt in [(self.lhs_name, self.lhs_distinct, self.lhs_item_count),(self.rhs_name, self.rhs_distinct, self.rhs_item_count)]:
-			yield "Distinct from {}".format(name)
-			yield "----------"
-			for number, codes in dis.items():
-				yield "Tray #{}".format(number)
-				for code in codes:
-					yield "  {}".format(code)
-			yield "----------"
-			yield "Tray Count = {}".format(len(dis))
-			yield "Item Count = {}".format(cnt)
-			yield "__________"
+		yield from self.reportLeft()
+		yield from self.reportRight()
 	
 	def __repr__(self):
 		return '\n'.join(self.genReport())
@@ -128,10 +159,18 @@ def main(argv : List[str] = []):
 	bbb = Collective("bed body and booty")
 	bbb.addTray(123).add(*range(5005,5055))
 	bbb.addTray(456).add(*range(6006,6023))
+	bbb.addTray(777).add(5043)
 
 	# Init tspin collective
 	tsp = Collective("tspin's")
 	tsp.addTray(123).add(*range(5010,5070))
 	
 	#print(bbb.compare(tsp))
-	bbb.compare(tsp).printOut(print)
+	#bbb.compare(tsp).printOut(print)
+	
+	#print(list(bbb.trackCode(5023)))
+	#print(list(bbb.trackCode(5043)))
+	bbb.json("/mnt/ramdisk/test.json")
+	
+	bbb2 = Collective.fromJson("/mnt/ramdisk/test.json")
+	print(bbb2.trays)
