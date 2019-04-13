@@ -5,11 +5,6 @@ import java.util.ArrayList;
 
 public class CompositePartString {
 
-    public CompositePartString() {
-	literals = new ArrayList<>();
-	parts = new ArrayList<>();
-    }
-
     public void addPart(Part part) {
 	parts.add(part);
     }
@@ -41,14 +36,15 @@ public class CompositePartString {
 	return literals.size();
     }
 
+    @Override
     public String toString() {
 	StringBuilder sb = new StringBuilder();
-	for (Part p : parts) {
+	parts.forEach((p) -> {
 	    p.out(sb);
-	}
+	});
 	return sb.toString();
     }
 
-    List<StringBuilder> literals;
-    List<Part> parts;
+    List<StringBuilder> literals = new ArrayList<>();
+    List<Part> parts = new ArrayList<>();
 }

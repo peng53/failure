@@ -50,9 +50,7 @@ public class CompositeState {
     @Override
     public String toString() {
 	StringBuilder sb = new StringBuilder();
-	for (Part p : parts) {
-	    p.out(sb);
-	}
+	parts.stream().forEach(p -> p.out(sb));
 	return sb.toString();
     }
 

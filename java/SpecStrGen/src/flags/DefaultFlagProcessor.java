@@ -14,6 +14,7 @@ import specstrgen.CompositeState;
  * @author lm
  */
 public class DefaultFlagProcessor implements FlagProcessor {
+    
 
     public DefaultFlagProcessor() {
         PlainFlagHandler p = new PlainFlagHandler();
