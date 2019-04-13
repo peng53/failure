@@ -4,6 +4,7 @@ from typing import Dict
 from typing import Set
 from copy import deepcopy
 import json
+import sys
 
 class Tray:
 	f_duplicate_found = []
@@ -15,7 +16,7 @@ class Tray:
 	def add(self, *codes: List[int]):
 		"""
 		Adds codes to Tray. Duplicate codes will not
-		be added and will called the DuplicateFound events.
+		be added and will call the DuplicateFound events.
 		"""
 		for code in codes:
 			if code in self.codes:
@@ -66,14 +67,24 @@ class Collective:
 		self.trays = trays if trays else {}
 	
 	@classmethod
+	def fromDict(cls, vDict):
+		"""
+		Creates a Collective from a dictionary. Will raise an
+		exception if the expected keys aren't there.
+		"""
+		if "location" not in vDict or "trays" not in vDict:
+			raise KeyError
+		t = {number : set(codes) for number,codes, in vDict["trays"].items()}
+		return cls(location = vDict["location"], trays = t)
+	
+	@classmethod
 	def fromJson(cls, filename: str):
 		"""
 		Creates a Collective from a JSON file.
 		"""
 		with open(filename) as f:
 			j = json.load(f)
-			t = {number : set(codes) for number,codes, in j["trays"].items()}
-			return cls(location = j["location"], trays = t)
+			return cls.fromDict(j)
 	
 	def addTray(self, number: int):
 		"""
@@ -121,9 +132,9 @@ class Collective:
 	def __repr__(self):
 		return "Collective of trays @ {}".format(self.location)
 
-	def saveJson(self, filename: str):
+	def dict(self):
 		"""
-		Saves Collective as Json to filename
+		Returns Collective as dict
 		"""
 		temp = {
 			"location" : self.location,
@@ -131,9 +142,14 @@ class Collective:
 		}
 		for number, tray in self.trays.items():
 			temp["trays"][number] = list(tray.codes)
+		return temp
+
+	def saveJson(self, filename: str):
+		"""
+		Saves Collective as Json to filename
+		"""
 		with open(filename, 'w') as jout:
-			json.dump(temp, jout)
-		
+			json.dump(self.dict(), jout)
 	
 class CollectiveDifference:
 	def __init__(self, lhs, rhs):
@@ -234,3 +250,6 @@ def main(argv : List[str] = []):
 	
 	bbb2 = Collective.fromJson("/mnt/ramdisk/test.json")
 	print(bbb2.trays)
+
+if __name__=="__main__":
+	main(sys.argv)
