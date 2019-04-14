@@ -8,10 +8,10 @@ import sys
 
 class Tray:
 	f_duplicate_found = []
-	def __init__(self, location: str, number: int):
+	def __init__(self, location: str, number: int, codes = None):
 		self.location = location
 		self.number = number
-		self.codes = set()
+		self.codes = set(codes) if codes else set()
 	
 	def add(self, *codes: List[int]):
 		"""
@@ -74,7 +74,7 @@ class Collective:
 		"""
 		if "location" not in vDict or "trays" not in vDict:
 			raise KeyError
-		t = {number : set(codes) for number,codes, in vDict["trays"].items()}
+		t = {number : Tray(vDict["location"],number,codes) for number,codes, in vDict["trays"].items()}
 		return cls(location = vDict["location"], trays = t)
 	
 	@classmethod
@@ -220,6 +220,7 @@ class CollectiveDifference:
 		"""
 		Calls 'print' function with every line from genReport.
 		"""
+		#map(out, self.genReport())
 		for line in self.genReport():
 			out(line)
 
@@ -242,14 +243,11 @@ def main(argv : List[str] = []):
 	tsp.addTray(123).add(*range(5010,5070))
 	
 	#print(bbb.compare(tsp))
-	#bbb.compare(tsp).printOut(print)
-	
+	bbb.compare(tsp).printOut(print)
+
 	#print(list(bbb.trackCode(5023)))
 	#print(list(bbb.trackCode(5043)))
-	bbb.saveJson("/mnt/ramdisk/test.json")
-	
-	bbb2 = Collective.fromJson("/mnt/ramdisk/test.json")
-	print(bbb2.trays)
+	print(bbb.dict())
 
 if __name__=="__main__":
 	main(sys.argv)
