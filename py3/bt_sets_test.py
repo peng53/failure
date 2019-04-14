@@ -77,7 +77,6 @@ def main(argv):
 		lambda nc: (nc[0],[c for c in nc[1] if c%2 ]),
 		evenTrays
 	)
-	print(type(evenTraysWithEvenCodes))
 	# Marco's trays are only even with even codes.
 	marcos = collectiveFromNumberCodes(
 		"Marcos",
@@ -86,7 +85,10 @@ def main(argv):
 	marcos.addTray(123).add(909, 304, 90210)
 	marcos.addTray(90210)
 	marcos.dropEmpty()
+
 	diff = johns.compare(marcos)
+	diff.limitCodes = 5
+	diff.trayPrintf = "Tray #{0:,d}"
 	diff.printOut(print)
 	
 
