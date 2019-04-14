@@ -83,9 +83,12 @@ def main(argv):
 		"Marcos",
 		evenTraysWithEvenCodes
 	)
-
+	marcos.addTray(123).add(909, 304, 90210)
+	marcos.addTray(90210)
+	marcos.dropEmpty()
 	diff = johns.compare(marcos)
 	diff.printOut(print)
+	
 
 if __name__=="__main__":
 	main(sys.argv)
