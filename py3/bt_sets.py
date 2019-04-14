@@ -13,7 +13,7 @@ class Tray:
 		self.number = number
 		self.codes = set(codes) if codes else set()
 	
-	def add(self, *codes: List[int]):
+	def add(self, *codes: int):
 		"""
 		Adds codes to Tray. Duplicate codes will not
 		be added and will call the DuplicateFound events.
@@ -34,6 +34,12 @@ class Tray:
 	
 	def __repr__(self):
 		return "#{} @ {}".format(self.number, self.location)
+		
+	def __len__(self):
+		"""
+		Returns # of codes.
+		"""
+		return len(self.codes)
 	
 	@staticmethod
 	def AddEvent_DuplicateFound(f):
@@ -62,6 +68,7 @@ class Tray_Err:
 		
 
 class Collective:
+	f_empty_removed = []
 	def __init__(self, location: str, trays: Dict = None):
 		self.location = location
 		self.trays = trays if trays else {}
@@ -129,6 +136,18 @@ class Collective:
 		collective.
 		"""
 		return CollectiveDifference(self,other)
+
+	def dropEmpty(self):
+		"""
+		Removes empty Trays.
+		"""
+		#empties = filter(
+			#lambda t: len(self.trays[t])==0,
+			#self.trays.keys()
+		#)
+		self.trays = {number : tray for number,tray in self.trays.items() if len(tray)>0}
+		# I do not know if this 'dict comprehension' will recreate the Trays
+		# but, it is the correct logic.
 
 	def __len__(self):
 		"""
