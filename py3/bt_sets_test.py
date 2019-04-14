@@ -59,6 +59,15 @@ def randomCollectiveFromFilesSameTrays(location: str, lTrays: List[str], fCodes)
 	}
 	return bt_sets.Collective.fromDict(vDict)
 
+def lastFive(s):
+	"""
+	Returns last substring of last five. 
+	"""
+	if isinstance(s, str):
+		return s
+	else:
+		return ".."+str(s)[-5:]
+
 def main(argv):
 	"""
 	Tests bt_sets with large data sets.
@@ -88,7 +97,8 @@ def main(argv):
 
 	diff = johns.compare(marcos)
 	diff.limitCodes = 5
-	diff.trayPrintf = "Tray #{0:,d}"
+	diff.trayFormat = "Tray #{0:,d}"
+	diff.codeStr = lastFive
 	diff.printOut(print)
 	
 
