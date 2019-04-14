@@ -3,7 +3,36 @@
 import sys
 import bt_sets
 import random
+from itertools import islice
 from typing import List
+
+def generateNumberCodes(fTrays, trayMaxCnt, fCodes, codeMaxCnt):
+	"""
+	Returns a List of Tuple consisting of a int, and a list of ints
+	e.g. [ (1, [1,2,3]), (2, [2,3,4])]
+	"""
+	gTrays = map(int, filter((lambda t: random.randint(1,10) > 2), fTrays))
+	gTraysLimit = islice(gTrays,trayMaxCnt)
+	return [
+		(
+			number,
+			list(
+				map(int,(fCodes.readline() for _ in range(random.randint(0,codeMaxCnt))))
+			)
+		)
+		for number in gTraysLimit
+	]
+
+def collectiveFromNumberCodes(location: str, numberCodes):
+	"""
+	Returns collective made from numberCodes
+	"""
+	return bt_sets.Collective.fromDict({
+		"location" : location,
+		"trays" : {
+			number : codes for number,codes in numberCodes
+		}
+	})
 
 def randomCollectiveFromFiles(location: str, fTrays, fCodes):
 	"""
@@ -31,19 +60,24 @@ def randomCollectiveFromFilesSameTrays(location: str, lTrays: List[str], fCodes)
 	return bt_sets.Collective.fromDict(vDict)
 
 def main(argv):
-	with open("../in_out/trays.txt", "r") as trays:
-		ltrays = list(map(int, filter((lambda t: random.randint(1,10) > 2), trays)))
-	with open("../in_out/codes.txt", "r") as codes:
-		johns = randomCollectiveFromFilesSameTrays("Johns", ltrays, codes);
-		#johns = randomCollectiveFromFiles("Johns",trays,codes)
-	with open("../in_out/codes.txt", "r") as codes:
-		marcos = randomCollectiveFromFilesSameTrays("Marcos", ltrays, codes);
-		#marcos = randomCollectiveFromFiles("Marcos",trays,codes)
 
+	with open("../in_out/trays.txt", 'r') as trays, open("../in_out/codes.txt", 'r') as codes:
+		numberCodes = generateNumberCodes(trays,250,codes,120)
+	johns = collectiveFromNumberCodes(
+		"Johns",
+		numberCodes
+	)
+	
+	marcos = collectiveFromNumberCodes(
+		"Marcos",
+		filter(
+			(lambda nc: nc[0]%2),
+			numberCodes
+		)
+	)
+	
 	diff = johns.compare(marcos)
 	diff.printOut(print)
-	#print(diff)
-	
 
 
 if __name__=="__main__":
