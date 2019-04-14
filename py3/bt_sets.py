@@ -98,6 +98,13 @@ class Collective:
 			self.trays[number] = Tray(self.location, number)
 		return self.trays[number]
 	
+	def remTray(self, number: int):
+		"""
+		Removes a tray, if it exists, else nothing happens.
+		"""
+		if number in trays:
+			trays.remove(number)
+	
 	def tray(self, number):
 		"""
 		Returns stored Tray with number.
