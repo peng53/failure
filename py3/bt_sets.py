@@ -5,6 +5,7 @@ from typing import Set
 from copy import deepcopy
 import json
 import sys
+from itertools import islice
 
 class Tray:
 	f_duplicate_found = []
@@ -183,6 +184,8 @@ class CollectiveDifference:
 		self.rhs_name = rhs.location
 		self.lhs_distinct,self.lhs_item_count = self.get_distinct(lhs,rhs)
 		self.rhs_distinct,self.rhs_item_count = self.get_distinct(rhs,lhs)
+		self.limitCodes = 0
+		self.trayPrintf = "Tray #{}"
 	
 	def get_distinct(self, lhs, rhs):
 		"""
@@ -211,8 +214,9 @@ class CollectiveDifference:
 		yield "Distinct from {}".format(name)
 		yield "----------"
 		for number, codes in dis.items():
-			yield "Tray #{}".format(number)
-			for code in codes:
+			yield self.trayPrintf.format(number)
+			lCodes = codes if self.limitCodes==0 else islice(codes, self.limitCodes)
+			for code in lCodes:
 				yield "  {}".format(code)
 		yield "----------"
 		yield "Tray Count = {}".format(len(dis))
