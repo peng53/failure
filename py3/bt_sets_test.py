@@ -60,25 +60,32 @@ def randomCollectiveFromFilesSameTrays(location: str, lTrays: List[str], fCodes)
 	return bt_sets.Collective.fromDict(vDict)
 
 def main(argv):
-
+	"""
+	Tests bt_sets with large data sets.
+	Doesn't use argv.
+	"""
 	with open("../in_out/trays.txt", 'r') as trays, open("../in_out/codes.txt", 'r') as codes:
 		numberCodes = generateNumberCodes(trays,250,codes,120)
 	johns = collectiveFromNumberCodes(
 		"Johns",
 		numberCodes
 	)
-	
+	# evenCodes = ((nc[0],[c for c in nc[1] if c%2]) for nc in numberCodes)
+	evenTrays = filter(lambda nc: nc[0]%2, numberCodes)
+	# If i filter for even trays first, I can save alot of work.
+	evenTraysWithEvenCodes = map(
+		lambda nc: (nc[0],[c for c in nc[1] if c%2 ]),
+		evenTrays
+	)
+	print(type(evenTraysWithEvenCodes))
+	# Marco's trays are only even with even codes.
 	marcos = collectiveFromNumberCodes(
 		"Marcos",
-		filter(
-			(lambda nc: nc[0]%2),
-			numberCodes
-		)
+		evenTraysWithEvenCodes
 	)
-	
+
 	diff = johns.compare(marcos)
 	diff.printOut(print)
-
 
 if __name__=="__main__":
 	main(sys.argv)
