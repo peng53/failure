@@ -66,13 +66,31 @@ def lastFive(s):
 	if isinstance(s, str):
 		return s
 	else:
-		return ".."+str(s)[-5:]
+		return str(s)[-5:]
+
+def Tray2Plain(self):
+	yield "\ntray;{}".format(self.number)
+	yield from map(
+		#lambda x: "\n{}".format(x),
+		str,
+		self.codes
+	)
+
+def Collective2Plain(self, filename: str):
+	with open(filename, 'w') as fw:
+		fw.write("name;{}".format(self.location))
+		for tray in self.trays.values():
+			fw.write('\n'.join(tray.plain()))
+		#for number in self.trays:
+		#	fw.write("\ntray;{}".format(number))
 
 def main(argv):
 	"""
 	Tests bt_sets with large data sets.
 	Doesn't use argv.
 	"""
+	bt_sets.Collective.plain = Collective2Plain
+	bt_sets.Tray.plain = Tray2Plain
 	with open("../in_out/trays.txt", 'r') as trays, open("../in_out/codes.txt", 'r') as codes:
 		numberCodes = generateNumberCodes(trays,250,codes,120)
 	johns = collectiveFromNumberCodes(
@@ -98,9 +116,10 @@ def main(argv):
 	diff = johns.compare(marcos)
 	diff.limitCodes = 5
 	diff.trayFormat = "Tray #{0:,d}"
+	diff.codeFormat = "  ..{}"
 	diff.codeStr = lastFive
 	diff.printOut(print)
-	
+	marcos.plain("test.txt")
 
 if __name__=="__main__":
 	main(sys.argv)

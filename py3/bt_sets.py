@@ -66,7 +66,6 @@ class Tray_Err:
 		if number not in self.err_trays[location]:
 			self.err_trays[location][number] = set()
 		self.err_trays[location][number].add(code)
-		
 
 class Collective:
 	f_empty_removed = []
@@ -252,7 +251,6 @@ class CollectiveDifference:
 		"""
 		Calls 'print' function with every line from genReport.
 		"""
-		#map(out, self.genReport())
 		for line in self.genReport():
 			out(line)
 
