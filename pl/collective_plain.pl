@@ -8,31 +8,30 @@
 #	...
 # To a string and a hash of arrays of numbers.
 #
+use warnings;
+use strict;
 
 sub lineType {
 	# Returns which type the line matches.
 	my $line = shift;
-	if ($line =~ /name;/) {
-		return 'name';
-	} elsif ($line =~ /tray;/) {
-		return 'tray';
-	} elsif ($line =~ /\d+;\d/) {
-		return 'numbers';
-	} else {
-		return 'number';
-	}
+	return 'comment'  if ($line =~ /^#/);
+	return 'name'     if ($line =~ /^name;/);
+	return 'tray'     if ($line =~ /^tray;/);
+	return 'numbers'  if ($line =~ /^\d+;\d/);
+	return 'number'   if ($line =~ /^\d+/);
+	return 'unknown';
 }
 
 sub getCollectiveName {
 	# Returns the name of the collective or empty str.
 	my $line = shift;
-	($line =~ /name;(.+)/) ? $1 : "";
+	($line =~ /^name;(.+)/) ? $1 : "";
 }
 
 sub getTrayNumber {
 	# Returns tray number for a given line.
 	my $line = shift;
-	($line =~ /tray;(\d+)/) ? $1 : "";
+	($line =~ /^tray;(\d+)/) ? $1 : "";
 }
 
 sub getNumbers {
@@ -62,8 +61,8 @@ sub getCollectiveHash {
 	# filename to read from.
 	open(my $fh, shift) or die "Can't open file.";
 	my $line = <$fh>;
-	die "Couldn't get name line." unless lineType($line) eq 'name';
 	chomp($line);
+	die "Couldn't get name line." unless lineType($line) eq 'name';
 	my $name = getCollectiveName($line);
 	my %trays;
 	my $tray_number;
@@ -71,18 +70,18 @@ sub getCollectiveHash {
 	while ($line = <$fh>) {
 		chomp($line);
 		$type = lineType($line);
+		next if ($type eq 'comment');
 		if ($type eq 'tray') {
 			$tray_number = getTrayNumber($line);
-		} elsif ($type eq 'name') {
-			die "Unexcepted line type found.";
 		} elsif ($type eq 'numbers') {
 			push(
 				@{$trays{$tray_number}},
 				@{getNumbers($line)}
 			);
-
-		} else {
+		} elsif ($type eq 'number') {
 			push(@{$trays{$tray_number}},$line);
+		} else {
+			die "Unexcepted line type found.";
 		}
 	}
 	return ($name, \%trays);
