@@ -71,7 +71,6 @@ def lastFive(s):
 def Tray2Plain(self):
 	yield "\ntray;{}".format(self.number)
 	yield from map(
-		#lambda x: "\n{}".format(x),
 		str,
 		self.codes
 	)
@@ -81,8 +80,6 @@ def Collective2Plain(self, filename: str):
 		fw.write("name;{}".format(self.location))
 		for tray in self.trays.values():
 			fw.write('\n'.join(tray.plain()))
-		#for number in self.trays:
-		#	fw.write("\ntray;{}".format(number))
 
 def main(argv):
 	"""
