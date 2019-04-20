@@ -16,8 +16,10 @@ sub lineType {
 		return 'name';
 	} elsif ($line =~ /tray;/) {
 		return 'tray';
+	} elsif ($line =~ /\d+;\d/) {
+		return 'numbers';
 	} else {
-		return 'unknown';
+		return 'number';
 	}
 }
 
@@ -33,18 +35,26 @@ sub getTrayNumber {
 	($line =~ /tray;(\d+)/) ? $1 : "";
 }
 
+sub getNumbers {
+	my $numbers = shift;
+	my @numbers = split ';', $numbers;
+	return \@numbers;
+}
+
 sub printCollectiveHash {
 	# Prints CollectiveHash given its name and values.
 	my $name = shift;
 	my $trays = shift;
 	my %trays = %$trays;
-	print "Collective: $name\n";
+	print '_'x10, "\nCollective: $name\n", '='x10, "\n";
 	foreach (keys %trays) {
-		print "  Tray: $_\n";
+		print "<|Tray: $_\n";
 		foreach my $number (@{$trays{$_}}) {
-			print "    $number";
+			print " |  $number\n";
 		}
+		print " |>\n";
 	}
+	print '='x10, "\n";
 }
 
 sub getCollectiveHash {
@@ -53,18 +63,24 @@ sub getCollectiveHash {
 	open(my $fh, shift) or die "Can't open file.";
 	my $line = <$fh>;
 	die "Couldn't get name line." unless lineType($line) eq 'name';
-	chomp $line;
+	chomp($line);
 	my $name = getCollectiveName($line);
 	my %trays;
 	my $tray_number;
 	my $type;
 	while ($line = <$fh>) {
-		chomp;
+		chomp($line);
 		$type = lineType($line);
 		if ($type eq 'tray') {
 			$tray_number = getTrayNumber($line);
 		} elsif ($type eq 'name') {
 			die "Unexcepted line type found.";
+		} elsif ($type eq 'numbers') {
+			push(
+				@{$trays{$tray_number}},
+				@{getNumbers($line)}
+			);
+
 		} else {
 			push(@{$trays{$tray_number}},$line);
 		}
