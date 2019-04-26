@@ -13,25 +13,25 @@ use strict;
 
 sub lineType {
 	# Returns which type the line matches.
-	my $line = shift;
-	return 'comment'  if ($line =~ /^#/);
-	return 'name'     if ($line =~ /^name;/);
-	return 'tray'     if ($line =~ /^tray;/);
-	return 'numbers'  if ($line =~ /^\d+;\d/);
-	return 'number'   if ($line =~ /^\d+/);
+	$_ = shift;
+	return 'comment'  if (/^#/);
+	return 'name'     if (/^name;/);
+	return 'tray'     if (/^tray;/);
+	return 'numbers'  if (/^\d+;\d/);
+	return 'number'   if (/^\d+/);
 	return 'unknown';
 }
 
 sub getCollectiveName {
 	# Returns the name of the collective or empty str.
-	my $line = shift;
-	($line =~ /^name;(.+)/) ? $1 : "";
+	shift;
+	(/^name;(.+)/) ? $1 : '';
 }
 
 sub getTrayNumber {
 	# Returns tray number for a given line.
-	my $line = shift;
-	($line =~ /^tray;(\d+)/) ? $1 : "";
+	shift;
+	(/^tray;(\d+)/) ? $1 : '0';
 }
 
 sub getNumbers {
@@ -81,7 +81,7 @@ sub getCollectiveHash {
 		} elsif ($type eq 'number') {
 			push(@{$trays{$tray_number}},$line);
 		} else {
-			die "Unexcepted line type found.";
+			die 'Unexcepted line type found.';
 		}
 	}
 	return ($name, \%trays);
@@ -93,5 +93,7 @@ sub main {
 	printCollectiveHash($name, \%trays);
 }
 
-die "No arguments were provided." unless @ARGV>=1;
-main(@ARGV);
+unless (caller) {
+	die "No arguments were provided." unless @ARGV>=1;
+	main(@ARGV);
+}
