@@ -6,12 +6,14 @@ use Fcntl;
 use GDBM_File;
 use POSIX;
 
+package DQueue;
+
 our $MAX = 16;
 
 sub loadIt {
 	my $hash = shift;
 	my $dfile = shift;
-	tie %$hash, 'GDBM_File', $dfile, O_CREAT|O_RDWR, 0644 or die 'Couldn\'t open.';
+	tie %$hash, 'GDBM_File', $dfile, main::O_CREAT|main::O_RDWR, 0644 or die 'Couldn\'t open.';
 }
 
 sub initDBM {
@@ -53,13 +55,9 @@ sub sizeDown {
 	print "Decreasing size to $new_size\n";
 	my $next = $$hash{'next'};
 	my $read = $$hash{'read'};
-	my @items;
-	while ($read != $next) {
-		push(@items, $$hash{$read});
-		($read+=1) %= $size;
-	}
+	my $items = readOut($hash);
 	$next = 0;
-	foreach (@items) {
+	foreach (@$items) {
 		$$hash{$next++} = $_;
 		last if $next >= $size;
 	}
@@ -81,10 +79,12 @@ sub readOut {
 	my $read = $$hash{'read'};
 	my $next = $$hash{'next'};
 	my $size = $$hash{'size'};
+	my @items;
 	while ($read != $next) {
-		print "$$hash{$read}\n";
+		push(@items, $$hash{$read});
 		($read+=1) %= $size;
 	}
+	return \@items;
 }
 
 sub main {
@@ -108,7 +108,7 @@ sub main {
 	} elsif ($cmd eq '?debug') {
 		print "$dhash{'next'}\n$dhash{'read'}\n$dhash{'size'}\n";
 	} elsif ($cmd eq '?all') {
-		readOut(\%dhash);
+		print join("\n", @{readOut(\%dhash)}), "\n";
 	} else {
 		print "Adding $cmd\n";
 		add(\%dhash,$cmd);
