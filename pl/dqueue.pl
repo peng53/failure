@@ -45,6 +45,48 @@ sub advanceRead {
 	($$hash{'read'}+=1) %= $$hash{'size'};
 }
 
+sub sizeDown {
+	my $hash = shift;
+	my $new_size = shift;
+	my $size = $$hash{'size'};
+	return if ($size < $new_size);
+	print "Decreasing size to $new_size\n";
+	my $next = $$hash{'next'};
+	my $read = $$hash{'read'};
+	my @items;
+	while ($read != $next) {
+		push(@items, $$hash{$read});
+		($read+=1) %= $size;
+	}
+	$next = 0;
+	foreach (@items) {
+		$$hash{$next++} = $_;
+		last if $next >= $size;
+	}
+	$$hash{'next'} = $next % $new_size;
+	$$hash{'read'} = 0;
+	$$hash{'size'} = $new_size;
+}
+
+sub sizeUp {
+	my $hash = shift;
+	my $new_size = shift;
+	return if $new_size <= $$hash{'size'};
+	print "Increasing size to $new_size\n";
+	$$hash{'size'} = $new_size;
+}
+
+sub readOut {
+	my $hash = shift;
+	my $read = $$hash{'read'};
+	my $next = $$hash{'next'};
+	my $size = $$hash{'size'};
+	while ($read != $next) {
+		print "$$hash{$read}\n";
+		($read+=1) %= $size;
+	}
+}
+
 sub main {
 	my $file = shift or die 'No input file.';
 	my $cmd = shift or die 'No command.';
@@ -59,6 +101,14 @@ sub main {
 			print "Adding $item\n";
 			add(\%dhash,$item);
 		}
+	} elsif ($cmd eq '+size') {
+		sizeUp(\%dhash,shift);
+	} elsif ($cmd eq '-size') {
+		sizeDown(\%dhash,shift);
+	} elsif ($cmd eq '?debug') {
+		print "$dhash{'next'}\n$dhash{'read'}\n$dhash{'size'}\n";
+	} elsif ($cmd eq '?all') {
+		readOut(\%dhash);
 	} else {
 		print "Adding $cmd\n";
 		add(\%dhash,$cmd);

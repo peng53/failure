@@ -14,12 +14,10 @@ sub loadIt {
 	tie %$hash, 'GDBM_File', $dfile, O_CREAT|O_RDWR, 0644 or die 'Couldn\'t open.';
 }
 sub basicPrintHash {
+	# Just prints key-value pairs in no particular order.
 	my $hash = shift;
-	#foreach (keys %$hash) {
-	#	print "$_ : ", {${%$hash}}{$_}, "\n";
-	#}
 	while (my ($k, $v) = each %$hash) {
-		print $k, ' : ', $v, "\n";
+		print "$k : $v\n";
 	}
 }
 
@@ -28,13 +26,13 @@ loadIt(\%dhash, 'dfile.dbm');
 tied %dhash or die;
 
 if (! keys %dhash) {
+	# Have to populate file/hash.
 	print "Reading from file.\n";
 	my ($name, $trays) = getCollectiveHash(shift);
-	my %trays = %{$trays};
 	$dhash{'location'} = $name;
-	foreach (keys %trays) {
-		foreach my $number (@{$trays{$_}}) {
-			$dhash{$number} = $_;
+	while (my ($tray, $codes) = each %$trays) {
+		foreach (@$codes) {
+			$dhash{$_} = $tray;
 		}
 	}
 }
