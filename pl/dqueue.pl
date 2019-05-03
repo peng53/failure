@@ -6,7 +6,7 @@ use Fcntl;
 use GDBM_File;
 use POSIX;
 
-our $MAX = 4;
+our $MAX = 16;
 
 sub loadIt {
 	my $hash = shift;
@@ -18,18 +18,19 @@ sub initDBM {
 	my $hash = shift;
 	if (! keys %$hash) {
 		$$hash{'next'} = 0;
+		$$hash{'size'} = $MAX;
 	}
 }
 
 sub add {
 	my $hash = shift;
-	$$hash{$$hash{'next'}} = shift;
 	$$hash{'read'} = 0 if ( ! exists $$hash{'read'});
-	$$hash{'next'} = ($$hash{'next'}+1) % $MAX;
-	if ($$hash{'next'} == $$hash{'read'}) {
-		print "Data was overwritten.\n";
-		$$hash{'read'} = ($$hash{'read'}+1) % $MAX;
+	if (($$hash{'next'}+1)%$$hash{'size'} == $$hash{'read'}) {
+		print get($hash), "\n";
+		advanceRead($hash);
 	}
+	$$hash{$$hash{'next'}} = shift;
+	($$hash{'next'}+=1) %= $$hash{'size'};
 }
 
 sub get {
@@ -41,21 +42,25 @@ sub get {
 
 sub advanceRead {
 	my $hash = shift;
-	$$hash{'read'} = ($$hash{'read'}+1) % $MAX;
+	($$hash{'read'}+=1) %= $$hash{'size'};
 }
 
 sub main {
 	my $file = shift or die 'No input file.';
+	my $cmd = shift or die 'No command.';
 	my %dhash;
 	loadIt(\%dhash, $file);
 	initDBM(\%dhash);
-	my $cmd = shift or die 'No command.';
 	if ($cmd eq 'get') {
 		print get(\%dhash), "\n";
 		advanceRead(\%dhash);
 	} elsif ($cmd eq 'add') {
-		add(\%dhash,shift);
+		while (my $item = shift) {
+			print "Adding $item\n";
+			add(\%dhash,$item);
+		}
 	} else {
+		print "Adding $cmd\n";
 		add(\%dhash,$cmd);
 	}
 	untie %dhash;
