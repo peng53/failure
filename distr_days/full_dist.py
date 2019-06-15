@@ -58,3 +58,28 @@ splitX = datetime.date(2019,2,5)
 splited = x.splitAt(splitX)
 for ds in splited:
 	print(ds)
+
+# Using the 'division method'
+vacation_days = 5*3
+good_interval = (365 // vacation_days) - 1
+year = 2020
+day1 = datetime.date(year,1,1)
+possible_days = [day1+datetime.timedelta(days=x) for x in range(good_interval,good_interval*(vacation_days+1),good_interval)]
+# Now to 'snap' the possible days to the closest friday
+better_possible_days = []
+for day in possible_days:
+	wd = day.weekday()
+	if wd == 4:
+		better_possible_days.append(day)
+	elif wd == 0:
+		# Closest is 'prev' friday (left)
+		better_possible_days.append(day + datetime.timedelta(days=-3))
+	elif wd > 4:
+		# Closest is 'prev' friday (left)
+		better_possible_days.append(day + datetime.timedelta(days=4-wd))
+	elif wd >= 1 and wd < 4:
+		# Closest is 'next' friday (right)
+		better_possible_days.append(day + datetime.timedelta(days=4-wd))
+for d in better_possible_days:
+	print(d)
+print(len(better_possible_days))
