@@ -60,14 +60,15 @@ for ds in splited:
 	print(ds)
 
 # Using the 'division method'
-vacation_days = 5*3
+vacation_days = 50
 year = 2020
 day1 = datetime.date(year,1,1)
 dayn = datetime.date(year,12,31)
 good_interval = ((dayn-day1).days // vacation_days) - 1
+print(good_interval)
 
 
-possible_days = [day1+datetime.timedelta(days=x) for x in range(good_interval,good_interval*(vacation_days+1),good_interval)]
+possible_days = (day1+datetime.timedelta(days=x) for x in range(good_interval,(dayn-day1).days,good_interval))
 # Now to 'snap' the possible days to the closest friday
 
 def snapToFriday(date):
@@ -83,7 +84,7 @@ def snapToFriday(date):
 		return (date + datetime.timedelta(days=4-wd))
 
 better_possible_days = list(map(snapToFriday, possible_days))
-time_intervals = [better_possible_days[i+1]-better_possible_days[i] for i in range(len(better_possible_days)-1)]
+time_intervals = (better_possible_days[i+1]-better_possible_days[i] for i in range(len(better_possible_days)-1))
 print('\n'.join(map(str, (d.days for d in time_intervals))))
 
 for d in better_possible_days:
