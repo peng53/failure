@@ -27,12 +27,14 @@ sub initDBM {
 sub add {
 	my $hash = shift;
 	$$hash{'read'} = 0 if ( ! exists $$hash{'read'});
+	my $r;
 	if (($$hash{'next'}+1)%$$hash{'size'} == $$hash{'read'}) {
-		print get($hash), "\n";
+		$r = get($hash);
 		advanceRead($hash);
 	}
 	$$hash{$$hash{'next'}} = shift;
 	($$hash{'next'}+=1) %= $$hash{'size'};
+	return $r;
 }
 
 sub get {
