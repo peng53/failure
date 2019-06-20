@@ -19,13 +19,13 @@ class DateSpan:
 		'''
 		dow = start.weekday()
 		return [dow+i for i in range(self.diff+1)]
-	
+
 	def median(self):
 		'''	Returns middle date of datespan.
 				If even, return greater.
 		'''
 		return self.end-datetime.timedelta(days=self.diff//2)
-	
+
 	def splitAt(self, point):
 		'''	Returns list of datespans created by
 				removing a day in this datespan. Where point
@@ -60,26 +60,33 @@ for ds in splited:
 	print(ds)
 
 # Using the 'division method'
-vacation_days = 5*3
-good_interval = (365 // vacation_days) - 1
+vacation_days = 50
 year = 2020
 day1 = datetime.date(year,1,1)
-possible_days = [day1+datetime.timedelta(days=x) for x in range(good_interval,good_interval*(vacation_days+1),good_interval)]
+dayn = datetime.date(year,12,31)
+good_interval = ((dayn-day1).days // vacation_days) - 1
+print(good_interval)
+
+
+possible_days = (day1+datetime.timedelta(days=x) for x in range(good_interval,(dayn-day1).days,good_interval))
 # Now to 'snap' the possible days to the closest friday
-better_possible_days = []
-for day in possible_days:
-	wd = day.weekday()
+
+def snapToFriday(date):
+	wd = date.weekday()
 	if wd == 4:
-		better_possible_days.append(day)
+		return date
 	elif wd == 0:
 		# Closest is 'prev' friday (left)
-		better_possible_days.append(day + datetime.timedelta(days=-3))
-	elif wd > 4:
+		return (date + datetime.timedelta(days=-3))
+	else:
 		# Closest is 'prev' friday (left)
-		better_possible_days.append(day + datetime.timedelta(days=4-wd))
-	elif wd >= 1 and wd < 4:
-		# Closest is 'next' friday (right)
-		better_possible_days.append(day + datetime.timedelta(days=4-wd))
+		# or 'next' friday (right)
+		return (date + datetime.timedelta(days=4-wd))
+
+better_possible_days = list(map(snapToFriday, possible_days))
+time_intervals = (better_possible_days[i+1]-better_possible_days[i] for i in range(len(better_possible_days)-1))
+print('\n'.join(map(str, (d.days for d in time_intervals))))
+
 for d in better_possible_days:
-	print(d)
+	print('{} {}'.format(d, d.weekday()))
 print(len(better_possible_days))
