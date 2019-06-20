@@ -12,6 +12,7 @@
     <File Name="../../json_adt/jso_f.h"/>
     <File Name="../../json_adt/parser.cpp"/>
     <File Name="../../json_adt/parser.h"/>
+    <File Name="../../json_adt/spit_out.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="chunkreader">
     <File Name="../../chunkreader/chread.cpp"/>
