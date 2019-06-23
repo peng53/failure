@@ -44,6 +44,12 @@ sub get {
 	return $$hash{$$hash{'read'}};
 }
 
+sub flush {
+	# Skips all items in queue by moving read index to write index
+	my $hash = shift;
+	$$hash{'read'} = $$hash{'next'};
+}
+
 sub advanceRead {
 	my $hash = shift;
 	($$hash{'read'}+=1) %= $$hash{'size'};
