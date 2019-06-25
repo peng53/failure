@@ -60,24 +60,21 @@ proc create_new_database {dbhandle dbname} {
 proc base_tables {dbhandle} {
 	# Creates the base tables in database
 	mysql::exec $dbhandle {CREATE TABLE rel(gid int,pid int,depth int) }
-	mysql::exec $dbhandle {
-		CREATE TRIGGER closure AFTER INSERT ON rel
-		FOR EACH ROW
-		IF (NEW.depth > 0) THEN
+	mysql::exec $dbhandle {CREATE TABLE group(
+		gid int auto_increment primary key,
+		name char(255))
 	}
-	DELIMITER $$
-	CREATE PROCEDURE newGroup (IN filename char(255), IN parent int)
-		INSERT into filegroups (name) VALUE (filename);
-		DECLARE rid INT;
-		SET rid = LAST_INSERT_ID();
-		INSERT into rel (gid,pid,depth) VALUES (rid,rid,0);
-		IF (parent IS NULL) THEN
-			INSERT into rel (gid,pid,depth) VALUES (rid,NULL,1);
-		ELSE
-			INSERT into rel SELECT rid,pid,depth+1 FROM rel
-				WHERE gid=parent AND pid IS NOT NULL;
-		END IF;
-	END$$
-	DELIMITER ;
-
 }
+
+delimiter $$
+create procedure new_group (in name char(255), in parent int)
+begin
+	declare rid int;
+	insert into groups (name) value (name);
+	select last_insert_id() into rid;
+	insert into rel (gid,pid,depth) values (rid,rid,0);
+	if (parent is NULL) then insert into rel (gid,pid,depth) values (rid,NULL,1);
+	else insert into rel SELECT rid,pid,depth+1 FROM rel where gid=parent AND pid IS NOT NULL;
+	end if;
+end$$
+delmiter ;
