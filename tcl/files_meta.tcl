@@ -63,6 +63,7 @@ proc create_new_database {dbhandle dbname} {
 	mysql::exec $dbhandle "create database if not exists $dbname"
 	mysql::use $dbhandle $dbname
 	base_tables $dbhandle
+	special_tables $dbhandle
 }
 
 proc base_tables {dbhandle} {
@@ -82,10 +83,55 @@ proc base_tables {dbhandle} {
 	}
 }
 
+proc special_tables {dbhandle} {
+	# Creates tables specific to this application
+	mysql::exec $dbhandle {create table if not exists filenames
+			(id int auto_increment primary key, gid int foreign key, name char(255) NOT NULL, views int default 0)}
+	mysql::exec $dbhandle {create procedure if not exists add_filename (in name char(255), in parent int)
+		begin
+			insert into filenames (gid,name) VALUES (nullif(parent,0),name);
+			select last_insert_id();
+		end;
+	}
+}
+
 proc new_group {dbhandle name {parent 0}} {
 	set l [mysql::sel $dbhandle "call new_group('$name',$parent)" -flatlist]
 	puts "Created group $name with parent $parent"
 	return [lindex $l 0]
+}
+
+proc new_filename {fname {group 0}} {
+	set r [mysql::sel $dbhandle "call add_filename('$fname',$group)" -flatlist]
+	return [lindex $r 0]
+}
+
+proc delete_group {dbhandle d_gid} {
+	# first get all groups that descends from d_gid
+#	select gid from rel where pid=$d_gid;
+	# for each of those do the following f_gid:
+#	delete from groups where gid=f_gid;
+#	delete from filenames where gid=f_gid;
+#	delete from rel where gid=f_gid;
+
+## cursor steps
+	create procedure delete_group (in d_gid int)
+	begin
+		declare done int default 0;
+		declare GIDS cursor for select gid from rel where pid=d_gid;
+		declare continue handler for not found set done = 1;
+		open GIDS;
+		delete_loop: LOOP
+			fetch GIDS into fgid;
+			if done = 1 THEN LEAVE delete_loop;
+			end if;
+			delete from groups where gid=fgid;
+			delete from filenames where gid=fgid;
+			delete from rel where gid=fgid;
+		END LOOP delete_loop;
+		close fgid;
+	end;
+	
 }
 
 set user $env(user)
