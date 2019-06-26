@@ -48,6 +48,14 @@ proc open_database {username password database} {
 	return $dbhandle
 }
 
+proc login_database {user pass} {
+	# Logs into mysql
+	if {[catch {set dbhandle [mysql::connect -user $user -pass $pass]}] != 0} {
+		return {}
+	}
+	return $dbhandle
+}
+
 proc create_new_database {dbhandle dbname} {
 	# Creates database and populates it with default tables
 	# Can this be injected? Need to test.
@@ -58,23 +66,38 @@ proc create_new_database {dbhandle dbname} {
 }
 
 proc base_tables {dbhandle} {
-	# Creates the base tables in database
-	mysql::exec $dbhandle {CREATE TABLE rel(gid int,pid int,depth int) }
-	mysql::exec $dbhandle {CREATE TABLE group(
-		gid int auto_increment primary key,
-		name char(255))
+	# Creates the base tables in database and procedures
+	mysql::exec $dbhandle {CREATE TABLE if not exists rel(gid int NOT NULL,pid int,depth int NOT NULL) }
+	mysql::exec $dbhandle {CREATE TABLE if not exists groups (gid int auto_increment primary key, name char(255) NOT NULL)}
+	mysql::exec $dbhandle {create procedure if not exists new_group (in name char(255), in parent int) 
+		begin
+			declare rid int;
+			insert into groups (name) value (name);select last_insert_id() into rid;
+			insert into rel (gid,pid,depth) values (rid,rid,0);
+			if (parent = 0) then insert into rel (gid,pid,depth) values (rid,NULL,1);
+			else insert into rel SELECT rid,pid,depth+1 FROM rel where gid=parent AND pid IS NOT NULL;
+			end if;
+			select rid;
+		end;
 	}
 }
 
-delimiter $$
-create procedure new_group (in name char(255), in parent int)
-begin
-	declare rid int;
-	insert into groups (name) value (name);
-	select last_insert_id() into rid;
-	insert into rel (gid,pid,depth) values (rid,rid,0);
-	if (parent is NULL) then insert into rel (gid,pid,depth) values (rid,NULL,1);
-	else insert into rel SELECT rid,pid,depth+1 FROM rel where gid=parent AND pid IS NOT NULL;
-	end if;
-end$$
-delmiter ;
+proc new_group {dbhandle name {parent 0}} {
+	set l [mysql::sel $dbhandle "call new_group('$name',$parent)" -flatlist]
+	puts "Created group $name with parent $parent"
+	return [lindex $l 0]
+}
+
+set user $env(user)
+set pass $env(pass)
+set dbhandle [login_database $user $pass]
+create_new_database $dbhandle {test2}
+#mysq::exec $dbhandle {start transaction;}
+set g1 [new_group $dbhandle test_group]
+
+new_group $dbhandle test_group2 $g1
+
+mysql::close $dbhandle
+
+
+
