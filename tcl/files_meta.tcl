@@ -87,6 +87,11 @@ proc special_tables {dbhandle} {
 	# Creates tables specific to this application
 	mysql::exec $dbhandle {create table if not exists filenames
 			(id int auto_increment primary key, gid int, name char(255) NOT NULL, views int default 0)}
+	mysql::exec $dbhandle {create table if not exists tags
+			(id int auto_increment primary key, tag char(16) NOT NULL)}
+	mysql::exec $dbhandle {create table if not exists tag_map
+			(fileid int, tagid int)}
+
 	mysql::exec $dbhandle {create procedure if not exists add_filename (in name char(255), in parent int)
 		begin
 			insert into filenames (gid,name) VALUES (nullif(parent,0),name);
@@ -104,8 +109,11 @@ proc special_tables {dbhandle} {
 				fetch GIDS into fgid;
 				if done = 1 THEN LEAVE delete_loop;
 				end if;
-				delete from groups where gid=fgid;
+
+				delete tag_map from tag_map join filenames on fileid=id where gid=fgid;
+
 				delete from filenames where gid=fgid;
+				delete from groups where gid=fgid;
 				delete from rel where gid=fgid;
 			END LOOP delete_loop;
 			close GIDS;
