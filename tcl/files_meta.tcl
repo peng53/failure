@@ -124,6 +124,24 @@ proc new_filename {dbhandle fname {group 0}} {
 	return [lindex $r 0]
 }
 
+proc add_filenames {dbhandle fdir {group 0}} {
+	# Adds filenames in fdir to group
+	set added [list]
+	foreach f [glob -tails -types f -directory $fdir *] {
+		lappend added $f
+		lappend [new_filename $dbhandle $f $group]
+	}
+	return $added
+}
+
+proc add_directory {dbhandle fdir name {group 0}} {
+	# Adds a directory and its files to group
+	set gid [new_group $dbhandle $name $group]
+	puts "Made group $name with gid $gid parent $group"
+	set filenames [add_filenames $dbhandle $fdir $gid]
+	return $gid
+}
+
 proc delete_group {dbhandle d_gid} {
 	mysql::exec $dbhandle "call delete_group($d_gid)"
 }
@@ -131,19 +149,14 @@ proc delete_group {dbhandle d_gid} {
 set user $env(user)
 set pass $env(pass)
 set dbhandle [login_database $user $pass]
-create_new_database $dbhandle {test2}
-#mysq::exec $dbhandle {start transaction;}
-set g1 [new_group $dbhandle test_group]
-set g2 [new_group $dbhandle test_group2 $g1]
-set file_rows [list]
+create_new_database $dbhandle {files_meta}
 
-foreach {name} {telsa coil max recoil drop} {
-	lappend file_rows [new_filename $dbhandle $name $g1]
-	lappend file_rows [new_filename $dbhandle g2_$name $g2]
-}
+set docs [new_group $dbhandle docs]
+set osimg [add_directory $dbhandle ~/os_images OS $docs]
+set pet [add_directory $dbhandle ~/pet pet $docs]
+set music [add_directory $dbhandle ~/Music Music $pet]
 
-delete_group $dbhandle $g1
 mysql::close $dbhandle
-puts $file_rows
+
 
 
