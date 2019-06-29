@@ -1,44 +1,40 @@
 #!/usr/bin/env tclsh8.6
-#package require Tk
+package require Tk
 package require mysqltcl
 
-#pack [ttk::treeview .tv_links -columns {views tags} -yscrollcommand {.tv_links_sb set}] -side left -fill both -expand 1
-#pack [scrollbar .tv_links_sb -command {.tv_links yview}] -side left -fill y
+proc init_filenames_tv {parent} {
+	pack [frame $parent] -fill both -expand 1
+	pack [ttk::treeview $parent.fnames -columns {views tags} -yscrollcommand "$parent.fnames_sb set"] -side left -fill both -expand 1
+	pack [scrollbar $parent.fnames_sb -command "$parent.fnames yview"] -side left -fill y
+	foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
+		# this loop adjusts the treeview's columns
+		$parent.fnames heading $c -text $l -anchor w
+		$parent.fnames column $c -minwidth 16 -width $w
+		incr i
+	}
+}
 
-#foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
-	## this loop adjusts the treeview's columns
-	#.tv_links heading $c -text $l -anchor w
-	#.tv_links column $c -minwidth 16 -width $w
-	#incr i
-#}
+proc insert_group {widget name {parent {}}} {
+	# need to check if parent in .tv_links
+	# ideally would accept a list of:
+	# group_id name
+	if {[$widget.fnames exists $parent]} {
+		return [$widget.fnames insert $parent end -text $name]
+	}
+}
 
-#proc insert_group {name {parent {}}} {
-	## need to check if parent in .tv_links
-	#return [.tv_links insert $parent end -text $name]
-#}
+proc insert_filename {widget parent name {views 0}} {
+	# need to check if parent exists in widget first
+	# ideally would accept a list of:
+	# rownumber filename views tags
+	if {[$widget.fnames exists $parent]} {
+		return [$widget.fnames insert $parent end -text $name -value [list $views]]
+	}
+}
 
-#proc insert_filename {parent name {views 0}} {
-	## need to check if parent in .tv_links
-	#return [.tv_links insert $parent end -text $name -value [list $views]]
-#}
-
-#set g1 [insert_group cookies]
-#set g2 [insert_group bagels $g1]
-#set i1 [insert_filename $g2 my_file 200]
-#set i2 [insert_filename $g1 my_other_file 111]
-#puts $i1
-#puts $i2
-
-##mysqlsel $dbhandle {select * from keywords} -flatlist
-#mysql::sel $dbhandle {select * from keywords}
-#while {[llength [set row [mysql::fetch $dbhandle]]]>0} {
-	#puts [lindex $row 1]
-#}
-#set ext {}
-#set my_dir {}
-#foreach $file [glob -directory $my_dir $ext] {
-	#mysql
-#}
+init_filenames_tv .links
+puts [insert_group .links test]
+puts [insert_filename .links 11 my_file 200]
 
 proc open_database {username password database} {
 	# Returns dbhandle if params result in a correct open
@@ -154,17 +150,18 @@ proc delete_group {dbhandle d_gid} {
 	mysql::exec $dbhandle "call delete_group($d_gid)"
 }
 
-set user $env(user)
-set pass $env(pass)
-set dbhandle [login_database $user $pass]
-create_new_database $dbhandle {files_meta}
+proc test_database_creation {} {
+	set user $env(user)
+	set pass $env(pass)
+	set dbhandle [login_database $user $pass]
+	create_new_database $dbhandle {files_meta}
 
-set docs [new_group $dbhandle docs]
-set osimg [add_directory $dbhandle ~/os_images OS $docs]
-set pet [add_directory $dbhandle ~/pet pet $docs]
-set music [add_directory $dbhandle ~/Music Music $pet]
+	set docs [new_group $dbhandle docs]
+	set osimg [add_directory $dbhandle ~/os_images OS $docs]
+	set pet [add_directory $dbhandle ~/pet pet $docs]
+	set music [add_directory $dbhandle ~/Music Music $pet]
 
-mysql::close $dbhandle
-
+	mysql::close $dbhandle
+}
 
 
