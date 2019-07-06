@@ -84,8 +84,8 @@ sub sizeUp {
 
 sub readOut {
 	my $hash = shift;
-	my $read = $$hash{'read'};
-	my $next = $$hash{'next'};
+	my $read = $$hash{'read'} // 0;
+	my $next = $$hash{'next'} // 0;
 	my $size = $$hash{'size'};
 	my @items;
 	while ($read != $next) {

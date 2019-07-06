@@ -2,9 +2,15 @@
 package require Tk
 package require mysqltcl
 
+namespace eval App {
+	namespace eval v {
+#		variable selectedrowids
+	}
+}
+
 proc init_filenames_tv {parent} {
 	pack [frame $parent] -fill both -expand 1
-	pack [ttk::treeview $parent.fnames -columns {views tags} -yscrollcommand "$parent.fnames_sb set"] -side left -fill both -expand 1
+	pack [ttk::treeview $parent.fnames -columns {views tags} -yscrollcommand "$parent.fnames_sb set"] -fill both -expand 1
 	pack [scrollbar $parent.fnames_sb -command "$parent.fnames yview"] -side left -fill y
 	foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
 		# this loop adjusts the treeview's columns
@@ -12,29 +18,71 @@ proc init_filenames_tv {parent} {
 		$parent.fnames column $c -minwidth 16 -width $w
 		incr i
 	}
+#	bind $parent.fnames <<TreeviewSelect>> {
+#		puts "$parent".fnames selection
+#	}
 }
 
-proc insert_group {widget name {parent {}}} {
+proc insert_group {widget id name {parent {}}} {
 	# need to check if parent in .tv_links
 	# ideally would accept a list of:
 	# group_id name
 	if {[$widget.fnames exists $parent]} {
-		return [$widget.fnames insert $parent end -text $name]
+		return [$widget.fnames insert $parent end -id $id -text $name]
 	}
 }
 
-proc insert_filename {widget parent name {views 0}} {
+proc insert_filename {widget id name meta {parent {}} } {
 	# need to check if parent exists in widget first
 	# ideally would accept a list of:
 	# rownumber filename views tags
 	if {[$widget.fnames exists $parent]} {
-		return [$widget.fnames insert $parent end -text $name -value [list $views]]
+		set tags [lassign $meta views]
+		return [$widget.fnames insert $parent end -id $id -text $name -value [list $views [concat $tags]]]
+	}
+}
+proc group_from_selection {master} {
+	set select [list [$master.fnames selection]]
+	if {[llength $select] == 0} {
+		return {}
+	} else {
+		set item [lindex $select 0]
+		if {[string match r* $item]} {
+			return [$master.fnames parent $item]
+		} else {
+			return $item
+		}
 	}
 }
 
-init_filenames_tv .links
-puts [insert_group .links test]
-puts [insert_filename .links 11 my_file 200]
+
+proc new_group_gui {master dbhandle} {
+	set parent [group_from_selection $master]
+	set name [.new_group.name.e get]
+	set folder [.new_group.dir.e get]
+#	set gid [new_group $dbhandle $name
+
+#	insert_group $master 123 $name $parent
+}
+proc set_entry {e text} {
+	$e delete 0 end
+	$e insert 0 $text
+}
+
+proc new_group_window {master dbhandle} {
+	toplevel .new_group
+	wm attributes .new_group -topmost 1
+	wm resizable .new_group 0 0
+	wm title .new_group {New Group}
+	pack [labelframe .new_group.name -text Name] -expand 1 -fill x
+	pack [entry .new_group.name.e] -side left -expand 1 -fill x
+	pack [labelframe .new_group.dir -text Directory] -expand 1 -fill x
+	pack [entry .new_group.dir.e] -side left  -expand 1 -fill x
+	pack [button .new_group.dir.select -text Open -command {set_entry .new_group.dir.e [tk_chooseDirectory]}]
+
+	pack [button .new_group.cancel -text Cancel -command {destroy .new_group}] -side right
+	pack [button .new_group.new -text New -command [list new_group_gui $master $dbhandle]] -side right
+}
 
 proc open_database {username password database} {
 	# Returns dbhandle if params result in a correct open
@@ -164,4 +212,43 @@ proc test_database_creation {} {
 	mysql::close $dbhandle
 }
 
+proc fill_tv_links {master dbhandle} {
+	pack forget $master.fnames
+	$master.fnames delete [$master.fnames children {}]
+	set groups [dict create]
+	mysql::receive $dbhandle {select gid,name from groups} [list gid name] {
+		dict append groups $gid $name
+		insert_group $master $gid $name
+	}
+	pack $master.fnames -fill both -expand 1 -before $master.fnames_sb -side left
+	return $groups
+}
 
+
+proc quit_app {dbhandle} {
+	mysql::close $dbhandle
+	puts {Ended App}
+	destroy .
+}
+
+init_filenames_tv .links
+menu .men
+.men add command -label {New Group} -command {new_group_window .links {}}
+.men add command -label {Reload} -command {fill_tv_links .links $dbhandle}
+.men add command -label {Quit} -command {quit_app $dbhandle}
+. configure -menu .men
+
+
+set user $env(user)
+set pass $env(pass)
+set dbhandle [login_database $user $pass]
+create_new_database $dbhandle {files_meta}
+fill_tv_links .links $dbhandle
+
+
+#set g1 [insert_group .links 1 Test_Group]
+#insert_filename .links r101 first_row [list 100 red blue] $g1
+#set g2 [insert_group .links 2 Other]
+#insert_filename .links r202 secn_row [list 100 red blue] $g2
+#set g3 [insert_group .links 3 Subgroup $g2]
+#insert_filename .links r303 secn_row [list 100 red blue] $g3
