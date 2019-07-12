@@ -23,11 +23,17 @@ namespace eval Gui {
 				Gui::loadGroupItems $gid
 			}
 		}
+		bind .links.fnames <<TreeviewSelect>> {
+			set item [.links.fnames focus]
+			foreach tid [.links.fnames item $item -tags] {
+				puts [dict get $App::v::tags $tid]
+			}
+		}
 	}
 	proc initMenu {} {
 		menu .men
 		.men add command -label {New Group} -command Gui::winNewGroup
-		.men add command -label {Reload} -command Gui::loadGroups
+		.men add command -label {Reload} -command Gui::loadRootGroups
 		.men add command -label {Quit} -command Gui::quit
 		. configure -menu .men
 	}
@@ -62,27 +68,6 @@ namespace eval Gui {
 		# Creates a dummy load item for group
 		.links.fnames insert $id end -id d$id -text {(load)}
 	}
-	proc loadGroups {} {
-		pack forget .links.fnames
-		.links.fnames delete [.links.fnames children {}]
-		set groups [dict create]
-		# Create initial groups all at root
-		mysql::receive $App::v::dbhandle {select gid,name from groups} [list gid name] {
-			dict append groups $gid $name
-			Gui::newGroup $gid $name
-			Gui::dummyLoadItem $gid
-		}
-		# Move groups to correct parents
-		mysql::receive $App::v::dbhandle {select gid,pid from rel where pid is not null and depth=1} [list gid pid] {
-			.links.fnames move $gid $pid end
-		}
-		# Get the filenames
-		#mysql::receive $App::v::dbhandle {select id,ifnull(gid,''),name,views from filenames} [list id gid name views] {
-		#	Gui::newFilename r$id $name [list $views] $gid
-		#}
-		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
-		return $groups
-	}
 	proc loadRootGroups {} {
 		# Loads only root groups and creates on demand
 		pack forget .links.fnames
@@ -91,8 +76,6 @@ namespace eval Gui {
 		set Gui::v::unloaded [dict create]
 		mysql::receive $App::v::dbhandle {select rel.gid,name from groups join rel on groups.gid=rel.gid where pid is null} [list gid name] {
 			Gui::newGroup $gid $name
-			Gui::dummyLoadItem $gid
-			dict append Gui::v::unloaded $gid $name
 		}
 		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
 	}
@@ -103,12 +86,15 @@ namespace eval Gui {
 		# Get subgroups
 		mysql::receive $App::v::dbhandle "select rel.gid,name from rel join groups on rel.gid=groups.gid where pid=$gid and depth=1" [list sgid name] {
 			Gui::newGroup $sgid $name $gid
-			Gui::dummyLoadItem $sgid
-			dict append Gui::v::unloaded $sgid $name
 		}
 		# Get filenames
 		mysql::receive $App::v::dbhandle "select id,name,views from filenames where gid=$gid" [list id name views] {
 			Gui::newFilename r$id $name [list $views] $gid
+		}
+		# Get tags for filenames just loaded
+		mysql::receive $App::v::dbhandle "select fileid,tagid from tag_map join filenames on fileid=id where gid=$gid" [list id tid] {
+			#.links.fnames item r$id -value [list [.links.fnames item r$id -value] $tid]
+			.links.fnames tag add $tid r$id
 		}
 		dict append Gui::v::groups $gid [dict get $Gui::v::unloaded $gid]
 		dict unset Gui::v::unloaded $gid
@@ -125,7 +111,9 @@ namespace eval Gui {
 		# ideally would accept a list of:
 		# group_id name
 		if {[.links.fnames exists $parent]} {
-			return [.links.fnames insert $parent end -id $id -text $name]
+			dict append Gui::v::unloaded $id $name
+			.links.fnames insert $parent end -id $id -text $name
+			Gui::dummyLoadItem $id
 		}
 	}
 
@@ -157,6 +145,7 @@ namespace eval Gui {
 namespace eval App {
 	namespace eval v {
 		variable dbhandle
+		variable tags
 	}
 }
 
@@ -274,6 +263,13 @@ proc delete_group {dbhandle d_gid} {
 	mysql::exec $dbhandle "call delete_group($d_gid)"
 }
 
+proc retrive_tags {dbhandle} {
+	set App::v::tags [dict create]
+	mysql::receive $dbhandle {select id,tag from tags} [list id tag] {
+		dict append App::v::tags $id $tag 
+	}
+}
+
 proc test_database_creation {} {
 	set user $env(user)
 	set pass $env(pass)
@@ -297,4 +293,5 @@ set user $env(user)
 set pass $env(pass)
 set App::v::dbhandle [login_database $user $pass]
 create_new_database $App::v::dbhandle {files_meta}
+retrive_tags $App::v::dbhandle
 Gui::loadRootGroups
