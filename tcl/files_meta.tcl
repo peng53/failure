@@ -2,88 +2,162 @@
 package require Tk
 package require mysqltcl
 
-namespace eval App {
+namespace eval Gui {
 	namespace eval v {
-		variable dbhandle
-		variable tvlinks
+		variable unloaded
+		variable groups
 	}
-}
+	proc initMainView {} {
+		pack [frame .links] -fill both -expand 1
+		pack [ttk::treeview .links.fnames -columns {views tags} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1
+		pack [scrollbar .links.fnames_sb -command {.links.fnames yview}] -side left -fill y
+		foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
+			# this loop adjusts the treeview's columns
+			.links.fnames heading $c -text $l -anchor w
+			.links.fnames column $c -minwidth 16 -width $w
+			incr i
+		}
+		bind .links.fnames <<TreeviewOpen>> {
+			set gid [.links.fnames focus]
+			if {[dict exists $Gui::v::unloaded $gid]} {
+				Gui::loadGroupItems $gid
+			}
+		}
+	}
+	proc initMenu {} {
+		menu .men
+		.men add command -label {New Group} -command Gui::winNewGroup
+		.men add command -label {Reload} -command Gui::loadGroups
+		.men add command -label {Quit} -command Gui::quit
+		. configure -menu .men
+	}
+	proc winNewGroup {} {
+		toplevel .new_group
+		wm attributes .new_group -topmost 1
+		wm resizable .new_group 0 0
+		wm title .new_group {New Group}
+		pack [labelframe .new_group.name -text Name] -expand 1 -fill x
+		pack [entry .new_group.name.e] -side left -expand 1 -fill x
+		pack [labelframe .new_group.dir -text Directory] -expand 1 -fill x
+		pack [entry .new_group.dir.e] -side left  -expand 1 -fill x
+		pack [button .new_group.dir.select -text Open -command {Gui::setEntry .new_group.dir.e [tk_chooseDirectory]}]
 
-proc init_filenames_tv {parent} {
-	pack [frame $parent] -fill both -expand 1
-	pack [ttk::treeview $parent.fnames -columns {views tags} -yscrollcommand "$parent.fnames_sb set"] -fill both -expand 1
-	pack [scrollbar $parent.fnames_sb -command "$parent.fnames yview"] -side left -fill y
-	foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
-		# this loop adjusts the treeview's columns
-		$parent.fnames heading $c -text $l -anchor w
-		$parent.fnames column $c -minwidth 16 -width $w
-		incr i
+		pack [button .new_group.cancel -text Cancel -command {destroy .new_group}] -side right
+		pack [button .new_group.new -text New -command Gui::newGroupAction] -side right
 	}
-	#bind $parent.fnames <<TreeviewSelect>> {
-	#	puts "$parent".fnames selection
-	#}
-	return $parent
-}
+	proc newGroupAction {} {
+		set dbhandle $App::v::dbhandle
+		set parent [Gui::selectedGroup]
+		set name [.new_group.name.e get]
+		set folder [.new_group.dir.e get]
+	#	set gid [new_group $dbhandle $name
 
-proc insert_group {widget id name {parent {}}} {
-	# need to check if parent in .tv_links
-	# ideally would accept a list of:
-	# group_id name
-	if {[$widget.fnames exists $parent]} {
-		return [$widget.fnames insert $parent end -id $id -text $name]
+	#	Gui::newGroup $master 123 $name $parent
 	}
-}
+	proc setEntry {e text} {
+		$e delete 0 end
+		$e insert 0 $text
+	}
+	proc dummyLoadItem {id} {
+		# Creates a dummy load item for group
+		.links.fnames insert $id end -id d$id -text {(load)}
+	}
+	proc loadGroups {} {
+		pack forget .links.fnames
+		.links.fnames delete [.links.fnames children {}]
+		set groups [dict create]
+		# Create initial groups all at root
+		mysql::receive $App::v::dbhandle {select gid,name from groups} [list gid name] {
+			dict append groups $gid $name
+			Gui::newGroup $gid $name
+			Gui::dummyLoadItem $gid
+		}
+		# Move groups to correct parents
+		mysql::receive $App::v::dbhandle {select gid,pid from rel where pid is not null and depth=1} [list gid pid] {
+			.links.fnames move $gid $pid end
+		}
+		# Get the filenames
+		#mysql::receive $App::v::dbhandle {select id,ifnull(gid,''),name,views from filenames} [list id gid name views] {
+		#	Gui::newFilename r$id $name [list $views] $gid
+		#}
+		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
+		return $groups
+	}
+	proc loadRootGroups {} {
+		# Loads only root groups and creates on demand
+		pack forget .links.fnames
+		.links.fnames delete [.links.fnames children {}]
+		set Gui::v::groups [dict create]
+		set Gui::v::unloaded [dict create]
+		mysql::receive $App::v::dbhandle {select rel.gid,name from groups join rel on groups.gid=rel.gid where pid is null} [list gid name] {
+			Gui::newGroup $gid $name
+			Gui::dummyLoadItem $gid
+			dict append Gui::v::unloaded $gid $name
+		}
+		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
+	}
+	proc loadGroupItems {gid} {
+		# Loads subgroups & filenames from a group
+		# First delete dummy item
+		.links.fnames delete d$gid
+		# Get subgroups
+		mysql::receive $App::v::dbhandle "select rel.gid,name from rel join groups on rel.gid=groups.gid where pid=$gid and depth=1" [list sgid name] {
+			Gui::newGroup $sgid $name $gid
+			Gui::dummyLoadItem $sgid
+			dict append Gui::v::unloaded $sgid $name
+		}
+		# Get filenames
+		mysql::receive $App::v::dbhandle "select id,name,views from filenames where gid=$gid" [list id name views] {
+			Gui::newFilename r$id $name [list $views] $gid
+		}
+		dict append Gui::v::groups $gid [dict get $Gui::v::unloaded $gid]
+		dict unset Gui::v::unloaded $gid
+		puts "Loaded group #$gid!"
+	}
+	proc quit {} {
+		mysql::close $App::v::dbhandle
+		puts {Ended App}
+		destroy .
+	}
+	### Following procs only add rows visually {
+	proc newGroup {id name {parent {}}} {
+		# need to check if parent in .tv_links
+		# ideally would accept a list of:
+		# group_id name
+		if {[.links.fnames exists $parent]} {
+			return [.links.fnames insert $parent end -id $id -text $name]
+		}
+	}
 
-proc insert_filename {widget id name meta {parent {}} } {
-	# need to check if parent exists in widget first
-	# ideally would accept a list of:
-	# rownumber filename views tags
-	if {[$widget.fnames exists $parent]} {
-		set tags [lassign $meta views]
-		return [$widget.fnames insert $parent end -id $id -text $name -value [list $views [concat $tags]]]
+	proc newFilename {id name meta {parent {}} } {
+		# need to check if parent exists in widget first
+		# ideally would accept a list of:
+		# rownumber filename views tags
+		if {[.links.fnames exists $parent]} {
+			set tags [lassign $meta views]
+			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [concat $tags]]]
+		}
 	}
-}
-proc group_from_selection {master} {
-	set select [list [$master.fnames selection]]
-	if {[llength $select] == 0} {
-		return {}
-	} else {
-		set item [lindex $select 0]
-		if {[string match r* $item]} {
-			return [$master.fnames parent $item]
+	### }
+	proc selectedGroup {} {
+		set select [list [.links.fnames selection]]
+		if {[llength $select] == 0} {
+			return {}
 		} else {
-			return $item
+			set item [lindex $select 0]
+			if {[string match r* $item]} {
+				return [.links.fnames parent $item]
+			} else {
+				return $item
+			}
 		}
 	}
 }
 
-
-proc new_group_gui {master dbhandle} {
-	set parent [group_from_selection $master]
-	set name [.new_group.name.e get]
-	set folder [.new_group.dir.e get]
-#	set gid [new_group $dbhandle $name
-
-#	insert_group $master 123 $name $parent
-}
-proc set_entry {e text} {
-	$e delete 0 end
-	$e insert 0 $text
-}
-
-proc new_group_window {master dbhandle} {
-	toplevel .new_group
-	wm attributes .new_group -topmost 1
-	wm resizable .new_group 0 0
-	wm title .new_group {New Group}
-	pack [labelframe .new_group.name -text Name] -expand 1 -fill x
-	pack [entry .new_group.name.e] -side left -expand 1 -fill x
-	pack [labelframe .new_group.dir -text Directory] -expand 1 -fill x
-	pack [entry .new_group.dir.e] -side left  -expand 1 -fill x
-	pack [button .new_group.dir.select -text Open -command {set_entry .new_group.dir.e [tk_chooseDirectory]}]
-
-	pack [button .new_group.cancel -text Cancel -command {destroy .new_group}] -side right
-	pack [button .new_group.new -text New -command [list new_group_gui $master $dbhandle]] -side right
+namespace eval App {
+	namespace eval v {
+		variable dbhandle
+	}
 }
 
 proc open_database {username password database} {
@@ -214,51 +288,13 @@ proc test_database_creation {} {
 	mysql::close $dbhandle
 }
 
-proc fill_tv_links {master} {
-	pack forget $master.fnames
-	$master.fnames delete [$master.fnames children {}]
-	set groups [dict create]
-	# Create initial groups all at root
-	mysql::receive $App::v::dbhandle {select gid,name from groups} [list gid name] {
-		dict append groups $gid $name
-		insert_group $master $gid $name
-	}
-	# Move groups to correct parents
-	mysql::receive $App::v::dbhandle {select gid,pid from rel where pid is not null and depth=1} [list gid pid] {
-		$master.fnames move $gid $pid end
-	}
-	# Get the filenames
-	#mysql::receive $App::v::dbhandle {select id,ifnull(gid,''),name,views from filenames} [list id gid name views] {
-	#	insert_filename $master r$id $name [list $views] $gid
-	#}
-	pack $master.fnames -fill both -expand 1 -before $master.fnames_sb -side left
-	return $groups
-}
 
 
-proc quit_app {} {
-	mysql::close $App::v::dbhandle
-	puts {Ended App}
-	destroy .
-}
-
-set App::v::tvlinks [init_filenames_tv .links]
-menu .men
-.men add command -label {New Group} -command {new_group_window .links {}}
-.men add command -label {Reload} -command {fill_tv_links .links}
-.men add command -label {Quit} -command quit_app
-. configure -menu .men
+Gui::initMainView
+Gui::initMenu
 
 set user $env(user)
 set pass $env(pass)
 set App::v::dbhandle [login_database $user $pass]
 create_new_database $App::v::dbhandle {files_meta}
-fill_tv_links .links
-
-
-#set g1 [insert_group .links 1 Test_Group]
-#insert_filename .links r101 first_row [list 100 red blue] $g1
-#set g2 [insert_group .links 2 Other]
-#insert_filename .links r202 secn_row [list 100 red blue] $g2
-#set g3 [insert_group .links 3 Subgroup $g2]
-#insert_filename .links r303 secn_row [list 100 red blue] $g3
+Gui::loadRootGroups
