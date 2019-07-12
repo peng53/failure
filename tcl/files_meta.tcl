@@ -4,7 +4,8 @@ package require mysqltcl
 
 namespace eval App {
 	namespace eval v {
-#		variable selectedrowids
+		variable dbhandle
+		variable tvlinks
 	}
 }
 
@@ -18,9 +19,10 @@ proc init_filenames_tv {parent} {
 		$parent.fnames column $c -minwidth 16 -width $w
 		incr i
 	}
-#	bind $parent.fnames <<TreeviewSelect>> {
-#		puts "$parent".fnames selection
-#	}
+	#bind $parent.fnames <<TreeviewSelect>> {
+	#	puts "$parent".fnames selection
+	#}
+	return $parent
 }
 
 proc insert_group {widget id name {parent {}}} {
@@ -212,38 +214,46 @@ proc test_database_creation {} {
 	mysql::close $dbhandle
 }
 
-proc fill_tv_links {master dbhandle} {
+proc fill_tv_links {master} {
 	pack forget $master.fnames
 	$master.fnames delete [$master.fnames children {}]
 	set groups [dict create]
-	mysql::receive $dbhandle {select gid,name from groups} [list gid name] {
+	# Create initial groups all at root
+	mysql::receive $App::v::dbhandle {select gid,name from groups} [list gid name] {
 		dict append groups $gid $name
 		insert_group $master $gid $name
 	}
+	# Move groups to correct parents
+	mysql::receive $App::v::dbhandle {select gid,pid from rel where pid is not null and depth=1} [list gid pid] {
+		$master.fnames move $gid $pid end
+	}
+	# Get the filenames
+	#mysql::receive $App::v::dbhandle {select id,ifnull(gid,''),name,views from filenames} [list id gid name views] {
+	#	insert_filename $master r$id $name [list $views] $gid
+	#}
 	pack $master.fnames -fill both -expand 1 -before $master.fnames_sb -side left
 	return $groups
 }
 
 
-proc quit_app {dbhandle} {
-	mysql::close $dbhandle
+proc quit_app {} {
+	mysql::close $App::v::dbhandle
 	puts {Ended App}
 	destroy .
 }
 
-init_filenames_tv .links
+set App::v::tvlinks [init_filenames_tv .links]
 menu .men
 .men add command -label {New Group} -command {new_group_window .links {}}
-.men add command -label {Reload} -command {fill_tv_links .links $dbhandle}
-.men add command -label {Quit} -command {quit_app $dbhandle}
+.men add command -label {Reload} -command {fill_tv_links .links}
+.men add command -label {Quit} -command quit_app
 . configure -menu .men
-
 
 set user $env(user)
 set pass $env(pass)
-set dbhandle [login_database $user $pass]
-create_new_database $dbhandle {files_meta}
-fill_tv_links .links $dbhandle
+set App::v::dbhandle [login_database $user $pass]
+create_new_database $App::v::dbhandle {files_meta}
+fill_tv_links .links
 
 
 #set g1 [insert_group .links 1 Test_Group]
