@@ -23,12 +23,6 @@ namespace eval Gui {
 				Gui::loadGroupItems $gid
 			}
 		}
-		bind .links.fnames <<TreeviewSelect>> {
-			set item [.links.fnames focus]
-			foreach tid [.links.fnames item $item -tags] {
-				puts [dict get $App::v::tags $tid]
-			}
-		}
 	}
 	proc initMenu {} {
 		menu .men
@@ -87,15 +81,15 @@ namespace eval Gui {
 		mysql::receive $App::v::dbhandle "select rel.gid,name from rel join groups on rel.gid=groups.gid where pid=$gid and depth=1" [list sgid name] {
 			Gui::newGroup $sgid $name $gid
 		}
-		# Get filenames
-		mysql::receive $App::v::dbhandle "select id,name,views from filenames where gid=$gid" [list id name views] {
-			Gui::newFilename r$id $name [list $views] $gid
+		# Get filenames and tags
+		mysql::receive $App::v::dbhandle "select id,name,views,group_concat(tagid) from filenames left outer join tag_map on id=fileid where gid=$gid group by id order by id" [list id name views tags] {
+			if {[string length $tags]==0} {
+				Gui::newFilename r$id $name [list $views] $gid
+			} else {
+				Gui::newFilename r$id $name [list $views $tags] $gid
+			}
 		}
-		# Get tags for filenames just loaded
-		mysql::receive $App::v::dbhandle "select fileid,tagid from tag_map join filenames on fileid=id where gid=$gid" [list id tid] {
-			#.links.fnames item r$id -value [list [.links.fnames item r$id -value] $tid]
-			.links.fnames tag add $tid r$id
-		}
+
 		dict append Gui::v::groups $gid [dict get $Gui::v::unloaded $gid]
 		dict unset Gui::v::unloaded $gid
 		puts "Loaded group #$gid!"
@@ -123,7 +117,11 @@ namespace eval Gui {
 		# rownumber filename views tags
 		if {[.links.fnames exists $parent]} {
 			set tags [lassign $meta views]
-			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [concat $tags]]]
+			set stag [list]
+			foreach tag [split $tags ,] {
+				lappend stag [dict get $App::v::tags $tag]
+			}
+			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [join $stag {, }]]]
 		}
 	}
 	### }
