@@ -6,10 +6,11 @@ namespace eval Gui {
 	namespace eval v {
 		variable unloaded
 		variable groups
+		variable rootgrp 0
 	}
 	proc initMainView {} {
 		pack [frame .links] -fill both -expand 1
-		pack [ttk::treeview .links.fnames -columns {views tags} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1
+		pack [ttk::treeview .links.fnames -columns {views tags} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1 -side left
 		pack [scrollbar .links.fnames_sb -command {.links.fnames yview}] -side left -fill y
 		foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
 			# this loop adjusts the treeview's columns
@@ -28,31 +29,70 @@ namespace eval Gui {
 		menu .men
 		.men add command -label {New Group} -command Gui::winNewGroup
 		.men add command -label {Reload} -command Gui::loadRootGroups
+		.men add command -label {New Tag} -command Gui::winNewTag
 		.men add command -label {Quit} -command Gui::quit
 		. configure -menu .men
 	}
+	proc winNewTag {} {
+		if {{.win} in [winfo children .]} { return }
+		toplevel .win 
+		wm attributes .win -topmost 1
+		wm resizable .win 0 0
+		wm title .win {New Tag}
+		pack [labelframe .win.tag -text Tag] -expand 1 -fill x
+		pack [entry .win.tag.e] -expand 1 -fill x
+		pack [button .win.cancel -text Cancel -command {destroy .win}] -side right
+		pack [button .win.new -text New -command Gui::newTagAction] -side right
+	}
+	proc newTagAction {} {
+		set tag [.win.tag.e get]
+		if {[string length $tag] > 15} {
+			if {[tk_dialog .win_tcate {Too many characters} {Truncate tag to 15 chars?} questhead 0 Yes No] == 1} {
+				return
+			}
+			set tag [string range $tag 0 15]
+		}
+		create_tag $App::v::dbhandle $tag
+		destroy .win
+	}
 	proc winNewGroup {} {
-		toplevel .new_group
-		wm attributes .new_group -topmost 1
-		wm resizable .new_group 0 0
-		wm title .new_group {New Group}
-		pack [labelframe .new_group.name -text Name] -expand 1 -fill x
-		pack [entry .new_group.name.e] -side left -expand 1 -fill x
-		pack [labelframe .new_group.dir -text Directory] -expand 1 -fill x
-		pack [entry .new_group.dir.e] -side left  -expand 1 -fill x
-		pack [button .new_group.dir.select -text Open -command {Gui::setEntry .new_group.dir.e [tk_chooseDirectory]}]
+		if {{.win} in [winfo children .]} { return }
+		toplevel .win
+		wm attributes .win -topmost 1
+		wm resizable .win 0 0
+		wm title .win {New Group}
+		pack [labelframe .win.name -text Name] -expand 1 -fill x
+		pack [entry .win.name.e] -side left -expand 1 -fill x
+		pack [labelframe .win.dir -text Directory] -expand 1 -fill x
+		pack [entry .win.dir.e] -side left  -expand 1 -fill x
+		pack [button .win.dir.select -text Open -command {Gui::setEntry .win.dir.e [tk_chooseDirectory]}]
+		pack [checkbutton .win.grp -text {Create at Root} -variable Gui::v::rootgrp]
 
-		pack [button .new_group.cancel -text Cancel -command {destroy .new_group}] -side right
-		pack [button .new_group.new -text New -command Gui::newGroupAction] -side right
+		pack [button .win.cancel -text Cancel -command {destroy .win}] -side right
+		pack [button .win.new -text New -command Gui::newGroupAction] -side right
 	}
 	proc newGroupAction {} {
-		set dbhandle $App::v::dbhandle
-		set parent [Gui::selectedGroup]
-		set name [.new_group.name.e get]
-		set folder [.new_group.dir.e get]
-	#	set gid [new_group $dbhandle $name
-
-	#	Gui::newGroup $master 123 $name $parent
+		set name [.win.name.e get]
+		if {[string length $name]==0} {
+			tk_messageBox -type ok -icon error -title Error -message {Group name cannot be empty.}
+			return
+		}
+		set folder [.win.dir.e get]
+		if {[string length $folder] > 0 && ! [file isdirectory $folder] } {
+			 tk_messageBox -type ok -icon error -title Error -message {Folder doesn't exist.}
+			 return
+		}
+		if {$Gui::v::rootgrp} {
+			set parent 0
+		} else {
+			set parent [Gui::selectedGroup]
+		}
+		set gid [group_from_dir_maybe $App::v::dbhandle $name $folder $parent]
+		if {$gid != 0} {
+			newGroup $gid $name [expr {$Gui::v::rootgrp==1? {} : $parent }]
+			loadGroupItems	$gid
+			destroy .win
+		}
 	}
 	proc setEntry {e text} {
 		$e delete 0 end
@@ -251,11 +291,20 @@ proc add_filenames {dbhandle fdir {group 0}} {
 
 proc add_directory {dbhandle fdir name {group 0}} {
 	# Adds a directory and its files to group
+	if {! [file isdirectory $fdir]} { return 0 }
 	set gid [new_group $dbhandle $name $group]
 	puts "Made group $name with gid $gid parent $group"
 	set filenames [add_filenames $dbhandle $fdir $gid]
 	return $gid
 }
+proc group_from_dir_maybe {dbhandle name fdir {group 0}} {
+	if {[string length $fdir]==0} {
+		return [new_group $dbhandle $name $group]
+	} else {
+		return [add_directory $dbhandle $fdir $name $group]
+	}
+}
+
 
 proc delete_group {dbhandle d_gid} {
 	mysql::exec $dbhandle "call delete_group($d_gid)"
@@ -266,6 +315,12 @@ proc retrive_tags {dbhandle} {
 	mysql::receive $dbhandle {select id,tag from tags} [list id tag] {
 		dict append App::v::tags $id $tag 
 	}
+}
+
+proc create_tag {dbhandle tag} {
+	mysql::exec $dbhandle "insert into tags (tag) value ('$tag')"
+	set r [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
+	dict append App::v::tags [lindex $r 0] $tag
 }
 
 proc test_database_creation {} {
@@ -292,4 +347,4 @@ set pass $env(pass)
 set App::v::dbhandle [login_database $user $pass]
 create_new_database $App::v::dbhandle {files_meta}
 retrive_tags $App::v::dbhandle
-Gui::loadRootGroups
+#Gui::loadRootGroups
