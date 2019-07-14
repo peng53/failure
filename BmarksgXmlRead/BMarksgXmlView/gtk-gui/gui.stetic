@@ -4,7 +4,7 @@
     <images-root-path>..</images-root-path>
   </configuration>
   <import>
-    <widget-library name="../bin/Debug/BMarksgXmlView.exe" internal="true" />
+    <widget-library name="../bin/Release/BMarksgXmlView.exe" internal="true" />
   </import>
   <widget class="Gtk.Window" id="MainWindow" design-size="427 300">
     <action-group name="Default">
@@ -93,10 +93,9 @@
             <property name="CanFocus">True</property>
             <property name="ShadowType">In</property>
             <child>
-              <widget class="Gtk.NodeView" id="nodeview1">
+              <widget class="Gtk.TreeView" id="treeview1">
                 <property name="MemberName" />
                 <property name="CanFocus">True</property>
-                <property name="Reorderable">True</property>
               </widget>
             </child>
           </widget>
