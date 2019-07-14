@@ -15,17 +15,42 @@ public partial class MainWindow : Gtk.Window
         QuitAction.Activated += QuitAction_Activated;
         name_entry.Activated += (o, e) => url_entry.GrabFocus();
         url_entry.Activated += (o, e) => GetEntry();
-        data = new NodeStore(typeof(LinkNode));
-        nodeview1.NodeStore = data;
-        typeof(NodeView).GetField("store", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(nodeview1, data);
-        // Above line due to
-        // https://stackoverflow.com/questions/47831631/gtk-nodeview-nodestore-always-gets-null-reference
-        nodeview1.AppendColumn("Group", new CellRendererText(), "text", 0).Resizable = true;
-        nodeview1.AppendColumn("Name", new CellRendererText(), "text",1).Resizable = true;
-        nodeview1.AppendColumn("URL", new CellRendererText(), "text",2).Resizable = true;
-        nodeview1.NodeSelection.Changed += Cwout;
-        store = new ListStore(typeof(LinkNode));
-        nodeview1.Model = store;
+        TreeViewColumn groupColumn = new TreeViewColumn { Title = "Group1" };
+        TreeViewColumn nameColumn = new TreeViewColumn { Title = "Name2" };
+        TreeViewColumn urlColumn = new TreeViewColumn { Title = "Url3" };
+        treeview1.AppendColumn(groupColumn);
+        treeview1.AppendColumn(nameColumn);
+        treeview1.AppendColumn(urlColumn);
+        linksListStore = new TreeStore(typeof(LinkNode));
+        treeview1.Model = linksListStore;
+        Gtk.CellRendererText groupCell = new CellRendererText();
+        groupColumn.PackStart(groupCell, true);
+
+        Gtk.CellRendererText nameCell = new CellRendererText();
+        nameColumn.PackStart(nameCell, true);
+
+        Gtk.CellRendererText urlCell = new CellRendererText();
+        urlColumn.PackStart(urlCell, true);
+
+        groupColumn.SetCellDataFunc(groupCell, new TreeCellDataFunc(RenderGroupText));
+        nameColumn.SetCellDataFunc(nameCell, new TreeCellDataFunc(RenderNameText));
+        urlColumn.SetCellDataFunc(urlCell, new TreeCellDataFunc(RenderUrlText));
+    }
+
+    private void RenderGroupText(TreeViewColumn tree_column, CellRenderer cell, TreeModel tree_model, TreeIter iter)
+    {
+        LinkNode link = (LinkNode)tree_model.GetValue(iter, 0);
+        (cell as CellRendererText).Text = link.Group;
+    }
+    private void RenderNameText(TreeViewColumn tree_column, CellRenderer cell, TreeModel tree_model, TreeIter iter)
+    {
+        LinkNode link = (LinkNode)tree_model.GetValue(iter, 0);
+        (cell as CellRendererText).Text = link.Title;
+    }
+    private void RenderUrlText(TreeViewColumn tree_column, CellRenderer cell, TreeModel tree_model, TreeIter iter)
+    {
+        LinkNode link = (LinkNode)tree_model.GetValue(iter, 0);
+        (cell as CellRendererText).Text = link.Url;
     }
     private void Cwout(object sender, EventArgs e)
     {
@@ -50,34 +75,13 @@ public partial class MainWindow : Gtk.Window
     public void AddLink(XElement link)
     {
         //data.AddNode(new LinkNode(link));
-        store.AppendValues(new LinkNode(link));
+        //store.AppendValues(new LinkNode(link));
+        linksListStore.AppendValues(new LinkNode(link));
     }
-    public void AddGroup(XElement mgroup)
-    {
-        nodeview1.Hide();
-        var xes = new Queue<XElement>();
-        xes.Enqueue(mgroup);
-        while (xes.Count > 0)
-        {
-            var group = xes.Dequeue();
-            foreach (var link in group.Elements())
-            {
-                if (link.Name == "Group")
-                {
-                    xes.Enqueue(link);
-                }
-                else
-                {
-                    AddLink(link);
-                }
-            }
-        }
-        nodeview1.Show();
-    }
-    private void GetEntry()
+private void GetEntry()
     {
         Console.WriteLine($"{name_entry.Text}, {url_entry.Text}");
     }
-    NodeStore data;
-    ListStore store;
+    TreeStore linksListStore;
+
 }
