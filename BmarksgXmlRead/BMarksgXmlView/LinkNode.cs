@@ -10,7 +10,7 @@ namespace BMarksgXmlView
         public LinkNode(XElement link)
         {
             element = link;
-        }
+}
         [Gtk.TreeNodeValue (Column = 0)]
         public string Group
         {

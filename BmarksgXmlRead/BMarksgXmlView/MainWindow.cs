@@ -24,18 +24,37 @@ public partial class MainWindow : Gtk.Window
         linksListStore = new TreeStore(typeof(LinkNode));
         treeview1.Model = linksListStore;
         Gtk.CellRendererText groupCell = new CellRendererText();
+        Gtk.CellRendererText nameCell = new CellRendererText { Editable = true };
+        Gtk.CellRendererText urlCell = new CellRendererText { Editable = true };
+
+        nameCell.Edited += NameCell_Edited;
+        urlCell.Edited += UrlCell_Edited;
+
         groupColumn.PackStart(groupCell, true);
-
-        Gtk.CellRendererText nameCell = new CellRendererText();
         nameColumn.PackStart(nameCell, true);
-
-        Gtk.CellRendererText urlCell = new CellRendererText();
         urlColumn.PackStart(urlCell, true);
 
         groupColumn.SetCellDataFunc(groupCell, new TreeCellDataFunc(RenderGroupText));
         nameColumn.SetCellDataFunc(nameCell, new TreeCellDataFunc(RenderNameText));
         urlColumn.SetCellDataFunc(urlCell, new TreeCellDataFunc(RenderUrlText));
     }
+
+    void NameCell_Edited(object o, EditedArgs args)
+    {
+        TreeIter iter;
+        linksListStore.GetIter(out iter, new TreePath(args.Path));
+        LinkNode link = (LinkNode)linksListStore.GetValue(iter, 0);
+        link.Title = args.NewText;
+    }
+
+    void UrlCell_Edited(object o, EditedArgs args)
+    {
+        TreeIter iter;
+        linksListStore.GetIter(out iter, new TreePath(args.Path));
+        LinkNode link = (LinkNode)linksListStore.GetValue(iter, 0);
+        link.Url = args.NewText;
+    }
+
 
     private void RenderGroupText(TreeViewColumn tree_column, CellRenderer cell, TreeModel tree_model, TreeIter iter)
     {

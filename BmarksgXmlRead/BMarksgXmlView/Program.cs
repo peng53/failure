@@ -1,5 +1,6 @@
 ﻿using System;
 using Gtk;
+using System.Linq;
 using System.Xml.Linq;
 using System.Collections.Generic;
 
@@ -16,13 +17,12 @@ namespace BMarksgXmlView
             foreach (XElement node in document.Elements("Bookmarks").Elements("Group"))
             {
                 AddGroup(node,win);
-                //Console.WriteLine("start");
-                //Console.WriteLine(node);
-                //Console.WriteLine("end");
             }
             win.Show();
             Application.Run();
-
+            //var findit = document.Descendants("Group").FirstOrDefault(el => el.Attribute("Id")?.Value == "5");
+            //Console.WriteLine(findit);
+            document.Save("../../../../in_out/test.xml");
         }
         public static void AddGroup(XElement groups, MainWindow win)
         {
