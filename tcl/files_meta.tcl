@@ -4,8 +4,8 @@ package require mysqltcl
 
 namespace eval Gui {
 	namespace eval v {
-		variable unloaded
-		variable groups
+		variable unloaded [list]
+		variable groups [list]
 		variable rootgrp 0
 	}
 	proc initMainView {} {
@@ -24,14 +24,64 @@ namespace eval Gui {
 				Gui::loadGroupItems $gid
 			}
 		}
+		bind .links.fnames <<TreeviewSelect>> {
+			set id [.links.fnames focus]
+			puts $id
+		}
 	}
 	proc initMenu {} {
 		menu .men
-		.men add command -label {New Group} -command Gui::winNewGroup
-		.men add command -label {Reload} -command Gui::loadRootGroups
-		.men add command -label {New Tag} -command Gui::winNewTag
-		.men add command -label {Quit} -command Gui::quit
+		menu .men.app
+		menu .men.new
+		menu .men.edit
+		.men.app add command -label {Load} -command {}
+		.men.app add command -label {Unload} -command {}
+		.men.app add command -label {Reload} -command Gui::loadRootGroups
+		.men.app add command -label {Quit} -command Gui::quit
+		.men.new add command -label {New Group} -command Gui::winNewGroup
+		.men.new add command -label {New Tag} -command Gui::winNewTag
+		.men.edit add command -label {Modify} -command Gui::winModify
+		.men.edit add command -label {Delete}
+		.men add cascade -label {App} -menu .men.app
+		.men add cascade -label {New} -menu .men.new
+		.men add cascade -label {Edit} -menu .men.edit
 		. configure -menu .men
+	}
+	proc tagLR {name} {
+		pack [frame $name]
+		pack [labelframe $name.left -text Selected] -side left -expand 1 -fill both
+		pack [listbox $name.left.lb -width 16]
+		pack [frame $name.buttons] -side left
+		pack [button $name.buttons.add -text {<}]
+		pack [button $name.buttons.rem -text {>}]
+		pack [labelframe $name.right -text Tags] -side left -expand 1 -fill both
+		pack [listbox $name.right.lb -width 16]
+		return $name
+	}
+	proc winModify {} {
+		#if {[llength [dict keys $Gui::v::groups]] == 0 && [llength [dict keys $Gui::v::unloaded]] == 0} {
+		#	tk_messageBox -detail {Database not loaded, cannot modify.} -icon error -title Error -type ok
+		#	return
+		#} ## probally not needed
+		set rid [.links.fnames focus]
+		if {[string length $rid] == 0 || [string match {[1-9]} $rid]} {
+			tk_messageBox -detail {Please select a filename to modify} -icon error -title Error -type ok
+			return
+		}
+		toplevel .win 
+		wm attributes .win -topmost 1
+		wm resizable .win 0 0
+		wm title .win {Modify}
+		pack [labelframe .win.name -text Name] -expand 1 -fill x
+		pack [entry .win.name.e] -expand 1 -fill x
+		pack [labelframe .win.group -text Group] -expand 1 -fill x
+		pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloaded] [dict values $Gui::v::groups]]] -expand 1 -fill x
+		pack [labelframe .win.views -text Views] -expand 1 -fill x
+		pack [spinbox .win.views.sb] -expand 1 -fill x
+		pack [tagLR .win.tags]
+		pack [frame .win.actions]
+		pack [button .win.actions.save -text Save] -side left
+		pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
 	}
 	proc winNewTag {} {
 		if {{.win} in [winfo children .]} { return }
@@ -51,6 +101,10 @@ namespace eval Gui {
 				return
 			}
 			set tag [string range $tag 0 15]
+		}
+		if {[dict exists $App::v::tags_id $tag]} {
+			tk_messageBox -detail {Tag already exists} -icon error -parent .win -title Error -type ok
+			return
 		}
 		create_tag $App::v::dbhandle $tag
 		destroy .win
@@ -184,6 +238,7 @@ namespace eval App {
 	namespace eval v {
 		variable dbhandle
 		variable tags
+		variable tags_id
 	}
 }
 
@@ -312,8 +367,10 @@ proc delete_group {dbhandle d_gid} {
 
 proc retrive_tags {dbhandle} {
 	set App::v::tags [dict create]
+	set App::v::tags_id [dict create]
 	mysql::receive $dbhandle {select id,tag from tags} [list id tag] {
 		dict append App::v::tags $id $tag 
+		dict append App::v::tags_id $tag $id
 	}
 }
 
@@ -321,6 +378,7 @@ proc create_tag {dbhandle tag} {
 	mysql::exec $dbhandle "insert into tags (tag) value ('$tag')"
 	set r [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
 	dict append App::v::tags [lindex $r 0] $tag
+	puts "Created tag: $tag id $r"
 }
 
 proc test_database_creation {} {
