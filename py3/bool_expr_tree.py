@@ -90,59 +90,58 @@ class ChainNode:
 		self.rightl = other
 		other.leftl = self
 
-class ChainHead:
-	def __init__(self):
-		self.beg = None
-		self.end = None
-		self.rightl = None
-
-	def append(self, node, required = True):
-		''' Add to end of chain '''
-		if not self.end:
-			self.end = self.beg = node
-			node.leftl = self
-			self.rightl = node
-		else:
-			self.end.insert(node)
-			self.end = node
-
 	def __str__(self):
-		l = []
-		n = self.beg
-		while n:
-			l.append(n)
-			n = n.rightl
-		return '\n'.join(map(str, l))
+		return str(self.exp)
 
 def breathlink(node):
 	''' Returns this node's left and right child as chain if possible '''
 	c = node.exp.pivot()
 	if not c:
 		return None
+	'''
 	a = ChainNode(c[0],True if node.exp.sym()==1 else False)
 	b = ChainNode(c[1])
 	a.rightl = b
 	b.leftl = a
 
+
 	node.leftl.rightl = a
 	a.rightl = node.leftl.rightl
 	node.replace(a,b)
 	return (a,b)
+	'''
+	# instead of replacing node, why not 'upgrade' node to the left child
+	# while inserting the right child after it
+	# make the right child first
+	right = ChainNode(c[1])
+	right.rightl = node.rightl
+	right.deferfail = node.deferfail
+	# begin change of node
+	node.deferfail = True if node.exp.sym()==1 else False
+	node.exp = c[0]
+	node.rightl = right
+	right.leftl = node
+	return (node,right)
 
 def tree2chain(tree):
 	''' Changes a expr tree to a chain '''
-	C = ChainHead()
+
 	q = Queue()
-	n = ChainNode(tree, False)
-	C.append(n)
-	q.put(n)
+	C = ChainNode(tree, False)
+	q.put(C)
 	while not q.empty():
 		n = q.get()
+		print('Got {}'.format(n))
 		nc = breathlink(n)
 		if nc:
-			print("Replacing {} with {}".format(n,nc))
+			print('Put {}'.format(nc[0]))
+			print('Put {}'.format(nc[1]))
 			q.put(nc[0])
 			q.put(nc[1])
+		else:
+			# if breathlink returns false, than the node is already in final state
+			print('final: {}'.format(n.exp.exp))
+
 	return C
 '''
    a    B AND C
@@ -151,17 +150,25 @@ def tree2chain(tree):
 /|\
 d e
 '''
-d = ExprNode(lambda x: x%2==0) # is divisible by 2
-e = ExprNode(lambda x: x%5==0) # is divisible by 5
-c = ExprNode(lambda x: x > 0)  # is greater than 0
+#d = ExprNode(lambda x: x%2==0) # is divisible by 2
+#e = ExprNode(lambda x: x%5==0) # is divisible by 5
+#c = ExprNode(lambda x: x > 0)  # is greater than 0
+d = ExprNode('lambda x: x%2==0') # is divisible by 2
+e = ExprNode('lambda x: x%5==0') # is divisible by 5
+c = ExprNode('lambda x: x > 0')  # is greater than 0
+
 
 b = OrNode(d,e)
 a = AndNode(b,c)
 
 CHAIN = tree2chain(a)
-print(CHAIN.beg)
-print(CHAIN.beg.rightl)
-print(CHAIN.end)
+#print(CHAIN)
+n = CHAIN
+#print(CHAIN.exp.exp)
+while n:
+	print('{} CAN FAIL: {}'.format(n.exp.exp,n.deferfail))
+	#print(n)
+	n = n.rightl
 
 '''
 c = ExprNode(lambda x: x>2)
