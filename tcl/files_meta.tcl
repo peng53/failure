@@ -7,6 +7,8 @@ namespace eval Gui {
 		variable unloaded [list]
 		variable groups [list]
 		variable rootgrp 0
+		variable views 0
+		variable tags [list]
 	}
 	proc initMainView {} {
 		pack [frame .links] -fill both -expand 1
@@ -45,18 +47,39 @@ namespace eval Gui {
 		.men add cascade -label {App} -menu .men.app
 		.men add cascade -label {New} -menu .men.new
 		.men add cascade -label {Edit} -menu .men.edit
+		.men add command  -label {View} -command Gui::winView
 		. configure -menu .men
 	}
 	proc tagLR {name} {
 		pack [frame $name]
 		pack [labelframe $name.left -text Selected] -side left -expand 1 -fill both
-		pack [listbox $name.left.lb -width 16]
+		pack [listbox $name.left.lb -width 16 -selectmode extended]
 		pack [frame $name.buttons] -side left
-		pack [button $name.buttons.add -text {<}]
-		pack [button $name.buttons.rem -text {>}]
+		pack [button $name.buttons.add -text {<} -command [list Gui::tagLRadd $name]]
+		pack [button $name.buttons.rem -text {>} -command [list Gui::tagLRrem $name]]
 		pack [labelframe $name.right -text Tags] -side left -expand 1 -fill both
-		pack [listbox $name.right.lb -width 16]
+		pack [listbox $name.right.lb -width 16 -selectmode extended]
 		return $name
+	}
+	proc tagLRadd {name} {
+		foreach i [lreverse [$name.right.lb curselection]] {
+			$name.left.lb insert end [$name.right.lb get $i]
+			$name.right.lb delete $i
+		}
+	}
+	proc tagLRrem {name} {
+		foreach i [lreverse [$name.left.lb curselection]] {
+			$name.right.lb insert end [$name.left.lb get $i]
+			$name.left.lb delete $i
+		}
+	}
+	proc tagLRfill {name} {
+		foreach tag [dict values $Gui::v::tags] {
+			$name.left.lb insert end $tag
+			puts $tag
+		}
+		#set p [dict values $Gui::v::tags]
+		#puts $p
 	}
 	proc winModify {} {
 		#if {[llength [dict keys $Gui::v::groups]] == 0 && [llength [dict keys $Gui::v::unloaded]] == 0} {
@@ -77,11 +100,17 @@ namespace eval Gui {
 		pack [labelframe .win.group -text Group] -expand 1 -fill x
 		pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloaded] [dict values $Gui::v::groups]]] -expand 1 -fill x
 		pack [labelframe .win.views -text Views] -expand 1 -fill x
-		pack [spinbox .win.views.sb] -expand 1 -fill x
+		lassign [.links.fnames item $rid -values] views tags
+		set Gui::v::views $views
+		pack [spinbox .win.views.sb -from 0 -to 32767 -textvariable Gui::v::views] -expand 1 -fill x
 		pack [tagLR .win.tags]
+		tagLRfill .win.tags
 		pack [frame .win.actions]
 		pack [button .win.actions.save -text Save] -side left
 		pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
+
+		.win.name.e insert 0 [.links.fnames item $rid -text]
+		.win.group.cb set [dict get $Gui::v::groups [.links.fnames parent $rid]]
 	}
 	proc winNewTag {} {
 		if {{.win} in [winfo children .]} { return }
@@ -166,6 +195,8 @@ namespace eval Gui {
 			Gui::newGroup $gid $name
 		}
 		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
+		
+		loadTags
 	}
 	proc loadGroupItems {gid} {
 		# Loads subgroups & filenames from a group
@@ -187,6 +218,14 @@ namespace eval Gui {
 		dict append Gui::v::groups $gid [dict get $Gui::v::unloaded $gid]
 		dict unset Gui::v::unloaded $gid
 		puts "Loaded group #$gid!"
+	}
+	proc loadTags {} {
+		# Load tags as dict
+		set Gui::v::tags [dict create]
+		mysql::receive $App::v::dbhandle {select id, tag from tags} [list id tag] {
+			dict lappend Gui::v::tags $id $tag
+			puts "$id $tag"
+		}
 	}
 	proc quit {} {
 		mysql::close $App::v::dbhandle
@@ -231,6 +270,30 @@ namespace eval Gui {
 				return $item
 			}
 		}
+	}
+	
+	proc winView {} {
+		# Creates a window with details on item with id itemId
+		set itemId [.links.fnames focus]
+		if {[string length $itemId] == 0 || [string match {[1-9]} $itemId]} {
+			tk_messageBox -detail {Please select a filename to view} -icon error -title Error -type ok
+			return
+		}
+		if [winfo exists .v$itemId] {
+			return
+		}
+		toplevel .v$itemId
+		set item [.links.fnames item $itemId -text]
+		lassign [.links.fnames item $itemId -values] views tags
+		wm resizable .v$itemId 0 0
+		wm title .v$itemId "Item $itemId"
+		pack [labelframe .v$itemId.name -text Filename] -expand 1 -fill x
+		pack [label .v$itemId.name.l -text $item]
+		pack [labelframe .v$itemId.views -text Views] -expand 1 -fill x
+		pack [label .v$itemId.views.l -text $views]
+		pack [labelframe .v$itemId.tags -text Tags] -expand 1 -fill x
+		pack [label .v$itemId.tags.l -text $tags]
+		pack [button .v$itemId.exit -text Close -command [list destroy .v$itemId]]
 	}
 }
 
