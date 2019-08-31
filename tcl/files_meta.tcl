@@ -113,11 +113,14 @@ namespace eval Gui {
 		pack [tagLR .win.tags]
 		tagLRfill .win.tags [split $tagsI {,}]
 		pack [frame .win.actions]
-		pack [button .win.actions.save -text Save] -side left
+		pack [button .win.actions.save -text Save -command Gui::saveModifyChanges] -side left
 		pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
 
 		.win.name.e insert 0 [.links.fnames item $rid -text]
 		.win.group.cb set [dict get $Gui::v::groups [.links.fnames parent $rid]]
+	}
+	proc saveModifyChanges {} {
+		# Saves modify changes
 	}
 	proc winNewTag {} {
 		if {{.win} in [winfo children .]} { return }
