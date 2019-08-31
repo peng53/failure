@@ -12,7 +12,7 @@ namespace eval Gui {
 	}
 	proc initMainView {} {
 		pack [frame .links] -fill both -expand 1
-		pack [ttk::treeview .links.fnames -columns {views tags} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1 -side left
+		pack [ttk::treeview .links.fnames -columns {views tags tagsEnum} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1 -side left
 		pack [scrollbar .links.fnames_sb -command {.links.fnames yview}] -side left -fill y
 		foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
 			# this loop adjusts the treeview's columns
@@ -73,14 +73,21 @@ namespace eval Gui {
 			$name.left.lb delete $i
 		}
 	}
-	proc tagLRfill {name} {
-		foreach tag [dict values $Gui::v::tags] {
-			$name.left.lb insert end $tag
-			puts $tag
+	proc tagLRfill {name left} {
+		# Fills the tagLR widget with all possible tags
+		#foreach tag [dict values $Gui::v::tags] {
+		#	$name.right.lb insert end $tag
+		#}
+		# where left are tags for the left side
+		dict for {id val} $Gui::v::tags {
+			if {[lsearch $left $id] == -1} {
+				$name.right.lb insert end $val
+			} else {
+				$name.left.lb insert end $val
+			}
 		}
-		#set p [dict values $Gui::v::tags]
-		#puts $p
 	}
+	
 	proc winModify {} {
 		#if {[llength [dict keys $Gui::v::groups]] == 0 && [llength [dict keys $Gui::v::unloaded]] == 0} {
 		#	tk_messageBox -detail {Database not loaded, cannot modify.} -icon error -title Error -type ok
@@ -100,11 +107,11 @@ namespace eval Gui {
 		pack [labelframe .win.group -text Group] -expand 1 -fill x
 		pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloaded] [dict values $Gui::v::groups]]] -expand 1 -fill x
 		pack [labelframe .win.views -text Views] -expand 1 -fill x
-		lassign [.links.fnames item $rid -values] views tags
+		lassign [.links.fnames item $rid -values] views tags tagsI
 		set Gui::v::views $views
 		pack [spinbox .win.views.sb -from 0 -to 32767 -textvariable Gui::v::views] -expand 1 -fill x
 		pack [tagLR .win.tags]
-		tagLRfill .win.tags
+		tagLRfill .win.tags [split $tagsI {,}]
 		pack [frame .win.actions]
 		pack [button .win.actions.save -text Save] -side left
 		pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
@@ -227,6 +234,7 @@ namespace eval Gui {
 			puts "$id $tag"
 		}
 	}
+
 	proc quit {} {
 		mysql::close $App::v::dbhandle
 		puts {Ended App}
@@ -254,7 +262,7 @@ namespace eval Gui {
 			foreach tag [split $tags ,] {
 				lappend stag [dict get $App::v::tags $tag]
 			}
-			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [join $stag {, }]]]
+			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [join $stag {, }] $tags]]
 		}
 	}
 	### }
