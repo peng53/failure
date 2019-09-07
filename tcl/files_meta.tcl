@@ -13,7 +13,7 @@ namespace eval Gui {
 	}
 	proc initMainWindow {} {
 		pack [frame .links] -fill both -expand 1
-		pack [ttk::treeview .links.fnames -columns {views tags tagsEnum} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1 -side left
+		pack [ttk::treeview .links.fnames -columns {views tags} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1 -side left
 		pack [scrollbar .links.fnames_sb -command {.links.fnames yview}] -side left -fill y
 		foreach {c l w} [list #0 Group/Name 128 views Views 128 tags Tags 128] {
 			# this loop adjusts the treeview's columns
@@ -74,14 +74,14 @@ namespace eval Gui {
 			$name.left.lb delete $i
 		}
 	}
-	proc tagSelectFrame.init {name left} {
+	proc tagSelectFrame.init {frameWidget rid} {
 		# Fills the tagSelectFrame widget with all possible tags
-		#foreach tag [dict values $Gui::v::tags] {
-		#	$name.right.lb insert end $tag
-		#}
-		# where left are tags for the left side
+		set selected [list]
+		if {[dict exist $Gui::v::rowTagList $rid]} {
+			set selected [dict get $Gui::v::rowTagList $rid]
+		}
 		dict for {id val} $Gui::v::tags {
-			if {[lsearch $left $id] == -1} {
+			if {[lsearch $selected $id] == -1} {
 				$name.right.lb insert end $val
 			} else {
 				$name.left.lb insert end $val
@@ -113,13 +113,16 @@ namespace eval Gui {
 	}
 	namespace eval modifyWindow {
 		variable updatedViews 0 views 0
-		variable oldTags [list]
 		proc open {} {
 			set rid [.links.fnames focus]
 			if {[string length $rid] == 0 || [string match {[1-9]} $rid]} {
 				tk_messageBox -detail {Please select a filename to modify} -icon error -title Error -type ok
 				return
 			}
+			create $rid
+			setup $rid
+		}
+		proc create {rid} {
 			toplevel .win 
 			wm attributes .win -topmost 1
 			wm resizable .win 0 0
@@ -133,25 +136,50 @@ namespace eval Gui {
 			#pack [tagSelectFrame .win.tags]
 			pack [Gui::tagSelectFrameSingle .win.tags]
 			pack [frame .win.actions]
-			pack [button .win.actions.save -text Save -command Gui::modifyWindow::save] -side left
+			pack [button .win.actions.save -text Save -command [list Gui::modifyWindow::save .win.tags $rid]] -side left
 			pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
-			# to move to 'setup' steps
-			#tagSelectFrame.init .win.tags [split $tagsI {,}]
+			bind .win <Escape> {
+				destroy .win
+			}
+		}
+		proc setup {rid} {
+			# Prepares modify window for usage
 			set Gui::modifyWindow::views [lindex [.links.fnames item $rid -values] 0]
-			#lassign [.links.fnames item $rid -values] Gui::modifyWindow::views Gui::modifyWindow::oldTags tagsI
 			set Gui::modifyWindow::updatedViews $Gui::modifyWindow::views
-			#set Gui::modifyWindow::oldTags [split $Gui::modifyWindow::oldTags {,}]
-			
+			#tagSelectFrame.init .win.tags $rid
 			Gui::tagSelectFrameSingle.init .win.tags $rid
 			.win.name.e insert 0 [.links.fnames item $rid -text]
 			.win.group.cb set [dict get $Gui::v::loadedGroups [.links.fnames parent $rid]]
-			#
 		}
-		proc save {} {
+		proc save {widgetFrame rid} {
 		# Saves modify changes
 			if {$Gui::modifyWindow::updatedViews != $Gui::modifyWindow::views} {
 				puts "$Gui::modifyWindow::views -> $Gui::modifyWindow::updatedViews"
 			}
+			set previousTags [list]
+			if {[dict exist $Gui::v::rowTagList $rid]} {
+				set previousTags [dict get $Gui::v::rowTagList $rid]
+			}
+			set selectedTags [list]
+			foreach selected [$widgetFrame.tags.lb curselection] {
+				lappend selectedTags [dict get $Gui::v::tags_id [$widgetFrame.tags.lb get $selected]]
+			}
+			set diff [tagChangeSet $previousTags $selectedTags]
+			puts $diff
+		}
+		proc tagChangeSet {old new} {
+			set diff [dict create]
+			foreach i $new {
+				dict append diff $i +
+			}
+			foreach i $old {
+				if {[dict exists $diff $i]} {
+					dict unset diff $i
+				} else {
+					dict append diff $i -
+				}
+			}
+			return $diff
 		}
 	}
 	proc createNewTagDialog {} {
@@ -348,8 +376,6 @@ namespace eval Gui {
 namespace eval App {
 	namespace eval v {
 		variable dbhandle
-		#variable tags
-		#variable tags_id
 	}
 }
 
