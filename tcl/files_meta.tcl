@@ -4,12 +4,8 @@ package require mysqltcl
 
 namespace eval Gui {
 	namespace eval v {
-		variable unloadedGroups [list]
-		variable loadedGroups [list]
-		variable createAsRootGroup 0
-		variable tags [list]
-		variable tags_id [list]
-		variable rowTagList [list]
+		variable createAsRootGroup 0 tagById {} idOfTag {} rowTagList {}
+		### fix::name tags is a int->string and tags_id is string->ing	### fixed
 	}
 	proc initMenu {} {
 		menu .men
@@ -59,7 +55,7 @@ namespace eval Gui {
 		if {[dict exist $v::rowTagList $rid]} {
 			set selected [dict get $v::rowTagList $rid]
 		}
-		dict for {id val} $v::tags {
+		dict for {id val} $v::tagById {
 			if {[lsearch $selected $id] == -1} {
 				$name.right.lb insert end $val
 			} else {
@@ -82,7 +78,7 @@ namespace eval Gui {
 		if {[dict exist $v::rowTagList $rid]} {
 			set selected [dict get $v::rowTagList $rid]
 		}
-		dict for {id val} $v::tags {
+		dict for {id val} $v::tagById {
 			$frameWidget.tags.lb insert end $val
 			if {[lsearch $selected $id] != -1} {
 				# if the item was selected, select in the listbox
@@ -109,11 +105,13 @@ namespace eval Gui {
 			}
 			set tag [string range $tag 0 15]
 		}
-		if {[dict exists $Gui::v::tags_id $tag]} {
+		if {[dict exists $Gui::v::idOfTag $tag]} {
 			tk_messageBox -detail {Tag already exists} -icon error -parent .win -title Error -type ok
 			return
 		}
-		create_tag $App::v::dbhandle $tag
+		set r [create_tag $App::v::dbhandle $tag]
+		dict append Gui::v::tagById $r $tag
+		dict append Gui::v::idOfTag $tag $r
 		destroy .win
 	}
 	proc createNewGroupWindow {} {
@@ -146,7 +144,7 @@ namespace eval Gui {
 		if {$Gui::v::createAsRootGroup} {
 			set parent 0
 		} else {
-			set parent [Gui::getSelectedGroup]
+			set parent [mainTreeview::getSelectedGroup]
 		}
 		set gid [group_from_dir_maybe $App::v::dbhandle $name $folder $parent]
 		if {$gid != 0} {
@@ -161,11 +159,11 @@ namespace eval Gui {
 	}
 	proc loadTagsFromDatabase {} {
 		# Load tags as dict
-		set Gui::v::tags [dict create]
-		set Gui::v::tags_id [dict create]
+		set Gui::v::tagById [dict create]
+		set Gui::v::idOfTag [dict create]
 		mysql::receive $App::v::dbhandle {select id, tag from tags} [list id tag] {
-			dict append Gui::v::tags $id $tag
-			dict append Gui::v::tags_id $tag $id
+			dict append Gui::v::tagById $id $tag
+			dict append Gui::v::idOfTag $tag $id
 		}
 	}
 	proc quitProgram {} {
@@ -173,19 +171,7 @@ namespace eval Gui {
 		puts {Ended App}
 		destroy .
 	}
-	proc getSelectedGroup {} {
-		set select [list [.links.fnames selection]]
-		if {[llength $select] == 0} {
-			return {}
-		} else {
-			set item [lindex $select 0]
-			if {[string match r* $item]} {
-				return [.links.fnames parent $item]
-			} else {
-				return $item
-			}
-		}
-	}
+
 	
 	proc createViewWindow {} {
 		# Creates a window with details on item with id itemId
@@ -212,6 +198,9 @@ namespace eval Gui {
 	}
 }
 namespace eval mainTreeview {
+	namespace eval v {
+		variable unloadedGroups {} loadedGroups {}
+	}
 	proc init {} {
 		# Initializes the mainTreeview widget .links
 		pack [frame .links] -fill both -expand 1
@@ -225,14 +214,14 @@ namespace eval mainTreeview {
 		}
 		bind .links.fnames <<TreeviewOpen>> {
 			set gid [.links.fnames focus]
-			if {[dict exists $Gui::v::unloadedGroups $gid]} {
+			if {[dict exists $mainTreeview::v::unloadedGroups $gid]} {
 				mainTreeview::createLeaves $gid
 			}
 		}
-		bind .links.fnames <<TreeviewSelect>> {
-			set id [.links.fnames focus]
-			puts $id
-		}
+		## not actually used?
+		#bind .links.fnames <<TreeviewSelect>> {
+		#	set id [.links.fnames focus]
+		#}
 	}
 	proc createDummy {id} {
 		# Creates a dummy load item for group
@@ -243,7 +232,7 @@ namespace eval mainTreeview {
 		# ideally would accept a list of:
 		# group_id name
 		if {[.links.fnames exists $parent]} {
-			dict append Gui::v::unloadedGroups $id $name
+			dict append v::unloadedGroups $id $name
 			.links.fnames insert $parent end -id $id -text $name
 			createDummy $id
 		}
@@ -252,9 +241,9 @@ namespace eval mainTreeview {
 		# Loads only root groups and creates on demand
 		pack forget .links.fnames
 		.links.fnames delete [.links.fnames children {}]
-		set Gui::v::loadedGroups [dict create]
-		set Gui::v::unloadedGroups [dict create]
-		set Gui::v::rowTagList [dict create]
+		set v::loadedGroups [dict create]
+		set v::unloadedGroups [dict create]
+		set v::rowTagList [dict create]
 		mysql::receive $App::v::dbhandle {select rel.gid,name from groups join rel on groups.gid=rel.gid where pid is null} [list gid name] {
 			createRoot $gid $name
 		}
@@ -277,8 +266,8 @@ namespace eval mainTreeview {
 			}
 			createLeaf r$id $name $views $gid
 		}
-		dict append Gui::v::loadedGroups $gid [dict get $Gui::v::unloadedGroups $gid]
-		dict unset Gui::v::unloadedGroups $gid
+		dict append v::loadedGroups $gid [dict get $v::unloadedGroups $gid]
+		dict unset v::unloadedGroups $gid
 	}
 	proc createLeaf {id name views {parent {}} } {
 		# need to check if parent exists in widget first
@@ -288,10 +277,23 @@ namespace eval mainTreeview {
 			set tagCol [list]
 			if {[dict exist $Gui::v::rowTagList $id]} {
 				foreach tagId [dict get $Gui::v::rowTagList $id] {
-					lappend tagCol [dict get $Gui::v::tags $tagId]
+					lappend tagCol [dict get $Gui::v::tagById $tagId]
 				}
 			}
 			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [join $tagCol {, }]]]
+		}
+	}
+	proc getSelectedGroup {} {
+		set select [list [.links.fnames selection]]
+		if {[llength $select] == 0} {
+			return {}
+		} else {
+			set item [lindex $select 0]
+			if {[string match r* $item]} {
+				return [.links.fnames parent $item]
+			} else {
+				return $item
+			}
 		}
 	}
 }
@@ -314,7 +316,7 @@ namespace eval modifyWindow {
 		pack [labelframe .win.name -text Name] -expand 1 -fill x
 		pack [entry .win.name.e] -expand 1 -fill x
 		pack [labelframe .win.group -text Group] -expand 1 -fill x
-		pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloadedGroups] [dict values $Gui::v::loadedGroups]]] -expand 1 -fill x
+		pack [ttk::combobox .win.group.cb -values [concat [dict values $mainTreeview::v::unloadedGroups] [dict values $mainTreeview::v::loadedGroups]]] -expand 1 -fill x
 		pack [labelframe .win.views -text Views] -expand 1 -fill x
 		pack [spinbox .win.views.sb -from 0 -to 32767 -textvariable modifyWindow::updatedViews] -expand 1 -fill x
 		#pack [tagSelectFrame .win.tags]
@@ -333,23 +335,44 @@ namespace eval modifyWindow {
 		#Gui::tagSelectFrame.init .win.tags $rid
 		Gui::tagSelectFrameSingle.init .win.tags $rid
 		.win.name.e insert 0 [.links.fnames item $rid -text]
-		.win.group.cb set [dict get $Gui::v::loadedGroups [.links.fnames parent $rid]]
+		.win.group.cb set [dict get $mainTreeview::v::loadedGroups [.links.fnames parent $rid]]
 	}
 	proc save {widgetFrame rid} {
 	# Saves modify changes
+		set newName [.win.name.e get]
+		## needs to check if above changed and if so sql update
 		if {$modifyWindow::updatedViews != $modifyWindow::views} {
 			puts "$modifyWindow::views -> $modifyWindow::updatedViews"
+			## needs sql update here
 		}
+		## TAGs
 		set previousTags [list]
 		if {[dict exist $Gui::v::rowTagList $rid]} {
 			set previousTags [dict get $Gui::v::rowTagList $rid]
 		}
 		set selectedTags [list]
+		set newTagCol [list]
 		foreach selected [$widgetFrame.tags.lb curselection] {
-			lappend selectedTags [dict get $Gui::v::tags_id [$widgetFrame.tags.lb get $selected]]
+			# convert tags as string to their enum number
+			set s [$widgetFrame.tags.lb get $selected]
+			lappend newTagCol $s
+			lappend selectedTags [dict get $Gui::v::idOfTag $s]
 		}
+		## TAGs
+		dict set Gui::v::rowTagList $rid $selectedTags
+		.links.fnames item $rid -text $newName -values [list $modifyWindow::updatedViews [join $newTagCol {, }]]
 		set diff [tagChangeSet $previousTags $selectedTags]
-		puts $diff
+		# the below needs to be seperated
+		dict for {tagId action} $diff {
+			if {$action eq {-}} {
+				puts "Removing tag #$tagId for $rid"
+				# need sql removal
+				
+			} else {
+				# need sql add
+				puts "Adding tag #$tagId for $rid"
+			}
+		}
 	}
 	proc tagChangeSet {old new} {
 		set diff [dict create]
@@ -495,20 +518,11 @@ proc delete_group {dbhandle d_gid} {
 	mysql::exec $dbhandle "call delete_group($d_gid)"
 }
 
-#proc retrive_tags {dbhandle} {
-#	set App::v::tags [dict create]
-#	set App::v::tags_id [dict create]
-#	mysql::receive $dbhandle {select id,tag from tags} [list id tag] {
-#		dict append App::v::tags $id $tag 
-#		dict append App::v::tags_id $tag $id
-#	}
-#}
-
 proc create_tag {dbhandle tag} {
 	mysql::exec $dbhandle "insert into tags (tag) value ('$tag')"
 	set r [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
-	#dict append App::v::tags [lindex $r 0] $tag
 	puts "Created tag: $tag id $r"
+	return $r
 }
 
 proc test_database_creation {} {
