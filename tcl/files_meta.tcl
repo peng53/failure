@@ -7,8 +7,9 @@ namespace eval Gui {
 		variable unloadedGroups [list]
 		variable loadedGroups [list]
 		variable createAsRootGroup 0
-		variable newViewsValue 0
 		variable tags [list]
+		variable tags_id [list]
+		variable rowTagList [list]
 	}
 	proc initMainWindow {} {
 		pack [frame .links] -fill both -expand 1
@@ -42,7 +43,7 @@ namespace eval Gui {
 		.men.app add command -label {Quit} -command Gui::quitProgram
 		.men.new add command -label {New Group} -command Gui::createNewGroupWindow
 		.men.new add command -label {New Tag} -command Gui::createNewTagDialog
-		.men.edit add command -label {Modify} -command Gui::createModifyWindow
+		.men.edit add command -label {Modify} -command Gui::modifyWindow::open
 		.men.edit add command -label {Delete}
 		.men add cascade -label {App} -menu .men.app
 		.men add cascade -label {New} -menu .men.new
@@ -95,48 +96,63 @@ namespace eval Gui {
 		pack [scrollbar $name.tags.sb -command [list $name.tags.lb yview]] -side left -fill y
 		return $name
 	}
-	proc tagSelectFrameSingle.init {frameWidget selectedTags} {
+	proc tagSelectFrameSingle.init {frameWidget rid} {
 		# Fills the tagSelectFrame widget with all possible tags
 		# where left are tags for the left side
+		set selected [list]
+		if {[dict exist $Gui::v::rowTagList $rid]} {
+			set selected [dict get $Gui::v::rowTagList $rid]
+		}
 		dict for {id val} $Gui::v::tags {
 			$frameWidget.tags.lb insert end $val
-			if {[lsearch $selectedTags $id] != -1} {
+			if {[lsearch $selected $id] != -1} {
 				# if the item was selected, select in the listbox
 				$frameWidget.tags.lb selection set end
 			}
 		}
 	}
-	proc createModifyWindow {} {
-		set rid [.links.fnames focus]
-		if {[string length $rid] == 0 || [string match {[1-9]} $rid]} {
-			tk_messageBox -detail {Please select a filename to modify} -icon error -title Error -type ok
-			return
+	namespace eval modifyWindow {
+		variable updatedViews 0 views 0
+		variable oldTags [list]
+		proc open {} {
+			set rid [.links.fnames focus]
+			if {[string length $rid] == 0 || [string match {[1-9]} $rid]} {
+				tk_messageBox -detail {Please select a filename to modify} -icon error -title Error -type ok
+				return
+			}
+			toplevel .win 
+			wm attributes .win -topmost 1
+			wm resizable .win 0 0
+			wm title .win {Modify}
+			pack [labelframe .win.name -text Name] -expand 1 -fill x
+			pack [entry .win.name.e] -expand 1 -fill x
+			pack [labelframe .win.group -text Group] -expand 1 -fill x
+			pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloadedGroups] [dict values $Gui::v::loadedGroups]]] -expand 1 -fill x
+			pack [labelframe .win.views -text Views] -expand 1 -fill x
+			pack [spinbox .win.views.sb -from 0 -to 32767 -textvariable Gui::modifyWindow::updatedViews] -expand 1 -fill x
+			#pack [tagSelectFrame .win.tags]
+			pack [Gui::tagSelectFrameSingle .win.tags]
+			pack [frame .win.actions]
+			pack [button .win.actions.save -text Save -command Gui::modifyWindow::save] -side left
+			pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
+			# to move to 'setup' steps
+			#tagSelectFrame.init .win.tags [split $tagsI {,}]
+			set Gui::modifyWindow::views [lindex [.links.fnames item $rid -values] 0]
+			#lassign [.links.fnames item $rid -values] Gui::modifyWindow::views Gui::modifyWindow::oldTags tagsI
+			set Gui::modifyWindow::updatedViews $Gui::modifyWindow::views
+			#set Gui::modifyWindow::oldTags [split $Gui::modifyWindow::oldTags {,}]
+			
+			Gui::tagSelectFrameSingle.init .win.tags $rid
+			.win.name.e insert 0 [.links.fnames item $rid -text]
+			.win.group.cb set [dict get $Gui::v::loadedGroups [.links.fnames parent $rid]]
+			#
 		}
-		toplevel .win 
-		wm attributes .win -topmost 1
-		wm resizable .win 0 0
-		wm title .win {Modify}
-		pack [labelframe .win.name -text Name] -expand 1 -fill x
-		pack [entry .win.name.e] -expand 1 -fill x
-		pack [labelframe .win.group -text Group] -expand 1 -fill x
-		pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloadedGroups] [dict values $Gui::v::loadedGroups]]] -expand 1 -fill x
-		pack [labelframe .win.views -text Views] -expand 1 -fill x
-		lassign [.links.fnames item $rid -values] Gui::v::newViewsValue tags tagsI
-		#set Gui::v::newViewsValue $views
-		pack [spinbox .win.views.sb -from 0 -to 32767 -textvariable Gui::v::newViewsValue] -expand 1 -fill x
-		#pack [tagSelectFrame .win.tags]
-		#tagSelectFrame.init .win.tags [split $tagsI {,}]
-		pack [tagSelectFrameSingle .win.tags]
-		tagSelectFrameSingle.init .win.tags [split $tagsI {,}]
-		pack [frame .win.actions]
-		pack [button .win.actions.save -text Save -command Gui::createModifyWindow.save] -side left
-		pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
-
-		.win.name.e insert 0 [.links.fnames item $rid -text]
-		.win.group.cb set [dict get $Gui::v::loadedGroups [.links.fnames parent $rid]]
-	}
-	proc createModifyWindow.save {} {
+		proc save {} {
 		# Saves modify changes
+			if {$Gui::modifyWindow::updatedViews != $Gui::modifyWindow::views} {
+				puts "$Gui::modifyWindow::views -> $Gui::modifyWindow::updatedViews"
+			}
+		}
 	}
 	proc createNewTagDialog {} {
 		if {{.win} in [winfo children .]} { return }
@@ -157,7 +173,7 @@ namespace eval Gui {
 			}
 			set tag [string range $tag 0 15]
 		}
-		if {[dict exists $App::v::tags_id $tag]} {
+		if {[dict exists $Gui::v::tags_id $tag]} {
 			tk_messageBox -detail {Tag already exists} -icon error -parent .win -title Error -type ok
 			return
 		}
@@ -218,6 +234,7 @@ namespace eval Gui {
 		.links.fnames delete [.links.fnames children {}]
 		set Gui::v::loadedGroups [dict create]
 		set Gui::v::unloadedGroups [dict create]
+		set Gui::v::rowTagList [dict create]
 		mysql::receive $App::v::dbhandle {select rel.gid,name from groups join rel on groups.gid=rel.gid where pid is null} [list gid name] {
 			Gui::createNewTreeviewGroup $gid $name
 		}
@@ -235,11 +252,11 @@ namespace eval Gui {
 		}
 		# Get filenames and tags
 		mysql::receive $App::v::dbhandle "select id,name,views,group_concat(tagid) from filenames left outer join tag_map on id=fileid where gid=$gid group by id order by id" [list id name views tags] {
-			if {[string length $tags]==0} {
-				Gui::createNewTreeviewItem r$id $name [list $views] $gid
-			} else {
-				Gui::createNewTreeviewItem r$id $name [list $views $tags] $gid
+			# tags here is a comma seperated list of ints
+			if {[string length $tags]>0} {
+				dict append Gui::v::rowTagList r$id [split $tags {,}]
 			}
+			Gui::createNewTreeviewItem r$id $name $views $gid
 		}
 
 		dict append Gui::v::loadedGroups $gid [dict get $Gui::v::unloadedGroups $gid]
@@ -249,8 +266,10 @@ namespace eval Gui {
 	proc loadTagsFromDatabase {} {
 		# Load tags as dict
 		set Gui::v::tags [dict create]
+		set Gui::v::tags_id [dict create]
 		mysql::receive $App::v::dbhandle {select id, tag from tags} [list id tag] {
-			dict lappend Gui::v::tags $id $tag
+			dict append Gui::v::tags $id $tag
+			dict append Gui::v::tags_id $tag $id
 			puts "$id $tag"
 		}
 	}
@@ -272,17 +291,18 @@ namespace eval Gui {
 		}
 	}
 
-	proc createNewTreeviewItem {id name meta {parent {}} } {
+	proc createNewTreeviewItem {id name views {parent {}} } {
 		# need to check if parent exists in widget first
 		# ideally would accept a list of:
-		# rownumber filename views tags
+		# rownumber filename views parent
 		if {[.links.fnames exists $parent]} {
-			set tags [lassign $meta views]
-			set stag [list]
-			foreach tag [split $tags ,] {
-				lappend stag [dict get $App::v::tags $tag]
+			set tagCol [list]
+			if {[dict exist $Gui::v::rowTagList $id]} {
+				foreach tagId [dict get $Gui::v::rowTagList $id] {
+					lappend tagCol [dict get $Gui::v::tags $tagId]
+				}
 			}
-			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [join $stag {, }] $tags]]
+			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [join $tagCol {, }]]]
 		}
 	}
 	### }
@@ -328,8 +348,8 @@ namespace eval Gui {
 namespace eval App {
 	namespace eval v {
 		variable dbhandle
-		variable tags
-		variable tags_id
+		#variable tags
+		#variable tags_id
 	}
 }
 
@@ -456,19 +476,19 @@ proc delete_group {dbhandle d_gid} {
 	mysql::exec $dbhandle "call delete_group($d_gid)"
 }
 
-proc retrive_tags {dbhandle} {
-	set App::v::tags [dict create]
-	set App::v::tags_id [dict create]
-	mysql::receive $dbhandle {select id,tag from tags} [list id tag] {
-		dict append App::v::tags $id $tag 
-		dict append App::v::tags_id $tag $id
-	}
-}
+#proc retrive_tags {dbhandle} {
+#	set App::v::tags [dict create]
+#	set App::v::tags_id [dict create]
+#	mysql::receive $dbhandle {select id,tag from tags} [list id tag] {
+#		dict append App::v::tags $id $tag 
+#		dict append App::v::tags_id $tag $id
+#	}
+#}
 
 proc create_tag {dbhandle tag} {
 	mysql::exec $dbhandle "insert into tags (tag) value ('$tag')"
 	set r [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
-	dict append App::v::tags [lindex $r 0] $tag
+	#dict append App::v::tags [lindex $r 0] $tag
 	puts "Created tag: $tag id $r"
 }
 
@@ -495,5 +515,3 @@ set user $env(user)
 set pass $env(pass)
 set App::v::dbhandle [login_database $user $pass]
 create_new_database $App::v::dbhandle {files_meta}
-retrive_tags $App::v::dbhandle
-#Gui::loadRootGroups
