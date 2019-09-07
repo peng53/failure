@@ -4,13 +4,13 @@ package require mysqltcl
 
 namespace eval Gui {
 	namespace eval v {
-		variable unloaded [list]
-		variable groups [list]
-		variable rootgrp 0
-		variable views 0
+		variable unloadedGroups [list]
+		variable loadedGroups [list]
+		variable createAsRootGroup 0
+		variable newViewsValue 0
 		variable tags [list]
 	}
-	proc initMainView {} {
+	proc initMainWindow {} {
 		pack [frame .links] -fill both -expand 1
 		pack [ttk::treeview .links.fnames -columns {views tags tagsEnum} -yscrollcommand {.links.fnames_sb set}] -fill both -expand 1 -side left
 		pack [scrollbar .links.fnames_sb -command {.links.fnames yview}] -side left -fill y
@@ -22,7 +22,7 @@ namespace eval Gui {
 		}
 		bind .links.fnames <<TreeviewOpen>> {
 			set gid [.links.fnames focus]
-			if {[dict exists $Gui::v::unloaded $gid]} {
+			if {[dict exists $Gui::v::unloadedGroups $gid]} {
 				Gui::createChildTreeviewItemsForGroup $gid
 			}
 		}
@@ -55,25 +55,25 @@ namespace eval Gui {
 		pack [labelframe $name.left -text Selected] -side left -expand 1 -fill both
 		pack [listbox $name.left.lb -width 16 -selectmode extended]
 		pack [frame $name.buttons] -side left
-		pack [button $name.buttons.add -text {<} -command [list Gui::tagSelectFrameAddLeft $name]]
-		pack [button $name.buttons.rem -text {>} -command [list Gui::tagSelectFrameRemLeft $name]]
-		pack [labelframe $name.right -text Tags] -side left -expand 1 -fill both
+		pack [button $name.buttons.add -text {<} -command [list Gui::tagSelectFrame.AddLeft $name]]
+		pack [button $name.buttons.rem -text {>} -command [list Gui::tagSelectFrame.RemLeft $name]]
+		pack [labelframe $name.right -text {All Tags}] -side left -expand 1 -fill both
 		pack [listbox $name.right.lb -width 16 -selectmode extended]
 		return $name
 	}
-	proc tagSelectFrameAddLeft {name} {
+	proc tagSelectFrame.AddLeft {name} {
 		foreach i [lreverse [$name.right.lb curselection]] {
 			$name.left.lb insert end [$name.right.lb get $i]
 			$name.right.lb delete $i
 		}
 	}
-	proc tagSelectFrameRemLeft {name} {
+	proc tagSelectFrame.RemLeft {name} {
 		foreach i [lreverse [$name.left.lb curselection]] {
 			$name.right.lb insert end [$name.left.lb get $i]
 			$name.left.lb delete $i
 		}
 	}
-	proc tagSelectFramePopulateTags {name left} {
+	proc tagSelectFrame.init {name left} {
 		# Fills the tagSelectFrame widget with all possible tags
 		#foreach tag [dict values $Gui::v::tags] {
 		#	$name.right.lb insert end $tag
@@ -87,12 +87,26 @@ namespace eval Gui {
 			}
 		}
 	}
-	
+	proc tagSelectFrameSingle {name} {
+		# Creates a tag selection frame but with only a single listbox
+		pack [frame $name] -expand 1 -fill both
+		pack [labelframe $name.tags -text Tags] -expand 1 -fill both
+		pack [listbox $name.tags.lb -width 16 -selectmode multiple -yscrollcommand [list $name.tags.sb set]] -side left -expand 1 -fill both
+		pack [scrollbar $name.tags.sb -command [list $name.tags.lb yview]] -side left -fill y
+		return $name
+	}
+	proc tagSelectFrameSingle.init {frameWidget selectedTags} {
+		# Fills the tagSelectFrame widget with all possible tags
+		# where left are tags for the left side
+		dict for {id val} $Gui::v::tags {
+			$frameWidget.tags.lb insert end $val
+			if {[lsearch $selectedTags $id] != -1} {
+				# if the item was selected, select in the listbox
+				$frameWidget.tags.lb selection set end
+			}
+		}
+	}
 	proc createModifyWindow {} {
-		#if {[llength [dict keys $Gui::v::groups]] == 0 && [llength [dict keys $Gui::v::unloaded]] == 0} {
-		#	tk_messageBox -detail {Database not loaded, cannot modify.} -icon error -title Error -type ok
-		#	return
-		#} ## probally not needed
 		set rid [.links.fnames focus]
 		if {[string length $rid] == 0 || [string match {[1-9]} $rid]} {
 			tk_messageBox -detail {Please select a filename to modify} -icon error -title Error -type ok
@@ -105,19 +119,21 @@ namespace eval Gui {
 		pack [labelframe .win.name -text Name] -expand 1 -fill x
 		pack [entry .win.name.e] -expand 1 -fill x
 		pack [labelframe .win.group -text Group] -expand 1 -fill x
-		pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloaded] [dict values $Gui::v::groups]]] -expand 1 -fill x
+		pack [ttk::combobox .win.group.cb -values [concat [dict values $Gui::v::unloadedGroups] [dict values $Gui::v::loadedGroups]]] -expand 1 -fill x
 		pack [labelframe .win.views -text Views] -expand 1 -fill x
-		lassign [.links.fnames item $rid -values] views tags tagsI
-		set Gui::v::views $views
-		pack [spinbox .win.views.sb -from 0 -to 32767 -textvariable Gui::v::views] -expand 1 -fill x
-		pack [tagSelectFrame .win.tags]
-		tagSelectFramePopulateTags .win.tags [split $tagsI {,}]
+		lassign [.links.fnames item $rid -values] Gui::v::newViewsValue tags tagsI
+		#set Gui::v::newViewsValue $views
+		pack [spinbox .win.views.sb -from 0 -to 32767 -textvariable Gui::v::newViewsValue] -expand 1 -fill x
+		#pack [tagSelectFrame .win.tags]
+		#tagSelectFrame.init .win.tags [split $tagsI {,}]
+		pack [tagSelectFrameSingle .win.tags]
+		tagSelectFrameSingle.init .win.tags [split $tagsI {,}]
 		pack [frame .win.actions]
 		pack [button .win.actions.save -text Save -command Gui::createModifyWindow.save] -side left
 		pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
 
 		.win.name.e insert 0 [.links.fnames item $rid -text]
-		.win.group.cb set [dict get $Gui::v::groups [.links.fnames parent $rid]]
+		.win.group.cb set [dict get $Gui::v::loadedGroups [.links.fnames parent $rid]]
 	}
 	proc createModifyWindow.save {} {
 		# Saves modify changes
@@ -159,7 +175,7 @@ namespace eval Gui {
 		pack [labelframe .win.dir -text Directory] -expand 1 -fill x
 		pack [entry .win.dir.e] -side left  -expand 1 -fill x
 		pack [button .win.dir.select -text Open -command {Gui::setEntry .win.dir.e [tk_chooseDirectory]}]
-		pack [checkbutton .win.grp -text {Create at Root} -variable Gui::v::rootgrp]
+		pack [checkbutton .win.grp -text {Create at Root} -variable Gui::v::createAsRootGroup]
 
 		pack [button .win.cancel -text Cancel -command {destroy .win}] -side right
 		pack [button .win.new -text New -command Gui::createNewGroupWindow.save] -side right
@@ -175,14 +191,14 @@ namespace eval Gui {
 			 tk_messageBox -type ok -icon error -title Error -message {Folder doesn't exist.}
 			 return
 		}
-		if {$Gui::v::rootgrp} {
+		if {$Gui::v::createAsRootGroup} {
 			set parent 0
 		} else {
-			set parent [Gui::selectedGroup]
+			set parent [Gui::getSelectedGroup]
 		}
 		set gid [group_from_dir_maybe $App::v::dbhandle $name $folder $parent]
 		if {$gid != 0} {
-			createNewTreeviewGroup $gid $name [expr {$Gui::v::rootgrp==1? {} : $parent }]
+			createNewTreeviewGroup $gid $name [expr {$Gui::v::createAsRootGroup==1? {} : $parent }]
 			createChildTreeviewItemsForGroup	$gid
 			destroy .win
 		}
@@ -200,8 +216,8 @@ namespace eval Gui {
 		# Loads only root groups and creates on demand
 		pack forget .links.fnames
 		.links.fnames delete [.links.fnames children {}]
-		set Gui::v::groups [dict create]
-		set Gui::v::unloaded [dict create]
+		set Gui::v::loadedGroups [dict create]
+		set Gui::v::unloadedGroups [dict create]
 		mysql::receive $App::v::dbhandle {select rel.gid,name from groups join rel on groups.gid=rel.gid where pid is null} [list gid name] {
 			Gui::createNewTreeviewGroup $gid $name
 		}
@@ -226,8 +242,8 @@ namespace eval Gui {
 			}
 		}
 
-		dict append Gui::v::groups $gid [dict get $Gui::v::unloaded $gid]
-		dict unset Gui::v::unloaded $gid
+		dict append Gui::v::loadedGroups $gid [dict get $Gui::v::unloadedGroups $gid]
+		dict unset Gui::v::unloadedGroups $gid
 		puts "Loaded group #$gid!"
 	}
 	proc loadTagsFromDatabase {} {
@@ -250,7 +266,7 @@ namespace eval Gui {
 		# ideally would accept a list of:
 		# group_id name
 		if {[.links.fnames exists $parent]} {
-			dict append Gui::v::unloaded $id $name
+			dict append Gui::v::unloadedGroups $id $name
 			.links.fnames insert $parent end -id $id -text $name
 			Gui::createDummyTreeviewItem $id
 		}
@@ -472,7 +488,7 @@ proc test_database_creation {} {
 
 
 
-Gui::initMainView
+Gui::initMainWindow
 Gui::initMenu
 
 set user $env(user)
