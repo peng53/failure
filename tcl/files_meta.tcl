@@ -296,9 +296,13 @@ namespace eval mainTreeview {
 			}
 		}
 	}
+	proc updateLeaf {rowId newName updatedViews newTagCol} {
+		# Updates (leaf) row of treeview with new values
+		.links.fnames item $rowId -text $newName -values [list $updatedViews $newTagCol]
+	}
 }
 namespace eval modifyWindow {
-	variable updatedViews 0 views 0
+	variable updatedViews 0 views 0 updatedGroup 0 group 0
 	proc open {} {
 		set rid [.links.fnames focus]
 		if {[string length $rid] == 0 || [string match {[1-9]} $rid]} {
@@ -339,11 +343,16 @@ namespace eval modifyWindow {
 	}
 	proc save {widgetFrame rid} {
 	# Saves modify changes
+		set changes [dict create]
 		set newName [.win.name.e get]
-		## needs to check if above changed and if so sql update
+		if {$newName != [.links.fnames item $rid -text]} {
+			puts "changing name to $newName"
+			dict set changes {name} $newName
+		}
 		if {$modifyWindow::updatedViews != $modifyWindow::views} {
 			puts "$modifyWindow::views -> $modifyWindow::updatedViews"
 			## needs sql update here
+			dict set changes {views} $modifyWindow::updatedViews
 		}
 		## TAGs
 		set previousTags [list]
@@ -360,7 +369,9 @@ namespace eval modifyWindow {
 		}
 		## TAGs
 		dict set Gui::v::rowTagList $rid $selectedTags
-		.links.fnames item $rid -text $newName -values [list $modifyWindow::updatedViews [join $newTagCol {, }]]
+		#.links.fnames item $rid -text $newName -values [list $modifyWindow::updatedViews [join $newTagCol {, }]]
+		mainTreeview::updateLeaf $rid $newName $modifyWindow::updatedViews [join $newTagCol {, }]
+		
 		set diff [tagChangeSet $previousTags $selectedTags]
 		# the below needs to be seperated
 		dict for {tagId action} $diff {
@@ -373,6 +384,7 @@ namespace eval modifyWindow {
 				puts "Adding tag #$tagId for $rid"
 			}
 		}
+		update_filename {?} $rid $changes
 	}
 	proc tagChangeSet {old new} {
 		set diff [dict create]
@@ -523,6 +535,24 @@ proc create_tag {dbhandle tag} {
 	set r [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
 	puts "Created tag: $tag id $r"
 	return $r
+}
+
+proc update_filename {dbhandle rid changes} {
+	# where changes is a dict
+	set t [list]
+	if {[dict exists $changes {name}]} {
+		lappend t [format {name="%s"} [dict get $changes {name}]]
+	}
+	if {[dict exists $changes {views}]} {
+		lappend t [format {views=%d} [dict get $changes {views}]]
+	}
+	if {[dict exists $changes {gid}]} {
+		lappend t [format {gid=%d} [dict get $changes {gid}]]
+	}
+	if {[llength $t]>0} {
+		#mysql::exec $dbhandle [concat {update filenames set} [join $t] "where id=$rid"]
+		puts [concat {update filenames set} [join $t {, }] "where id=$rid"]
+	}
 }
 
 proc test_database_creation {} {
