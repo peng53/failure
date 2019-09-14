@@ -161,13 +161,10 @@ namespace eval Gui {
 		# Load tags as dict
 		set Gui::v::tagById [dict create]
 		set Gui::v::idOfTag [dict create]
-		mysql::receive $App::v::dbhandle {select id, tag from tags} [list id tag] {
-			dict append Gui::v::tagById $id $tag
-			dict append Gui::v::idOfTag $tag $id
-		}
+		DBtagAccumulate Gui::v::tagById Gui::v::idOfTag
 	}
 	proc quitProgram {} {
-		mysql::close $App::v::dbhandle
+		DBclose
 		puts {Ended App}
 		destroy .
 	}
@@ -244,9 +241,7 @@ namespace eval mainTreeview {
 		set v::loadedGroups [dict create]
 		set v::unloadedGroups [dict create]
 		set v::rowTagList [dict create]
-		mysql::receive $App::v::dbhandle {select rel.gid,name from groups join rel on groups.gid=rel.gid where pid is null} [list gid name] {
-			createRoot $gid $name
-		}
+		DBforGroups mainTreeview::createRoot
 		Gui::loadTagsFromDatabase
 		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
 	}
@@ -255,25 +250,21 @@ namespace eval mainTreeview {
 		# First delete dummy item
 		.links.fnames delete d$gid
 		# Get subgroups
-		mysql::receive $App::v::dbhandle "select rel.gid,name from rel join groups on rel.gid=groups.gid where pid=$gid and depth=1" [list sgid name] {
-			createRoot $sgid $name $gid
-		}
+		DBforGroups mainTreeview::createRoot $gid
 		# Get filenames and tags
-		mysql::receive $App::v::dbhandle "select id,name,views,group_concat(tagid) from filenames left outer join tag_map on id=fileid where gid=$gid group by id order by id" [list id name views tags] {
-			# tags here is a comma seperated list of ints
-			if {[string length $tags]>0} {
-				dict append Gui::v::rowTagList r$id [split $tags {,}]
-			}
-			createLeaf r$id $name $views $gid
-		}
+		DBforFilenames mainTreeview::createLeaf $gid
+
 		dict append v::loadedGroups $gid [dict get $v::unloadedGroups $gid]
 		dict unset v::unloadedGroups $gid
 	}
-	proc createLeaf {id name views {parent {}} } {
+	proc createLeaf {id name views tags {parent {}} } {
 		# need to check if parent exists in widget first
 		# ideally would accept a list of:
 		# rownumber filename views parent
 		if {[.links.fnames exists $parent]} {
+			if {[string length $tags]>0} {
+				dict append Gui::v::rowTagList $id [split $tags {,}]
+			}
 			set tagCol [list]
 			if {[dict exist $Gui::v::rowTagList $id]} {
 				foreach tagId [dict get $Gui::v::rowTagList $id] {
@@ -553,6 +544,32 @@ proc update_filename {dbhandle rid changes} {
 		#mysql::exec $dbhandle [concat {update filenames set} [join $t] "where id=$rid"]
 		puts [concat {update filenames set} [join $t {, }] "where id=$rid"]
 	}
+}
+
+proc DBforGroups {action {pgid {}}} {
+	# this doesn't need dbhandle passed in because of a later change in style
+	set where {pid is null}
+	if {$pgid!={}} {
+		set where [format {pid=%d and depth=1} $pgid]
+	}
+	mysql::receive $App::v::dbhandle [concat {select rel.gid,name from groups join rel on groups.gid=rel.gid where } $where] [list gid name] {
+		$action $gid $name $pgid
+	}
+}
+proc DBforFilenames {action gid} {
+	mysql::receive $App::v::dbhandle "select id,name,views,group_concat(tagid) from filenames left outer join tag_map on id=fileid where gid=$gid group by id order by id" [list id name views tags] {
+		# tags here is a comma seperated list of ints
+		$action r$id $name $views $tags $gid
+	}
+}
+proc DBtagAccumulate {tagById idOfTag} {
+	mysql::receive $App::v::dbhandle {select id, tag from tags} [list id tag] {
+		dict append $tagById $id $tag
+		dict append $idOfTag $tag $id
+	}
+}
+proc DBclose {} {
+	mysql::close $App::v::dbhandle
 }
 
 proc test_database_creation {} {
