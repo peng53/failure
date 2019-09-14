@@ -161,10 +161,10 @@ namespace eval Gui {
 		# Load tags as dict
 		set Gui::v::tagById [dict create]
 		set Gui::v::idOfTag [dict create]
-		DBtagAccumulate Gui::v::tagById Gui::v::idOfTag
+		$App::v::dbo tagAccumulate Gui::v::tagById Gui::v::idOfTag
 	}
 	proc quitProgram {} {
-		DBclose
+		$App::v::dbo close
 		puts {Ended App}
 		destroy .
 	}
@@ -241,7 +241,7 @@ namespace eval mainTreeview {
 		set v::loadedGroups [dict create]
 		set v::unloadedGroups [dict create]
 		set v::rowTagList [dict create]
-		DBforGroups mainTreeview::createRoot
+		$App::v::dbo forGroups mainTreeview::createRoot
 		Gui::loadTagsFromDatabase
 		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
 	}
@@ -250,9 +250,9 @@ namespace eval mainTreeview {
 		# First delete dummy item
 		.links.fnames delete d$gid
 		# Get subgroups
-		DBforGroups mainTreeview::createRoot $gid
+		$App::v::dbo forGroups mainTreeview::createRoot $gid
 		# Get filenames and tags
-		DBforFilenames mainTreeview::createLeaf $gid
+		$App::v::dbo forFilenames mainTreeview::createLeaf $gid
 
 		dict append v::loadedGroups $gid [dict get $v::unloadedGroups $gid]
 		dict unset v::unloadedGroups $gid
@@ -392,9 +392,121 @@ namespace eval modifyWindow {
 		return $diff
 	}
 }
+package require TclOO
+oo::class create db {
+	constructor {} {
+		my variable dbhandle
+		set dbhandle {}
+	}
+	method login {user pass} {
+	# Logs into mysql
+		my variable dbhandle
+		if {[catch {set dbhandle [mysql::connect -user $user -pass $pass]}] != 0} {
+			set dbhandle {}
+		}
+	}
+	method createNewDatabase {dbname} {
+		# Creates database and populates it with default tables
+		######### NEEDS TESTING
+		my variable dbhandle
+		mysql::exec $dbhandle "create database if not exists $dbname"
+		mysql::use $dbhandle $dbname
+		my genBaseTables
+		my genSpecialTables
+	}
+	method getHandle {} {
+		# transitional method, will be removed later
+		my variable dbhandle
+		return $dbhandle
+	}
+	method genBaseTables {} {
+		# Creates the base tables in database and procedures
+		my variable dbhandle
+		mysql::exec $dbhandle {CREATE TABLE if not exists rel(gid int NOT NULL,pid int,depth int NOT NULL) }
+		mysql::exec $dbhandle {CREATE TABLE if not exists groups (gid int auto_increment primary key, name char(255) NOT NULL)}
+		mysql::exec $dbhandle {create procedure if not exists new_group (in name char(255), in parent int) 
+			begin
+				declare rid int;
+				insert into groups (name) value (name);select last_insert_id() into rid;
+				insert into rel (gid,pid,depth) values (rid,rid,0);
+				if (parent = 0) then insert into rel (gid,pid,depth) values (rid,NULL,1);
+				else insert into rel SELECT rid,pid,depth+1 FROM rel where gid=parent AND pid IS NOT NULL;
+				end if;
+				select rid;
+			end;
+		}
+	}
+	method genSpecialTables {} {
+		# Creates tables specific to this application
+		my variable dbhandle
+		mysql::exec $dbhandle {create table if not exists filenames
+				(id int auto_increment primary key, gid int, name char(255) NOT NULL, views int default 0)}
+		mysql::exec $dbhandle {create table if not exists tags
+				(id int auto_increment primary key, tag char(16) NOT NULL)}
+		mysql::exec $dbhandle {create table if not exists tag_map
+				(fileid int, tagid int)}
+
+		mysql::exec $dbhandle {create procedure if not exists add_filename (in name char(255), in parent int)
+			begin
+				insert into filenames (gid,name) VALUES (nullif(parent,0),name);
+				select last_insert_id();
+			end;
+		}
+		mysql::exec $dbhandle {create procedure if not exists delete_group (in d_gid int)
+			begin
+				declare fgid int;
+				declare done int default 0;
+				declare GIDS cursor for select gid from rel where pid=d_gid;
+				declare continue handler for not found set done = 1;
+				open GIDS;
+				delete_loop: LOOP
+					fetch GIDS into fgid;
+					if done = 1 THEN LEAVE delete_loop;
+					end if;
+
+					delete tag_map from tag_map join filenames on fileid=id where gid=fgid;
+
+					delete from filenames where gid=fgid;
+					delete from groups where gid=fgid;
+					delete from rel where gid=fgid;
+				END LOOP delete_loop;
+				close GIDS;
+			end;
+		}
+	}
+	method forGroups {action {pgid {}}} {
+		my variable dbhandle
+		set where {pid is null}
+		if {$pgid!={}} {
+			set where [format {pid=%d and depth=1} $pgid]
+		}
+		mysql::receive $dbhandle [concat {select rel.gid,name from groups join rel on groups.gid=rel.gid where } $where] [list gid name] {
+			$action $gid $name $pgid
+		}
+	}
+	method forFilenames {action gid} {
+		my variable dbhandle
+		mysql::receive $dbhandle "select id,name,views,group_concat(tagid) from filenames left outer join tag_map on id=fileid where gid=$gid group by id order by id" [list id name views tags] {
+			# tags here is a comma seperated list of ints
+			$action r$id $name $views $tags $gid
+		}
+	}
+	method tagAccumulate {tagById idOfTag} {
+		my variable dbhandle
+		mysql::receive $dbhandle {select id, tag from tags} [list id tag] {
+		dict append $tagById $id $tag
+		dict append $idOfTag $tag $id
+		}
+	}
+	method close {} {
+		my variable dbhandle
+		mysql::close $dbhandle
+	}
+}
 namespace eval App {
 	namespace eval v {
 		variable dbhandle
+		variable dbo
 	}
 }
 
@@ -404,79 +516,6 @@ proc open_database {username password database} {
 		return {}
 	}
 	return $dbhandle
-}
-
-proc login_database {user pass} {
-	# Logs into mysql
-	if {[catch {set dbhandle [mysql::connect -user $user -pass $pass]}] != 0} {
-		return {}
-	}
-	return $dbhandle
-}
-
-proc create_new_database {dbhandle dbname} {
-	# Creates database and populates it with default tables
-	# Can this be injected? Need to test.
-	# Have not found any way to make prepared stmts
-	mysql::exec $dbhandle "create database if not exists $dbname"
-	mysql::use $dbhandle $dbname
-	base_tables $dbhandle
-	special_tables $dbhandle
-}
-
-proc base_tables {dbhandle} {
-	# Creates the base tables in database and procedures
-	mysql::exec $dbhandle {CREATE TABLE if not exists rel(gid int NOT NULL,pid int,depth int NOT NULL) }
-	mysql::exec $dbhandle {CREATE TABLE if not exists groups (gid int auto_increment primary key, name char(255) NOT NULL)}
-	mysql::exec $dbhandle {create procedure if not exists new_group (in name char(255), in parent int) 
-		begin
-			declare rid int;
-			insert into groups (name) value (name);select last_insert_id() into rid;
-			insert into rel (gid,pid,depth) values (rid,rid,0);
-			if (parent = 0) then insert into rel (gid,pid,depth) values (rid,NULL,1);
-			else insert into rel SELECT rid,pid,depth+1 FROM rel where gid=parent AND pid IS NOT NULL;
-			end if;
-			select rid;
-		end;
-	}
-}
-
-proc special_tables {dbhandle} {
-	# Creates tables specific to this application
-	mysql::exec $dbhandle {create table if not exists filenames
-			(id int auto_increment primary key, gid int, name char(255) NOT NULL, views int default 0)}
-	mysql::exec $dbhandle {create table if not exists tags
-			(id int auto_increment primary key, tag char(16) NOT NULL)}
-	mysql::exec $dbhandle {create table if not exists tag_map
-			(fileid int, tagid int)}
-
-	mysql::exec $dbhandle {create procedure if not exists add_filename (in name char(255), in parent int)
-		begin
-			insert into filenames (gid,name) VALUES (nullif(parent,0),name);
-			select last_insert_id();
-		end;
-	}
-	mysql::exec $dbhandle {create procedure if not exists delete_group (in d_gid int)
-		begin
-			declare fgid int;
-			declare done int default 0;
-			declare GIDS cursor for select gid from rel where pid=d_gid;
-			declare continue handler for not found set done = 1;
-			open GIDS;
-			delete_loop: LOOP
-				fetch GIDS into fgid;
-				if done = 1 THEN LEAVE delete_loop;
-				end if;
-
-				delete tag_map from tag_map join filenames on fileid=id where gid=fgid;
-
-				delete from filenames where gid=fgid;
-				delete from groups where gid=fgid;
-				delete from rel where gid=fgid;
-			END LOOP delete_loop;
-			close GIDS;
-		end;
-	}
 }
 
 proc new_group {dbhandle name {parent 0}} {
@@ -545,33 +584,6 @@ proc update_filename {dbhandle rid changes} {
 		puts [concat {update filenames set} [join $t {, }] "where id=$rid"]
 	}
 }
-
-proc DBforGroups {action {pgid {}}} {
-	# this doesn't need dbhandle passed in because of a later change in style
-	set where {pid is null}
-	if {$pgid!={}} {
-		set where [format {pid=%d and depth=1} $pgid]
-	}
-	mysql::receive $App::v::dbhandle [concat {select rel.gid,name from groups join rel on groups.gid=rel.gid where } $where] [list gid name] {
-		$action $gid $name $pgid
-	}
-}
-proc DBforFilenames {action gid} {
-	mysql::receive $App::v::dbhandle "select id,name,views,group_concat(tagid) from filenames left outer join tag_map on id=fileid where gid=$gid group by id order by id" [list id name views tags] {
-		# tags here is a comma seperated list of ints
-		$action r$id $name $views $tags $gid
-	}
-}
-proc DBtagAccumulate {tagById idOfTag} {
-	mysql::receive $App::v::dbhandle {select id, tag from tags} [list id tag] {
-		dict append $tagById $id $tag
-		dict append $idOfTag $tag $id
-	}
-}
-proc DBclose {} {
-	mysql::close $App::v::dbhandle
-}
-
 proc test_database_creation {} {
 	set user $env(user)
 	set pass $env(pass)
@@ -592,5 +604,7 @@ Gui::initMenu
 
 set user $env(user)
 set pass $env(pass)
-set App::v::dbhandle [login_database $user $pass]
-create_new_database $App::v::dbhandle {files_meta}
+set App::v::dbo [db new]
+$App::v::dbo login $user $pass
+set App::v::dbhandle [$App::v::dbo getHandle]
+$App::v::dbo createNewDatabase {files_meta}
