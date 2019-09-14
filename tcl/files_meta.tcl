@@ -361,19 +361,10 @@ namespace eval modifyWindow {
 		#.links.fnames item $rid -text $newName -values [list $modifyWindow::updatedViews [join $newTagCol {, }]]
 		mainTreeview::updateLeaf $rid $newName $modifyWindow::updatedViews [join $newTagCol {, }]
 		
-		set diff [tagChangeSet $previousTags $selectedTags]
+		set tagDiff [tagChangeSet $previousTags $selectedTags]
 		# the below needs to be seperated
-		dict for {tagId action} $diff {
-			if {$action eq {-}} {
-				puts "Removing tag #$tagId for $rid"
-				# need sql removal
-				
-			} else {
-				# need sql add
-				puts "Adding tag #$tagId for $rid"
-			}
-		}
 		DBO updateFilename $rid $changes
+		DBO updateFilenameTags $rid $tagDiff
 	}
 	proc tagChangeSet {old new} {
 		set diff [dict create]
@@ -554,6 +545,7 @@ oo::class create db {
 	method updateFilename {rid changes} {
 		# where changes is a dict
 		my variable dbhandle
+		set id [string range $rid 1 end]
 		set t [list]
 		if {[dict exists $changes {name}]} {
 			lappend t [format {name="%s"} [dict get $changes {name}]]
@@ -565,9 +557,22 @@ oo::class create db {
 			lappend t [format {gid=%d} [dict get $changes {gid}]]
 		}
 		if {[llength $t]>0} {
-			#mysql::exec $dbhandle [concat {update filenames set} [join $t] "where id=$rid"]
-			puts [concat {update filenames set} [join $t {, }] "where id=$rid"]
+			mysql::exec $dbhandle [concat {update filenames set} [join $t {, }] "where id=$id"]
 		}
+	}
+	method updateFilenameTags {rid changeSet} {
+		# where changeSet is a dict of tagId : action
+		my variable dbhandle
+		set id [string range $rid 1 end]
+		mysql::exec $dbhandle {BEGIN}
+		dict for {tagId action} $changeSet {
+			if {$action eq {-}} {
+				mysql::exec $dbhandle [format {delete from tag_map where fileid=%d and tagid=%d} $id $tagId] 
+			} else {
+				mysql::exec $dbhandle [format {insert into tag_map (fileid,tagid) values (%d,%d)} $id $tagId]
+			}
+		}
+		mysql::commit $dbhandle
 	}
 }
 
