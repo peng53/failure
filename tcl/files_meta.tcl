@@ -109,7 +109,7 @@ namespace eval Gui {
 			tk_messageBox -detail {Tag already exists} -icon error -parent .win -title Error -type ok
 			return
 		}
-		set r [create_tag $App::v::dbhandle $tag]
+		set r [DBO createTag $tag]
 		dict append Gui::v::tagById $r $tag
 		dict append Gui::v::idOfTag $tag $r
 		destroy .win
@@ -146,7 +146,7 @@ namespace eval Gui {
 		} else {
 			set parent [mainTreeview::getSelectedGroup]
 		}
-		set gid [group_from_dir_maybe $App::v::dbhandle $name $folder $parent]
+		set gid [DBO addGroupFromDirMaybe $name $folder $parent]
 		if {$gid != 0} {
 			mainTreeview::createRoot $gid $name [expr {$Gui::v::createAsRootGroup==1? {} : $parent }]
 			mainTreeview::createLeaves $gid
@@ -161,15 +161,13 @@ namespace eval Gui {
 		# Load tags as dict
 		set Gui::v::tagById [dict create]
 		set Gui::v::idOfTag [dict create]
-		$App::v::dbo tagAccumulate Gui::v::tagById Gui::v::idOfTag
+		DBO tagAccumulate Gui::v::tagById Gui::v::idOfTag
 	}
 	proc quitProgram {} {
-		$App::v::dbo close
+		DBO close
 		puts {Ended App}
 		destroy .
 	}
-
-	
 	proc createViewWindow {} {
 		# Creates a window with details on item with id itemId
 		set itemId [.links.fnames focus]
@@ -241,7 +239,7 @@ namespace eval mainTreeview {
 		set v::loadedGroups [dict create]
 		set v::unloadedGroups [dict create]
 		set v::rowTagList [dict create]
-		$App::v::dbo forGroups mainTreeview::createRoot
+		DBO forGroups mainTreeview::createRoot
 		Gui::loadTagsFromDatabase
 		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
 	}
@@ -250,9 +248,9 @@ namespace eval mainTreeview {
 		# First delete dummy item
 		.links.fnames delete d$gid
 		# Get subgroups
-		$App::v::dbo forGroups mainTreeview::createRoot $gid
+		DBO forGroups mainTreeview::createRoot $gid
 		# Get filenames and tags
-		$App::v::dbo forFilenames mainTreeview::createLeaf $gid
+		DBO forFilenames mainTreeview::createLeaf $gid
 
 		dict append v::loadedGroups $gid [dict get $v::unloadedGroups $gid]
 		dict unset v::unloadedGroups $gid
@@ -375,7 +373,7 @@ namespace eval modifyWindow {
 				puts "Adding tag #$tagId for $rid"
 			}
 		}
-		update_filename {?} $rid $changes
+		DBO updateFilename $rid $changes
 	}
 	proc tagChangeSet {old new} {
 		set diff [dict create]
@@ -502,11 +500,74 @@ oo::class create db {
 		my variable dbhandle
 		mysql::close $dbhandle
 	}
-}
-namespace eval App {
-	namespace eval v {
-		variable dbhandle
-		variable dbo
+	method addGroup {name {parent 0}} {
+		my variable dbhandle
+		set l [mysql::sel $dbhandle "call new_group('$name',$parent)" -flatlist]
+		puts "Created group $name with parent $parent"
+		return [lindex $l 0]
+	}
+
+	method addFilename {fname {group 0}} {
+		my variable dbhandle
+		set r [mysql::sel $dbhandle "call add_filename('$fname',$group)" -flatlist]
+		return [lindex $r 0]
+	}
+
+	method addFilenamesFromDir {fdir {group 0}} {
+		# Adds filenames in fdir to group
+		set added [list]
+		my variable dbhandle
+		foreach f [glob -tails -types f -directory $fdir *] {
+			lappend added $f
+			lappend [my addFilename $f $group]
+		}
+		return $added
+	}
+
+	method addGroupFromDir {fdir name {group 0}} {
+		# Adds a directory and its files to group
+		my variable dbhandle
+		if {! [file isdirectory $fdir]} { return 0 }
+		set gid [my addGroup $name $group]
+		puts "Made group $name with gid $gid parent $group"
+		set filenames [my addFilenamesFromDir $fdir $gid]
+		return $gid
+	}
+	method addGroupFromDirMaybe {name fdir {group 0}} {
+		my variable dbhandle
+		if {[string length $fdir]==0} {
+			return [my addGroup $name $group]
+		} else {
+			return [my addGroupFromDir $fdir $name $group]
+		}
+	}
+	method remGroup {d_gid} {
+		my variable dbhandle
+		mysql::exec $dbhandle "call delete_group($d_gid)"
+	}
+	method createTag {tag} {
+		my variable dbhandle
+		mysql::exec $dbhandle "insert into tags (tag) value ('$tag')"
+		set r [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
+		return $r
+	}
+	method updateFilename {rid changes} {
+		# where changes is a dict
+		my variable dbhandle
+		set t [list]
+		if {[dict exists $changes {name}]} {
+			lappend t [format {name="%s"} [dict get $changes {name}]]
+		}
+		if {[dict exists $changes {views}]} {
+			lappend t [format {views=%d} [dict get $changes {views}]]
+		}
+		if {[dict exists $changes {gid}]} {
+			lappend t [format {gid=%d} [dict get $changes {gid}]]
+		}
+		if {[llength $t]>0} {
+			#mysql::exec $dbhandle [concat {update filenames set} [join $t] "where id=$rid"]
+			puts [concat {update filenames set} [join $t {, }] "where id=$rid"]
+		}
 	}
 }
 
@@ -518,93 +579,11 @@ proc open_database {username password database} {
 	return $dbhandle
 }
 
-proc new_group {dbhandle name {parent 0}} {
-	set l [mysql::sel $dbhandle "call new_group('$name',$parent)" -flatlist]
-	puts "Created group $name with parent $parent"
-	return [lindex $l 0]
-}
-
-proc new_filename {dbhandle fname {group 0}} {
-	set r [mysql::sel $dbhandle "call add_filename('$fname',$group)" -flatlist]
-	return [lindex $r 0]
-}
-
-proc add_filenames {dbhandle fdir {group 0}} {
-	# Adds filenames in fdir to group
-	set added [list]
-	foreach f [glob -tails -types f -directory $fdir *] {
-		lappend added $f
-		lappend [new_filename $dbhandle $f $group]
-	}
-	return $added
-}
-
-proc add_directory {dbhandle fdir name {group 0}} {
-	# Adds a directory and its files to group
-	if {! [file isdirectory $fdir]} { return 0 }
-	set gid [new_group $dbhandle $name $group]
-	puts "Made group $name with gid $gid parent $group"
-	set filenames [add_filenames $dbhandle $fdir $gid]
-	return $gid
-}
-proc group_from_dir_maybe {dbhandle name fdir {group 0}} {
-	if {[string length $fdir]==0} {
-		return [new_group $dbhandle $name $group]
-	} else {
-		return [add_directory $dbhandle $fdir $name $group]
-	}
-}
-
-
-proc delete_group {dbhandle d_gid} {
-	mysql::exec $dbhandle "call delete_group($d_gid)"
-}
-
-proc create_tag {dbhandle tag} {
-	mysql::exec $dbhandle "insert into tags (tag) value ('$tag')"
-	set r [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
-	puts "Created tag: $tag id $r"
-	return $r
-}
-
-proc update_filename {dbhandle rid changes} {
-	# where changes is a dict
-	set t [list]
-	if {[dict exists $changes {name}]} {
-		lappend t [format {name="%s"} [dict get $changes {name}]]
-	}
-	if {[dict exists $changes {views}]} {
-		lappend t [format {views=%d} [dict get $changes {views}]]
-	}
-	if {[dict exists $changes {gid}]} {
-		lappend t [format {gid=%d} [dict get $changes {gid}]]
-	}
-	if {[llength $t]>0} {
-		#mysql::exec $dbhandle [concat {update filenames set} [join $t] "where id=$rid"]
-		puts [concat {update filenames set} [join $t {, }] "where id=$rid"]
-	}
-}
-proc test_database_creation {} {
-	set user $env(user)
-	set pass $env(pass)
-	set dbhandle [login_database $user $pass]
-	create_new_database $dbhandle {files_meta}
-
-	set docs [new_group $dbhandle docs]
-	set osimg [add_directory $dbhandle ~/os_images OS $docs]
-	set pet [add_directory $dbhandle ~/pet pet $docs]
-	set music [add_directory $dbhandle ~/Music Music $pet]
-
-	mysql::close $dbhandle
-}
-
-
 mainTreeview::init
 Gui::initMenu
 
 set user $env(user)
 set pass $env(pass)
-set App::v::dbo [db new]
-$App::v::dbo login $user $pass
-set App::v::dbhandle [$App::v::dbo getHandle]
-$App::v::dbo createNewDatabase {files_meta}
+db create DBO
+DBO login $user $pass
+DBO createNewDatabase {files_meta}
