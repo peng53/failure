@@ -52,14 +52,13 @@ class AudioMetaProcessor:
 		key, val = self.line.split('=', maxsplit=1)
 		key = key.lower()
 		if key=='songend':
-			t = timeStrToRelativeTime(val)
+			t = timeStampToTimeDelta(val)
 			self.tags[key] = t
 			self.outputCall(self.tags)
 		elif key=='songstart':
-			t = timeStrToRelativeTime(val)
+			t = timeStampToTimeDelta(val)
 			self.tags[key] = t
 		else:
-			###print("Got {}:{}".format(key, val))
 			self.tags[key] = val
 
 	def atEOF(self):
@@ -69,6 +68,21 @@ class AudioMetaProcessor:
 def timeStrToRelativeTime(s):
 	t = datetime.strptime(s, "%H:%M:%S")
 	return timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+
+class UndefinedTimeUnit(Exception):
+	pass
+
+def timeStampToTimeDelta(s):
+	units = s.split(':')
+	if len(units) > 3:
+		raise UndefinedTimeUnit
+	units.reverse()
+	# H:M:S to S:M:H
+	return timedeltaFromTimeUnits(*units)
+
+def timedeltaFromTimeUnits(seconds, minutes=0, hours=0):
+	# seconds and minutes must be <60.
+	return timedelta(hours=int(hours), minutes=int(minutes), seconds=int(seconds))
 
 splitter = AudioSplitter()
 sch = SplitScheduler(splitter)
