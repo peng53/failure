@@ -2,10 +2,13 @@ from queue import Queue
 from datetime import datetime, timedelta
 
 class AudioSegment:
-	def __init__(self, startTime=None, endTime=None, addtionalAttrs=None):
-		self.optionalAttrs = {}
+	def __init__(self, startTime=None, endTime=None, additionalAttrs=None):
+		self.optionalAttrs = additionalAttrs
 		self.startTime = startTime
 		self.endTime = endTime
+	
+	def __repr__(self):
+		return '{0}-{1} [{2}]'.format(self.startTime,self.endTime, self.optionalAttrs)
 	
 	def generateFilename(self, fmt, extension):
 		pass
@@ -23,7 +26,15 @@ class SplitScheduler:
 		self.jobs = Queue()
 	
 	def addJob(self, job):
-		print("Got job: {}".format(job))
+		#print("Got job: {}".format(job))
+		# has to check if 'job' contains needed keys
+		self.jobs.put(
+			AudioSegment(
+				job['songstart'],
+				job['songend'],
+				job
+			)
+		)
 	
 	def processNext(self):
 		job = self.jobs.get()
@@ -38,7 +49,7 @@ class AudioMetaProcessor:
 		self.metadata = metafileHdl
 		self.outputCall = outputCall
 		self.line = True
-		self.tags = {'songstart': -1, 'songend': -1}
+		self.tags = {}
 
 	def processLine(self):
 		self.line = self.metadata.readline()
@@ -58,6 +69,11 @@ class AudioMetaProcessor:
 		elif key=='songstart':
 			t = timeStampToTimeDelta(val)
 			self.tags[key] = t
+		elif key=='songstartend':
+			ts, te = val.split('-', maxsplit=1)
+			self.tags['songstart'] = timeStampToTimeDelta(ts)
+			self.tags['songend'] = timeStampToTimeDelta(te)
+			self.outputCall(self.tags)
 		else:
 			self.tags[key] = val
 
