@@ -1,0 +1,16 @@
+album=White Album
+artist=John Snow
+title=It's Snowing
+songStart=0:0:00
+#songEnd=0:1:24
+title=Raindrops
+songStart=0:1:24
+#songEnd=0:2:00
+title=Underground
+songStart=0:2:00
+#songEnd=0:3:00
+title=Bloody
+songStart=0:3:00
+#songEnd=0:6:00
+title=Snow
+songStart=0:6:55
