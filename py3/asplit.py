@@ -2,13 +2,22 @@ from queue import Queue
 from datetime import datetime, timedelta
 
 class AudioSegment:
-	def __init__(self, startTime=None, endTime=None, additionalAttrs=None):
+	def __init__(self, title, startTime, endTime, additionalAttrs=None):
 		self.optionalAttrs = additionalAttrs
 		self.startTime = startTime
 		self.endTime = endTime
+		self.title = title
 	
 	def __repr__(self):
-		return '{0}-{1} [{2}]'.format(self.startTime,self.endTime, self.optionalAttrs)
+		r = []
+		if 'album' in self.optionalAttrs:
+			r.append(self.optionalAttrs['album'])
+		if 'artist' in self.optionalAttrs:
+			r.append(self.optionalAttrs['artist'])
+		r.append(self.title)
+		r.append(str(self.startTime))
+		r.append(str(self.endTime))
+		return ' - '.join(r)
 	
 	def generateFilename(self, fmt, extension):
 		pass
@@ -18,7 +27,7 @@ class AudioSplitter:
 		self.encodeParams = {}
 	
 	def splitOut(self, segment):
-		print("Got segment: {}".format(segment))
+		print("Spliting job: {}".format(segment))
 
 class SplitScheduler:
 	def __init__(self, splitter):
@@ -26,18 +35,21 @@ class SplitScheduler:
 		self.jobs = Queue()
 	
 	def addJob(self, job):
-		#print("Got job: {}".format(job))
 		# has to check if 'job' contains needed keys
+		filterAttr = { k : job[k] for k in ['album','artist'] if k in job}
 		self.jobs.put(
 			AudioSegment(
+				job['title'],
 				job['songstart'],
 				job['songend'],
-				job
+				filterAttr
 			)
 		)
+		print("Added job: #{}".format(self.jobs.qsize()))
 	
 	def processNext(self):
 		job = self.jobs.get()
+		print("Processing job: {}".format(job))
 		self.splitter.splitOut(job)
 	
 	def hasJobs(self):
@@ -65,7 +77,8 @@ class AudioMetaProcessor:
 		if key=='songend':
 			t = timeStampToTimeDelta(val)
 			self.tags[key] = t
-			self.outputCall(self.tags)
+			if 'title' in self.tags:
+				self.outputCall(self.tags)
 		elif key=='songstart':
 			t = timeStampToTimeDelta(val)
 			self.tags[key] = t
@@ -106,6 +119,5 @@ with open("../in_out/meta.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
 		amp.processLine()
-	print(amp.tags)
 while sch.hasJobs():
 	sch.processNext()
