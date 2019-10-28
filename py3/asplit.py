@@ -1,5 +1,21 @@
 from queue import Queue
 from datetime import datetime, timedelta
+import re
+
+class StringFormater:
+	def __init__(self, kwDict):
+		self.kwDict = kwDict
+	
+	pat = re.compile(r'(\%.)|([^\%]+)')
+	
+	def format(self, fmt, keyValues):
+		parts = (fmt[m.start():m.end()] for m in self.pat.finditer(fmt))
+		sub = (
+			(keyValues[self.kwDict[p[1]]] if self.kwDict[p[1]] in keyValues else '') 
+			if p[0]=='%' else p for p in parts
+		)
+		#nonNullSub = (s for s in sub if len(s)>0)
+		return ''.join(sub)
 
 class AudioSegment:
 	def __init__(self, title, startTime, endTime, additionalAttrs=None):
@@ -19,14 +35,32 @@ class AudioSegment:
 		r.append(str(self.endTime))
 		return ' - '.join(r)
 	
-	def generateFilename(self, fmt, extension):
-		pass
+	kwList = {
+		'l' : 'album',
+		'a' : 'artist',
+		's' : 'title',
+		'y' : 'year',
+		'g' : 'genre',
+		'n' : 'track'
+	}
+	
+	def generateFilename(self, fmt, extension, fmter):
+		# l : album
+		# a : artist
+		# s : songname
+		# y : year
+		# g : genre
+		# n : track number
+		return fmter.format(fmt, self.optionalAttrs)+'.'+extension
 
 class AudioSplitter:
-	def __init__(self):
+	def __init__(self, fileToBeSplit):
 		self.encodeParams = {}
+		self.fileToBeSplit = fileToBeSplit
+		self.fmter = StringFormater(AudioSegment.kwList)
 	
 	def splitOut(self, segment):
+		print("Generated filename: {}".format(segment.generateFilename('%l-%a-%s','mp4',self.fmter)))
 		print("Spliting job: {}".format(segment))
 
 class SplitScheduler:
@@ -36,7 +70,7 @@ class SplitScheduler:
 	
 	def addJob(self, job):
 		# has to check if 'job' contains needed keys
-		filterAttr = { k : job[k] for k in ['album','artist'] if k in job}
+		filterAttr = { k : job[k] for k in ['album','artist','title'] if k in job}
 		self.jobs.put(
 			AudioSegment(
 				job['title'],
@@ -113,7 +147,7 @@ def timedeltaFromTimeUnits(seconds, minutes=0, hours=0):
 	# seconds and minutes must be <60.
 	return timedelta(hours=int(hours), minutes=int(minutes), seconds=int(seconds))
 
-splitter = AudioSplitter()
+splitter = AudioSplitter('')
 sch = SplitScheduler(splitter)
 with open("../in_out/meta.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
