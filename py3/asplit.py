@@ -63,16 +63,26 @@ class AudioSplitter:
 	def __init__(self, fileToBeSplit):
 		self.encodeParams = {}
 		self.fileToBeSplit = fileToBeSplit
+		self.outputFilesFmt = None
 	
 	def splitOut(self, segment):
-		out = segment.generateFilename('%l-%a-%s','mp4',AudioSplitter.fmter,replaceSpaces='_')
-		print("Generated filename: {}".format(out))
-		print("Spliting job: {}".format(segment))
-		print("BIN {0} -o {1}".format(self.fileToBeSplit, out))
+		if self.outputFilesFmt:
+			out = segment.generateFilename('%l-%a-%s', self.outputFilesFmt, AudioSplitter.fmter,replaceSpaces='_')
+			print("Generated filename: {}".format(out))
+			print("Spliting job: {}".format(segment))
+			print("BIN {0} -o {1}".format(self.fileToBeSplit, out))
+			return out
+		else:
+			print("No output format has been selected!")
+			return None
+
+	def splitTo(self, fileFmt):
+		self.outputFilesFmt = fileFmt
 
 class SplitScheduler:
-	def __init__(self, splitter):
+	def __init__(self, splitter, tagger):
 		self.splitter = splitter
+		self.tagger = tagger
 		self.jobs = Queue()
 	
 	def addJob(self, job):
@@ -91,7 +101,13 @@ class SplitScheduler:
 	def processNext(self):
 		job = self.jobs.get()
 		print("Processing job: {}".format(job))
-		self.splitter.splitOut(job)
+		out = self.splitter.splitOut(job)
+		if not out:
+			print("Split task has not produced a file")
+			return
+		# tag
+		print("Now tagging {}".format(out))
+		tagger.tag(out, job)
 	
 	def hasJobs(self):
 		return not self.jobs.empty()
@@ -154,8 +170,38 @@ def timedeltaFromTimeUnits(seconds, minutes=0, hours=0):
 	# seconds and minutes must be <60.
 	return timedelta(hours=int(hours), minutes=int(minutes), seconds=int(seconds))
 
+class AudioTagger:
+	def tag(self, AudioSegment):
+		pass
+
+import mp3_tagger
+import os.path
+
+class MP3Tagger(AudioTagger):
+	# will use mp3_tagger to do it
+	possibleTags = [
+		'artist',
+		'album',
+		'track',
+		'genre',
+		'year'
+	]
+	def tag(self, filename, seg):
+		if not os.path.isfile(filename):
+			print("{} doesn't exist to tag".format(filename))
+			return
+		m = mp3_tagger.MP3File(filename)
+		m.set_version(mp3_tagger.VERSION_BOTH)
+		m.song = seg.title
+		for tag in possibleTags:
+			if 'tag' in m.optionalAttrs:
+				setattr(m, tag, m.optionalAttrs[tag])
+		m.save()
+
 splitter = AudioSplitter('my_audio_file.mp3')
-sch = SplitScheduler(splitter)
+splitter.splitTo('mp3')
+tagger = MP3Tagger()
+sch = SplitScheduler(splitter, tagger)
 with open("../in_out/meta.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
