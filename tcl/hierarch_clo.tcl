@@ -314,7 +314,7 @@ proc import_places {fname mtime} {
 			BEGIN TRANSACTION;
 			INSERT INTO data
 				SELECT :ngid,PL.moz_bookmarks.title,PL.moz_places.url,:mtime
-				FROM PL.moz_bookmarks JOIN PL.moz_places ON PL.moz_bookmarks.id=PL.moz_places.id
+				FROM PL.moz_bookmarks JOIN PL.moz_places ON PL.moz_bookmarks.fk=PL.moz_places.id
 					WHERE url LIKE 'http%';
 			END TRANSACTION;
 			DETACH PL;
