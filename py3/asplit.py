@@ -45,33 +45,30 @@ class AudioSegment:
 		'n' : 'track'
 	}
 	
-	def generateFilename(self, fmt, extension, fmter, replaceSpaces=None):
+	def generateFilename(self, fmt, fmter, replaceSpaces=None):
 		# l : album
 		# a : artist
 		# s : songname
 		# y : year
 		# g : genre
 		# n : track number
-		r = fmter.format(fmt, self.optionalAttrs)+'.'+extension
+		r = fmter.format(fmt, self.optionalAttrs)
 		if replaceSpaces:
 			return r.replace(' ',replaceSpaces)
 		else:
 			return r
 
 class AudioSplitter:
-	fmter = StringFormater(AudioSegment.kwList)
 	def __init__(self, fileToBeSplit):
 		self.encodeParams = {}
 		self.fileToBeSplit = fileToBeSplit
 		self.outputFilesFmt = None
 	
-	def splitOut(self, segment):
+	def splitOut(self, segment, outputFile):
 		if self.outputFilesFmt:
-			out = segment.generateFilename('%l-%a-%s', self.outputFilesFmt, AudioSplitter.fmter,replaceSpaces='_')
-			print("Generated filename: {}".format(out))
 			print("Spliting job: {}".format(segment))
-			print("BIN {0} -o {1}".format(self.fileToBeSplit, out))
-			return out
+			print("BIN {0} -o {1}".format(self.fileToBeSplit, outputFile))
+			return outputFile
 		else:
 			print("No output format has been selected!")
 			return None
@@ -80,6 +77,7 @@ class AudioSplitter:
 		self.outputFilesFmt = fileFmt
 
 class SplitScheduler:
+	fmter = StringFormater(AudioSegment.kwList)
 	def __init__(self, splitter, tagger):
 		self.splitter = splitter
 		self.tagger = tagger
@@ -101,14 +99,15 @@ class SplitScheduler:
 	def processNext(self):
 		job = self.jobs.get()
 		print("Processing job: {}".format(job))
-		out = self.splitter.splitOut(job)
+		outFile = job.generateFilename('%l-%a-%s',SplitScheduler.fmter,replaceSpaces='_')
+		out = self.splitter.splitOut(job,outFile)
 		if not out:
 			print("Split task has not produced a file")
 			return
 		# tag
 		print("Now tagging {}".format(out))
 		tagger.tag(out, job)
-	
+		
 	def hasJobs(self):
 		return not self.jobs.empty()
 
