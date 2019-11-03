@@ -64,9 +64,9 @@ class AudioSplitter:
 		self.fileToBeSplit = fileToBeSplit
 		self.outputFilesFmt = None
 	
-	def splitOut(self, segment, outputFile):
+	def splitOut(self, outputFile, start, duration):
 		if self.outputFilesFmt:
-			print("Spliting job: {}".format(segment))
+			print("Spliting job: {} {} {}".format(self.fileToBeSplit, start, duration))
 			print("BIN {0} -o {1}".format(self.fileToBeSplit, outputFile))
 			return outputFile
 		else:
@@ -77,11 +77,11 @@ class AudioSplitter:
 		self.outputFilesFmt = fileFmt
 
 class SplitScheduler:
-	fmter = StringFormater(AudioSegment.kwList)
-	def __init__(self, splitter, tagger):
+	def __init__(self, splitter, tagger, fmter, afterSplit = None):
 		self.splitter = splitter
-		self.tagger = tagger
 		self.jobs = Queue()
+		self.fmter = fmter
+		self.afterSplit = afterSplit
 	
 	def addJob(self, job):
 		# has to check if 'job' contains needed keys
@@ -99,15 +99,13 @@ class SplitScheduler:
 	def processNext(self):
 		job = self.jobs.get()
 		print("Processing job: {}".format(job))
-		outFile = job.generateFilename('%l-%a-%s',SplitScheduler.fmter,replaceSpaces='_')
-		out = self.splitter.splitOut(job,outFile)
-		if not out:
+		outFile = job.generateFilename('%l-%a-%s', self.fmter,replaceSpaces='_')+'.'+self.splitter.outputFilesFmt
+		out = self.splitter.splitOut(outFile, job.startTime, job.endTime-job.startTime)
+		if out:
+			if self.afterSplit:
+				self.afterSplit((job, outFile))
+		else:
 			print("Split task has not produced a file")
-			return
-		# tag
-		print("Now tagging {}".format(out))
-		tagger.tag(out, job)
-		
 	def hasJobs(self):
 		return not self.jobs.empty()
 
@@ -200,7 +198,8 @@ class MP3Tagger(AudioTagger):
 splitter = AudioSplitter('my_audio_file.mp3')
 splitter.splitTo('mp3')
 tagger = MP3Tagger()
-sch = SplitScheduler(splitter, tagger)
+tagStep = lambda task: tagger.tag(task[1], task[0])
+sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList), tagStep)
 with open("../in_out/meta.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
