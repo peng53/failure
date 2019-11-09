@@ -1,6 +1,7 @@
 from queue import Queue
 from datetime import datetime, timedelta
 import re
+import ffmpeg
 
 class StringFormater:
 	def __init__(self, kwDict, ifNull=''):
@@ -59,6 +60,7 @@ class AudioSegment:
 			return r
 
 class AudioSplitter:
+	supportedEncodeParams = ['acodec', 'audio_bitrate', 'aq']
 	def __init__(self, fileToBeSplit):
 		self.encodeParams = {}
 		self.fileToBeSplit = fileToBeSplit
@@ -66,15 +68,26 @@ class AudioSplitter:
 	
 	def splitOut(self, outputFile, start, duration):
 		if self.outputFilesFmt:
-			print("Spliting job: {} {} {}".format(self.fileToBeSplit, start, duration))
-			print("BIN {0} -o {1}".format(self.fileToBeSplit, outputFile))
-			return outputFile
+			infile = ffmpeg.input(self.fileToBeSplit)
+			encode = ffmpeg.output(
+				infile,
+				outputFile,
+				acodec=self.encodeParams['acodec'] if 'acodec' in self.encodeParams else 'copy',
+				ss=start,
+				t=duration
+			)
+			r = encode.run()
+			return r
 		else:
 			print("No output format has been selected!")
 			return None
 
 	def splitTo(self, fileFmt):
 		self.outputFilesFmt = fileFmt
+	
+	def setEncode(self, param, value):
+		if param in AudioSplitter.supportedEncodeParams:
+			self.encodeParams[param] = value
 
 class SplitScheduler:
 	def __init__(self, splitter, tagger, fmter, afterSplit = None):
@@ -190,17 +203,17 @@ class MP3Tagger(AudioTagger):
 		m = mp3_tagger.MP3File(filename)
 		m.set_version(mp3_tagger.VERSION_BOTH)
 		m.song = seg.title
-		for tag in possibleTags:
-			if 'tag' in m.optionalAttrs:
-				setattr(m, tag, m.optionalAttrs[tag])
+		for tag in MP3Tagger.possibleTags:
+			if 'tag' in seg.optionalAttrs:
+				setattr(m, tag, seg.optionalAttrs[tag])
 		m.save()
 
-splitter = AudioSplitter('my_audio_file.mp3')
+splitter = AudioSplitter('/mnt/ramdisk/test.mp3')
 splitter.splitTo('mp3')
 tagger = MP3Tagger()
 tagStep = lambda task: tagger.tag(task[1], task[0])
 sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList), tagStep)
-with open("../in_out/meta.txt") as f:
+with open("../in_out/meta_short.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
 		amp.processLine()
