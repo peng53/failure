@@ -74,7 +74,8 @@ class AudioSplitter:
 				outputFile,
 				acodec=self.encodeParams['acodec'] if 'acodec' in self.encodeParams else 'copy',
 				ss=start,
-				t=duration
+				t=duration,
+				map_metadata=-1
 			)
 			r = encode.run()
 			return r
@@ -201,18 +202,47 @@ class MP3Tagger(AudioTagger):
 			print("{} doesn't exist to tag".format(filename))
 			return
 		m = mp3_tagger.MP3File(filename)
-		m.set_version(mp3_tagger.VERSION_BOTH)
-		m.song = seg.title
-		for tag in MP3Tagger.possibleTags:
-			if 'tag' in seg.optionalAttrs:
-				setattr(m, tag, seg.optionalAttrs[tag])
+		print('filename is {}'.format(filename))
+		print('seg is {}'.format(seg))
+		m.song = str(seg.title)
+		#print(m.song)
+		#for tag in MP3Tagger.possibleTags:
+		#	if tag in seg.optionalAttrs:
+		#		setattr(m, tag, seg.optionalAttrs[tag])
+		#		print('{}={}'.format(tag,seg.optionalAttrs[tag]))
+		#m.set_version(mp3_tagger.VERSION_BOTH)
+		m.save()
+
+from mutagen.easyid3 import EasyID3
+
+class MutagenMP3Tagger(AudioTagger):
+	possibleTags = [
+		'artist',
+		'album',
+		'track',
+		'genre',
+		'year'
+	]
+	def tag(self, filename, seg):
+		if not os.path.isfile(filename):
+			print("{} doesn't exist to tag".format(filename))
+			return
+		m = EasyID3(filename)
+		m.delete()
+		m['title'] = seg.title
+		for tag in MutagenMP3Tagger.possibleTags:
+			if tag in seg.optionalAttrs:
+				m[tag] = ascii(seg.optionalAttrs[tag])
+				print('setting {}={}'.format(tag,seg.optionalAttrs[tag]))
+		print(m)
 		m.save()
 
 splitter = AudioSplitter('/mnt/ramdisk/test.mp3')
 splitter.splitTo('mp3')
 tagger = MP3Tagger()
 tagStep = lambda task: tagger.tag(task[1], task[0])
-sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList), tagStep)
+#tagStep = lambda null: print(null)
+sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList))
 with open("../in_out/meta_short.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
