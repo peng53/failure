@@ -3,6 +3,26 @@ from datetime import datetime, timedelta
 import re
 import ffmpeg
 
+class TargetNotFoundException(Exception):
+	pass
+
+class SplitOperationException(Exception):
+	pass
+
+class CannotWriteException(Exception):
+	def __init__(self, message, errors):
+		super().__init__(message)
+		self.errors = errors
+
+class FileAlreadyExistsException(Exception):
+	def __init__(self, message, errors):
+		super().__init__(message)
+		self.errors = errors
+
+class UndefinedTimeUnit(Exception):
+	pass
+
+
 class StringFormater:
 	def __init__(self, kwDict, ifNull=''):
 		self.kwDict = kwDict
@@ -61,6 +81,7 @@ class AudioSegment:
 		else:
 			return r
 
+
 class AudioSplitter:
 	supportedEncodeParams = ['acodec', 'audio_bitrate', 'aq']
 	def __init__(self, fileToBeSplit):
@@ -70,8 +91,7 @@ class AudioSplitter:
 	
 	def splitOut(self, outputFile, start, duration):
 		if not self.outputFilesFmt:
-			print("No output format has been selected!")
-			return None
+			raise SplitOperationException('Split has failed to execute because no output format was selected.')
 
 		infile = ffmpeg.input(self.fileToBeSplit)
 		encode = ffmpeg.output(
@@ -120,12 +140,12 @@ class SplitScheduler:
 		if os.path.isdir(outputDir) and os.access(outputDir, os.W_OK):
 			self.mainOutputDir = outputDir
 		else:
-			print('output dir unchanged because "{}" does not exist or lack write access.'.format(outputDir))
+			raise CannotWriteException("Cannot write to path", outputDir)
 
 	def processNext(self):
 		job = self.jobs.get()
-		print("Processing job: {}".format(job))
-		filename = job.generateFilename('%l-%a-%s', self.fmter,replaceSpaces='_')+'.'+self.splitter.outputFilesFmt
+		print("Processing job: {}".format(job.title))
+		filename = job.generateFilename('%a-%s', self.fmter,replaceSpaces='_')+'.'+self.splitter.outputFilesFmt
 
 		outdir = self.mainOutputDir if self.mainOutputDir else os.getcwd()
 		if self.groupOutputFunc:
@@ -139,16 +159,11 @@ class SplitScheduler:
 			if self.overwrite:
 				os.remove(outFile)
 			else:
-				print('{} already exists.'.format(outFile))
-				return
+				raise FileAlreadyExistsException('File already exists and overwrite is set to false!', filename)
 
 		out = self.splitter.splitOut(outFile, job.startTime, job.endTime-job.startTime)
-		if out:
-			if self.afterSplit:
-				self.afterSplit((job, outFile))
-		else:
-			print("Split task has not produced a file")
-
+		if out and self.afterSplit:
+			self.afterSplit((job, outFile))
 
 	def hasJobs(self):
 		return not self.jobs.empty()
@@ -196,8 +211,6 @@ def timeStrToRelativeTime(s):
 	t = datetime.strptime(s, "%H:%M:%S")
 	return timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
 
-class UndefinedTimeUnit(Exception):
-	pass
 
 def timeStampToTimeDelta(s):
 	units = s.split(':')
@@ -229,8 +242,8 @@ class MP3Tagger(AudioTagger):
 	]
 	def tag(self, filename, seg):
 		if not os.path.isfile(filename):
-			print("{} doesn't exist to tag".format(filename))
-			return
+			raise TargetNotFoundException('File to be tagged was not found.')
+
 		m = mp3_tagger.MP3File(filename)
 		print('filename is {}'.format(filename))
 		print('seg is {}'.format(seg))
@@ -255,8 +268,8 @@ class MutagenMP3Tagger(AudioTagger):
 	]
 	def tag(self, filename, seg):
 		if not os.path.isfile(filename):
-			print("{} doesn't exist to tag".format(filename))
-			return
+			raise TargetNotFoundException('File to be tagged was not found.')
+
 		m = EasyID3(filename)
 		m.delete()
 		m['title'] = seg.title
@@ -269,17 +282,23 @@ class MutagenMP3Tagger(AudioTagger):
 
 splitter = AudioSplitter('/home/sintel/Music/in.ogg')
 splitter.splitTo('ogg')
+
 tagger = MP3Tagger()
 tagStep = lambda task: tagger.tag(task[1], task[0])
 #tagStep = lambda null: print(null)
+
 sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList))
 sch.setOutputDir('/mnt/ramdisk')
-sch.overwrite = True
+sch.overwrite = False
 albumNameFromAudSeg = lambda a: a.optionalAttrs['album'] if 'album' in a.optionalAttrs else ''
 sch.groupOutputFunc = albumNameFromAudSeg
+
 with open("../in_out/meta_short.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
 		amp.processLine()
 while sch.hasJobs():
-	sch.processNext()
+	try:
+		sch.processNext()
+	except FileAlreadyExistsException as e:
+		print('Skipping {} because overwrite was not set.'.format(e.errors))
