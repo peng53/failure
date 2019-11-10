@@ -67,21 +67,24 @@ class AudioSplitter:
 		self.outputFilesFmt = None
 	
 	def splitOut(self, outputFile, start, duration):
-		if self.outputFilesFmt:
-			infile = ffmpeg.input(self.fileToBeSplit)
-			encode = ffmpeg.output(
-				infile,
-				outputFile,
-				acodec=self.encodeParams['acodec'] if 'acodec' in self.encodeParams else 'copy',
-				ss=start,
-				t=duration,
-				map_metadata=-1
-			)
-			r = encode.run()
-			return r
-		else:
+		if not self.outputFilesFmt:
 			print("No output format has been selected!")
 			return None
+		if os.path.exists(outputFile):
+			print('{} already exists.'.format(outputFile))
+			return None
+
+		infile = ffmpeg.input(self.fileToBeSplit)
+		encode = ffmpeg.output(
+			infile,
+			outputFile,
+			acodec=self.encodeParams['acodec'] if 'acodec' in self.encodeParams else 'copy',
+			ss=start,
+			t=duration,
+			map_metadata=-1,
+		)
+		r = encode.run(quiet=True)
+		return r
 
 	def splitTo(self, fileFmt):
 		self.outputFilesFmt = fileFmt
@@ -96,6 +99,8 @@ class SplitScheduler:
 		self.jobs = Queue()
 		self.fmter = fmter
 		self.afterSplit = afterSplit
+		self.mainOutputDir = None
+		self.groupOutputFunc = None
 	
 	def addJob(self, job):
 		# has to check if 'job' contains needed keys
@@ -110,10 +115,26 @@ class SplitScheduler:
 		)
 		print("Added job: #{}".format(self.jobs.qsize()))
 	
+	def setOutputDir(self, outputDir):
+		if os.path.isdir(outputDir) and os.access(outputDir, os.W_OK):
+			self.mainOutputDir = outputDir
+		else:
+			print('output dir unchanged because "{}" does not exist or lack write access.'.format(outputDir))
+
 	def processNext(self):
 		job = self.jobs.get()
 		print("Processing job: {}".format(job))
-		outFile = job.generateFilename('%l-%a-%s', self.fmter,replaceSpaces='_')+'.'+self.splitter.outputFilesFmt
+		filename = job.generateFilename('%l-%a-%s', self.fmter,replaceSpaces='_')+'.'+self.splitter.outputFilesFmt
+
+		outdir = self.mainOutputDir if self.mainOutputDir else os.getcwd()
+		if self.groupOutputFunc:
+			subdir = self.groupOutputFunc(job)
+			outdir = os.path.join(outdir, subdir)
+			if not os.path.isdir(outdir):
+				os.mkdir(outdir)
+
+		outFile = os.path.join(outdir, filename)
+
 		out = self.splitter.splitOut(outFile, job.startTime, job.endTime-job.startTime)
 		if out:
 			if self.afterSplit:
@@ -237,12 +258,15 @@ class MutagenMP3Tagger(AudioTagger):
 		print(m)
 		m.save()
 
-splitter = AudioSplitter('/mnt/ramdisk/test.mp3')
-splitter.splitTo('mp3')
+splitter = AudioSplitter('/home/sintel/Music/in.ogg')
+splitter.splitTo('ogg')
 tagger = MP3Tagger()
 tagStep = lambda task: tagger.tag(task[1], task[0])
 #tagStep = lambda null: print(null)
 sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList))
+sch.setOutputDir('/mnt/ramdisk')
+albumNameFromAudSeg = lambda a: a.optionalAttrs['album'] if 'album' in a.optionalAttrs else ''
+sch.groupOutputFunc = albumNameFromAudSeg
 with open("../in_out/meta_short.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
