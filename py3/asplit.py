@@ -19,6 +19,8 @@ class StringFormater:
 		#nonNullSub = (s for s in sub if len(s)>0)
 		return ''.join(sub)
 
+
+
 class AudioSegment:
 	def __init__(self, title, startTime, endTime, additionalAttrs=None):
 		self.optionalAttrs = additionalAttrs
@@ -70,9 +72,6 @@ class AudioSplitter:
 		if not self.outputFilesFmt:
 			print("No output format has been selected!")
 			return None
-		if os.path.exists(outputFile):
-			print('{} already exists.'.format(outputFile))
-			return None
 
 		infile = ffmpeg.input(self.fileToBeSplit)
 		encode = ffmpeg.output(
@@ -93,6 +92,7 @@ class AudioSplitter:
 		if param in AudioSplitter.supportedEncodeParams:
 			self.encodeParams[param] = value
 
+
 class SplitScheduler:
 	def __init__(self, splitter, tagger, fmter, afterSplit = None):
 		self.splitter = splitter
@@ -101,6 +101,7 @@ class SplitScheduler:
 		self.afterSplit = afterSplit
 		self.mainOutputDir = None
 		self.groupOutputFunc = None
+		self.overwrite = False
 	
 	def addJob(self, job):
 		# has to check if 'job' contains needed keys
@@ -134,6 +135,12 @@ class SplitScheduler:
 				os.mkdir(outdir)
 
 		outFile = os.path.join(outdir, filename)
+		if os.path.exists(outFile):
+			if self.overwrite:
+				os.remove(outFile)
+			else:
+				print('{} already exists.'.format(outFile))
+				return
 
 		out = self.splitter.splitOut(outFile, job.startTime, job.endTime-job.startTime)
 		if out:
@@ -141,6 +148,8 @@ class SplitScheduler:
 				self.afterSplit((job, outFile))
 		else:
 			print("Split task has not produced a file")
+
+
 	def hasJobs(self):
 		return not self.jobs.empty()
 
@@ -265,6 +274,7 @@ tagStep = lambda task: tagger.tag(task[1], task[0])
 #tagStep = lambda null: print(null)
 sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList))
 sch.setOutputDir('/mnt/ramdisk')
+sch.overwrite = True
 albumNameFromAudSeg = lambda a: a.optionalAttrs['album'] if 'album' in a.optionalAttrs else ''
 sch.groupOutputFunc = albumNameFromAudSeg
 with open("../in_out/meta_short.txt") as f:
