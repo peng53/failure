@@ -1,11 +1,9 @@
 from queue import Queue
 from datetime import datetime, timedelta
-from atagger import MP3Tagger
+from atagger import MP3Tagger, mp3tagTagger
+import ffmpeg
 import os.path
 import re
-
-class TargetNotFoundException(Exception):
-	pass
 
 class SplitOperationException(Exception):
 	pass
@@ -126,7 +124,7 @@ class SplitScheduler:
 	
 	def addJob(self, job):
 		# has to check if 'job' contains needed keys
-		filterAttr = { k : job[k] for k in ['album','artist','title'] if k in job}
+		filterAttr = { k : job[k] for k in ['album','artist','title','track','year','genre'] if k in job}
 		self.jobs.put(
 			AudioSegment(
 				job['title'],
@@ -236,16 +234,16 @@ def timedeltaFromTimeUnits(seconds, minutes=0, hours=0):
 
 
 
-splitter = AudioSplitter('/home/sintel/Music/in.ogg')
-splitter.outputFmt = 'ogg'
+splitter = AudioSplitter('/mnt/ramdisk/test.mp3')
+splitter.outputFmt = 'mp3'
 
 tagger = MP3Tagger()
+tagger = mp3tagTagger()
 tagStep = lambda task: tagger.tag(task[1], task[0])
 #tagStep = lambda null: print(null)
-
-sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList))
+sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList), afterSplit = tagStep)
 sch.setOutputDir('/mnt/ramdisk')
-sch.overwrite = False
+sch.overwrite = True
 sch.outputFmt = '%a-%s'
 albumNameFromAudSeg = lambda a: a.optionalAttrs['album'] if 'album' in a.optionalAttrs else ''
 sch.groupOutputFunc = albumNameFromAudSeg
