@@ -122,6 +122,8 @@ class SplitScheduler:
 		self.mainOutputDir = None
 		self.groupOutputFunc = None
 		self.overwrite = False
+		self.outputFmt = '%l %a %s'
+		self.outputReplaceSpaces = False
 	
 	def addJob(self, job):
 		# has to check if 'job' contains needed keys
@@ -145,7 +147,11 @@ class SplitScheduler:
 	def processNext(self):
 		job = self.jobs.get()
 		print("Processing job: {}".format(job.title))
-		filename = job.generateFilename('%a-%s', self.fmter,replaceSpaces='_')+'.'+self.splitter.outputFilesFmt
+		filename = job.generateFilename(
+			self.outputFmt,
+			self.fmter,
+			replaceSpaces=self.outputReplaceSpaces
+		) + '.' + self.splitter.outputFilesFmt
 
 		outdir = self.mainOutputDir if self.mainOutputDir else os.getcwd()
 		if self.groupOutputFunc:
@@ -290,6 +296,7 @@ tagStep = lambda task: tagger.tag(task[1], task[0])
 sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList))
 sch.setOutputDir('/mnt/ramdisk')
 sch.overwrite = False
+sch.outputFmt = '%a-%s'
 albumNameFromAudSeg = lambda a: a.optionalAttrs['album'] if 'album' in a.optionalAttrs else ''
 sch.groupOutputFunc = albumNameFromAudSeg
 
@@ -297,6 +304,7 @@ with open("../in_out/meta_short.txt") as f:
 	amp = AudioMetaProcessor(f, sch.addJob)
 	while not amp.atEOF():
 		amp.processLine()
+
 while sch.hasJobs():
 	try:
 		sch.processNext()
