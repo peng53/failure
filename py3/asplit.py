@@ -18,6 +18,9 @@ class FileAlreadyExistsException(Exception):
 		super().__init__(message)
 		self.errors = errors
 
+class UnclearFileConversionException(Exception):
+	pass
+
 class UndefinedTimeUnit(Exception):
 	pass
 
@@ -79,6 +82,14 @@ class AudioSegment:
 		else:
 			return r
 
+fileExtPat = re.compile(r'(?<=\.)\w+$')
+
+def getInputFileExt(path):
+	m = fileExtPat.search(path)
+	if m:
+		return path[m.start():m.end()]
+	else:
+		return ''
 
 class AudioSplitter:
 	supportedEncodeParams = ['acodec', 'audio_bitrate', 'aq']
@@ -90,6 +101,10 @@ class AudioSplitter:
 	def splitOut(self, outputFile, start, duration):
 		if not self.outputFmt:
 			raise SplitOperationException('Split has failed to execute because no output format was selected.')
+
+		inputExt = getInputFileExt(self.fileToBeSplit)
+		if 'acodec' not in self.encodeParams and inputExt != self.outputFmt:
+			raise UnclearFileConversionException
 
 		infile = ffmpeg.input(self.fileToBeSplit)
 		encode = ffmpeg.output(
@@ -234,8 +249,9 @@ def timedeltaFromTimeUnits(seconds, minutes=0, hours=0):
 
 
 
-splitter = AudioSplitter('/mnt/ramdisk/test.mp3')
+splitter = AudioSplitter('/home/sintel/Music/in.ogg')
 splitter.outputFmt = 'mp3'
+splitter.setEncode('acodec','libmp3lame')
 
 tagger = MP3Tagger()
 tagger = mp3tagTagger()
