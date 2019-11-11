@@ -1,6 +1,11 @@
 from mutagen.easyid3 import EasyID3
-import ffmpeg
+from subprocess import run
 import mp3_tagger
+import os
+
+class TargetNotFoundException(Exception):
+	pass
+
 
 class AudioTagger:
 	def tag(self, AudioSegment):
@@ -52,3 +57,31 @@ class MutagenMP3Tagger(AudioTagger):
 				print('setting {}={}'.format(tag,seg.optionalAttrs[tag]))
 		print(m)
 		m.save()
+
+class mp3tagTagger(AudioTagger):
+	possibleTags = {
+		'artist' : 'a',
+		'album' : 'l',
+		'track' : 'k',
+		'genre': 'g',
+		'year': 'y'
+	}
+
+	def tag(self, filename, seg):
+		if not os.path.isfile(filename):
+			raise TargetNotFoundException('File to be tagged was not found.')
+		tagline = {'s' : seg.title}
+		for tag in self.possibleTags:
+			if tag in seg.optionalAttrs:
+				tagline[self.possibleTags[tag]] = seg.optionalAttrs[tag]
+
+		flags = []
+		for k in tagline:
+			flags.append('-{}'.format(k))
+			flags.append(tagline[k])
+
+		cmd = ['mp3tag']+ flags + [ filename]
+		r = run(cmd, check=True)
+
+
+
