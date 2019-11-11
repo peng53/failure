@@ -36,7 +36,6 @@ class StringFormater:
 			(keyValues[self.kwDict[p[1]]] if self.kwDict[p[1]] in keyValues else self.ifNull) 
 			if p[0]=='%' else p for p in parts
 		)
-		#nonNullSub = (s for s in sub if len(s)>0)
 		return ''.join(sub)
 
 
@@ -87,10 +86,10 @@ class AudioSplitter:
 	def __init__(self, fileToBeSplit):
 		self.encodeParams = {}
 		self.fileToBeSplit = fileToBeSplit
-		self.outputFilesFmt = None
+		self.outputFmt = None
 	
 	def splitOut(self, outputFile, start, duration):
-		if not self.outputFilesFmt:
+		if not self.outputFmt:
 			raise SplitOperationException('Split has failed to execute because no output format was selected.')
 
 		infile = ffmpeg.input(self.fileToBeSplit)
@@ -105,21 +104,20 @@ class AudioSplitter:
 		r = encode.run(quiet=True)
 		return r
 
-	def splitTo(self, fileFmt):
-		self.outputFilesFmt = fileFmt
-	
 	def setEncode(self, param, value):
 		if param in AudioSplitter.supportedEncodeParams:
 			self.encodeParams[param] = value
 
+def pathIsWritable(path):
+	return os.path.isdir(path) and os.access(path, os.W_OK)
 
 class SplitScheduler:
-	def __init__(self, splitter, tagger, fmter, afterSplit = None):
+	def __init__(self, splitter, tagger, fmter, afterSplit = None, outputFolder = None):
 		self.splitter = splitter
 		self.jobs = Queue()
 		self.fmter = fmter
 		self.afterSplit = afterSplit
-		self.mainOutputDir = None
+		self.mainOutputDir = outputFolder if outputFolder else os.getcwd()
 		self.groupOutputFunc = None
 		self.overwrite = False
 		self.outputFmt = '%l %a %s'
@@ -136,29 +134,29 @@ class SplitScheduler:
 				filterAttr
 			)
 		)
-		print("Added job: #{}".format(self.jobs.qsize()))
-	
+		print("Added job: #{} - {}".format(self.jobs.qsize(), job['title']))
+
 	def setOutputDir(self, outputDir):
-		if os.path.isdir(outputDir) and os.access(outputDir, os.W_OK):
+		if pathIsWritable(outputDir):
 			self.mainOutputDir = outputDir
 		else:
 			raise CannotWriteException("Cannot write to path", outputDir)
 
-	def processNext(self):
-		job = self.jobs.get()
-		print("Processing job: {}".format(job.title))
+	def getJobOutputPath(self, job):
 		filename = job.generateFilename(
 			self.outputFmt,
 			self.fmter,
 			replaceSpaces=self.outputReplaceSpaces
-		) + '.' + self.splitter.outputFilesFmt
+		) + '.' + self.splitter.outputFmt
 
-		outdir = self.mainOutputDir if self.mainOutputDir else os.getcwd()
+		outdir = self.mainOutputDir
 		if self.groupOutputFunc:
 			subdir = self.groupOutputFunc(job)
 			outdir = os.path.join(outdir, subdir)
 			if not os.path.isdir(outdir):
 				os.mkdir(outdir)
+		if not pathIsWritable(outdir):
+			raise CannotWriteException("Cannot write to path", outdir)
 
 		outFile = os.path.join(outdir, filename)
 		if os.path.exists(outFile):
@@ -166,7 +164,12 @@ class SplitScheduler:
 				os.remove(outFile)
 			else:
 				raise FileAlreadyExistsException('File already exists and overwrite is set to false!', filename)
+		return outFile
 
+	def processNext(self):
+		job = self.jobs.get()
+		print("Processing job: {}".format(job.title))
+		outFile = self.getJobOutputPath(job)
 		out = self.splitter.splitOut(outFile, job.startTime, job.endTime-job.startTime)
 		if out and self.afterSplit:
 			self.afterSplit((job, outFile))
@@ -287,7 +290,7 @@ class MutagenMP3Tagger(AudioTagger):
 		m.save()
 
 splitter = AudioSplitter('/home/sintel/Music/in.ogg')
-splitter.splitTo('ogg')
+splitter.outputFmt = 'ogg'
 
 tagger = MP3Tagger()
 tagStep = lambda task: tagger.tag(task[1], task[0])
