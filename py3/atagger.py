@@ -41,21 +41,20 @@ class MutagenTagger(AudioTagger):
 		'artist',
 		'album',
 		'genre',
+		'title',
 		'year'
 	]
 	def tag(self, filename, seg):
 		if not os.path.isfile(filename):
 			raise TargetNotFoundException('File to be tagged was not found.')
-
 		m = EasyID3(filename)
 		m.delete()
-		m['title'] = seg.title
 		for tag in MutagenTagger.possibleTags:
 			if tag in seg.optionalAttrs:
-				m[tag] = ascii(seg.optionalAttrs[tag])
-				print('setting {}={}'.format(tag,seg.optionalAttrs[tag]))
-		print(m)
-		m.save()
+				m[tag] = seg.optionalAttrs[tag]
+		if 'track' in seg.optionalAttrs:
+			m['tracknumber'] = seg.optionalAttrs['track']
+		m.save(v1=2)
 
 class mp3tagTagger(AudioTagger):
 	possibleTags = {
