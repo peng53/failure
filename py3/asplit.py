@@ -1,6 +1,6 @@
 from queue import Queue
 from datetime import datetime, timedelta
-from atagger import MP3Tagger, mp3tagTagger
+from atagger import MP3Tagger, mp3tagTagger, MutagenTagger
 import ffmpeg
 import os.path
 import re
@@ -249,12 +249,13 @@ def timedeltaFromTimeUnits(seconds, minutes=0, hours=0):
 
 
 
-splitter = AudioSplitter('/home/sintel/Music/in.ogg')
+splitter = AudioSplitter('/home/sintel/Music/longaudio.ogg')
 splitter.outputFmt = 'mp3'
 splitter.setEncode('acodec','libmp3lame')
 
-tagger = MP3Tagger()
-tagger = mp3tagTagger()
+#tagger = MP3Tagger()
+#tagger = mp3tagTagger()
+tagger = MutagenTagger()
 tagStep = lambda task: tagger.tag(task[1], task[0])
 #tagStep = lambda null: print(null)
 sch = SplitScheduler(splitter, tagger, StringFormater(AudioSegment.kwList), afterSplit = tagStep)

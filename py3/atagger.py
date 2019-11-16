@@ -36,11 +36,10 @@ class MP3Tagger(AudioTagger):
 		#m.set_version(mp3_tagger.VERSION_BOTH)
 		m.save()
 
-class MutagenMP3Tagger(AudioTagger):
+class MutagenTagger(AudioTagger):
 	possibleTags = [
 		'artist',
 		'album',
-		'track',
 		'genre',
 		'year'
 	]
@@ -51,7 +50,7 @@ class MutagenMP3Tagger(AudioTagger):
 		m = EasyID3(filename)
 		m.delete()
 		m['title'] = seg.title
-		for tag in MutagenMP3Tagger.possibleTags:
+		for tag in MutagenTagger.possibleTags:
 			if tag in seg.optionalAttrs:
 				m[tag] = ascii(seg.optionalAttrs[tag])
 				print('setting {}={}'.format(tag,seg.optionalAttrs[tag]))
@@ -63,6 +62,7 @@ class mp3tagTagger(AudioTagger):
 		'artist' : 'a',
 		'album' : 'l',
 		'track' : 'k',
+		'title' : 's',
 		'genre': 'g',
 		'year': 'y'
 	}
@@ -70,18 +70,18 @@ class mp3tagTagger(AudioTagger):
 	def tag(self, filename, seg):
 		if not os.path.isfile(filename):
 			raise TargetNotFoundException('File to be tagged was not found.')
-		tagline = {'s' : seg.title}
-		for tag in self.possibleTags:
-			if tag in seg.optionalAttrs:
-				tagline[self.possibleTags[tag]] = seg.optionalAttrs[tag]
 
-		flags = []
+		tagline = {
+			self.possibleTags[tag] : seg.optionalAttrs[tag]
+			for tag in self.possibleTags
+			if tag in seg.optionalAttrs
+		}
+
+		args = ['mp3tag']
 		for k in tagline:
-			flags.append('-{}'.format(k))
-			flags.append(tagline[k])
+			args.append('-{}'.format(k))
+			args.append(tagline[k])
+		args.append(filename)
 
-		cmd = ['mp3tag']+ flags + [ filename]
-		r = run(cmd, check=True)
-
-
+		r = run(args, check=True)
 
