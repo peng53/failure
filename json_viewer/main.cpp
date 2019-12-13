@@ -1,6 +1,9 @@
-#include "view.h"
+#include "app.h"
 
 int main(int argc, char** argv){
-	View t();
+	App t;
+	View v;
+	Jso* j = JSON::Num(10);
+	v.setViewItem(j);
 	return 0;
 }

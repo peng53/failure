@@ -16,6 +16,10 @@ class App {
 		void selectLowerItem();
 		void openSelectedItem();
 		void closeView();
+		void keySym(int c);
+		void addBind(int c, string& cmd);
+
+		bool running;
 };
 
 #endif

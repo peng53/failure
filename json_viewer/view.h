@@ -1,7 +1,7 @@
 #ifndef JSONVIEW
 #define JSONVIEW
 #include <memory>
-#include "../json_adt/jso.h"
+#include "../json_adt/jso_f.h"
 
 using std::unique_ptr;
 
