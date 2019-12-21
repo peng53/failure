@@ -5,24 +5,24 @@
 
 using std::unique_ptr;
 
+enum class PageState { MORE, DONE };
+
 class View {
 	private:
 		Jso* displayedItem;
-		unsigned x, y, width, height;
-
+		unsigned itemsPerPage, page, item;
 	public:
 		View();
 		~View();
 		void setViewItem(Jso* item);
-		void setOrigin(unsigned x, unsigned y);
-		void setDimensions(unsigned width, unsigned height);
-		bool draw();
+		void setItemsPerPage(unsigned count);
+		void firstPage();
+		void lastPage();
 		bool nextPage();
 		bool prevPage();
-		bool selectUpperItem();
-		bool selectLowerItem();
-		unique_ptr<View> openSelectedItem();
-		void close();
+		void getItem(void (*f)(const char* s));
+		unique_ptr<View> openNthItem();
+		PageState state;
 };
 
 #endif
