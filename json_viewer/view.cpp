@@ -19,16 +19,19 @@ void View::setItemsPerPage(unsigned count){
 	itemsPerPage = count;
 }
 
-void View::getItem(void (*f) (const char* s)){
+void View::getItem(void (*f) (string& s)){
 	string out;
 	if (item < itemsPerPage){
 		switch (displayedItem->t){
 			case JType::Num:
-				out += to_string(displayedItem->x.f);
+				out = to_string(displayedItem->x.f);
+				break;
+			case JType::Str:
+				out = *(displayedItem->x.s);
 				break;
 			default:
 				break;
 		}
-		f(out.c_str());
+		f(out);
 	}
 }

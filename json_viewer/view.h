@@ -20,7 +20,7 @@ class View {
 		void lastPage();
 		bool nextPage();
 		bool prevPage();
-		void getItem(void (*f)(const char* s));
+		void getItem(void (*f)(string& s));
 		unique_ptr<View> openNthItem();
 		PageState state;
 };
