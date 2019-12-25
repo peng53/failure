@@ -21,6 +21,7 @@ class View {
 		bool nextPage();
 		bool prevPage();
 		void getItem(void (*f)(string& s));
+		void reloadPage();
 		unique_ptr<View> openNthItem();
 		PageState state;
 };
