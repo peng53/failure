@@ -70,6 +70,21 @@ void View::getItem(void (*f) (string& s)){
 					}
 				}
 				break;
+			case JType::Obj:
+				if (item < itemsPerPage){
+					size_t index = item + itemsPerPage*page;
+					if (index >= displayedItem->x.m->size()){
+						state = PageState::DONE;
+					} else {
+						unordered_map<string,Jso*>::iterator it = displayedItem->x.m->begin();
+						for (size_t i = 0; i < index; ++i){
+							++it;
+						}
+						out = it->first;
+						++item;
+					}
+				}
+				break;
 			default:
 				break;
 		}
