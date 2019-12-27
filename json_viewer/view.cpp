@@ -45,51 +45,39 @@ string JsoStringRep(Jso *j){
 }
 
 void View::getItem(void (*f) (string& s)){
-	if (state != PageState::MORE){
+	if (state != PageState::MORE || item >= itemsPerPage){
 		return;
 	}
 	string out;
-	if (item < itemsPerPage){
-		switch (displayedItem->t){
-			case JType::Num:
-				out = JsoStringRep(displayedItem);
+	size_t index = item + itemsPerPage*page;
+	switch (displayedItem->t){
+		case JType::Arr:
+			if (index >= displayedItem->x.a->size()){
 				state = PageState::DONE;
-				break;
-			case JType::Str:
-				out = JsoStringRep(displayedItem);
+			} else {
+				out = JsoStringRep((*displayedItem->x.a)[index]);
+				++item;
+			}
+			break;
+		case JType::Obj:
+			if (index >= displayedItem->x.m->size()){
 				state = PageState::DONE;
-				break;
-			case JType::Arr:
-				if (item < itemsPerPage){
-					size_t index = item + itemsPerPage*page;
-					if (index >= displayedItem->x.a->size()){
-						state = PageState::DONE;
-					} else {
-						out = JsoStringRep((*displayedItem->x.a)[index]);
-						++item;
-					}
+			} else {
+				unordered_map<string,Jso*>::iterator it = displayedItem->x.m->begin();
+				for (size_t i = 0; i < index; ++i){
+					++it;
 				}
-				break;
-			case JType::Obj:
-				if (item < itemsPerPage){
-					size_t index = item + itemsPerPage*page;
-					if (index >= displayedItem->x.m->size()){
-						state = PageState::DONE;
-					} else {
-						unordered_map<string,Jso*>::iterator it = displayedItem->x.m->begin();
-						for (size_t i = 0; i < index; ++i){
-							++it;
-						}
-						out = it->first;
-						++item;
-					}
-				}
-				break;
-			default:
-				break;
-		}
-		f(out);
+				out = it->first;
+				++item;
+			}
+			break;
+		default:
+			out = JsoStringRep(displayedItem);
+			state = PageState::DONE;
+			break;
 	}
+	f(out);
+
 }
 
 void View::reloadPage(){

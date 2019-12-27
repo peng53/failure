@@ -13,13 +13,14 @@ int main(int argc, char** argv){
 	Jso* js = JSON::Str("hello world");
 	Jso* ja = JSON::Arr();
 	Jso* jm = JSON::Map();
+
 	ja->Append(jf);
 	ja->Append(js);
 	jm->Append("arr", ja);
 	jm->Append("str", js);
 	jm->Append("num", jf);
 
-	v.setViewItem(jf);
+	v.setViewItem(JSON::Single(JType::Null));
 	v.setItemsPerPage(10);
 	while (v.state == PageState::MORE){
 		v.getItem([] (string& s){ cout << s << '\n';});
