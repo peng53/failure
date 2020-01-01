@@ -11,6 +11,7 @@ class View {
 	private:
 		Jso* displayedItem;
 		unsigned itemsPerPage, page, item;
+		unordered_map<string,Jso*>::iterator it;
 	public:
 		View();
 		~View();
@@ -22,7 +23,7 @@ class View {
 		bool prevPage();
 		void getItem(void (*f)(string& s));
 		void reloadPage();
-		unique_ptr<View> openNthItem();
+		unique_ptr<View> openNthItem(unsigned n);
 		PageState state;
 };
 
