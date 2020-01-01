@@ -23,7 +23,7 @@ void View::setItemsPerPage(unsigned count){
 	firstPage();
 }
 
-string JsoStringRep(Jso *j){
+const string JsoStringRep(Jso *j){
 	switch (j->t){
 		case JType::Num:
 			return to_string(j->x.f);
@@ -44,6 +44,17 @@ string JsoStringRep(Jso *j){
 	}
 }
 
+const string subitemDist(Jso* j){
+	switch (j->t){
+		case JType::Arr:
+			return " ~[]";
+		case JType::Obj:
+			return " ~{}";
+		default:
+			return "";
+	}
+}
+
 void View::getItem(void (*f) (string& s)){
 	if (state != PageState::MORE || item >= itemsPerPage){
 		state = PageState::DONE;
@@ -56,7 +67,9 @@ void View::getItem(void (*f) (string& s)){
 			if (index >= displayedItem->x.a->size()){
 				state = PageState::DONE;
 			} else {
-				out = JsoStringRep((*displayedItem->x.a)[index]);
+				out = JsoStringRep((*displayedItem->x.a)[index])
+					+ subitemDist((*displayedItem->x.a)[index]);
+
 				++item;
 			}
 			break;
@@ -64,7 +77,7 @@ void View::getItem(void (*f) (string& s)){
 			if (index >= displayedItem->x.m->size()){
 				state = PageState::DONE;
 			} else {
-				out = it->first;
+				out = it->first + subitemDist(it->second);
 				++item;
 				++it;
 			}

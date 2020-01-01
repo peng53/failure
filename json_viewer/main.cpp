@@ -16,6 +16,8 @@ int main(int argc, char** argv){
 	for (size_t i=0; i<numbersCnt; ++i){
 		(*master)->Append(to_string(i), JSON::Num(i));
 	}
+	(*master)->Append("mini-map", JSON::Map());
+	(*master)->Append("mini-arr", JSON::Arr());
 
 	v.setViewItem(*master);
 	v.setItemsPerPage(4);
