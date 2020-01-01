@@ -87,7 +87,9 @@ void View::getItem(void (*f) (string& s)){
 			state = PageState::DONE;
 			break;
 	}
-	f(out);
+	if (state != PageState::DONE){
+		f(out);
+	}
 
 }
 
@@ -127,8 +129,8 @@ bool View::nextPage(){
 	if (displayedItem->t == JType::Obj){
 		// it could already be there
 		std::advance(it, itemsPerPage-item);
-		item = 0;
 	}
+	item = 0;
 	return true;
 }
 
