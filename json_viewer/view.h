@@ -12,6 +12,10 @@ class View {
 		Jso* displayedItem;
 		unsigned itemsPerPage, page, item;
 		unordered_map<string,Jso*>::iterator it;
+
+		string getItemFromArray();
+		string getItemFromObject();
+
 	public:
 		View();
 		~View();

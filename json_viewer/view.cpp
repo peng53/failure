@@ -61,26 +61,12 @@ void View::getItem(void (*f) (string& s)){
 		return;
 	}
 	string out;
-	size_t index = item + itemsPerPage*page;
 	switch (displayedItem->t){
 		case JType::Arr:
-			if (index >= displayedItem->x.a->size()){
-				state = PageState::DONE;
-			} else {
-				out = JsoStringRep((*displayedItem->x.a)[index])
-					+ subitemDist((*displayedItem->x.a)[index]);
-
-				++item;
-			}
+			out = getItemFromArray();
 			break;
 		case JType::Obj:
-			if (index >= displayedItem->x.m->size()){
-				state = PageState::DONE;
-			} else {
-				out = it->first + subitemDist(it->second);
-				++item;
-				++it;
-			}
+			out = getItemFromObject();
 			break;
 		default:
 			out = JsoStringRep(displayedItem);
@@ -90,7 +76,30 @@ void View::getItem(void (*f) (string& s)){
 	if (state != PageState::DONE){
 		f(out);
 	}
+}
 
+string View::getItemFromArray(){
+	size_t index = item + itemsPerPage*page;
+	if (index >= displayedItem->x.a->size()){
+		state = PageState::DONE;
+		return "";
+	} else {
+		++item;
+		return JsoStringRep((*displayedItem->x.a)[index]);
+	}
+}
+
+string View::getItemFromObject(){
+	size_t index = item + itemsPerPage*page;
+	if (index >= displayedItem->x.m->size()){
+		state = PageState::DONE;
+		return "";
+	} else {
+		string out = it->first + subitemDist(it->second);
+		++item;
+		++it;
+		return out;
+	}
 }
 
 void View::reloadPage(){
