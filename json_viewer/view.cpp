@@ -14,6 +14,9 @@ View::~View(){
 
 void View::setViewItem(Jso* viewItem){
 	displayedItem = viewItem;
+	if (displayedItem->t == JType::Obj){
+		it = displayedItem->x.m->begin();
+	}
 	item = 0;
 	page = 0;
 	state = PageState::MORE;
@@ -21,6 +24,12 @@ void View::setViewItem(Jso* viewItem){
 
 void View::setItemsPerPage(unsigned count){
 	itemsPerPage = count;
+	if (displayedItem->t == JType::Obj){
+		it = displayedItem->x.m->begin();
+	}
+	item = 0;
+	page = 0;
+	state = PageState::MORE;
 }
 
 string JsoStringRep(Jso *j){
@@ -63,12 +72,9 @@ void View::getItem(void (*f) (string& s)){
 			if (index >= displayedItem->x.m->size()){
 				state = PageState::DONE;
 			} else {
-				unordered_map<string,Jso*>::iterator it = displayedItem->x.m->begin();
-				for (size_t i = 0; i < index; ++i){
-					++it;
-				}
 				out = it->first;
 				++item;
+				++it;
 			}
 			break;
 		default:
