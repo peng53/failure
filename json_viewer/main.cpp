@@ -33,6 +33,7 @@ int main(int argc, char** argv){
 	myarr->Append(JSON::Single(JType::False));
 	myarr->Append(JSON::Num(24));
 	myarr->Append(JSON::Str("twenty-four"));
+	myarr->Append(JSON::Arr());
 
 	v.setViewItem(*master);
 	v.setItemsPerPage(4);
