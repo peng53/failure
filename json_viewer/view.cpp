@@ -1,5 +1,6 @@
 #include "view.h"
 #include <string>
+#include <iostream>
 
 using std::to_string;
 using std::string;
@@ -14,22 +15,12 @@ View::~View(){
 
 void View::setViewItem(Jso* viewItem){
 	displayedItem = viewItem;
-	if (displayedItem->t == JType::Obj){
-		it = displayedItem->x.m->begin();
-	}
-	item = 0;
-	page = 0;
-	state = PageState::MORE;
+	firstPage();
 }
 
 void View::setItemsPerPage(unsigned count){
 	itemsPerPage = count;
-	if (displayedItem->t == JType::Obj){
-		it = displayedItem->x.m->begin();
-	}
-	item = 0;
-	page = 0;
-	state = PageState::MORE;
+	firstPage();
 }
 
 string JsoStringRep(Jso *j){
@@ -55,6 +46,7 @@ string JsoStringRep(Jso *j){
 
 void View::getItem(void (*f) (string& s)){
 	if (state != PageState::MORE || item >= itemsPerPage){
+		state = PageState::DONE;
 		return;
 	}
 	string out;
@@ -90,3 +82,40 @@ void View::reloadPage(){
 	state = PageState::MORE;
 	item = 0;
 }
+
+void View::firstPage(){
+	reloadPage();
+	page = 0;
+	if (displayedItem->t == JType::Obj){
+		it = displayedItem->x.m->begin();
+	}
+}
+
+bool View::nextPage(){
+	// first check if new page is valid
+	size_t items = 0;
+	switch (displayedItem->t){
+		case JType::Arr:
+			items = displayedItem->x.a->size();
+			break;
+		case JType::Obj:
+			items = displayedItem->x.m->size();
+			break;
+		default:
+			break;
+	}
+	if ((page+1)*itemsPerPage >= items){
+		return false;
+		// currently on last page
+	}
+	state = PageState::MORE;
+	++page;
+	// now to increment iterator to first item of new page
+	if (displayedItem->t == JType::Obj){
+		// it could already be there
+		std::advance(it, itemsPerPage-item);
+		item = 0;
+	}
+	return true;
+}
+
