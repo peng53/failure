@@ -39,7 +39,8 @@ int main(int argc, char** argv){
 	cout << "300, 300!!!!! was appended to mini-map as a str,str\n\n";
 
 	v.setViewItem(*master);
-	v.setItemsPerPage(4);
+	v.setItemsPerPage(LINES-2);
+	/*
 	cout << "--master items!--\n";
 	allPagesFromViewToStdOut(v);
 	cout << "------------\n";
@@ -54,10 +55,13 @@ int main(int argc, char** argv){
 	
 	subview = subview.openNthItem(0);
 	allPagesFromViewToStdOut(subview);
-	
+	v.reloadPage();
+	*/
 	initscr();
 	App a;
+	a.setRootViewItem(v);
 	a.setDimensions(24,LINES);
+	a.draw();
 	getch();
 	endwin();
 	return 0;

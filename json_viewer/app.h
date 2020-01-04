@@ -2,12 +2,15 @@
 #define JSONAPP
 #include "view.h"
 #include <ncurses.h>
+#include <stack>
 
 class App {
 	private:
 		View rootViewItem;
 		unsigned width, height;
 		WINDOW* viewwin;
+		std::stack<View> views;
+		void drawString(const string& s);
 		
 	public:
 		App();
@@ -23,8 +26,10 @@ class App {
 		void closeView();
 		void keySym(int c);
 		void addBind(int c, string& cmd);
-
 		bool running;
+
+
+
 };
 
 #endif
