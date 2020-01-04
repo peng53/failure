@@ -51,5 +51,14 @@ int main(int argc, char** argv){
 	allPagesFromViewToStdOut(subview);
 	cout << "------------\n";
 	cout << "\nsubview was viewed, it only contains 24 or 300\n";
+	
+	subview = subview.openNthItem(0);
+	allPagesFromViewToStdOut(subview);
+	
+	initscr();
+	App a;
+	a.setDimensions(24,LINES);
+	getch();
+	endwin();
 	return 0;
 }

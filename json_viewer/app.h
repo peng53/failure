@@ -1,15 +1,20 @@
 #ifndef JSONAPP
 #define JSONAPP
 #include "view.h"
+#include <ncurses.h>
 
 class App {
 	private:
-
+		View rootViewItem;
+		unsigned width, height;
+		WINDOW* viewwin;
+		
 	public:
 		App();
 		~App();
 		void draw();
-		void setRootViewItem(Jso* item);
+		void setRootViewItem(View& item);
+		void setDimensions(unsigned _width, unsigned _height);
 		void nextPage();
 		void prevPage();
 		void selectUpperItem();

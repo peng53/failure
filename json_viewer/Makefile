@@ -3,7 +3,7 @@ OBJ=../objects
 objects=$(OBJ)/jso.o $(OBJ)/jso_f.o $(OBJ)/app.o $(OBJ)/view.o $(OBJ)/viewer.o
 
 build: $(objects)
-	$(CXX) $(CXXFLAGS) $^ -o ../bin/jso_viewer
+	$(CXX) $(CXXFLAGS) $^ -o ../bin/jso_viewer -lncurses
 
 
 $(OBJ)/%.o: %.cpp %.h

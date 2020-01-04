@@ -3,8 +3,6 @@
 #include <memory>
 #include "../json_adt/jso_f.h"
 
-using std::unique_ptr;
-
 enum class PageState { MORE, DONE };
 
 class View {
