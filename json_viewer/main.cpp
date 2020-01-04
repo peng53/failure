@@ -24,21 +24,27 @@ void allPagesFromViewToStdOut(View &v){
 int main(int argc, char** argv){
 	View v;
 	JSON master;
+	cout << "Master JSON was initilized!\n";
 	(*master)->Append("mini-arr", JSON::Arr());
+	cout << "mini-array appended to master.\n";
+
 	Jso* myarr = (*master)->key_value("mini-arr");
-	(*master)->Append("num", JSON::Num(11));
 	myarr->Append(JSON::Num(24));
-	Jso* subitem = (*myarr->x.a)[0];
-	cout << subitem << '\n';
-	v.setViewItem(myarr);
+	cout << "24 was appended to mini-array as a number\n\n";
+
+
+	v.setViewItem(*master);
 	v.setItemsPerPage(4);
+	cout << "--master items!--\n";
 	allPagesFromViewToStdOut(v);
+	cout << "------------\n";
+	cout << "\nmaster items was viewed, it only contains mini-arr\n";
 
 	View subview = v.openNthItem(0);
+	cout << "subview created for 0th item of master\n\n";
+	cout << "--subview items!--\n";
 	allPagesFromViewToStdOut(subview);
-
-	Jso* mynum = (*master)->key_value("num");
-	v.setViewItem(mynum);
-	allPagesFromViewToStdOut(v);
+	cout << "------------\n";
+	cout << "\nsubview was viewed, it only contains 24\n";
 	return 0;
 }
