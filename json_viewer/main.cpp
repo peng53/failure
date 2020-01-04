@@ -27,24 +27,29 @@ int main(int argc, char** argv){
 	cout << "Master JSON was initilized!\n";
 	(*master)->Append("mini-arr", JSON::Arr());
 	cout << "mini-array appended to master.\n";
+	(*master)->Append("mini-map", JSON::Map());
+	cout << "mini-map appended to master.\n";
 
 	Jso* myarr = (*master)->key_value("mini-arr");
 	myarr->Append(JSON::Num(24));
 	cout << "24 was appended to mini-array as a number\n\n";
 
+	Jso* mymap = (*master)->key_value("mini-map");
+	mymap->Append("300", JSON::Str("300!!!!!"));
+	cout << "300, 300!!!!! was appended to mini-map as a str,str\n\n";
 
 	v.setViewItem(*master);
 	v.setItemsPerPage(4);
 	cout << "--master items!--\n";
 	allPagesFromViewToStdOut(v);
 	cout << "------------\n";
-	cout << "\nmaster items was viewed, it only contains mini-arr\n";
+	cout << "\nmaster items was viewed, it contains mini-arr and mini-map\n";
 
-	View subview = v.openNthItem(0);
-	cout << "subview created for 0th item of master\n\n";
+	View subview = v.openNthItem(1);
+	cout << "subview created for 1st item of master\n\n";
 	cout << "--subview items!--\n";
 	allPagesFromViewToStdOut(subview);
 	cout << "------------\n";
-	cout << "\nsubview was viewed, it only contains 24\n";
+	cout << "\nsubview was viewed, it only contains 24 or 300\n";
 	return 0;
 }
