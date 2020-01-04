@@ -95,9 +95,9 @@ string View::getItemFromObject(){
 		state = PageState::DONE;
 		return "";
 	} else {
-		string out = it->first + subitemDist(it->second);
+		string out = mapPlaceholder->first + subitemDist(mapPlaceholder->second);
 		++item;
-		++it;
+		++mapPlaceholder;
 		return out;
 	}
 }
@@ -111,7 +111,7 @@ void View::firstPage(){
 	reloadPage();
 	page = 0;
 	if (displayedItem->t == JType::Obj){
-		it = displayedItem->x.m->begin();
+		mapPlaceholder = displayedItem->x.m->begin();
 	}
 }
 
@@ -136,10 +136,58 @@ bool View::nextPage(){
 	++page;
 	// now to increment iterator to first item of new page
 	if (displayedItem->t == JType::Obj){
-		// it could already be there
-		std::advance(it, itemsPerPage-item);
+		// mapPlaceholder could already be there
+		std::advance(mapPlaceholder, itemsPerPage-item);
 	}
 	item = 0;
 	return true;
 }
 
+bool View::prevPage(){
+	if (page==0){
+		return false;
+	}
+	unsigned tPage = page-1;
+	if (displayedItem->t == JType::Obj){
+		firstPage();
+		if (tPage != 0){
+			// need to fast forward to page
+			std::advance(mapPlaceholder, tPage*itemsPerPage);
+		}
+	} else {
+		reloadPage();
+	}
+	page = tPage;
+	return true;
+}
+
+View View::openNthItem(unsigned n){
+	Jso* j = JSON::Single(JType::Null);
+	std::cout << j << '\n';
+	size_t index;
+	unordered_map<string,Jso*>::iterator nthItem;
+	switch (displayedItem->t){
+		case JType::Arr:
+			index = (itemsPerPage*page) + n;
+			if (index < displayedItem->x.a->size()){
+				j = (*displayedItem->x.a)[index];
+				std::cout << "set j to " << index << " item\n";
+			}
+			break;
+		case JType::Obj:
+			if (n < item){
+				nthItem = displayedItem->x.m->begin();
+				std::advance(nthItem, (page*itemsPerPage)+n);
+				j = nthItem->second;
+				std::cout << "j has been set\n";
+			}
+			break;
+		default:
+			break;
+	}
+	View v;
+	v.setViewItem(j);
+	std::cout << j << '\n';
+	v.setItemsPerPage(itemsPerPage);
+	return v;
+}

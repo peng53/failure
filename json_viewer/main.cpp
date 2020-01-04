@@ -7,43 +7,38 @@ using std::to_string;
 using std::cout;
 using std::unordered_map;
 
+void pageFromViewToStdout(View& v){
+	while (v.state == PageState::MORE){
+		v.getItem([] (string& s){ cout << s << '\n';});
+	}
+}
+
 void allPagesFromViewToStdOut(View &v){
 	unsigned pageNum = 0;
 	do {
 		cout << "---Page " << pageNum++ << " ---\n";
-		while (v.state == PageState::MORE){
-			v.getItem([] (string& s){ cout << s << '\n';});
-		}
+		pageFromViewToStdout(v);
 	} while (v.nextPage());
 }
 
 int main(int argc, char** argv){
 	View v;
 	JSON master;
-	
-	const size_t numbersCnt = 26+1;
-	for (size_t i=0; i<numbersCnt; ++i){
-		(*master)->Append(to_string(i), JSON::Num(i));
-	}
-	(*master)->Append("mini-map", JSON::Map());
 	(*master)->Append("mini-arr", JSON::Arr());
 	Jso* myarr = (*master)->key_value("mini-arr");
-	myarr->Append(JSON::Single(JType::Null));
-	myarr->Append(JSON::Single(JType::True));
-	myarr->Append(JSON::Single(JType::False));
+	(*master)->Append("num", JSON::Num(11));
 	myarr->Append(JSON::Num(24));
-	myarr->Append(JSON::Str("twenty-four"));
-	myarr->Append(JSON::Arr());
-
-	v.setViewItem(*master);
-	v.setItemsPerPage(4);
-
-	cout << "Print out of master JSON\n";
-	allPagesFromViewToStdOut(v);
-	cout << "--------------\n";
+	Jso* subitem = (*myarr->x.a)[0];
+	cout << subitem << '\n';
 	v.setViewItem(myarr);
-	cout << "Print out of mini-arr\n";
+	v.setItemsPerPage(4);
 	allPagesFromViewToStdOut(v);
-	cout << "--------------\n";
+
+	View subview = v.openNthItem(0);
+	allPagesFromViewToStdOut(subview);
+
+	Jso* mynum = (*master)->key_value("num");
+	v.setViewItem(mynum);
+	allPagesFromViewToStdOut(v);
 	return 0;
 }
