@@ -86,7 +86,7 @@ string View::getItemFromArray(){
 		return "";
 	} else {
 		++item;
-		return JsoStringRep((*displayedItem->x.a)[index]);
+		return JsoStringRep((*displayedItem->x.a)[index]) + " ->";
 	}
 }
 
