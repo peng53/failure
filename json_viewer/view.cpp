@@ -70,6 +70,7 @@ void View::getItem(void (*f) (string& s)){
 			break;
 		default:
 			out = JsoStringRep(displayedItem);
+			f(out);
 			state = PageState::DONE;
 			break;
 	}
