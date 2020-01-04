@@ -164,7 +164,6 @@ bool View::prevPage(){
 
 View View::openNthItem(unsigned n){
 	Jso* j = JSON::Single(JType::Null);
-	std::cout << j << '\n';
 	size_t index;
 	unordered_map<string,Jso*>::iterator nthItem;
 	switch (displayedItem->t){
@@ -172,7 +171,6 @@ View View::openNthItem(unsigned n){
 			index = (itemsPerPage*page) + n;
 			if (index < displayedItem->x.a->size()){
 				j = (*displayedItem->x.a)[index];
-				std::cout << "set j to " << index << " item\n";
 			}
 			break;
 		case JType::Obj:
@@ -180,7 +178,6 @@ View View::openNthItem(unsigned n){
 				nthItem = displayedItem->x.m->begin();
 				std::advance(nthItem, (page*itemsPerPage)+n);
 				j = nthItem->second;
-				std::cout << "j has been set\n";
 			}
 			break;
 		default:
@@ -188,7 +185,6 @@ View View::openNthItem(unsigned n){
 	}
 	View v;
 	v.setViewItem(j);
-	std::cout << j << '\n';
 	v.setItemsPerPage(itemsPerPage);
 	return v;
 }
