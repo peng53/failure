@@ -33,6 +33,7 @@ void App::draw(){
 		v.getItem([](string& s){ printw(s.c_str());});
 		++l;
 	}
+	move(0,0);
 	refresh();
 }
 
@@ -52,10 +53,13 @@ void App::keySym(int c){
 				//openSelectedItem();
 				break;
 			case Command::MOVEUP:
-				selectUpperItem();
+				selectLowerItem();
 				break;
 			case Command::MOVEDOWN:
-				selectLowerItem();
+				selectUpperItem();
+				break;
+			case Command::RELOAD:
+				reload();
 				break;
 			case Command::QUIT:
 				quit();
@@ -65,7 +69,7 @@ void App::keySym(int c){
 }
 
 void App::selectUpperItem(){
-	if (selectedLine<height){
+	if (selectedLine+1<height){
 		++selectedLine;
 		move(selectedLine,0);
 	}
@@ -75,6 +79,12 @@ void App::selectLowerItem(){
 		--selectedLine;
 		move(selectedLine,0);
 	}
+}
+
+void App::reload(){
+	views.top().reloadPage();
+	selectedLine = 0;
+	draw();
 }
 
 void App::quit(){

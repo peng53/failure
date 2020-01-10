@@ -5,7 +5,7 @@
 #include <stack>
 #include <unordered_map>
 
-enum class Command {NEXTPG, PREVPG, CLOSEVIEW, OPENVIEW, QUIT, MOVEUP, MOVEDOWN};
+enum class Command {NEXTPG, PREVPG, CLOSEVIEW, OPENVIEW, QUIT, MOVEUP, MOVEDOWN, RELOAD};
 
 class App {
 	private:
@@ -27,6 +27,7 @@ class App {
 		void selectLowerItem();
 		void openSelectedItem();
 		void closeView();
+		void reload();
 		void quit();
 		void keySym(int c);
 		void addBind(int key, Command cmd);
