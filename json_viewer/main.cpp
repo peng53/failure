@@ -58,14 +58,17 @@ int main(int argc, char** argv){
 	v.reloadPage();
 	*/
 	initscr();
+	keypad(stdscr, TRUE);
+	noecho();
 	App a;
 	a.setRootViewItem(v);
 	a.setDimensions(24,LINES);
-	int key = getch();
-	a.addBind(key, Command::QUIT);
-	std::cout << key << '\n';
+	a.addBind('q', Command::QUIT);
+	a.addBind('r', Command::RELOAD);
+	a.addBind(KEY_DOWN, Command::MOVEDOWN);
+	a.addBind(KEY_UP, Command::MOVEUP);
+	a.draw();
 	while (a.running){
-		a.draw();
 		a.keySym(getch());
 	}
 	endwin();

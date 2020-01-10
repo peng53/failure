@@ -106,6 +106,10 @@ string View::getItemFromObject(){
 void View::reloadPage(){
 	state = PageState::MORE;
 	item = 0;
+	if (displayedItem->t == JType::Obj){
+		mapPlaceholder = displayedItem->x.m->begin();
+		std::advance(mapPlaceholder, page*itemsPerPage);
+	}
 }
 
 void View::firstPage(){
