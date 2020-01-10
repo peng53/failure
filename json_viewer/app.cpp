@@ -2,13 +2,10 @@
 
 #include <string>
 
-App::App(): width(0), height(0), viewwin(nullptr){
+App::App(): width(0), height(0), selectedLine(0), running(true){
 }
 
 App::~App(){
-	if (viewwin){
-		delwin(viewwin);
-	}
 }
 
 void App::setRootViewItem(View& item){
@@ -22,27 +19,70 @@ void App::setRootViewItem(View& item){
 void App::setDimensions(unsigned _width, unsigned _height){
 	width = _width;
 	height = _height;
-	viewwin = newwin(_height, _width, 0, 0);
 	refresh();
-}
-
-void App::drawString(const string& s){
-	mvwprintw(viewwin, 1, 1, s.c_str());
 }
 
 void App::draw(){
 	if (width==0 || height==0 || views.size()==0){
 		return;
 	}
-	unsigned l = 1;
+	unsigned l = 0;
 	View& v = views.top();
 	while (v.state == PageState::MORE){
 		move(l, 1);
-		v.getItem([] (string& s){ printw(s.c_str());});
+		v.getItem([](string& s){ printw(s.c_str());});
 		++l;
 	}
-	//std::string t = "hello world!";
-	//mvwprintw(viewwin,1,1,t.c_str());
-	box(viewwin, 0, 0);
-	wrefresh(viewwin);
+	refresh();
+}
+
+void App::keySym(int c){
+	if (keybinds.count(c)==1){
+		switch (keybinds[c]){
+			case Command::NEXTPG:
+				//nextPage();
+				break;
+			case Command::PREVPG:
+				//prevPage();
+				break;
+			case Command::CLOSEVIEW:
+				//closeView();
+				break;
+			case Command::OPENVIEW:
+				//openSelectedItem();
+				break;
+			case Command::MOVEUP:
+				selectUpperItem();
+				break;
+			case Command::MOVEDOWN:
+				selectLowerItem();
+				break;
+			case Command::QUIT:
+				quit();
+				break;
+		}
+	}
+}
+
+void App::selectUpperItem(){
+	if (selectedLine<height){
+		++selectedLine;
+		move(selectedLine,0);
+	}
+}
+void App::selectLowerItem(){
+	if (selectedLine>0){
+		--selectedLine;
+		move(selectedLine,0);
+	}
+}
+
+void App::quit(){
+	running = false;
+}
+
+void App::addBind(int k, Command cmd){
+	if (keybinds.count(k)==0){
+		keybinds.emplace(k,cmd);
+	}
 }

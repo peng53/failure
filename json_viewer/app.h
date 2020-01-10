@@ -3,14 +3,17 @@
 #include "view.h"
 #include <ncurses.h>
 #include <stack>
+#include <unordered_map>
+
+enum class Command {NEXTPG, PREVPG, CLOSEVIEW, OPENVIEW, QUIT, MOVEUP, MOVEDOWN};
 
 class App {
 	private:
 		View rootViewItem;
 		unsigned width, height;
-		WINDOW* viewwin;
 		std::stack<View> views;
-		void drawString(const string& s);
+		std::unordered_map<int, Command> keybinds;
+		unsigned selectedLine;
 		
 	public:
 		App();
@@ -24,11 +27,10 @@ class App {
 		void selectLowerItem();
 		void openSelectedItem();
 		void closeView();
+		void quit();
 		void keySym(int c);
-		void addBind(int c, string& cmd);
+		void addBind(int key, Command cmd);
 		bool running;
-
-
 
 };
 
