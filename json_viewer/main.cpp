@@ -39,7 +39,7 @@ int main(int argc, char** argv){
 	cout << "300, 300!!!!! was appended to mini-map as a str,str\n\n";
 
 	v.setViewItem(*master);
-	v.setItemsPerPage(LINES-2);
+	v.setItemsPerPage(LINES-1);
 	/*
 	cout << "--master items!--\n";
 	allPagesFromViewToStdOut(v);
@@ -61,8 +61,13 @@ int main(int argc, char** argv){
 	App a;
 	a.setRootViewItem(v);
 	a.setDimensions(24,LINES);
-	a.draw();
-	getch();
+	int key = getch();
+	a.addBind(key, Command::QUIT);
+	std::cout << key << '\n';
+	while (a.running){
+		a.draw();
+		a.keySym(getch());
+	}
 	endwin();
 	return 0;
 }
