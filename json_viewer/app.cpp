@@ -105,8 +105,9 @@ void App::openSelectedItem(){
 }
 
 void App::nextPage(){
-	views.top().nextPage();
-	draw();
+	if (views.top().nextPage()){
+		draw();
+	}
 }
 
 void App::prevPage(){

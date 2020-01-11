@@ -22,7 +22,6 @@ void allPagesFromViewToStdOut(View &v){
 }
 
 int main(int argc, char** argv){
-	View v;
 	JSON master;
 	cout << "Master JSON was initilized!\n";
 	(*master)->Append("mini-arr", JSON::Arr());
@@ -43,10 +42,6 @@ int main(int argc, char** argv){
 	for (unsigned i = 25; i < 70; ++i){
 		mymap->Append(std::to_string(i), JSON::Num(i));
 	}
-
-
-	v.setViewItem(*master);
-	v.setItemsPerPage(LINES-1);
 	/*
 	cout << "--master items!--\n";
 	allPagesFromViewToStdOut(v);
@@ -67,6 +62,9 @@ int main(int argc, char** argv){
 	initscr();
 	keypad(stdscr, TRUE);
 	noecho();
+	View v;
+	v.setViewItem(*master);
+	v.setItemsPerPage(LINES);
 	App a;
 	a.setRootViewItem(v);
 	a.setDimensions(24,LINES);
@@ -82,6 +80,5 @@ int main(int argc, char** argv){
 		a.keySym(getch());
 	}
 	endwin();
-	std::cout << "LINES IS " << LINES << '\n';
 	return 0;
 }
