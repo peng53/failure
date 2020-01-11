@@ -32,7 +32,7 @@ void App::draw(){
 	clear();
 	while (v.state == PageState::MORE && l<height){
 		move(l, 1);
-		v.getItem([](string& s){ printw(s.c_str());});
+		v.getItem([](const string& s){ printw(s.c_str());});
 		++l;
 	}
 	move(0,0);

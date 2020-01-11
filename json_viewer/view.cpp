@@ -62,18 +62,20 @@ const string subitemDist(Jso* j){
 	}
 }
 
-void View::getItem(void (*f) (string& s)){
-	if (state != PageState::MORE || item >= itemsPerPage){
+void View::getItem(void (*f) (const string& s)){
+	if (item >= itemsPerPage){
 		state = PageState::DONE;
+	}
+	if (state != PageState::MORE){
 		return;
 	}
 	string out;
 	switch (displayedItem->t){
 		case JType::Arr:
-			out = getItemFromArray();
+			getItemFromArray(f);
 			break;
 		case JType::Obj:
-			out = getItemFromObject();
+			getItemFromObject(f);
 			break;
 		default:
 			out = JsoStringRep(displayedItem);
@@ -81,32 +83,26 @@ void View::getItem(void (*f) (string& s)){
 			state = PageState::DONE;
 			break;
 	}
-	if (state != PageState::DONE){
-		f(out);
-	}
 }
 
-string View::getItemFromArray(){
+void View::getItemFromArray(void (*f) (const string& s)){
 	size_t index = item + itemsPerPage*page;
 	if (index >= displayedItem->x.a->size()){
 		state = PageState::DONE;
-		return "";
 	} else {
 		++item;
-		return JsoStringRep((*displayedItem->x.a)[index]) + " ->";
+		f(JsoStringRep((*displayedItem->x.a)[index]) + " ->");
 	}
 }
 
-string View::getItemFromObject(){
+void View::getItemFromObject(void (*f) (const string& s)){
 	size_t index = item + itemsPerPage*page;
 	if (index >= displayedItem->x.m->size()){
 		state = PageState::DONE;
-		return "";
 	} else {
-		string out = mapPlaceholder->first + subitemDist(mapPlaceholder->second);
+		f(mapPlaceholder->first + subitemDist(mapPlaceholder->second));
 		++item;
 		++mapPlaceholder;
-		return out;
 	}
 }
 
