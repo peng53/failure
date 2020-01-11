@@ -9,7 +9,7 @@ using std::unordered_map;
 
 void pageFromViewToStdout(View& v){
 	while (v.state == PageState::MORE){
-		v.getItem([] (string& s){ cout << s << '\n';});
+		v.getItem([] (const string& s){ cout << s << '\n';});
 	}
 }
 
