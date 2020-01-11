@@ -1,6 +1,5 @@
 #ifndef JSONVIEW
 #define JSONVIEW
-#include <memory>
 #include "../json_adt/jso_f.h"
 
 enum class PageState { MORE, DONE };
@@ -17,13 +16,13 @@ class View {
 	public:
 		View();
 		void setViewItem(Jso* item);
-		void setItemsPerPage(unsigned count);
+		void setItemsPerPage(const unsigned count);
 		void firstPage();
 		bool nextPage();
 		bool prevPage();
 		void getItem(void (*f)(const string& s));
 		void reloadPage();
-		View openNthItem(unsigned n);
+		View openNthItem(const unsigned n);
 		PageState state;
 };
 

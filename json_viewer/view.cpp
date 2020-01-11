@@ -7,7 +7,7 @@ using std::to_string;
 using std::string;
 
 template <class ForwardIter>
-ForwardIter iteratorToNthPage(ForwardIter it, size_t page, size_t itemsPerPage){
+static ForwardIter iteratorToNthPage(ForwardIter it, const size_t page, const size_t itemsPerPage){
 	std::advance(it, page*itemsPerPage);
 	return it;
 }
@@ -21,12 +21,12 @@ void View::setViewItem(Jso* viewItem){
 	firstPage();
 }
 
-void View::setItemsPerPage(unsigned count){
+void View::setItemsPerPage(const unsigned count){
 	itemsPerPage = count;
 	firstPage();
 }
 
-const string JsoStringRep(Jso *j){
+static const string JsoStringRep(Jso *j){
 	switch (j->t){
 		case JType::Num:
 			return to_string(j->x.f);
@@ -47,7 +47,7 @@ const string JsoStringRep(Jso *j){
 	}
 }
 
-const string subitemDist(Jso* j){
+static const string subitemDist(const Jso* j){
 	switch (j->t){
 		case JType::Arr:
 			return " ~[]";
@@ -177,7 +177,7 @@ bool View::prevPage(){
 }
 
 
-View View::openNthItem(unsigned n){
+View View::openNthItem(const unsigned n){
 	Jso* j = JSON::Single(JType::Null);
 	size_t index;
 	unordered_map<string,Jso*>::iterator nthItem;

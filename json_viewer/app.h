@@ -1,7 +1,6 @@
 #ifndef JSONAPP
 #define JSONAPP
 #include "view.h"
-#include <ncurses.h>
 #include <stack>
 #include <unordered_map>
 
@@ -19,7 +18,7 @@ class App {
 		App();
 		void draw();
 		void setRootViewItem(View& item);
-		void setDimensions(unsigned _width, unsigned _height);
+		void setDimensions(const unsigned _width, const unsigned _height);
 		void nextPage();
 		void prevPage();
 		void selectUpperItem();
@@ -28,8 +27,8 @@ class App {
 		void closeView();
 		void reload();
 		void quit();
-		void keySym(int c);
-		void addBind(int key, Command cmd);
+		void keySym(const int c);
+		void addBind(const int key, const Command cmd);
 		bool running();
 
 };
