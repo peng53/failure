@@ -16,7 +16,7 @@ $(OBJ)/jso_f.o: ../json_adt/jso_f.cpp ../json_adt/jso_f.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 ../objects/parser.o: ../json_adt/parser.cpp ../json_adt/parser.h
-	$(CXX) -c $(CXXFLAGS) ../json_adt/parser.cpp -o ../objects/parser.o
+	$(CXX) -c $(CXXFLAGS) $< -o $@
 
 $(OBJ)/ireaderfactory.o: ../chunkreader/ireaderfactory.cpp ../chunkreader/ireaderfactory.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@

@@ -25,7 +25,7 @@ int main(int argc, char** argv){
 	JSON master;
 
 	IReaderFactory reader_maker;
-	string rawJson = R"~({ "mini-arr": [1, 2, 3, 4, 5, 6, 7, 8 ], "mini-map": {"a":1, "b": 2, "c": 3}})~";
+	string rawJson = R"~({ "mini-arr": [1, 2, 3, 4, 5, 6, 7, 8 ], "mini-map": {"a":"alpha", "b": "banana", "c": "cisco"}})~";
 	IReader *textChunk = reader_maker.ByInput(rawJson);
 	
 	if (textChunk->empty()){
@@ -51,7 +51,9 @@ int main(int argc, char** argv){
 	a.addBind(KEY_DOWN, Command::MOVEDOWN);
 	a.addBind(KEY_UP, Command::MOVEUP);
 	a.addBind('c', Command::CLOSEVIEW);
+	a.addBind(KEY_LEFT, Command::CLOSEVIEW);
 	a.addBind('\n', Command::OPENVIEW);
+	a.addBind(KEY_RIGHT, Command::OPENVIEW);
 	a.addBind(KEY_NPAGE, Command::NEXTPG);
 	a.addBind(KEY_PPAGE, Command::PREVPG);
 	a.draw();
