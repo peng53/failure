@@ -30,7 +30,7 @@ void App::draw(){
 	unsigned l = 0;
 	View& v = views.top();
 	clear();
-	while (v.state == PageState::MORE){
+	while (v.state == PageState::MORE && l<height){
 		move(l, 1);
 		v.getItem([](string& s){ printw(s.c_str());});
 		++l;
@@ -105,9 +105,8 @@ void App::openSelectedItem(){
 }
 
 void App::nextPage(){
-	if (views.top().nextPage()){
-		draw();
-	}
+	views.top().nextPage();
+	draw();
 }
 
 void App::prevPage(){
