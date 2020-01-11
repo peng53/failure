@@ -9,7 +9,6 @@ enum class Command {NEXTPG, PREVPG, CLOSEVIEW, OPENVIEW, QUIT, MOVEUP, MOVEDOWN,
 
 class App {
 	private:
-		View rootViewItem;
 		unsigned width, height;
 		std::stack<View> views;
 		std::unordered_map<int, Command> keybinds;
@@ -18,7 +17,6 @@ class App {
 
 	public:
 		App();
-		~App();
 		void draw();
 		void setRootViewItem(View& item);
 		void setDimensions(unsigned _width, unsigned _height);
