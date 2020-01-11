@@ -5,11 +5,8 @@
 App::App(): width(0), height(0), selectedLine(0), _running(true){
 }
 
-App::~App(){
-}
 
 void App::setRootViewItem(View& item){
-	rootViewItem = item;
 	if (views.size()>0){
 		views = std::stack<View>();
 	}
@@ -19,7 +16,6 @@ void App::setRootViewItem(View& item){
 void App::setDimensions(unsigned _width, unsigned _height){
 	width = _width;
 	height = _height;
-	refresh();
 }
 
 void App::draw(){
@@ -27,13 +23,11 @@ void App::draw(){
 		return;
 	}
 	selectedLine = 0;
-	unsigned l = 0;
 	View& v = views.top();
 	clear();
-	while (v.state == PageState::MORE && l<height){
+	for (unsigned l=0; v.state == PageState::MORE && l<height; ++l){
 		move(l, 1);
 		v.getItem([](const string& s){ printw(s.c_str());});
-		++l;
 	}
 	move(0,0);
 	refresh();
@@ -97,8 +91,6 @@ void App::closeView(){
 }
 
 void App::openSelectedItem(){
-	//string s = std::to_string(selectedLine);
-	//printw(s.c_str());
 	View newview = views.top().openNthItem(selectedLine);
 	views.push(newview);
 	draw();

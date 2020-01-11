@@ -69,7 +69,6 @@ void View::getItem(void (*f) (const string& s)){
 	if (state != PageState::MORE){
 		return;
 	}
-	string out;
 	switch (displayedItem->t){
 		case JType::Arr:
 			getItemFromArray(f);
@@ -78,8 +77,7 @@ void View::getItem(void (*f) (const string& s)){
 			getItemFromObject(f);
 			break;
 		default:
-			out = JsoStringRep(displayedItem);
-			f(out);
+			f(JsoStringRep(displayedItem));
 			state = PageState::DONE;
 			break;
 	}
@@ -171,7 +169,6 @@ bool View::prevPage(){
 	page = tPage;
 	return true;
 }
-
 
 
 View View::openNthItem(unsigned n){
