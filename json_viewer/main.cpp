@@ -75,6 +75,7 @@ int main(int argc, char** argv){
 	a.addBind('c', Command::CLOSEVIEW);
 	a.addBind('\n', Command::OPENVIEW);
 	a.addBind(KEY_NPAGE, Command::NEXTPG);
+	a.addBind(KEY_PPAGE, Command::PREVPG);
 	a.draw();
 	while (a.running){
 		a.keySym(getch());

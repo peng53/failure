@@ -46,7 +46,7 @@ void App::keySym(int c){
 				nextPage();
 				break;
 			case Command::PREVPG:
-				//prevPage();
+				prevPage();
 				break;
 			case Command::CLOSEVIEW:
 				closeView();
@@ -104,14 +104,17 @@ void App::openSelectedItem(){
 	draw();
 }
 
+void App::prevPage(){
+	if (views.top().prevPage()){
+		draw();
+	}
+}
 void App::nextPage(){
 	if (views.top().nextPage()){
 		draw();
 	}
 }
 
-void App::prevPage(){
-}
 
 void App::quit(){
 	running = false;
