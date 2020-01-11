@@ -2,7 +2,7 @@
 
 #include <string>
 
-App::App(): width(0), height(0), selectedLine(0), running(true){
+App::App(): width(0), height(0), selectedLine(0), _running(true){
 }
 
 App::~App(){
@@ -117,11 +117,15 @@ void App::nextPage(){
 
 
 void App::quit(){
-	running = false;
+	_running = false;
 }
 
 void App::addBind(int k, Command cmd){
 	if (keybinds.count(k)==0){
 		keybinds.emplace(k,cmd);
 	}
+}
+
+bool App::running(){
+	return _running;
 }

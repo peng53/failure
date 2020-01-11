@@ -14,7 +14,8 @@ class App {
 		std::stack<View> views;
 		std::unordered_map<int, Command> keybinds;
 		unsigned selectedLine;
-		
+		bool _running;
+
 	public:
 		App();
 		~App();
@@ -31,7 +32,7 @@ class App {
 		void quit();
 		void keySym(int c);
 		void addBind(int key, Command cmd);
-		bool running;
+		bool running();
 
 };
 
