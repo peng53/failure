@@ -33,10 +33,17 @@ int main(int argc, char** argv){
 	Jso* myarr = (*master)->key_value("mini-arr");
 	myarr->Append(JSON::Num(24));
 	cout << "24 was appended to mini-array as a number\n\n";
+	for (unsigned i = 25; i < 70; ++i){
+		myarr->Append(JSON::Num(i));
+	}
 
 	Jso* mymap = (*master)->key_value("mini-map");
 	mymap->Append("300", JSON::Str("300!!!!!"));
 	cout << "300, 300!!!!! was appended to mini-map as a str,str\n\n";
+	for (unsigned i = 25; i < 70; ++i){
+		mymap->Append(std::to_string(i), JSON::Num(i));
+	}
+
 
 	v.setViewItem(*master);
 	v.setItemsPerPage(LINES-1);
@@ -69,10 +76,12 @@ int main(int argc, char** argv){
 	a.addBind(KEY_UP, Command::MOVEUP);
 	a.addBind('c', Command::CLOSEVIEW);
 	a.addBind('\n', Command::OPENVIEW);
+	a.addBind(KEY_NPAGE, Command::NEXTPG);
 	a.draw();
 	while (a.running){
 		a.keySym(getch());
 	}
 	endwin();
+	std::cout << "LINES IS " << LINES << '\n';
 	return 0;
 }

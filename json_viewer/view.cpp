@@ -1,9 +1,16 @@
 #include "view.h"
 #include <string>
 #include <iostream>
+#include <iterator>
 
 using std::to_string;
 using std::string;
+
+template <class ForwardIter>
+ForwardIter iteratorToNthPage(ForwardIter it, size_t page, size_t itemsPerPage){
+	std::advance(it, page*itemsPerPage);
+	return it;
+}
 
 View::View(): page(0), item(0){
 
@@ -80,6 +87,10 @@ void View::getItem(void (*f) (string& s)){
 }
 
 string View::getItemFromArray(){
+	if (item >= itemsPerPage){
+		state = PageState::DONE;
+		return "";
+	}
 	size_t index = item + itemsPerPage*page;
 	if (index >= displayedItem->x.a->size()){
 		state = PageState::DONE;
@@ -107,8 +118,11 @@ void View::reloadPage(){
 	state = PageState::MORE;
 	item = 0;
 	if (displayedItem->t == JType::Obj){
-		mapPlaceholder = displayedItem->x.m->begin();
-		std::advance(mapPlaceholder, page*itemsPerPage);
+		mapPlaceholder = iteratorToNthPage(
+			displayedItem->x.m->begin(),
+			page,
+			itemsPerPage
+		);
 	}
 }
 
@@ -166,6 +180,8 @@ bool View::prevPage(){
 	return true;
 }
 
+
+
 View View::openNthItem(unsigned n){
 	Jso* j = JSON::Single(JType::Null);
 	size_t index;
@@ -179,8 +195,12 @@ View View::openNthItem(unsigned n){
 			break;
 		case JType::Obj:
 			if (n < item){
-				nthItem = displayedItem->x.m->begin();
-				std::advance(nthItem, (page*itemsPerPage)+n);
+				nthItem = iteratorToNthPage(
+					displayedItem->x.m->begin(),
+					page,
+					itemsPerPage
+				);
+				std::advance(nthItem, n);
 				j = nthItem->second;
 			}
 			break;

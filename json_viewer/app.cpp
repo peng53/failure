@@ -43,7 +43,7 @@ void App::keySym(int c){
 	if (keybinds.count(c)==1){
 		switch (keybinds[c]){
 			case Command::NEXTPG:
-				//nextPage();
+				nextPage();
 				break;
 			case Command::PREVPG:
 				//prevPage();
@@ -90,10 +90,8 @@ void App::reload(){
 }
 
 void App::closeView(){
-	views.pop();
-	if (views.size()==0){
-		quit();
-	} else {
+	if (views.size()>1){
+		views.pop();
 		reload();
 	}
 }
@@ -104,7 +102,15 @@ void App::openSelectedItem(){
 	View newview = views.top().openNthItem(selectedLine);
 	views.push(newview);
 	draw();
-	refresh();
+}
+
+void App::nextPage(){
+	if (views.top().nextPage()){
+		draw();
+	}
+}
+
+void App::prevPage(){
 }
 
 void App::quit(){
