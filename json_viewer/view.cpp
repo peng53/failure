@@ -87,10 +87,6 @@ void View::getItem(void (*f) (string& s)){
 }
 
 string View::getItemFromArray(){
-	if (item >= itemsPerPage){
-		state = PageState::DONE;
-		return "";
-	}
 	size_t index = item + itemsPerPage*page;
 	if (index >= displayedItem->x.a->size()){
 		state = PageState::DONE;
