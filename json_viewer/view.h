@@ -16,7 +16,6 @@ class View {
 
 	public:
 		View();
-		~View();
 		void setViewItem(Jso* item);
 		void setItemsPerPage(unsigned count);
 		void firstPage();

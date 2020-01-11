@@ -16,10 +16,6 @@ View::View(): page(0), item(0){
 
 }
 
-View::~View(){
-
-}
-
 void View::setViewItem(Jso* viewItem){
 	displayedItem = viewItem;
 	firstPage();
