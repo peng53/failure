@@ -26,8 +26,10 @@ void App::draw(){
 	if (width==0 || height==0 || views.size()==0){
 		return;
 	}
+	selectedLine = 0;
 	unsigned l = 0;
 	View& v = views.top();
+	clear();
 	while (v.state == PageState::MORE){
 		move(l, 1);
 		v.getItem([](string& s){ printw(s.c_str());});
@@ -47,10 +49,10 @@ void App::keySym(int c){
 				//prevPage();
 				break;
 			case Command::CLOSEVIEW:
-				//closeView();
+				closeView();
 				break;
 			case Command::OPENVIEW:
-				//openSelectedItem();
+				openSelectedItem();
 				break;
 			case Command::MOVEUP:
 				selectLowerItem();
@@ -85,6 +87,24 @@ void App::reload(){
 	views.top().reloadPage();
 	selectedLine = 0;
 	draw();
+}
+
+void App::closeView(){
+	views.pop();
+	if (views.size()==0){
+		quit();
+	} else {
+		reload();
+	}
+}
+
+void App::openSelectedItem(){
+	//string s = std::to_string(selectedLine);
+	//printw(s.c_str());
+	View newview = views.top().openNthItem(selectedLine);
+	views.push(newview);
+	draw();
+	refresh();
 }
 
 void App::quit(){
