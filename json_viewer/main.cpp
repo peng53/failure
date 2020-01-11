@@ -1,11 +1,11 @@
-#include "app.h"
 #include <iostream>
+#include "app.h"
+#include "../json_adt/parser.h"
+#include "../chunkreader/ireaderfactory.h"
 
-#include <unordered_map>
 
 using std::to_string;
 using std::cout;
-using std::unordered_map;
 
 void pageFromViewToStdout(View& v){
 	while (v.state == PageState::MORE){
@@ -24,17 +24,18 @@ void allPagesFromViewToStdOut(View &v){
 int main(int argc, char** argv){
 	JSON master;
 
-	(*master)->Append("mini-arr", JSON::Arr());
-	Jso* myarr = (*master)->key_value("mini-arr");
-	for (unsigned i = 25; i < 70; ++i){
-		myarr->Append(JSON::Num(i));
+	IReaderFactory reader_maker;
+	string rawJson = R"~({ "mini-arr": [1, 2, 3, 4, 5, 6, 7, 8 ], "mini-map": {"a":1, "b": 2, "c": 3}})~";
+	IReader *textChunk = reader_maker.ByInput(rawJson);
+	
+	if (textChunk->empty()){
+		throw std::invalid_argument("No input or non-existent file.");
 	}
-
-	(*master)->Append("mini-map", JSON::Map());
-	Jso* mymap = (*master)->key_value("mini-map");
-	for (unsigned i = 300; i < 312; ++i){
-		mymap->Append(std::to_string(i), JSON::Num(i));
+	if (nextNonWS(textChunk)!='{'){
+		throw std::out_of_range("Could not find opening curly brace.");
 	}
+	textChunk->advance();
+	parse_file_comma(textChunk,master);
 
 	initscr();
 	keypad(stdscr, TRUE);
