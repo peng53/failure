@@ -152,8 +152,9 @@ static Jso* text2obj(IReader* chr, JType t){
 	switch (t){
 		case JType::Num:
 			parseDigits(chr,true,&tmp);
-			return JSON::Str(tmp);
+			//return JSON::Str(tmp);
 			// get a number actually returns a string.
+			return JSON::Num(std::stod(tmp));
 		case JType::Str:
 			get_a_string(chr,&tmp);
 			return JSON::Str(tmp);

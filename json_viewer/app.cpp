@@ -18,6 +18,10 @@ void App::setDimensions(unsigned _width, unsigned _height){
 	height = _height;
 }
 
+void ncursesPrintString(const string& s){
+	printw(s.c_str());
+}
+
 void App::draw(){
 	if (width==0 || height==0 || views.size()==0){
 		return;
@@ -27,7 +31,8 @@ void App::draw(){
 	clear();
 	for (unsigned l=0; v.state == PageState::MORE && l<height; ++l){
 		move(l, 1);
-		v.getItem([](const string& s){ printw(s.c_str());});
+		//v.getItem([](const string& s){ printw(s.c_str());});
+		v.getItem(ncursesPrintString);
 	}
 	move(0,0);
 	refresh();
