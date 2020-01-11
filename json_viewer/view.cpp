@@ -57,6 +57,16 @@ const string subitemDist(Jso* j){
 			return " ~[]";
 		case JType::Obj:
 			return " ~{}";
+		case JType::Str:
+			return " (s)";
+		case JType::Num:
+			return " (f)";
+		case JType::True:
+			return " (t)";
+		case JType::False:
+			return " (f)";
+		case JType::Null:
+			return " (n)";
 		default:
 			return "";
 	}
@@ -89,7 +99,7 @@ void View::getItemFromArray(void (*f) (const string& s)){
 		state = PageState::DONE;
 	} else {
 		++item;
-		f(JsoStringRep((*displayedItem->x.a)[index]) + " ->");
+		f(JsoStringRep((*displayedItem->x.a)[index]) + subitemDist((*displayedItem->x.a)[index]));
 	}
 }
 

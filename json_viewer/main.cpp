@@ -25,7 +25,7 @@ int main(int argc, char** argv){
 	JSON master;
 
 	IReaderFactory reader_maker;
-	string rawJson = R"~({ "mini-arr": [1, 2, 3, 4, 5, 6, 7, 8 ], "mini-map": {"a":"alpha", "b": "banana", "c": "cisco"}})~";
+	string rawJson = R"~({ "mini-arr": [1, 2, 3, 4, 5, 6, 7, 8, ["fox"] ], "mini-map": {"a":"alpha", "b": "banana", "c": "cisco", "r" : { "rabbit" : true }}})~";
 	IReader *textChunk = reader_maker.ByInput(rawJson);
 	
 	if (textChunk->empty()){
