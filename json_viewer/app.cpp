@@ -1,5 +1,5 @@
 #include "app.h"
-
+#include <ncurses.h>
 #include <string>
 
 App::App(): width(0), height(0), selectedLine(0), _running(true){
@@ -13,12 +13,12 @@ void App::setRootViewItem(View& item){
 	views.push(item);
 }
 
-void App::setDimensions(unsigned _width, unsigned _height){
+void App::setDimensions(const unsigned _width, const unsigned _height){
 	width = _width;
 	height = _height;
 }
 
-void ncursesPrintString(const string& s){
+static void ncursesPrintString(const string& s){
 	printw(s.c_str());
 }
 
@@ -31,14 +31,13 @@ void App::draw(){
 	clear();
 	for (unsigned l=0; v.state == PageState::MORE && l<height; ++l){
 		move(l, 1);
-		//v.getItem([](const string& s){ printw(s.c_str());});
 		v.getItem(ncursesPrintString);
 	}
 	move(0,0);
 	refresh();
 }
 
-void App::keySym(int c){
+void App::keySym(const int c){
 	if (keybinds.count(c)==1){
 		switch (keybinds[c]){
 			case Command::NEXTPG:
@@ -112,12 +111,11 @@ void App::nextPage(){
 	}
 }
 
-
 void App::quit(){
 	_running = false;
 }
 
-void App::addBind(int k, Command cmd){
+void App::addBind(const int k, const Command cmd){
 	if (keybinds.count(k)==0){
 		keybinds.emplace(k,cmd);
 	}

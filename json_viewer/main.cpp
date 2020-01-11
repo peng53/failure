@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ncurses.h>
 #include "app.h"
 #include "../json_adt/parser.h"
 #include "../chunkreader/ireaderfactory.h"
@@ -7,13 +8,13 @@
 using std::to_string;
 using std::cout;
 
-void pageFromViewToStdout(View& v){
+static void pageFromViewToStdout(View& v){
 	while (v.state == PageState::MORE){
 		v.getItem([] (const string& s){ cout << s << '\n';});
 	}
 }
 
-void allPagesFromViewToStdOut(View &v){
+static void allPagesFromViewToStdOut(View &v){
 	unsigned pageNum = 0;
 	do {
 		cout << "---Page " << pageNum++ << " ---\n";
@@ -25,7 +26,28 @@ int main(int argc, char** argv){
 	JSON master;
 
 	IReaderFactory reader_maker;
-	string rawJson = R"~({ "mini-arr": [1, 2, 3, 4.24, -5.0, 2e4, 7, 8, ["fox"] ], "mini-map": {"a":"alpha", "b": "banana", "c": "cisco", "r" : { "rabbit" : true }, "t" : 5}})~";
+	string rawJson = R"~(
+		{
+			"mini-arr": [
+				314e-2,
+				2e4,
+				-64,
+				844,
+				[
+					"fox"
+				]
+			],
+			"mini-map": {
+				"a": "alpha",
+				"b": "banana",
+				"c": "cisco",
+				"r" : {
+					"rabbit" : true
+				},
+				"t" : 5
+			}
+		}
+	)~";
 	IReader *textChunk = reader_maker.ByInput(rawJson);
 	
 	if (textChunk->empty()){
