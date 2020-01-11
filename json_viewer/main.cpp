@@ -23,42 +23,19 @@ void allPagesFromViewToStdOut(View &v){
 
 int main(int argc, char** argv){
 	JSON master;
-	cout << "Master JSON was initilized!\n";
-	(*master)->Append("mini-arr", JSON::Arr());
-	cout << "mini-array appended to master.\n";
-	(*master)->Append("mini-map", JSON::Map());
-	cout << "mini-map appended to master.\n";
 
+	(*master)->Append("mini-arr", JSON::Arr());
 	Jso* myarr = (*master)->key_value("mini-arr");
-	myarr->Append(JSON::Num(24));
-	cout << "24 was appended to mini-array as a number\n\n";
 	for (unsigned i = 25; i < 70; ++i){
 		myarr->Append(JSON::Num(i));
 	}
 
+	(*master)->Append("mini-map", JSON::Map());
 	Jso* mymap = (*master)->key_value("mini-map");
-	mymap->Append("300", JSON::Str("300!!!!!"));
-	cout << "300, 300!!!!! was appended to mini-map as a str,str\n\n";
-	for (unsigned i = 25; i < 70; ++i){
+	for (unsigned i = 300; i < 312; ++i){
 		mymap->Append(std::to_string(i), JSON::Num(i));
 	}
-	/*
-	cout << "--master items!--\n";
-	allPagesFromViewToStdOut(v);
-	cout << "------------\n";
-	cout << "\nmaster items was viewed, it contains mini-arr and mini-map\n";
 
-	View subview = v.openNthItem(1);
-	cout << "subview created for 1st item of master\n\n";
-	cout << "--subview items!--\n";
-	allPagesFromViewToStdOut(subview);
-	cout << "------------\n";
-	cout << "\nsubview was viewed, it only contains 24 or 300\n";
-	
-	subview = subview.openNthItem(0);
-	allPagesFromViewToStdOut(subview);
-	v.reloadPage();
-	*/
 	initscr();
 	keypad(stdscr, TRUE);
 	noecho();
@@ -77,7 +54,7 @@ int main(int argc, char** argv){
 	a.addBind(KEY_NPAGE, Command::NEXTPG);
 	a.addBind(KEY_PPAGE, Command::PREVPG);
 	a.draw();
-	while (a.running){
+	while (a.running()){
 		a.keySym(getch());
 	}
 	endwin();
