@@ -67,6 +67,8 @@ int main(int argc, char** argv){
 	a.addBind('r', Command::RELOAD);
 	a.addBind(KEY_DOWN, Command::MOVEDOWN);
 	a.addBind(KEY_UP, Command::MOVEUP);
+	a.addBind('c', Command::CLOSEVIEW);
+	a.addBind('\n', Command::OPENVIEW);
 	a.draw();
 	while (a.running){
 		a.keySym(getch());
