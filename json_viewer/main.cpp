@@ -26,29 +26,36 @@ int main(int argc, char** argv){
 	JSON master;
 
 	IReaderFactory reader_maker;
-	string rawJson = R"~(
-		{
-			"mini-arr": [
-				314e-2,
-				2e4,
-				-64,
-				844,
-				[
-					"fox"
-				]
-			],
-			"mini-map": {
-				"a": "alpha",
-				"b": "banana",
-				"c": "cisco",
-				"r" : {
-					"rabbit" : true
-				},
-				"t" : 5
+	IReader *textChunk;
+	if (argc<2){
+		string rawJson = R"~(
+			{
+				"mini-arr": [
+					314e-2,
+					2e4,
+					-64,
+					844,
+					[
+						"fox"
+					]
+				],
+				"mini-map": {
+					"a": "alpha",
+					"b": "banana",
+					"c": "cisco",
+					"r" : {
+						"rabbit" : true
+					},
+					"t" : 5
+				}
 			}
-		}
-	)~";
-	IReader *textChunk = reader_maker.ByInput(rawJson);
+		)~";
+			textChunk = reader_maker.ByInput(rawJson);
+	} else {
+		cout << "Using file: " << argv[1];
+		textChunk = reader_maker.ByFile(argv[1],1024);
+	}
+
 	
 	if (textChunk->empty()){
 		throw std::invalid_argument("No input or non-existent file.");
