@@ -9,9 +9,9 @@
 
 {% for row in data %}
 <tr>
-	<td>{{ row.first }}</td>
-	<td>{{ row.last }}</td>
-	<td>{{ row.bdate }}</td>
+	{% for cell in row %}
+	<td>{{ cell }}</td>
+	{% endfor %}
 </tr>
 {% endfor %}
 
