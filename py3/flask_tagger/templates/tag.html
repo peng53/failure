@@ -1,0 +1,20 @@
+<html>
+	<form action = "{{ to }}" method='post'>
+		<p>Filename
+		<input type='text' name='filename' value='{{ mfile }}' />
+		</p>
+		<p>Title/Song Name
+		<input type='text' name='title' value="{% if 'title' in meta %}{{ meta['title'][0] }}{% endif %}" />
+		</p>
+		<p>Artist
+		<input type='text' name='artist' value="{% if 'artist' in meta %}{{ meta['artist'][0] }}{% endif %}" />
+		</p>
+		<p>Album
+		<input type='text' name='album' value="{% if 'album' in meta %}{{ meta['album'][0] }}{% endif %}" />
+		</p>
+		<p>Track #
+		<input type='text' name='track' value="{% if 'tracknumber' in meta %}{{ meta['tracknumber'][0] }}{% endif %}" />
+		</p>
+		<input type='submit' value='Save' />
+	</form>
+</html>
