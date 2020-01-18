@@ -19,7 +19,7 @@ namespace eval Gui {
 		.men.new add command -label {New Group} -command Gui::createNewGroupWindow
 		.men.new add command -label {New Tag} -command Gui::createNewTagDialog
 		.men.edit add command -label {Modify} -command modifyWindow::open
-		.men.edit add command -label {Delete}
+		.men.edit add command -label {Delete} -command mainTreeview::delete
 		.men add cascade -label {App} -menu .men.app
 		.men add cascade -label {New} -menu .men.new
 		.men add cascade -label {Edit} -menu .men.edit
@@ -289,6 +289,34 @@ namespace eval mainTreeview {
 		# Updates (leaf) row of treeview with new values
 		.links.fnames item $rowId -text $newName -values [list $updatedViews $newTagCol]
 	}
+	proc delete {} {
+		# Deletes the focused items. Prompt for groups.
+		# If already deleted in same run, ignore
+		set deleteList [.links.fnames selection]
+		foreach d $deleteList {
+			if {[.links.fnames exists $d]} {
+				if {[string match {[1-9]} $d]} {
+					set r [tk_messageBox -type yesnocancel -icon question -title Delete -message {Delete group? (yes/no) Or stop? (cancel)}]
+					if {$r == {yes}} {
+						# delete all its children from rowTagList
+						deleteGroupChildren $d
+					} elseif {$r == {no}} {
+						continue
+					} elseif {$r == {cancel}} {
+						return
+					}
+				}
+				.links.fnames delete $d
+				puts $d
+			}
+		}
+	}
+	proc deleteGroupChildren {id} {
+		# Removes children of group
+		foreach c [.links.fnames children $id] {
+			puts {TBD}
+		}
+	}
 }
 namespace eval modifyWindow {
 	variable updatedViews 0 views 0 updatedGroup 0 group 0
@@ -308,6 +336,7 @@ namespace eval modifyWindow {
 		wm title .win {Modify}
 		pack [labelframe .win.name -text Name] -expand 1 -fill x
 		pack [entry .win.name.e] -expand 1 -fill x
+		### TODO: need validation to remove "'
 		pack [labelframe .win.group -text Group] -expand 1 -fill x
 		pack [ttk::combobox .win.group.cb -values [concat [dict values $mainTreeview::v::unloadedGroups] [dict values $mainTreeview::v::loadedGroups]]] -expand 1 -fill x
 		pack [labelframe .win.views -text Views] -expand 1 -fill x

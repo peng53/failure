@@ -95,7 +95,8 @@ void View::getItemFromArray(void (*f) (const string& s)){
 		state = PageState::DONE;
 	} else {
 		++item;
-		f(JsoStringRep((*displayedItem->x.a)[index]) + subitemDist((*displayedItem->x.a)[index]));
+		f(JsoStringRep((*displayedItem->x.a)[index]));
+		f(subitemDist((*displayedItem->x.a)[index]));
 	}
 }
 
@@ -104,7 +105,8 @@ void View::getItemFromObject(void (*f) (const string& s)){
 	if (index >= displayedItem->x.m->size()){
 		state = PageState::DONE;
 	} else {
-		f(mapPlaceholder->first + subitemDist(mapPlaceholder->second));
+		f(mapPlaceholder->first);
+		f(subitemDist(mapPlaceholder->second));
 		++item;
 		++mapPlaceholder;
 	}
