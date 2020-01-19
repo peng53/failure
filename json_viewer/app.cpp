@@ -26,6 +26,9 @@ static void ncursesPrintString(const string& s){
 static void ncursesPrintTypeString(const string& s){
 	attron(COLOR_PAIR(1));
 	printw(s.c_str());
+	addch(' ');
+	addch(' ');
+	addch(' ');
 	attroff(COLOR_PAIR(1));
 }
 
@@ -40,6 +43,8 @@ void App::draw(){
 		move(l, 1);
 		v.getItem(ncursesPrintString,ncursesPrintTypeString);
 	}
+	hline(ACS_CKBOARD,width);
+	mvvline(0, 5, ACS_VLINE, height);
 	move(0,0);
 	refresh();
 }

@@ -50,19 +50,19 @@ static const string JsoStringRep(Jso *j){
 static const string subitemDist(const Jso* j){
 	switch (j->t){
 		case JType::Arr:
-			return " ~[]";
+			return "~[]";
 		case JType::Obj:
-			return " ~{}";
+			return "~{}";
 		case JType::Str:
-			return " (s)";
+			return "(s)";
 		case JType::Num:
-			return " (f)";
+			return "(f)";
 		case JType::True:
-			return " (t)";
+			return "(1)";
 		case JType::False:
-			return " (f)";
+			return "(0)";
 		case JType::Null:
-			return " (n)";
+			return "(n)";
 		default:
 			return "";
 	}
@@ -83,6 +83,7 @@ void View::getItem(void (*itemPrint) (const string& s), void (*typePrint) (const
 			getItemFromObject(itemPrint, typePrint);
 			break;
 		default:
+			typePrint(subitemDist(displayedItem));
 			itemPrint(JsoStringRep(displayedItem));
 			state = PageState::DONE;
 			break;
@@ -95,8 +96,8 @@ void View::getItemFromArray(void (*itemPrint) (const string& s), void (*typePrin
 		state = PageState::DONE;
 	} else {
 		++item;
-		itemPrint(JsoStringRep((*displayedItem->x.a)[index]));
 		typePrint(subitemDist((*displayedItem->x.a)[index]));
+		itemPrint(JsoStringRep((*displayedItem->x.a)[index]));
 	}
 }
 
@@ -105,8 +106,8 @@ void View::getItemFromObject(void (*itemPrint) (const string& s), void (*typePri
 	if (index >= displayedItem->x.m->size()){
 		state = PageState::DONE;
 	} else {
-		itemPrint(mapPlaceholder->first);
 		typePrint(subitemDist(mapPlaceholder->second));
+		itemPrint(mapPlaceholder->first);
 		++item;
 		++mapPlaceholder;
 	}

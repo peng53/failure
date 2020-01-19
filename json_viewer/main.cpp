@@ -79,7 +79,7 @@ int main(int argc, char** argv){
 	v.setItemsPerPage(LINES);
 	App a;
 	a.setRootViewItem(v);
-	a.setDimensions(24,LINES);
+	a.setDimensions(COLS,LINES);
 	a.addBind('q', Command::QUIT);
 	a.addBind('r', Command::RELOAD);
 	a.addBind(KEY_DOWN, Command::MOVEDOWN);
