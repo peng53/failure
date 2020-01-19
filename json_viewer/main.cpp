@@ -10,7 +10,7 @@ using std::cout;
 
 static void pageFromViewToStdout(View& v){
 	while (v.state == PageState::MORE){
-		v.getItem([] (const string& s){ cout << s << '\n';});
+		v.getItem([] (const string& s){ cout << s << '\n';},[] (const string& s){ cout << s << '\n';});
 	}
 }
 
@@ -20,6 +20,17 @@ static void allPagesFromViewToStdOut(View &v){
 		cout << "---Page " << pageNum++ << " ---\n";
 		pageFromViewToStdout(v);
 	} while (v.nextPage());
+}
+
+static void reader2jsonADT(IReader* textChunk, JSON& j){
+	if (textChunk->empty()){
+		throw std::invalid_argument("No input or non-existent file.");
+	}
+	if (nextNonWS(textChunk)!='{'){
+		throw std::out_of_range("Could not find opening curly brace.");
+	}
+	textChunk->advance();
+	parse_file_comma(textChunk,j);
 }
 
 int main(int argc, char** argv){
@@ -55,20 +66,14 @@ int main(int argc, char** argv){
 		cout << "Using file: " << argv[1];
 		textChunk = reader_maker.ByFile(argv[1],1024);
 	}
-
 	
-	if (textChunk->empty()){
-		throw std::invalid_argument("No input or non-existent file.");
-	}
-	if (nextNonWS(textChunk)!='{'){
-		throw std::out_of_range("Could not find opening curly brace.");
-	}
-	textChunk->advance();
-	parse_file_comma(textChunk,master);
+	reader2jsonADT(textChunk, master);
 
 	initscr();
 	keypad(stdscr, TRUE);
 	noecho();
+	start_color();
+	init_pair(1, COLOR_RED, COLOR_BLACK);
 	View v;
 	v.setViewItem(*master);
 	v.setItemsPerPage(LINES);

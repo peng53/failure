@@ -10,8 +10,8 @@ class View {
 		unsigned itemsPerPage, page, item;
 		unordered_map<string,Jso*>::iterator mapPlaceholder;
 
-		void getItemFromArray(void (*f) (const string& s));
-		void getItemFromObject(void (*f) (const string& s));
+		void getItemFromArray(void (*itemPrint) (const string& s), void (*typePrint) (const string& s));
+		void getItemFromObject(void (*itemPrint) (const string& s), void (*typePrint) (const string& s));
 
 	public:
 		View();
@@ -20,7 +20,7 @@ class View {
 		void firstPage();
 		bool nextPage();
 		bool prevPage();
-		void getItem(void (*f)(const string& s));
+		void getItem(void (*itemPrint)(const string& s), void (*typePrint)(const string& s));
 		void reloadPage();
 		View openNthItem(const unsigned n);
 		PageState state;

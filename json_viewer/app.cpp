@@ -1,6 +1,7 @@
 #include "app.h"
 #include <ncurses.h>
 #include <string>
+#include <algorithm>
 
 App::App(): width(0), height(0), selectedLine(0), _running(true){
 }
@@ -22,6 +23,12 @@ static void ncursesPrintString(const string& s){
 	printw(s.c_str());
 }
 
+static void ncursesPrintTypeString(const string& s){
+	attron(COLOR_PAIR(1));
+	printw(s.c_str());
+	attroff(COLOR_PAIR(1));
+}
+
 void App::draw(){
 	if (width==0 || height==0 || views.size()==0){
 		return;
@@ -31,7 +38,7 @@ void App::draw(){
 	clear();
 	for (unsigned l=0; v.state == PageState::MORE && l<height; ++l){
 		move(l, 1);
-		v.getItem(ncursesPrintString);
+		v.getItem(ncursesPrintString,ncursesPrintTypeString);
 	}
 	move(0,0);
 	refresh();
