@@ -12,9 +12,10 @@ namespace eval Gui {
 		menu .men.app
 		menu .men.new
 		menu .men.edit
+		menu .men.actions
 		.men.app add command -label {Load} -command {}
 		.men.app add command -label {Unload} -command {}
-		.men.app add command -label {Reload} -command mainTreeview::createRoots
+		.men.app add command -label {Reload} -command mainTreeview::reloadFromDBO
 		.men.app add command -label {Quit} -command Gui::quitProgram
 		.men.new add command -label {New Group} -command Gui::createNewGroupWindow
 		.men.new add command -label {New Tag} -command Gui::createNewTagDialog
@@ -24,6 +25,7 @@ namespace eval Gui {
 		.men add cascade -label {New} -menu .men.new
 		.men add cascade -label {Edit} -menu .men.edit
 		.men add command  -label {View} -command Gui::createViewWindow
+		.men add cascade  -label {Actions} -menu .men.actions
 		. configure -menu .men
 	}
 	proc tagSelectFrame {name} {
@@ -194,7 +196,7 @@ namespace eval Gui {
 }
 namespace eval mainTreeview {
 	namespace eval v {
-		variable unloadedGroups {} loadedGroups {}
+		variable unloadedGroups {} loadedGroups {} actions [list]
 	}
 	proc init {} {
 		# Initializes the mainTreeview widget .links
@@ -213,6 +215,7 @@ namespace eval mainTreeview {
 				mainTreeview::createLeaves $gid
 			}
 		}
+
 		## not actually used?
 		#bind .links.fnames <<TreeviewSelect>> {
 		#	set id [.links.fnames focus]
@@ -231,6 +234,10 @@ namespace eval mainTreeview {
 			.links.fnames insert $parent end -id $id -text $name
 			createDummy $id
 		}
+	}
+	proc reloadFromDBO {} {
+		mainTreeview::createRoots
+		fillActionsMenu
 	}
 	proc createRoots {} {
 		# Loads only root groups and creates on demand
@@ -270,6 +277,25 @@ namespace eval mainTreeview {
 				}
 			}
 			return [.links.fnames insert $parent end -id $id -text $name -value [list $views [join $tagCol {, }]]]
+		}
+	}
+	proc fillActionsMenu {} {
+		if {[llength $v::actions] > 0} {
+			.men.actions delete 0 [llength $v::actions]
+			set v::actions [list]
+		}
+		DBO forActions mainTreeview::addActionMenuItem
+	}
+	proc addActionMenuItem {name cmd} {
+		set id [llength $v::actions]
+		lappend v::actions $cmd
+		.men.actions add command -label $name -command "mainTreeview::actionMenuInvoke $id"
+	}
+	proc actionMenuInvoke {id} {
+		puts "You called $id!~"
+		set cmd [lindex $v::actions $id]
+		foreach rid [.links.fnames selection] {
+			puts [string map [list %1 [.links.fnames item $rid -text]] $cmd]
 		}
 	}
 	proc getSelectedGroup {} {
@@ -436,8 +462,8 @@ oo::class create db {
 	method genActionTable {} {
 		# Creates the action table
 		my variable dbhandle
-		mysql::exec $dbhandle {CREATE TABLE if not exists actions(aid int auto_increment primary key,label char(25) NOT NULL,cmdstr char(255) NOT NULL)}
-		
+		mysql::exec $dbhandle {CREATE TABLE if not exists actions(aid int auto_increment primary key,label char(32) NOT NULL,cmdstr char(255) NOT NULL)}
+	}
 	method getHandle {} {
 		# transitional method, will be removed later
 		my variable dbhandle
@@ -513,6 +539,13 @@ oo::class create db {
 		mysql::receive $dbhandle "select id,name,views,group_concat(tagid) from filenames left outer join tag_map on id=fileid where gid=$gid group by id order by id" [list id name views tags] {
 			# tags here is a comma seperated list of ints
 			$action r$id $name $views $tags $gid
+		}
+	}
+	method forActions {doAction} {
+		my variable dbhandle
+		mysql::receive $dbhandle {select label,cmdstr from actions} [list label cmdstr] {
+			# tags here is a comma seperated list of ints
+			$doAction $label $cmdstr
 		}
 	}
 	method tagAccumulate {tagById idOfTag} {
