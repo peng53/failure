@@ -431,7 +431,13 @@ oo::class create db {
 		mysql::use $dbhandle $dbname
 		my genBaseTables
 		my genSpecialTables
+		my genActionTable
 	}
+	method genActionTable {} {
+		# Creates the action table
+		my variable dbhandle
+		mysql::exec $dbhandle {CREATE TABLE if not exists actions(aid int auto_increment primary key,label char(25) NOT NULL,cmdstr char(255) NOT NULL)}
+		
 	method getHandle {} {
 		# transitional method, will be removed later
 		my variable dbhandle
