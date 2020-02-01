@@ -19,6 +19,7 @@ namespace eval Gui {
 		.men.app add command -label {Quit} -command Gui::quitProgram
 		.men.new add command -label {New Group} -command Gui::createNewGroupWindow
 		.men.new add command -label {New Tag} -command Gui::createNewTagDialog
+		.men.new add command -label {New Action} -command newActionWindow::open
 		.men.edit add command -label {Modify} -command modifyWindow::open
 		.men.edit add command -label {Delete} -command mainTreeview::delete
 		.men add cascade -label {App} -menu .men.app
@@ -436,6 +437,36 @@ namespace eval modifyWindow {
 		return $diff
 	}
 }
+namespace eval newActionWindow {
+	namespace eval v {
+	}
+	proc open {} {
+		create
+	}
+	proc create {} {
+		# Create the newActionWindow
+		toplevel .win
+		wm attributes .win -topmost 1
+		wm resizable .win 0 0
+		wm title .win {Create new action..}
+		pack [labelframe .win.label -text Label] -expand 1 -fill x
+		pack [entry .win.label.e] -expand 1 -fill x
+		pack [labelframe .win.cmd -text Command] -expand 1 -fill x
+		pack [entry .win.cmd.e] -expand 1 -fill x
+		pack [frame .win.actions]
+		pack [button .win.actions.browse -text Browse -command {newActionWindow::browse}] -side left
+		pack [button .win.actions.save -text Save -command {newActionWindow::save}] -side left
+		pack [button .win.actions.cancel -text Cancel -command {destroy .win}] -side left
+	}
+	proc browse {} {
+		.win.cmd.e delete 0 end
+		.win.cmd.e insert 0 [tk_getOpenFile]
+	}
+	proc save {} {
+		destroy .win
+	}
+}
+
 package require TclOO
 oo::class create db {
 	constructor {} {
