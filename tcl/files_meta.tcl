@@ -197,7 +197,7 @@ namespace eval Gui {
 }
 namespace eval mainTreeview {
 	namespace eval v {
-		variable unloadedGroups {} loadedGroups {} actions [list]
+		variable unloadedGroups {} loadedGroups {} actions [list] basedirs {}
 	}
 	proc init {} {
 		# Initializes the mainTreeview widget .links
@@ -247,7 +247,7 @@ namespace eval mainTreeview {
 		set v::loadedGroups [dict create]
 		set v::unloadedGroups [dict create]
 		set v::rowTagList [dict create]
-		DBO forGroups mainTreeview::createRoot
+		DBO forGroups mainTreeview::createRoot mainTreeview::recordBasePath
 		Gui::loadTagsFromDatabase
 		pack .links.fnames -fill both -expand 1 -before .links.fnames_sb -side left
 	}
@@ -256,7 +256,7 @@ namespace eval mainTreeview {
 		# First delete dummy item
 		.links.fnames delete d$gid
 		# Get subgroups
-		DBO forGroups mainTreeview::createRoot $gid
+		DBO forGroups mainTreeview::createRoot mainTreeview::recordBasePath $gid
 		# Get filenames and tags
 		DBO forFilenames mainTreeview::createLeaf $gid
 
@@ -343,6 +343,10 @@ namespace eval mainTreeview {
 		foreach c [.links.fnames children $id] {
 			puts {TBD}
 		}
+	}
+	proc recordBasePath {id basepath} {
+		dict append v::basedirs $id $basepath
+		puts $v::basedirs
 	}
 }
 namespace eval modifyWindow {
@@ -536,6 +540,9 @@ oo::class create db {
 				(id int auto_increment primary key, tag char(16) NOT NULL)}
 		mysql::exec $dbhandle {create table if not exists tag_map
 				(fileid int, tagid int)}
+				
+		mysql::exec $dbhandle {create table if not exists groups_basedir
+				(gid int primary key, basepath char(255) NOT NULL, FOREIGN KEY (gid) REFERENCES groups(gid))}
 
 		mysql::exec $dbhandle {create procedure if not exists add_filename (in name char(255), in parent int)
 			begin
@@ -565,7 +572,7 @@ oo::class create db {
 			end;
 		}
 	}
-	method forGroups {action {pgid {}}} {
+	method forGroups {action givenBase {pgid {}}} {
 		my variable dbhandle
 		set where {pid is null}
 		if {$pgid!={}} {
@@ -573,6 +580,14 @@ oo::class create db {
 		}
 		mysql::receive $dbhandle [concat {select rel.gid,name from groups join rel on groups.gid=rel.gid where } $where] [list gid name] {
 			$action $gid $name $pgid
+		}
+		mysql::receive $dbhandle [concat {
+			select rel.gid, basepath from
+				groups_basedir join rel
+				on groups_basedir.gid=rel.gid 
+				where
+			} $where] [list gid basepath] {
+				$givenBase $gid $basepath
 		}
 	}
 	method forFilenames {action gid} {
