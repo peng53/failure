@@ -463,6 +463,16 @@ namespace eval newActionWindow {
 		.win.cmd.e insert 0 [tk_getOpenFile]
 	}
 	proc save {} {
+		if {[string length [set label [.win.label.e get]]] == 0} {
+			tk_messageBox -detail {Label cannot be blank!} -icon error -parent .win -title Error -type ok
+			return
+		}
+		if {[string first {%1} [set cmds [.win.cmd.e get]]] == -1} {
+			tk_messageBox -detail {Command string missing %1 !} -icon error -parent .win -title Error -type ok
+			return
+		}
+		set aid [DBO createAction $label $cmds]
+		mainTreeview::addActionMenuItem $label $cmds
 		destroy .win
 	}
 }
@@ -575,7 +585,6 @@ oo::class create db {
 	method forActions {doAction} {
 		my variable dbhandle
 		mysql::receive $dbhandle {select label,cmdstr from actions} [list label cmdstr] {
-			# tags here is a comma seperated list of ints
 			$doAction $label $cmdstr
 		}
 	}
@@ -672,6 +681,12 @@ oo::class create db {
 			}
 		}
 		mysql::commit $dbhandle
+	}
+	method createAction {name cmds} {
+		my variable dbhandle
+		mysql::exec $dbhandle [format {insert into actions (label,cmdstr) value ('%s', '%s')} $name $cmds]
+		set aid [mysql::sel $dbhandle {select last_insert_id()} -flatlist]
+		return $aid
 	}
 }
 
