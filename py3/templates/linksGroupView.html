@@ -1,17 +1,20 @@
 <html>
-	<table>
+	<style>
+		a.top {
+			text-decoration: none;
+		}
+	</style>
+	<div id="groups">
+		<h2>Groups</h2>
+		{% for groupId in groups %}
+			<a href="#{{ groupId }}">{{ groupNames[groupId] }}</a>
+		{% endfor %}
+	</div>
+	<hr>
 	{% for groupId in groups %}
-		<tr><th colspan="2">{{ groupNames[groupId] }}</th></tr>
-		<tr>
-			<th>Name</th>
-			<th>URL</th>
-		</tr>
+		<h3><a id="{{ groupId }}">{{ groupNames[groupId] }}</a> <a class='top' href="#groups">^</a></h3>
 		{% for l in groups[groupId] %}
-		<tr>
-			<td>{{ l.name }}</td>
-			<td>{{ l.url }}</td>
-		</tr>
+			<a href="{{ l.url }}">{{ l.name }}</a><br />
 		{% endfor %}
 	{% endfor %}
-	</table>
 </html>
