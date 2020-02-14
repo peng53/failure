@@ -8,6 +8,6 @@ template = env.get_template(tmpFile)
 with open('linksrender.json', 'r') as f:
 	data = json.load(f)
 
-output = template.render(links=data['links'])
+output = template.render(links=data['links'], groups=data['groups'])
 with open('linksJsonOut.html', 'w') as o:
 	o.write(output)

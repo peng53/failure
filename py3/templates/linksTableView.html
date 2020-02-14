@@ -9,7 +9,7 @@
 		<tr>
 			<td>{{ i['name'] }}</td>
 			<td>{{ i['url'] }}</td>
-			<td>{{ i['group'] }}</td>
+			<td>({{ i['group'] }}) {{ groups[i['group']] }}</td>
 		</tr>
 		{% endfor %}
 	</table>
