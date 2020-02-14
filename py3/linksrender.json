@@ -1,0 +1,10 @@
+{
+	"groups": [
+		"cats",
+		"dogs"
+	],
+	"links": [
+		{"name": "X", "url": "U1", "group": 0},
+		{"name": "Y", "url": "U2", "group": 1}
+	]
+}
