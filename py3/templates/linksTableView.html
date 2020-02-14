@@ -1,9 +1,24 @@
 <html>
-	<table>
+	<head>
+		<title>Links</title>
+		<style>
+			table, tr, td {
+				color: #000;
+				border: none;
+			}
+			table tr:nth-child(odd) td{
+				background : #ccc;
+			}
+			table tr:nth-child(even) td{
+				background : #fff;
+			}
+		</style>
+	</head>
+	<table cellspacing='0'>
 		<tr>
 			<th>Name</th>
 			<th>URL</th>
-			<th>Group</th>
+			<th width='150px'>Group</th>
 		</tr>
 		{% for i in links %}
 		<tr>
