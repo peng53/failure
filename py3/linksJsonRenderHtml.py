@@ -22,9 +22,9 @@ def renderAsTable(data, out: str):
 
 Link = namedtuple('Link', 'name,url')
 
-def renderAsGrouped(data, out: str):
+def renderAsGrouped(data, out: str, single: bool=False):
 	env = default_env()
-	tmpFile = "linksGroupView.html"
+	tmpFile = "linksSingleView.html" if single else "linksGroupView.html"
 	template = env.get_template(tmpFile)
 
 	groupedData = { i:[] for i,e in enumerate(data['groups'])}
@@ -37,9 +37,9 @@ def renderAsGrouped(data, out: str):
 	with open(out, 'w') as o:
 		o.write(output)
 
-def renderAsGroupedByDomain(data, out: str):
+def renderAsGroupedByDomain(data, out: str, single: bool=False):
 	env = default_env()
-	tmpFile = "linksGroupView.html"
+	tmpFile = "linksSingleView.html" if single else "linksGroupView.html"
 	template = env.get_template(tmpFile)
 
 	(groups, links) = groupByDomain(data['links'])
@@ -65,13 +65,9 @@ def groupByDomain(links):
 
 
 def getDomain(url: str):
-	startIndex = 0
-	if url[startIndex:].startswith('https://'):
-		startIndex += len('https://')
-	elif url[startIndex:].startswith('http://'):
-		startIndex += len('http://')
-	if url[startIndex:].startswith('www.'):
-		startIndex += len('www.')
+	urlStartPat = re.compile('^((http://)|(https://))?(www\.)?')
+	startIndex = urlStartPat.search(url).span()[1]
+	# Finds start of URL ignoring https / http / www
 	endIndex = url[startIndex:].find('/')
 	return url[startIndex:startIndex+endIndex]
 
@@ -82,12 +78,17 @@ def printDataGroupedByDomain(links):
 		for l in links[i]:
 			print(f'  {l.name}')
 
+renderAsGroupedSingle = lambda d,o: renderAsGrouped(d,o, True)
+renderAsGroupedByDomainSingle = lambda d,o: renderAsGroupedByDomain(d,o, True)
+
 class MainParser:
 	def __init__(self):
 		self.renderers = {
 			'table': renderAsTable,
 			'grouped': renderAsGrouped,
-			'domain': renderAsGroupedByDomain
+			'groupedSingle': renderAsGroupedSingle,
+			'domain': renderAsGroupedByDomain,
+			'domainSingle': renderAsGroupedByDomainSingle
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
 		self.parser.add_argument('jdata', help='Json data file')
