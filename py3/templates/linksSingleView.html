@@ -1,0 +1,64 @@
+<html>
+	<head>
+		<title>Links</title>
+		<script>
+			var shown = null;
+			function shownew(id){
+				var divele = document.getElementById(id);
+				if (shown != null){
+					shown.style.display = 'none';
+				}
+				shown = divele;
+				shown.style.display = 'block';
+			}
+		</script>
+		<style>
+			body {
+				background: #fff;
+				display: grid;
+				grid-template-areas: "nav content";
+				grid-template-columns: 300px 3fr;
+			}
+			div#groups {
+				position: fixed;
+				top: 0;
+				left: 0;
+				background: #ccc;
+				overflow-y: scroll;
+				overflow-x: hidden;
+				padding: 4px;
+				grid-area: nav;
+				max-height: 100%;
+			}
+			div#links {
+				grid-area: content;
+				padding: 2px;
+				height: 100%;
+				overflow: hidden;
+			}
+			h3.groupName {
+				background: yellow;
+			}
+		</style>
+	</head>
+	<body>
+	<div id='groups'>
+		<h2 align='center'>Groups</h2>
+		<ol>{% for groupId in groups %}
+			<li><a onclick="shownew({{ groupId }})" href='#'>{{ groupNames[groupId]|truncate(20) }}</a></li>
+		{% endfor %}</ol>
+	</div>
+	<div id='links'>
+		{% for groupId in groups %}
+		{% if groups[groupId]|length >0 %}
+		<div id='{{ groupId }}' style="display: none;">
+			<h3 class='groupName'>{{ groupNames[groupId] }}</h3>
+			{% for l in groups[groupId] %}
+				<a href="{{ l.url }}">{{ l.name }}</a><br />
+			{% endfor %}
+		</div>
+		{% endif %}
+		{% endfor %}
+	</div>
+	</body>
+</html>
