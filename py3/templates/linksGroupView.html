@@ -4,14 +4,14 @@
 		<style>
 			body {
 				background: #fff;
+				display: grid;
+				grid-template-areas: "content nav";
+				grid-template-columns: 3fr 300px;
 			}
 			a.top {
 				text-decoration: none;
 			}
 			div#groups {
-				float: right;
-				width: 25%;
-				height: 100%;
 				position: fixed;
 				top: 0;
 				right: 0;
@@ -19,23 +19,35 @@
 				overflow-y: scroll;
 				overflow-x: hidden;
 				padding: 4px;
+				grid-area: nav;
+				max-width: 20%;
+				max-height: 100%;
 			}
 			div#links {
-				width: 70%;
+				grid-area: content;
+			}
+			h3.groupName {
+				background: yellow;
 			}
 		</style>
 	</head>
-	<h1 id="top">Bookmarks</h1>
-	<div id="groups">
-		<h2>Groups</h2>
+	<body>
+	<div id='groups'>
+		<h2 align='center'>Groups</h2>
 		<ol>{% for groupId in groups %}
-			<li><a href="#{{ groupId }}">{{ groupNames[groupId] }}</a></li>
+			<li><a href="#{{ groupId }}">{{ groupNames[groupId]|truncate(20) }}</a></li>
 		{% endfor %}</ol>
 	</div>
-	<div id="links">{% for groupId in groups %}
-		<h3><a id="{{ groupId }}">{{ groupNames[groupId] }}</a> <a class='top' href="#top">^</a></h3>
+	<div id='links'>
+		<h1 id='top'>Bookmarks</h1>
+		{% for groupId in groups %}
+		{% if groups[groupId]|length >0 %}
+		<h3 class='groupName'><a id="{{ groupId }}">{{ groupNames[groupId] }}</a> <a class='top' href="#top">^</a></h3>
 		{% for l in groups[groupId] %}
 			<a href="{{ l.url }}">{{ l.name }}</a><br />
 		{% endfor %}
-	{% endfor %}</div>
+		{% endif %}
+	{% endfor %}
+	</div>
+	</body>
 </html>
