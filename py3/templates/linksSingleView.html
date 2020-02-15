@@ -2,14 +2,14 @@
 	<head>
 		<title>Links</title>
 		<script>
-			var shown = null;
 			function shownew(id){
 				var divele = document.getElementById(id);
-				if (shown != null){
-					shown.style.display = 'none';
+				if (divele.style.display === 'block'){
+					divele.style.display = 'none';
+				} else {
+					divele.style.display = 'block';
+					location.hash = '#' + id;
 				}
-				shown = divele;
-				shown.style.display = 'block';
 			}
 		</script>
 		<style>
@@ -39,6 +39,9 @@
 			h3.groupName {
 				background: yellow;
 			}
+			div#links div {
+				display: none;
+			}
 		</style>
 	</head>
 	<body>
@@ -51,10 +54,10 @@
 	<div id='links'>
 		{% for groupId in groups %}
 		{% if groups[groupId]|length >0 %}
-		<div id='{{ groupId }}' style="display: none;">
+		<div id='{{ groupId }}'>
 			<h3 class='groupName'>{{ groupNames[groupId] }}</h3>
 			{% for l in groups[groupId] %}
-				<a href="{{ l.url }}">{{ l.name }}</a><br />
+			<a href="{{ l.url }}">{{ l.name }}</a><br />
 			{% endfor %}
 		</div>
 		{% endif %}
