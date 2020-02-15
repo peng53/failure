@@ -18,13 +18,13 @@
 		<tr>
 			<th>Name</th>
 			<th>URL</th>
-			<th width='150px'>Group</th>
+			<th>Group</th>
 		</tr>
 		{% for i in links %}
 		<tr>
 			<td>{{ i['name'] }}</td>
 			<td>{{ i['url'] }}</td>
-			<td>({{ i['group'] }}) {{ groups[i['group']] }}</td>
+			<td>{% if 'group' in i %}({{ i['group'] }}) {{ groups[i['group']] }}{% endif %}</td>
 		</tr>
 		{% endfor %}
 	</table>

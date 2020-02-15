@@ -1,10 +1,16 @@
 from jinja2 import Environment, FileSystemLoader
 from collections import namedtuple
 import json
+import re
 
-
-def renderAsTable(data, out):
+def default_env():
 	env = Environment(loader = FileSystemLoader('templates'))
+	env.trim_blocks = True
+	env.lstrip_blocks = True
+	return env
+
+def renderAsTable(data, out: str):
+	env = default_env()
 	tmpFile = "linksTableView.html"
 	template = env.get_template(tmpFile)
 	output = template.render(links=data['links'], groups=data['groups'])
@@ -13,8 +19,8 @@ def renderAsTable(data, out):
 
 Link = namedtuple('Link', 'name,url')
 
-def renderAsGrouped(data, out):
-	env = Environment(loader = FileSystemLoader('templates'))
+def renderAsGrouped(data, out: str):
+	env = default_env()
 	tmpFile = "linksGroupView.html"
 	template = env.get_template(tmpFile)
 
@@ -23,16 +29,46 @@ def renderAsGrouped(data, out):
 	for l in data['links']:
 		if l['group']<groupsCount:
 			groupedData[l['group']].append(Link(l['name'],l['url']))
-	
+
 	output = template.render(groups=groupedData, groupNames = data['groups'])
 	with open(out, 'w') as o:
 		o.write(output)
 
-dataf = 'linksrender.json'
+def renderAsGroupedByDomain(data, out: str):
+	env = default_env()
+	tmpFile = "linksGroupView.html"
+	template = env.get_template(tmpFile)
+	
+	domainGroups = {}
+	domain_reg = re.compile(r'(http://)?(www\.)?\w+\.\D+/')
+	for link in data['links']:
+		domain = getDomain(link['url'])
+		if domain not in domainGroups:
+			domainGroups[domain] = []
+		domainGroups[domain].append(Link(link['name'],link['url']))
+
+	output = template.render(groups=domainGroups, groupNames = domainGroups.keys())
+	with open(out, 'w') as o:
+		o.write(output)
+
+def getDomain(url: str):
+	startIndex = 0
+	if url[startIndex:].startswith('https://'):
+		startIndex += len('https://')
+	elif url[startIndex:].startswith('http://'):
+		startIndex += len('http://')
+	if url[startIndex:].startswith('www.'):
+		startIndex += len('www.')
+	endIndex = url[startIndex:].find('/')
+	return url[startIndex:startIndex+endIndex]
+
+
+dataf = '/home/sintel/Documents/WEB/sorted_bm.json'
 out = 'linksJsonOut.html'
 
 with open(dataf, 'r') as f:
 	data = json.load(f)
 
 #renderAsTable(data, out)
-renderAsGrouped(data,out)
+#renderAsGrouped(data,out)
+renderAsGroupedByDomain(data,out)
