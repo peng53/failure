@@ -1,7 +1,10 @@
 from jinja2 import Environment, FileSystemLoader
 from collections import namedtuple
+from argparse import ArgumentParser
+from sys import argv, exit
 import json
 import re
+import os
 
 def default_env():
 	env = Environment(loader = FileSystemLoader('templates'))
@@ -79,15 +82,27 @@ def printDataGroupedByDomain(links):
 		for l in links[i]:
 			print(f'  {l.name}')
 
+class MainParser:
+	def __init__(self):
+		self.renderers = {
+			'table': renderAsTable,
+			'grouped': renderAsGrouped,
+			'domain': renderAsGroupedByDomain
+		}
+		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
+		self.parser.add_argument('jdata', help='Json data file')
+		self.parser.add_argument('out', help='Html output file')
+		self.parser.add_argument('--render','-r', help='How to render output', choices=self.renderers.keys(), default='table')
 
-dataf = '/home/sintel/Documents/WEB/bookmarks.json'
-out = 'linksJsonOut.html'
+	def parse(self, args) -> None:
+		t = self.parser.parse_args(args)
+		if os.path.exists(t.out):
+			print(f'File: {t.out} already exists.')
+			exit(1)
+		with open(t.jdata, 'r') as f:
+			data = json.load(f)
+		self.renderers[t.render](data, t.out)
 
-with open(dataf, 'r') as f:
-	data = json.load(f)
-
-#renderAsTable(data, out)
-#renderAsGrouped(data,out)
-renderAsGroupedByDomain(data,out)
-#printDataGroupedByDomain(data['links'])
-
+if __name__=='__main__':
+	m = MainParser()
+	m.parse(argv[1:])
