@@ -38,16 +38,20 @@ def renderAsGroupedByDomain(data, out: str):
 	env = default_env()
 	tmpFile = "linksGroupView.html"
 	template = env.get_template(tmpFile)
-	
-	domainGroups = {}
+
+	domainNames = {}
+	domainData = {}
 	domain_reg = re.compile(r'(http://)?(www\.)?\w+\.\D+/')
 	for link in data['links']:
 		domain = getDomain(link['url'])
-		if domain not in domainGroups:
-			domainGroups[domain] = []
-		domainGroups[domain].append(Link(link['name'],link['url']))
+		if domain not in domainNames:
+			i = len(domainNames)
+			domainNames[domain] = i
+			domainData[i] = []
+		domainData[domainNames[domain]].append(Link(link['name'],link['url']))
 
-	output = template.render(groups=domainGroups, groupNames = domainGroups.keys())
+	groupNames = [i for i in domainNames]
+	output = template.render(groups=domainData, groupNames = groupNames)
 	with open(out, 'w') as o:
 		o.write(output)
 
@@ -63,7 +67,7 @@ def getDomain(url: str):
 	return url[startIndex:startIndex+endIndex]
 
 
-dataf = '/home/sintel/Documents/WEB/sorted_bm.json'
+dataf = '/home/sintel/Documents/WEB/bookmarks.json'
 out = 'linksJsonOut.html'
 
 with open(dataf, 'r') as f:
