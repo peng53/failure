@@ -2,22 +2,40 @@
 	<head>
 		<title>Links</title>
 		<style>
+			body {
+				background: #fff;
+			}
 			a.top {
 				text-decoration: none;
 			}
+			div#groups {
+				float: right;
+				width: 25%;
+				height: 100%;
+				position: fixed;
+				top: 0;
+				right: 0;
+				background: #ccc;
+				overflow-y: scroll;
+				overflow-x: hidden;
+				padding: 4px;
+			}
+			div#links {
+				width: 70%;
+			}
 		</style>
 	</head>
+	<h1 id="top">Bookmarks</h1>
 	<div id="groups">
 		<h2>Groups</h2>
-		{% for groupId in groups %}
-			<a href="#{{ groupId }}">{{ groupNames[groupId] }}</a>
-		{% endfor %}
+		<ol>{% for groupId in groups %}
+			<li><a href="#{{ groupId }}">{{ groupNames[groupId] }}</a></li>
+		{% endfor %}</ol>
 	</div>
-	<hr>
-	{% for groupId in groups %}
-		<h3><a id="{{ groupId }}">{{ groupNames[groupId] }}</a> <a class='top' href="#groups">^</a></h3>
+	<div id="links">{% for groupId in groups %}
+		<h3><a id="{{ groupId }}">{{ groupNames[groupId] }}</a> <a class='top' href="#top">^</a></h3>
 		{% for l in groups[groupId] %}
 			<a href="{{ l.url }}">{{ l.name }}</a><br />
 		{% endfor %}
-	{% endfor %}
+	{% endfor %}</div>
 </html>
