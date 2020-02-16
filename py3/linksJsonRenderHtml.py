@@ -29,11 +29,22 @@ def renderAsGrouped(data, out: str, single: bool=False):
 
 	groupedData = { i:[] for i,e in enumerate(data['groups'])}
 	groupsCount = len(groupedData)
-	for l in data['links']:
-		if l['group']<groupsCount:
-			groupedData[l['group']].append(Link(l['name'],l['url']))
 
-	output = template.render(groups=groupedData, groupNames = data['groups'])
+	ungroupedId, unknownId = -1, -2
+	groupedData[ungroupedId] = []
+	groupedData[unknownId] = []
+
+	for l in data['links']:
+		if 'group' in l:
+			if l['group']<groupsCount:
+				groupedData[l['group']].append(Link(l['name'],l['url']))
+			else:
+				groupedData[unknownId].append(Link('g{}|{}'.format(l['group'],l['name']),l['url']))
+		else:
+			groupedData[ungroupedId].append(Link(l['name'],l['url']))
+
+	groupNames = data['groups']+['[[Ungrouped]]','[[Unknown Group]]']
+	output = template.render(groups=groupedData, groupNames = groupNames)
 	with open(out, 'w') as o:
 		o.write(output)
 
@@ -69,6 +80,9 @@ def getDomain(url: str):
 	startIndex = urlStartPat.search(url).span()[1]
 	# Finds start of URL ignoring https / http / www
 	endIndex = url[startIndex:].find('/')
+	if endIndex==-1:
+		# Url does not end in '/'
+		endIndex = len(url)
 	return url[startIndex:startIndex+endIndex]
 
 def printDataGroupedByDomain(links):
@@ -76,7 +90,7 @@ def printDataGroupedByDomain(links):
 	for i,g in enumerate(groups):
 		print(g)
 		for l in links[i]:
-			print(f'  {l.name}')
+			print('  {}'.format(l.name))
 
 renderAsGroupedSingle = lambda d,o: renderAsGrouped(d,o, True)
 renderAsGroupedByDomainSingle = lambda d,o: renderAsGroupedByDomain(d,o, True)
@@ -98,7 +112,7 @@ class MainParser:
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
 		if os.path.exists(t.out):
-			print(f'File: {t.out} already exists.')
+			print('File: {} already exists.'.format(t.out))
 			exit(1)
 		with open(t.jdata, 'r') as f:
 			data = json.load(f)

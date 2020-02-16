@@ -36,14 +36,14 @@
 	<div id='groups'>
 		<h2 align='center'>Groups</h2>
 		<ol>{% for groupId in groups %}
-			<li><a href="#{{ groupId }}">{{ groupNames[groupId]|truncate(20) }}</a></li>
+			<li><a href="#g{{ groupId }}">{{ groupNames[groupId]|truncate(20) }}</a></li>
 		{% endfor %}</ol>
 	</div>
 	<div id='links'>
 		<h1 id='top'>Bookmarks</h1>
 		{% for groupId in groups %}
 		{% if groups[groupId]|length >0 %}
-		<h3 class='groupName'><a id="{{ groupId }}">{{ groupNames[groupId] }}</a> <a class='top' href="#top">^</a></h3>
+		<h3 class='groupName'><a id="g{{ groupId }}">{{ groupNames[groupId] }}</a> <a class='top' href="#top">^</a></h3>
 		{% for l in groups[groupId] %}
 			<a href="{{ l.url }}">{{ l.name }}</a><br />
 		{% endfor %}
