@@ -1,13 +1,13 @@
 {
 	"groups": [
 		"group1",
-		"group2",
-		"group3"
+		"group2"
 	],
 	"links": [
 		{"name": "linkName1", "url": "https://url.dom", "group": 0},
 		{"name": "linkName2", "url": "https://url.dom", "group": 0},
 		{"name": "linkName3", "url": "https://url.dom", "group": 1},
-		{"name": "linkName4NoGroup", "url": "https://url.dom"}
+		{"name": "linkName4NoGroup", "url": "https://url.dom"},
+		{"name": "linkName5NonExistentGroup", "url": "https://url.dom", "group": 101}
 	]
 }

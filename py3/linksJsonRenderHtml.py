@@ -28,18 +28,22 @@ def renderAsGrouped(data, out: str, single: bool=False):
 	template = env.get_template(tmpFile)
 
 	groupedData = { i:[] for i,e in enumerate(data['groups'])}
-	ungroupedId = len(groupedData)
-	groupedData[ungroupedId] = []
 	groupsCount = len(groupedData)
+
+	ungroupedId, unknownId = -1, -2
+	groupedData[ungroupedId] = []
+	groupedData[unknownId] = []
 
 	for l in data['links']:
 		if 'group' in l:
 			if l['group']<groupsCount:
 				groupedData[l['group']].append(Link(l['name'],l['url']))
+			else:
+				groupedData[unknownId].append(Link('g{}|{}'.format(l['group'],l['name']),l['url']))
 		else:
 			groupedData[ungroupedId].append(Link(l['name'],l['url']))
 
-	groupNames = data['groups']+['[[Ungrouped]]']
+	groupNames = data['groups']+['[[Ungrouped]]','[[Unknown Group]]']
 	output = template.render(groups=groupedData, groupNames = groupNames)
 	with open(out, 'w') as o:
 		o.write(output)
