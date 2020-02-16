@@ -80,6 +80,9 @@ def getDomain(url: str):
 	startIndex = urlStartPat.search(url).span()[1]
 	# Finds start of URL ignoring https / http / www
 	endIndex = url[startIndex:].find('/')
+	if endIndex==-1:
+		# Url does not end in '/'
+		endIndex = len(url)
 	return url[startIndex:startIndex+endIndex]
 
 def printDataGroupedByDomain(links):
