@@ -8,33 +8,46 @@
 					divele.style.display = 'none';
 				} else {
 					divele.style.display = 'block';
-					location.hash = '#' + id;
+					location.hash = '#g' + id;
 				}
 			}
 		</script>
 		<style>
 			body {
 				background: #fff;
-				display: grid;
-				grid-template-areas: "nav content";
-				grid-template-columns: 300px 3fr;
+				margin: 0px;
 			}
 			div#groups {
+				border: 1px solid blue;
 				position: fixed;
 				top: 0;
 				left: 0;
-				background: #ccc;
-				overflow-y: scroll;
-				overflow-x: hidden;
-				padding: 4px;
-				grid-area: nav;
+				min-width: 240px;
 				max-height: 100%;
+				overflow: scroll;
+				float:left;
 			}
 			div#links {
-				grid-area: content;
-				padding: 2px;
-				height: 100%;
-				overflow: hidden;
+				border: 1px solid green;
+				position: fixed;
+				top: 0;
+				left: 242px;
+				width: 80%;
+				float:left;
+			}
+			@media (max-width: 640px) {
+				div#groups {
+					border: 1px solid green;
+					position: relative;
+					width: 100%;
+					height; auto;
+				}
+				div#links {
+					border: 1px solid blue;
+					position: relative;
+					width: 100%;
+					left: 0px;
+				}
 			}
 			h3.groupName {
 				background: yellow;
@@ -50,8 +63,7 @@
 		<ol>{% for groupId in groups %}
 			<li><a onclick='shownew("g{{ groupId }}")' href='#'>{{ groupNames[groupId]|truncate(20) }}</a></li>
 		{% endfor %}</ol>
-	</div>
-	<div id='links'>
+	</div><div id='links'>
 		{% for groupId in groups %}
 		{% if groups[groupId]|length >0 %}
 		<div id='g{{ groupId }}'>
