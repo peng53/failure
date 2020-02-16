@@ -17,7 +17,7 @@
 				background: #fff;
 				display: grid;
 				grid-template-areas: "nav content";
-				grid-template-columns: 300px 3fr;
+				grid-template-columns: 1fr 4fr;
 			}
 			div#groups {
 				position: fixed;
@@ -33,11 +33,13 @@
 			div#links {
 				grid-area: content;
 				padding: 2px;
-				height: 100%;
-				overflow: hidden;
 			}
 			h3.groupName {
 				background: yellow;
+			}
+			h3.groupName a {
+				text-decoration: none;
+				color: #000;
 			}
 			div#links div {
 				display: none;
@@ -55,7 +57,7 @@
 		{% for groupId in groups %}
 		{% if groups[groupId]|length >0 %}
 		<div id='{{ groupId }}'>
-			<h3 class='groupName'>{{ groupNames[groupId] }}</h3>
+			<h3 class='groupName'><a onclick="shownew({{ groupId }})" href='#'>{{ groupNames[groupId] }}</a></h3>
 			{% for l in groups[groupId] %}
 			<a href="{{ l.url }}">{{ l.name }}</a><br />
 			{% endfor %}

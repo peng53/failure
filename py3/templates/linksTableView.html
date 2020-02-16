@@ -22,7 +22,7 @@
 		</tr>
 		{% for i in links %}
 		<tr>
-			<td>{{ i['name'] }}</td>
+			<td>{{ i['name']|truncate(80) }}</td>
 			<td>{{ i['url'] }}</td>
 			<td>{% if 'group' in i %}({{ i['group'] }}) {{ groups[i['group']] }}{% endif %}</td>
 		</tr>
