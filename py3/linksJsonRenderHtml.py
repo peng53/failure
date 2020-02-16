@@ -28,12 +28,19 @@ def renderAsGrouped(data, out: str, single: bool=False):
 	template = env.get_template(tmpFile)
 
 	groupedData = { i:[] for i,e in enumerate(data['groups'])}
+	ungroupedId = len(groupedData)
+	groupedData[ungroupedId] = []
 	groupsCount = len(groupedData)
-	for l in data['links']:
-		if l['group']<groupsCount:
-			groupedData[l['group']].append(Link(l['name'],l['url']))
 
-	output = template.render(groups=groupedData, groupNames = data['groups'])
+	for l in data['links']:
+		if 'group' in l:
+			if l['group']<groupsCount:
+				groupedData[l['group']].append(Link(l['name'],l['url']))
+		else:
+			groupedData[ungroupedId].append(Link(l['name'],l['url']))
+
+	groupNames = data['groups']+['[[Ungrouped]]']
+	output = template.render(groups=groupedData, groupNames = groupNames)
 	with open(out, 'w') as o:
 		o.write(output)
 
@@ -76,7 +83,7 @@ def printDataGroupedByDomain(links):
 	for i,g in enumerate(groups):
 		print(g)
 		for l in links[i]:
-			print(f'  {l.name}')
+			print('  {}'.format(l.name))
 
 renderAsGroupedSingle = lambda d,o: renderAsGrouped(d,o, True)
 renderAsGroupedByDomainSingle = lambda d,o: renderAsGroupedByDomain(d,o, True)
@@ -98,7 +105,7 @@ class MainParser:
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
 		if os.path.exists(t.out):
-			print(f'File: {t.out} already exists.')
+			print('File: {} already exists.'.format(t.out))
 			exit(1)
 		with open(t.jdata, 'r') as f:
 			data = json.load(f)
