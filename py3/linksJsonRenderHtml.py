@@ -27,7 +27,7 @@ class TabularLinkRenderer(LinksRenderer):
 	
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
-		return template.render(links=data['links'], groups=data['groups'])
+		return template.render(data=data['groups'])
 
 Link = namedtuple('Link', 'name,url')
 
@@ -109,10 +109,10 @@ class MainParser:
 	def __init__(self):
 		self.renderers = {
 			'table': TabularLinkRenderer,
-			'grouped': GroupedLinkRenderer,
-			'domain': DomainGroupedLinkRenderer,
-			'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
-			'domainSingle': lambda: DomainGroupedLinkRenderer(tmpf='linksSingleView.html')
+			#'grouped': GroupedLinkRenderer,
+			#'domain': DomainGroupedLinkRenderer,
+			#'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
+			#'domainSingle': lambda: DomainGroupedLinkRenderer(tmpf='linksSingleView.html')
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
 		self.parser.add_argument('jdata', help='Json data file')
