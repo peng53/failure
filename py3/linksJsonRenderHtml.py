@@ -78,8 +78,8 @@ class MainParser:
 			'table': TabularLinkRenderer,
 			'grouped': GroupedLinkRenderer,
 			'domain': lambda: GroupedLinkRenderer(regroupl=groupByDomain),
-			#'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
-			#'domainSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html',regroupl=groupByDomain)
+			'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
+			'domainSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html',regroupl=groupByDomain)
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
 		self.parser.add_argument('jdata', help='Json data file')

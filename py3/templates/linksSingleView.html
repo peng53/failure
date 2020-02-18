@@ -64,19 +64,19 @@
 	<body>
 	<div id='groups'>
 		<h2 align='center'>Groups</h2>
-		<ol>{% for groupId in groups %}
-			<li><a onclick='shownew("g{{ groupId }}")' href='#'>{{ groupNames[groupId]|truncate(20) }}</a></li>
-		{% endfor %}</ol>
+		<ol>
+			{% for group in data %}
+			<li><a onclick='shownew("g{{ loop.index0 }}")' href='#'>{{ group['name']|truncate(20) }}</a></li>
+			{% endfor %}
+		</ol>
 	</div><div id='links'>
-		{% for groupId in groups %}
-		{% if groups[groupId]|length >0 %}
-		<div id='g{{ groupId }}'>
-			<h3 class='groupName'><a onclick='shownew("g{{ groupId }}")' href='#'>{{ groupNames[groupId] }}</a></h3>
-			{% for l in groups[groupId] %}
-			<a href="{{ l.url }}">{{ l.name }}</a><br />
+		{% for group in data %}
+		<div id='g{{ loop.index0 }}'>
+			<h3 class='groupName'><a onclick='shownew("g{{ loop.index0 }}")' href='#'>{{ group['name'] }}</a></h3>
+			{% for url in group['urls'] %}
+				<a href='{{ url["url"] }}'>{{ url['name'] }}</a><br />
 			{% endfor %}
 		</div>
-		{% endif %}
 		{% endfor %}
 	</div>
 	</body>
