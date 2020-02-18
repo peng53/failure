@@ -12,53 +12,62 @@ def default_env():
 	env.lstrip_blocks = True
 	return env
 
-def renderAsTable(data, out: str):
-	env = default_env()
-	tmpFile = "linksTableView.html"
-	template = env.get_template(tmpFile)
-	output = template.render(links=data['links'], groups=data['groups'])
-	with open(out, 'w') as o:
-		o.write(output)
+class LinksRenderer:
+	def __init__(self):
+		self.env = default_env()
+		self.templateFile = ""
+	
+	def render(self, data):
+		pass
+
+class TabularLinkRenderer(LinksRenderer):
+	def __init__(self):
+		self.env = default_env()
+		self.templateFile = "linksTableView.html"
+	
+	def render(self, data):
+		template = self.env.get_template(self.templateFile)
+		return template.render(links=data['links'], groups=data['groups'])
 
 Link = namedtuple('Link', 'name,url')
 
-def renderAsGrouped(data, out: str, single: bool=False):
-	env = default_env()
-	tmpFile = "linksSingleView.html" if single else "linksGroupView.html"
-	template = env.get_template(tmpFile)
+class GroupedLinkRenderer(LinksRenderer):
+	def __init__(self, tmpf: str=''):
+		self.env = default_env()
+		self.templateFile = tmpf if tmpf else "linksGroupView.html"
 
-	groupedData = { i:[] for i,e in enumerate(data['groups'])}
-	groupsCount = len(groupedData)
+	def render(self, data):
+		template = self.env.get_template(self.templateFile)
+		groupedData = { i:[] for i,e in enumerate(data['groups'])}
+		groupsCount = len(groupedData)
 
-	ungroupedId, unknownId = -1, -2
-	groupedData[ungroupedId] = []
-	groupedData[unknownId] = []
+		ungroupedId, unknownId = -1, -2
+		groupedData[ungroupedId] = []
+		groupedData[unknownId] = []
 
-	for l in data['links']:
-		if 'group' in l:
-			if l['group']<groupsCount:
-				groupedData[l['group']].append(Link(l['name'],l['url']))
+		for l in data['links']:
+			if 'group' in l:
+				if l['group']<groupsCount:
+					groupedData[l['group']].append(Link(l['name'],l['url']))
+				else:
+					groupedData[unknownId].append(Link('g{}|{}'.format(l['group'],l['name']),l['url']))
 			else:
-				groupedData[unknownId].append(Link('g{}|{}'.format(l['group'],l['name']),l['url']))
-		else:
-			groupedData[ungroupedId].append(Link(l['name'],l['url']))
+				groupedData[ungroupedId].append(Link(l['name'],l['url']))
 
-	groupNames = data['groups']+['[[Ungrouped]]','[[Unknown Group]]']
-	output = template.render(groups=groupedData, groupNames = groupNames)
-	with open(out, 'w') as o:
-		o.write(output)
+		groupNames = data['groups']+['[[Ungrouped]]','[[Unknown Group]]']
+		return template.render(groups=groupedData, groupNames = groupNames)
 
-def renderAsGroupedByDomain(data, out: str, single: bool=False):
-	env = default_env()
-	tmpFile = "linksSingleView.html" if single else "linksGroupView.html"
-	template = env.get_template(tmpFile)
+class DomainGroupedLinkRenderer(LinksRenderer):
+	'''Will eventually be combined with GroupLinkRenderer as an option'''
+	def __init__(self, tmpf: str=''):
+		self.env = default_env()
+		self.templateFile = tmpf if tmpf else "linksGroupView.html"
 
-	(groups, links) = groupByDomain(data['links'])
-	groupNames = [i for i in groups]
-
-	output = template.render(groups=links, groupNames = groupNames)
-	with open(out, 'w') as o:
-		o.write(output)
+	def render(self, data):
+		template = self.env.get_template(self.templateFile)
+		(groups, links) = groupByDomain(data['links'])
+		groupNames = [i for i in groups]
+		return template.render(groups=links, groupNames = groupNames)
 
 def groupByDomain(links):
 	# links is a [{'name', '..', 'url': '..'}, ..}]
@@ -92,17 +101,18 @@ def printDataGroupedByDomain(links):
 		for l in links[i]:
 			print('  {}'.format(l.name))
 
-renderAsGroupedSingle = lambda d,o: renderAsGrouped(d,o, True)
-renderAsGroupedByDomainSingle = lambda d,o: renderAsGroupedByDomain(d,o, True)
+def output2file(output, outputFile):
+	with open(outputFile, 'w') as o:
+		o.write(output)
 
 class MainParser:
 	def __init__(self):
 		self.renderers = {
-			'table': renderAsTable,
-			'grouped': renderAsGrouped,
-			'groupedSingle': renderAsGroupedSingle,
-			'domain': renderAsGroupedByDomain,
-			'domainSingle': renderAsGroupedByDomainSingle
+			'table': TabularLinkRenderer,
+			'grouped': GroupedLinkRenderer,
+			'domain': DomainGroupedLinkRenderer,
+			'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
+			'domainSingle': lambda: DomainGroupedLinkRenderer(tmpf='linksSingleView.html')
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
 		self.parser.add_argument('jdata', help='Json data file')
@@ -116,7 +126,9 @@ class MainParser:
 			exit(1)
 		with open(t.jdata, 'r') as f:
 			data = json.load(f)
-		self.renderers[t.render](data, t.out)
+		renderer = self.renderers[t.render]()
+		output = renderer.render(data)
+		output2file(output, t.out)
 
 if __name__=='__main__':
 	m = MainParser()
