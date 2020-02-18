@@ -1,6 +1,7 @@
 from jinja2 import Environment, FileSystemLoader
 from argparse import ArgumentParser
 from sys import argv, exit
+from abc import ABC, abstractmethod
 import json
 import re
 import os
@@ -11,11 +12,8 @@ def default_env():
 	env.lstrip_blocks = True
 	return env
 
-class LinksRenderer:
-	def __init__(self):
-		self.env = default_env()
-		self.templateFile = ""
-	
+class LinksRenderer(ABC):
+	@abstractmethod
 	def render(self, data):
 		pass
 
