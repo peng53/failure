@@ -3,13 +3,13 @@
 	[
 	{"name": "group1",
 		"urls": [
-			{"name": "linkName1", "url": "https://url.dom", "group": 0},
-			{"name": "linkName2", "url": "https://url.dom", "group": 0}
+			{"name": "linkName1", "url": "https://url.dom"},
+			{"name": "linkName2", "url": "https://url.dom"}
 		]
 	},
 	{"name": "group2",
 		"urls": [
-			{"name": "linkName3", "url": "https://url.dom", "group": 1}
+			{"name": "linkName3", "url": "https://url.dom"}
 		]
 	}
 	]
