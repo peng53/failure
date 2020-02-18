@@ -1,5 +1,4 @@
 from jinja2 import Environment, FileSystemLoader
-from collections import namedtuple
 from argparse import ArgumentParser
 from sys import argv, exit
 import json
@@ -20,6 +19,7 @@ class LinksRenderer:
 	def render(self, data):
 		pass
 
+
 class TabularLinkRenderer(LinksRenderer):
 	def __init__(self):
 		self.env = default_env()
@@ -29,63 +29,33 @@ class TabularLinkRenderer(LinksRenderer):
 		template = self.env.get_template(self.templateFile)
 		return template.render(data=data['groups'])
 
-Link = namedtuple('Link', 'name,url')
 
 class GroupedLinkRenderer(LinksRenderer):
-	def __init__(self, tmpf: str=''):
+	def __init__(self, tmpf: str='', regroupl=None):
 		self.env = default_env()
 		self.templateFile = tmpf if tmpf else "linksGroupView.html"
+		self.regroupl = regroupl
 
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
-		'''
-		groupedData = { i:[] for i,e in enumerate(data['groups'])}
-		groupsCount = len(groupedData)
+		if self.regroupl:
+			groupedData = self.regroupl(data['groups'])
+		else:
+			groupedData = data['groups']
+		return template.render(data=groupedData)
 
-		ungroupedId, unknownId = -1, -2
-		groupedData[ungroupedId] = []
-		groupedData[unknownId] = []
 
-		for l in data['links']:
-			if 'group' in l:
-				if l['group']<groupsCount:
-					groupedData[l['group']].append(Link(l['name'],l['url']))
-				else:
-					groupedData[unknownId].append(Link('g{}|{}'.format(l['group'],l['name']),l['url']))
-			else:
-				groupedData[ungroupedId].append(Link(l['name'],l['url']))
-
-		groupNames = data['groups']+['[[Ungrouped]]','[[Unknown Group]]']
-		return template.render(groups=groupedData, groupNames = groupNames)
-		'''
-		return template.render(data=data['groups'])
-
-class DomainGroupedLinkRenderer(LinksRenderer):
-	'''Will eventually be combined with GroupLinkRenderer as an option'''
-	def __init__(self, tmpf: str=''):
-		self.env = default_env()
-		self.templateFile = tmpf if tmpf else "linksGroupView.html"
-
-	def render(self, data):
-		template = self.env.get_template(self.templateFile)
-		(groups, links) = groupByDomain(data['links'])
-		groupNames = [i for i in groups]
-		return template.render(groups=links, groupNames = groupNames)
-
-def groupByDomain(links):
-	# links is a [{'name', '..', 'url': '..'}, ..}]
-	domainNames = {}
-	domainData = {}
-	domain_reg = re.compile(r'(http://)?(www\.)?\w+\.\D+/')
-	for link in links:
-		domain = getDomain(link['url'])
-		if domain not in domainNames:
-			i = len(domainNames)
-			domainNames[domain] = i
-			domainData[i] = []
-		domainData[domainNames[domain]].append(Link(link['name'],link['url']))
-	return (domainNames, domainData)
-
+def groupByDomain(groups):
+	groupMap = {}
+	out = []
+	for g in groups:
+		for link in g['urls']:
+			domain = getDomain(link['url'])
+			if domain not in groupMap:
+				groupMap[domain] = len(groupMap)
+				out.append({'name': domain, 'urls': []})
+			out[groupMap[domain]]['urls'].append(link)
+	return out
 
 def getDomain(url: str):
 	urlStartPat = re.compile('^((http://)|(https://))?(www\.)?')
@@ -97,25 +67,21 @@ def getDomain(url: str):
 		endIndex = len(url)
 	return url[startIndex:startIndex+endIndex]
 
-def printDataGroupedByDomain(links):
-	(groups, links) = groupByDomain(links)
-	for i,g in enumerate(groups):
-		print(g)
-		for l in links[i]:
-			print('  {}'.format(l.name))
 
 def output2file(output, outputFile):
 	with open(outputFile, 'w') as o:
 		o.write(output)
+
+
 
 class MainParser:
 	def __init__(self):
 		self.renderers = {
 			'table': TabularLinkRenderer,
 			'grouped': GroupedLinkRenderer,
-			#'domain': DomainGroupedLinkRenderer,
+			'domain': lambda: GroupedLinkRenderer(regroupl=groupByDomain),
 			#'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
-			#'domainSingle': lambda: DomainGroupedLinkRenderer(tmpf='linksSingleView.html')
+			#'domainSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html',regroupl=groupByDomain)
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
 		self.parser.add_argument('jdata', help='Json data file')
