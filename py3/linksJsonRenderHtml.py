@@ -39,22 +39,22 @@ class GroupedLinkRenderer(LinksRenderer):
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
 		if self.regroupl:
-			groupedData = self.regroupl(data['groups'])
+			groupedData = self.regroupl(data)
 		else:
-			groupedData = data['groups']
-		return template.render(data=groupedData)
+			groupedData = data
+		return template.render(data=groupedData['groups'])
 
 
-def groupByDomain(groups):
+def groupByDomain(data):
 	groupMap = {}
-	out = []
-	for g in groups:
-		for link in g['urls']:
+	out = {'groups': []}
+	for group in data['groups']:
+		for link in group['urls']:
 			domain = getDomain(link['url'])
 			if domain not in groupMap:
 				groupMap[domain] = len(groupMap)
-				out.append({'name': domain, 'urls': []})
-			out[groupMap[domain]]['urls'].append(link)
+				out['groups'].append({'name': domain, 'urls': []})
+			out['groups'][groupMap[domain]]['urls'].append(link)
 	return out
 
 def getDomain(url: str):
