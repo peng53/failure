@@ -38,6 +38,7 @@ class GroupedLinkRenderer(LinksRenderer):
 
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
+		'''
 		groupedData = { i:[] for i,e in enumerate(data['groups'])}
 		groupsCount = len(groupedData)
 
@@ -56,6 +57,8 @@ class GroupedLinkRenderer(LinksRenderer):
 
 		groupNames = data['groups']+['[[Ungrouped]]','[[Unknown Group]]']
 		return template.render(groups=groupedData, groupNames = groupNames)
+		'''
+		return template.render(data=data['groups'])
 
 class DomainGroupedLinkRenderer(LinksRenderer):
 	'''Will eventually be combined with GroupLinkRenderer as an option'''
@@ -109,7 +112,7 @@ class MainParser:
 	def __init__(self):
 		self.renderers = {
 			'table': TabularLinkRenderer,
-			#'grouped': GroupedLinkRenderer,
+			'grouped': GroupedLinkRenderer,
 			#'domain': DomainGroupedLinkRenderer,
 			#'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
 			#'domainSingle': lambda: DomainGroupedLinkRenderer(tmpf='linksSingleView.html')
