@@ -46,7 +46,7 @@
 	<div id='links'>
 		<h1 id='top'>Bookmarks</h1>
 		{% for group in data %}
-			<h3 class='groupName'>
+			<h3 class='groupName' {% if 'desc' in group %}title="{{ group['desc'] }}"{% endif %}>
 				<a id='g{{ loop.index0 }}'>{{ group['name'] }} <a class='top' href="#top">^</a>
 			</h3>
 			{% for url in group['urls'] %}

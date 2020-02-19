@@ -2,12 +2,14 @@
 	"groups":
 	[
 	{"name": "group1",
+		"desc": "This is group one!",
 		"urls": [
 			{"name": "linkName1", "url": "https://url.dom"},
 			{"name": "linkName2", "url": "https://url.dom"}
 		]
 	},
 	{"name": "group2",
+		"desc": "This is not group one!",
 		"urls": [
 			{"name": "linkName3", "url": "https://url.dom"}
 		]
