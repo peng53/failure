@@ -1,6 +1,7 @@
 from jinja2 import Environment, FileSystemLoader
 from argparse import ArgumentParser
 from sys import argv, exit
+from operator import itemgetter
 import json
 import re
 import os
@@ -16,12 +17,15 @@ class LinksRenderer():
 		self.env = default_env()
 		self.templateFile = templateFile
 		self.regroupf = None
+		self.sorturl = None
 	
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
 		processedData = data
 		if self.regroupf:
 			processedData = self.regroupf(processedData)
+		if self.sorturl:
+			self.sorturl(processedData)
 		return template.render(data=processedData['groups'])
 
 
@@ -48,6 +52,11 @@ def getDomain(url: str):
 	return url[startIndex:startIndex+endIndex]
 
 
+def sortByName(data):
+	for g in data['groups']:
+		g['urls'].sort(key=itemgetter('name'))
+
+
 def output2file(output, outputFile):
 	with open(outputFile, 'w') as o:
 		o.write(output)
@@ -66,6 +75,8 @@ class MainParser:
 		self.parser.add_argument('--json','-i', action='append', type=str, help='Json input file(s)')
 		self.parser.add_argument('--template','-t', help='Which template to use for rendering', choices=self.templates.keys(), default='table')
 		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
+		self.parser.add_argument('--nsorted', action='store_true', help='Store URLS by name (per group)')
+		
 
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
@@ -84,6 +95,8 @@ class MainParser:
 		renderer = LinksRenderer(self.templates[t.template])
 		if t.gdomain:
 			renderer.regroupf = groupByDomain
+		if t.nsorted:
+			renderer.sorturl = sortByName
 
 		output = renderer.render(data)
 		output2file(output, t.out)
