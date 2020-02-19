@@ -82,17 +82,22 @@ class MainParser:
 			'domainSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html',regroupl=groupByDomain)
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
-		self.parser.add_argument('jdata', help='Json data file')
 		self.parser.add_argument('out', help='Html output file')
+		self.parser.add_argument('--json','-i', action='append', type=str, help='Json input file(s)')
 		self.parser.add_argument('--render','-r', help='How to render output', choices=self.renderers.keys(), default='table')
 
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
+		if len(t.json)==0:
+			print('No json file as input!')
+			exit(2)
 		if os.path.exists(t.out):
 			print('File: {} already exists.'.format(t.out))
 			exit(1)
-		with open(t.jdata, 'r') as f:
-			data = json.load(f)
+		data = { 'groups' : []}
+		for filename in t.json:
+			with open(filename, 'r') as f:
+				data['groups'].extend(json.load(f)['groups'])
 		renderer = self.renderers[t.render]()
 		output = renderer.render(data)
 		output2file(output, t.out)
