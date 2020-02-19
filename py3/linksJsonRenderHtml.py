@@ -29,6 +29,19 @@ class LinksRenderer():
 		return template.render(data=processedData['groups'])
 
 
+def groupByLetter(data):
+	groupMap = {}
+	out = {'groups': []}
+	for group in data['groups']:
+		for link in group['urls']:
+			letter = link['name'][0].upper()
+			if letter not in groupMap:
+				groupMap[letter] = len(groupMap)
+				out['groups'].append({'name': letter, 'urls': []})
+			out['groups'][groupMap[letter]]['urls'].append(link)
+	out['groups'].sort(key=itemgetter('name'))
+	return out
+
 def groupByDomain(data):
 	groupMap = {}
 	out = {'groups': []}
@@ -75,7 +88,8 @@ class MainParser:
 		self.parser.add_argument('--json','-i', action='append', type=str, help='Json input file(s)')
 		self.parser.add_argument('--template','-t', help='Which template to use for rendering', choices=self.templates.keys(), default='table')
 		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
-		self.parser.add_argument('--nsorted', action='store_true', help='Store URLS by name (per group)')
+		self.parser.add_argument('--gletter', action='store_true', help='Group URLS by letter instead')
+		self.parser.add_argument('--nsorted', action='store_true', help='Sort URLS by name (per group)')
 		
 
 	def parse(self, args) -> None:
@@ -95,6 +109,8 @@ class MainParser:
 		renderer = LinksRenderer(self.templates[t.template])
 		if t.gdomain:
 			renderer.regroupf = groupByDomain
+		elif t.gletter:
+			renderer.regroupf = groupByLetter
 		if t.nsorted:
 			renderer.sorturl = sortByName
 
