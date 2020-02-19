@@ -29,30 +29,19 @@ class LinksRenderer():
 		return template.render(data=processedData['groups'])
 
 
-def groupByLetter(data):
+def groupByF(data, f):
 	groupMap = {}
 	out = {'groups': []}
 	for group in data['groups']:
 		for link in group['urls']:
-			letter = link['name'][0].upper()
-			if letter not in groupMap:
-				groupMap[letter] = len(groupMap)
-				out['groups'].append({'name': letter, 'urls': []})
-			out['groups'][groupMap[letter]]['urls'].append(link)
+			key = f(link)
+			if key not in groupMap:
+				groupMap[key] = len(groupMap)
+				out['groups'].append({'name': key, 'urls': []})
+			out['groups'][groupMap[key]]['urls'].append(link)
 	out['groups'].sort(key=itemgetter('name'))
 	return out
 
-def groupByDomain(data):
-	groupMap = {}
-	out = {'groups': []}
-	for group in data['groups']:
-		for link in group['urls']:
-			domain = getDomain(link['url'])
-			if domain not in groupMap:
-				groupMap[domain] = len(groupMap)
-				out['groups'].append({'name': domain, 'urls': []})
-			out['groups'][groupMap[domain]]['urls'].append(link)
-	return out
 
 def getDomain(url: str):
 	urlStartPat = re.compile('^((http://)|(https://))?(www\.)?')
@@ -108,9 +97,9 @@ class MainParser:
 
 		renderer = LinksRenderer(self.templates[t.template])
 		if t.gdomain:
-			renderer.regroupf = groupByDomain
+			renderer.regroupf = lambda d: groupByF(d, lambda x: getDomain(x['url']))
 		elif t.gletter:
-			renderer.regroupf = groupByLetter
+			renderer.regroupf = lambda d: groupByF(d, lambda x: x['name'][0].upper())
 		if t.nsorted:
 			renderer.sorturl = sortByName
 
