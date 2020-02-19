@@ -1,0 +1,17 @@
+<html>
+	<head>
+		<title>Links</title>
+		<style>
+		</style>
+	</head>
+	<ul>
+	{% for group in data %}
+		<li {% if 'desc' in group %}title="{{ group['desc'] }}"{% endif %}>{{ group['name']|truncate(20) }}</li>
+		<ul>
+		{% for url in group['urls'] %}
+			<li><a href='{{ url["url"] }}'>{{ url['name'] }}</a></li>
+		{% endfor %}
+		</ul>
+	{% endfor %}
+	</ul>
+</html>

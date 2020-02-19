@@ -1,0 +1,9 @@
+<groups>
+{% for group in data %}
+	<group name="{{ group['name'] }}" {% if 'desc' in group %}desc="{{ group['desc']|e }}"{% endif %}>
+	{% for link in group['urls'] %}
+		<link url="{{ link['url']|e }}" name="{{ link['name']|e }}" />
+	{% endfor %}
+	</group>
+{% endfor %}
+</groups>

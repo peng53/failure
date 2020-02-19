@@ -71,6 +71,8 @@ class MainParser:
 			'table': 'linksTableView.html',
 			'group': 'linksGroupView.html',
 			'single' : 'linksSingleView.html',
+			'bullet' : 'linksBulletView.html',
+			'xml' : 'linksXml.xml',
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
 		self.parser.add_argument('out', help='Html output file')
