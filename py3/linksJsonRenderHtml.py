@@ -1,7 +1,6 @@
 from jinja2 import Environment, FileSystemLoader
 from argparse import ArgumentParser
 from sys import argv, exit
-from abc import ABC, abstractmethod
 import json
 import re
 import os
@@ -12,35 +11,18 @@ def default_env():
 	env.lstrip_blocks = True
 	return env
 
-class LinksRenderer(ABC):
-	@abstractmethod
-	def render(self, data):
-		pass
-
-
-class TabularLinkRenderer(LinksRenderer):
-	def __init__(self):
+class LinksRenderer():
+	def __init__(self, templateFile):
 		self.env = default_env()
-		self.templateFile = "linksTableView.html"
+		self.templateFile = templateFile
+		self.regroupf = None
 	
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
-		return template.render(data=data['groups'])
-
-
-class GroupedLinkRenderer(LinksRenderer):
-	def __init__(self, tmpf: str='', regroupl=None):
-		self.env = default_env()
-		self.templateFile = tmpf if tmpf else "linksGroupView.html"
-		self.regroupl = regroupl
-
-	def render(self, data):
-		template = self.env.get_template(self.templateFile)
-		if self.regroupl:
-			groupedData = self.regroupl(data)
-		else:
-			groupedData = data
-		return template.render(data=groupedData['groups'])
+		processedData = data
+		if self.regroupf:
+			processedData = self.regroupf(processedData)
+		return template.render(data=processedData['groups'])
 
 
 def groupByDomain(data):
@@ -74,17 +56,16 @@ def output2file(output, outputFile):
 
 class MainParser:
 	def __init__(self):
-		self.renderers = {
-			'table': TabularLinkRenderer,
-			'grouped': GroupedLinkRenderer,
-			'domain': lambda: GroupedLinkRenderer(regroupl=groupByDomain),
-			'groupedSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html'),
-			'domainSingle': lambda: GroupedLinkRenderer(tmpf='linksSingleView.html',regroupl=groupByDomain)
+		self.templates = {
+			'table': 'linksTableView.html',
+			'group': 'linksGroupView.html',
+			'single' : 'linksSingleView.html',
 		}
 		self.parser = ArgumentParser(description='URL Data Json2Html Renderer')
 		self.parser.add_argument('out', help='Html output file')
 		self.parser.add_argument('--json','-i', action='append', type=str, help='Json input file(s)')
-		self.parser.add_argument('--render','-r', help='How to render output', choices=self.renderers.keys(), default='table')
+		self.parser.add_argument('--template','-t', help='Which template to use for rendering', choices=self.templates.keys(), default='table')
+		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
 
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
@@ -94,11 +75,16 @@ class MainParser:
 		if os.path.exists(t.out):
 			print('File: {} already exists.'.format(t.out))
 			exit(1)
+
 		data = { 'groups' : []}
 		for filename in t.json:
 			with open(filename, 'r') as f:
 				data['groups'].extend(json.load(f)['groups'])
-		renderer = self.renderers[t.render]()
+
+		renderer = LinksRenderer(self.templates[t.template])
+		if t.gdomain:
+			renderer.regroupf = groupByDomain
+
 		output = renderer.render(data)
 		output2file(output, t.out)
 
