@@ -1,38 +1,50 @@
 <html>
 	<head>
 		<title>Links</title>
+		<script>
+			function toggleGroup(id){
+				var ele = document.getElementById('g'+id).getElementsByClassName('urls')[0];
+				if (ele.style.display === 'block' || ele.style.display === ''){
+					ele.style.display = 'none';
+				} else {
+					ele.style.display = 'block';
+				}
+			}
+		</script>
 		<style>
 			body {
 				background: #fff;
-				display: grid;
-				grid-template-areas: "content nav";
-				grid-template-columns: 3fr 300px;
 			}
-			a.top {
-				text-decoration: none;
-			}
-			div#groups {
-				position: fixed;
-				top: 0;
-				right: 0;
-				background: #ccc;
-				overflow-y: scroll;
-				overflow-x: hidden;
-				padding: 4px;
-				grid-area: nav;
-				max-width: 20%;
-				max-height: 100%;
+			h1#top {
+				margin: 0 auto;
+				text-align: center;
 			}
 			div#links {
-				grid-area: content;
+				background: #fff;
+				max-width: 500px;
+				margin: 0 auto;
+			}
+			div.urls {
 				padding: 2px;
 			}
-			h3.groupName {
-				background: yellow;
+			div.group {
+				border: 1px inset #000;
+				margin-bottom: 10px;
+			}
+			div.groupName {
+				display: block;
+				background: #000;
+				font-size: 1.2em;
+				padding: 2px;
+			}
+			div.groupName a {
+				color: #fff;
+				text-decoration: none;
 			}
 		</style>
 	</head>
 	<body>
+	<!---
 	<div id='groups'>
 		<h2 align='center'>Groups</h2>
 		<ol>
@@ -43,15 +55,20 @@
 			{% endfor %}
 		</ol>
 	</div>
+	--!>
+	<h1 id='top'>Bookmarks</h1>
 	<div id='links'>
-		<h1 id='top'>Bookmarks</h1>
 		{% for group in data %}
-			<h3 class='groupName' {% if 'desc' in group %}title="{{ group['desc'] }}"{% endif %}>
-				<a id='g{{ loop.index0 }}'>{{ group['name'] }} <a class='top' href="#top">^</a>
-			</h3>
+		<div id='g{{ loop.index0 }}' class='group'>
+			<div class='groupName' {% if 'desc' in group %}title="{{ group['desc'] }}"{% endif %}>
+			<a href='#' onclick='toggleGroup({{ loop.index0 }})'>{{ group['name'] }} <a class='top' href="#top">^</a><br />
+			</div>
+			<div class='urls'>
 			{% for url in group['urls'] %}
 			<a href='{{ url["url"] }}'>{{ url['name'] }}</a><br />
 			{% endfor %}
+			</div>
+		</div>
 		{% endfor %}
 	</div>
 	</body>
