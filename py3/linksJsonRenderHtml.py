@@ -19,15 +19,22 @@ class LinksRenderer():
 		self.regroupf = None
 		self.sorturl = None
 		self.groupFilters = []
+		self.urlFilters = []
 	
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
 		processedData = data
+		if self.urlFilters:
+			processedData = {
+				'groups' : [
+					{k:(list(chainFilters(self.urlFilters, v)) if k=='urls' else v) for (k,v) in g.items()} for g in data['groups']
+				]
+			}
 		if self.regroupf:
 			processedData = self.regroupf(processedData)
 		if self.groupFilters:
 			processedData = {
-				"groups" : chainFilters(self.groupFilters, processedData['groups'])
+				'groups' : list(chainFilters(self.groupFilters, processedData['groups']))
 			}
 		if self.sorturl:
 			self.sorturl(processedData)
@@ -109,6 +116,8 @@ class MainParser:
 				data['groups'].extend(json.load(f)['groups'])
 
 		renderer = LinksRenderer(self.templates[t.template])
+		renderer.urlFilters.append(lambda u: u['url'].startswith('www.'))
+		renderer.urlFilters.append(lambda u: u['name'].startswith('Website'))
 		renderer.groupFilters.append(lambda g: g['name'].startswith('group1'))
 		if t.gdomain:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: getDomain(x['url']))

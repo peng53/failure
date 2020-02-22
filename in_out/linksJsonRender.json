@@ -17,7 +17,9 @@
 	{"name": "group10",
 		"desc": "This is also not group one!",
 		"urls": [
-			{"name": "linkName4", "url": "https://url.dom"}
+			{"name": "linkName4", "url": "https://url.dom"},
+			{"name": "Website X", "url": "www.http.dom"},
+			{"name": "Website Y", "url": "http://notsecure.dom"}
 		]
 	}
 	]
