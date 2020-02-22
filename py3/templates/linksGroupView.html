@@ -4,7 +4,7 @@
 		<script>
 			function toggleGroup(id){
 				var ele = document.getElementById('g'+id).getElementsByClassName('urls')[0];
-				if (ele.style.display === 'block' || ele.style.display === ''){
+				if (ele.style.display === 'block' || ele.style.display === null){
 					ele.style.display = 'none';
 				} else {
 					ele.style.display = 'block';
@@ -29,6 +29,7 @@
 			}
 			div.group {
 				border: 1px inset #000;
+				border-radius: 5px;
 				margin-bottom: 10px;
 			}
 			div.groupName {
@@ -41,21 +42,28 @@
 				color: #fff;
 				text-decoration: none;
 			}
+			div#groups {
+				position: fixed;
+				left: 0;
+				top: 0;
+				overflow-y: auto;
+				text-align: center;
+			}
+			div#groups a {
+				text-decoration: none;
+				font-size: 1.8em;
+			}
+			@media screen and (max-width: 510px){
+				div#groups {
+					position: static;
+				}
+				div.urls {
+					display: none;
+				}
+			}
 		</style>
 	</head>
 	<body>
-	<!---
-	<div id='groups'>
-		<h2 align='center'>Groups</h2>
-		<ol>
-			{% for group in data %}
-			<li>
-				<a href='#g{{ loop.index0 }}'>{{ group['name']|truncate(20) }}</a>
-			</li>
-			{% endfor %}
-		</ol>
-	</div>
-	--!>
 	<h1 id='top'>Bookmarks</h1>
 	<div id='links'>
 		{% for group in data %}
@@ -69,6 +77,11 @@
 			{% endfor %}
 			</div>
 		</div>
+		{% endfor %}
+	</div>
+	<div id='groups'>
+		{% for n in range(0,data|length,5) %}
+		<a href='#g{{ n }}' title="{{ data[n]['name'] }}">*</a><br />
 		{% endfor %}
 	</div>
 	</body>
