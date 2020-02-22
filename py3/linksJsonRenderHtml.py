@@ -116,8 +116,6 @@ class MainParser:
 				data['groups'].extend(json.load(f)['groups'])
 
 		renderer = LinksRenderer(self.templates[t.template])
-		#renderer.urlFilters.append(lambda u: u['url'].startswith('www.'))
-		#renderer.urlFilters.append(lambda u: u['name'].startswith('Website'))
 		if t.uf:
 			renderer.urlFilters = MainParser.parseUrlFilters(t.uf)
 		#renderer.groupFilters.append(lambda g: g['name'].startswith('group1'))
@@ -136,8 +134,11 @@ class MainParser:
 		for f in filters:
 			kv = f.split('=', maxsplit=1)
 			if len(kv)==2:
-				generatedFilters.append(lambda u: kv[0] in u and kv[1] in u[kv[0]])
+				generatedFilters.append(hasKeyAndValue(*kv))
 		return generatedFilters
+	
+def hasKeyAndValue(k, v):
+	return (lambda u: k in u and v in u[k])
 
 if __name__=='__main__':
 	m = MainParser()
