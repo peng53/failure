@@ -82,11 +82,14 @@ def chainFilters(filters, data):
 			yield value
 
 
+
 def concatGroups(data):
 	out = {'groups' : [{'name': 'All Urls', 'urls':[]}]}
 	for g in data['groups']:
 		out['groups'][0]['urls'].extend(g['urls'])
 	return out
+
+
 
 def output2file(output, outputFile):
 	with open(outputFile, 'w') as o:
@@ -110,6 +113,7 @@ class MainParser:
 
 		self.regroupArg()
 		self.userFilterArg()
+		self.stdFilterArg()
 
 	def regroupArg(self):
 		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
@@ -121,6 +125,10 @@ class MainParser:
 		self.parser.add_argument('--uf', action='append', help='Filter urls', default=[])
 		self.parser.add_argument('--gf', action='append', help='Filter incoming groups', default=[])
 		self.parser.add_argument('--fg', action='append', help='Filter outcoming groups', default=[])	
+
+	def stdFilterArg(self):
+		self.parser.add_argument('--dropEmpty', action='store_true', help='Drop empty groups')
+
 
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
@@ -138,7 +146,11 @@ class MainParser:
 
 		renderer = LinksRenderer(self.templates[t.template])
 		renderer.urlFilters = MainParser.parseUserFilters(t.uf)
-		renderer.inGroupFilters = MainParser.parseUserFilters(t.gf)
+
+		if t.dropEmpty:
+			renderer.inGroupFilters.append(lambda d: len(d['urls'])>0)
+		renderer.inGroupFilters.extend(MainParser.parseUserFilters(t.gf))
+
 		renderer.outGroupFilters = MainParser.parseUserFilters(t.fg)
 		if t.gdomain:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: getDomain(x['url']))

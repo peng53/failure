@@ -21,6 +21,9 @@
 			{"name": "Website X", "url": "www.http.dom"},
 			{"name": "Website Y", "url": "http://notsecure.dom"}
 		]
+	},
+	{"name": "empty_group",
+		"urls": []
 	}
 	]
 }
