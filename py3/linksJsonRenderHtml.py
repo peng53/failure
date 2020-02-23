@@ -107,13 +107,20 @@ class MainParser:
 		self.parser.add_argument('out', help='Html output file')
 		self.parser.add_argument('--json','-i', action='append', type=str, help='Json input file(s)')
 		self.parser.add_argument('--template','-t', help='Which template to use for rendering', choices=self.templates.keys(), default='table')
+
+		self.regroupArg()
+		self.userFilterArg()
+
+	def regroupArg(self):
 		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
 		self.parser.add_argument('--gletter', action='store_true', help='Group URLS by letter instead')
 		self.parser.add_argument('--gconcat', action='store_true', help='Group URLS in single group')
 		self.parser.add_argument('--nsorted', action='store_true', help='Sort URLS by name (per group)')
+	
+	def userFilterArg(self):
 		self.parser.add_argument('--uf', action='append', help='Filter urls', default=[])
 		self.parser.add_argument('--gf', action='append', help='Filter incoming groups', default=[])
-		self.parser.add_argument('--fg', action='append', help='Filter outcoming groups', default=[])
+		self.parser.add_argument('--fg', action='append', help='Filter outcoming groups', default=[])	
 
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
