@@ -2,9 +2,22 @@
 	<head>
 		<title>Links</title>
 		<style>
+			table#links {
+				width: 100%;
+				background: #000;
+			}
+			table#links th {
+				background: red;
+				text-align: left;
+			}
+			table#links td {
+				
+			}
+			table#links tr:hover td {
+				background: yellow;
+			}
 			table, tr, td {
 				color: #000;
-				border: none;
 			}
 			table tr:nth-child(odd) td{
 				background : #ccc;
@@ -14,20 +27,18 @@
 			}
 		</style>
 	</head>
-	<table cellspacing='0'>
+	<table id='links'>
 		<tr>
-			<th>Name</th>
-			<th>URL</th>
-			<th>Group</th>
+			<th width='33%'>Name</th>
+			<th width='33%'>URL</th>
+			<th width='33%'>Group</th>
 		</tr>
 		{% for group in data %}
-			{% for url in group['urls'] %}
-			<tr>
-			<td>{{ url['name'] }}</td>
-			<td>{{ url['url'] }}</td>
-			<td>{{ group['name'] }}</td>
-			</tr>
-			{% endfor %}
+		{% for url in group['urls'] %}
+		<tr>
+			<td>{{ url['name'] }}</td><td>{{ url['url'] }}</td><td>{{ group['name'] }}</td>
+		</tr>
+		{% endfor %}
 		{% endfor %}
 	</table>
 </html>
