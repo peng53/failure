@@ -4,22 +4,22 @@
 	{"name": "group1",
 		"desc": "This is group one!",
 		"urls": [
-			{"name": "linkName1", "url": "https://url.dom"},
-			{"name": "linkName2", "url": "https://url.dom"}
+			{"name": "AlinkName1", "url": "https://url.dom"},
+			{"name": "BlinkName2", "url": "https://url.dom"}
 		]
 	},
 	{"name": "group2",
 		"desc": "This is not group one!",
 		"urls": [
-			{"name": "linkName3", "url": "https://url.dom"}
+			{"name": "ZlinkName3", "url": "https://url.dom"}
 		]
 	},
 	{"name": "group10",
 		"desc": "This is also not group one!",
 		"urls": [
-			{"name": "linkName4", "url": "https://url.dom"},
-			{"name": "Website X", "url": "www.http.dom"},
-			{"name": "Website Y", "url": "http://notsecure.dom"}
+			{"name": "XlinkName4", "url": "https://url.dom"},
+			{"name": "FWebsite X", "url": "www.http.dom"},
+			{"name": "GWebsite Y", "url": "http://notsecure.dom"}
 		]
 	},
 	{"name": "empty_group",

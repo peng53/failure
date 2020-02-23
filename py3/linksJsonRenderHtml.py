@@ -42,7 +42,7 @@ class LinksRenderer():
 				'groups' : list(chainFilters(self.outGroupFilters, processedData['groups']))
 			}
 		if self.sorturl:
-			self.sorturl(processedData)
+			sortByProp(processedData, self.sorturl)
 		return template.render(data=processedData['groups'])
 
 
@@ -71,9 +71,9 @@ def getDomain(url: str):
 	return url[startIndex:startIndex+endIndex]
 
 
-def sortByName(data):
+def sortByProp(data, keys):
 	for g in data['groups']:
-		g['urls'].sort(key=itemgetter('name'))
+		g['urls'].sort(key=itemgetter(*keys))
 
 def chainFilters(filters, data):
 	for value in data:
@@ -119,7 +119,7 @@ class MainParser:
 		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
 		self.parser.add_argument('--gletter', action='store_true', help='Group URLS by letter instead')
 		self.parser.add_argument('--gconcat', action='store_true', help='Group URLS in single group')
-		self.parser.add_argument('--nsorted', action='store_true', help='Sort URLS by name (per group)')
+		self.parser.add_argument('--sorted', action='append', help='Sort URLS by a property (per group)', default=[])
 	
 	def userFilterArg(self):
 		self.parser.add_argument('--uf', action='append', help='Filter urls', default=[])
@@ -158,8 +158,8 @@ class MainParser:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: x['name'][0].upper())
 		elif t.gconcat:
 			renderer.regroupf = concatGroups
-		if t.nsorted:
-			renderer.sorturl = sortByName
+		if t.sorted:
+			renderer.sorturl = t.sorted
 
 		output = renderer.render(data)
 		output2file(output, t.out)
