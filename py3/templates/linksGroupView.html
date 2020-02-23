@@ -26,6 +26,8 @@
 			}
 			div.urls {
 				padding: 2px;
+				display: block;
+				font-size: 1em;
 			}
 			div.group {
 				border: 1px inset #000;
@@ -67,9 +69,10 @@
 	<h1 id='top'>Bookmarks</h1>
 	<div id='links'>
 		{% for group in data %}
+		{% if group['urls']|length > 0 %}
 		<div id='g{{ loop.index0 }}' class='group'>
 			<div class='groupName' {% if 'desc' in group %}title="{{ group['desc'] }}"{% endif %}>
-			<a href='#' onclick='toggleGroup({{ loop.index0 }})'>{{ group['name'] }} <a class='top' href="#top">^</a><br />
+					<a href='#' onclick='toggleGroup({{ loop.index0 }})'>{{ group['name'] }}</a> <a class='top' href="#top">^</a><br />
 			</div>
 			<div class='urls'>
 			{% for url in group['urls'] %}
@@ -77,11 +80,14 @@
 			{% endfor %}
 			</div>
 		</div>
+		{% endif %}
 		{% endfor %}
 	</div>
 	<div id='groups'>
 		{% for n in range(0,data|length,5) %}
+		{% if data[n]['urls']|length > 0 %}
 		<a href='#g{{ n }}' title="{{ data[n]['name'] }}">*</a><br />
+		{% endif %}
 		{% endfor %}
 	</div>
 	</body>
