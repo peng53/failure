@@ -106,6 +106,7 @@ class MainParser:
 		self.parser.add_argument('--nsorted', action='store_true', help='Sort URLS by name (per group)')
 		self.parser.add_argument('--uf', action='append', help='Filter urls', default=[])
 		self.parser.add_argument('--gf', action='append', help='Filter incoming groups', default=[])
+		self.parser.add_argument('--fg', action='append', help='Filter outcoming groups', default=[])
 
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
@@ -124,7 +125,7 @@ class MainParser:
 		renderer = LinksRenderer(self.templates[t.template])
 		renderer.urlFilters = MainParser.parseUserFilters(t.uf)
 		renderer.inGroupFilters = MainParser.parseUserFilters(t.gf)
-		renderer.outGroupFilters.append(lambda g: g['name'].startswith('group1'))
+		renderer.outGroupFilters = MainParser.parseUserFilters(t.fg)
 		if t.gdomain:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: getDomain(x['url']))
 		elif t.gletter:
