@@ -18,23 +18,28 @@ class LinksRenderer():
 		self.templateFile = templateFile
 		self.regroupf = None
 		self.sorturl = None
-		self.groupFilters = []
+		self.inGroupFilters = []
+		self.outGroupFilters = []
 		self.urlFilters = []
 	
 	def render(self, data):
 		template = self.env.get_template(self.templateFile)
 		processedData = data
+		if self.inGroupFilters:
+			 processedData = {
+				'groups' : list(chainFilters(self.inGroupFilters, processedData['groups']))
+			 }
 		if self.urlFilters:
 			processedData = {
 				'groups' : [
-					{k:(list(chainFilters(self.urlFilters, v)) if k=='urls' else v) for (k,v) in g.items()} for g in data['groups']
+					{k:(list(chainFilters(self.urlFilters, v)) if k=='urls' else v) for (k,v) in g.items()} for g in processedData['groups']
 				]
 			}
 		if self.regroupf:
 			processedData = self.regroupf(processedData)
-		if self.groupFilters:
+		if self.outGroupFilters:
 			processedData = {
-				'groups' : list(chainFilters(self.groupFilters, processedData['groups']))
+				'groups' : list(chainFilters(self.outGroupFilters, processedData['groups']))
 			}
 		if self.sorturl:
 			self.sorturl(processedData)
@@ -99,7 +104,8 @@ class MainParser:
 		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
 		self.parser.add_argument('--gletter', action='store_true', help='Group URLS by letter instead')
 		self.parser.add_argument('--nsorted', action='store_true', help='Sort URLS by name (per group)')
-		self.parser.add_argument('--uf', action='append', help='Filter urls')
+		self.parser.add_argument('--uf', action='append', help='Filter urls', default=[])
+		self.parser.add_argument('--gf', action='append', help='Filter incoming groups', default=[])
 
 	def parse(self, args) -> None:
 		t = self.parser.parse_args(args)
@@ -116,9 +122,9 @@ class MainParser:
 				data['groups'].extend(json.load(f)['groups'])
 
 		renderer = LinksRenderer(self.templates[t.template])
-		if t.uf:
-			renderer.urlFilters = MainParser.parseUrlFilters(t.uf)
-		#renderer.groupFilters.append(lambda g: g['name'].startswith('group1'))
+		renderer.urlFilters = MainParser.parseUserFilters(t.uf)
+		renderer.inGroupFilters = MainParser.parseUserFilters(t.gf)
+		renderer.outGroupFilters.append(lambda g: g['name'].startswith('group1'))
 		if t.gdomain:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: getDomain(x['url']))
 		elif t.gletter:
@@ -129,7 +135,7 @@ class MainParser:
 		output = renderer.render(data)
 		output2file(output, t.out)
 
-	def parseUrlFilters(filters):
+	def parseUserFilters(filters):
 		generatedFilters = []
 		for f in filters:
 			kv = f.split('=', maxsplit=1)
