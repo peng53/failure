@@ -82,6 +82,12 @@ def chainFilters(filters, data):
 			yield value
 
 
+def concatGroups(data):
+	out = {'groups' : [{'name': 'All Urls', 'urls':[]}]}
+	for g in data['groups']:
+		out['groups'][0]['urls'].extend(g['urls'])
+	return out
+
 def output2file(output, outputFile):
 	with open(outputFile, 'w') as o:
 		o.write(output)
@@ -103,6 +109,7 @@ class MainParser:
 		self.parser.add_argument('--template','-t', help='Which template to use for rendering', choices=self.templates.keys(), default='table')
 		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
 		self.parser.add_argument('--gletter', action='store_true', help='Group URLS by letter instead')
+		self.parser.add_argument('--gconcat', action='store_true', help='Group URLS in single group')
 		self.parser.add_argument('--nsorted', action='store_true', help='Sort URLS by name (per group)')
 		self.parser.add_argument('--uf', action='append', help='Filter urls', default=[])
 		self.parser.add_argument('--gf', action='append', help='Filter incoming groups', default=[])
@@ -130,6 +137,8 @@ class MainParser:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: getDomain(x['url']))
 		elif t.gletter:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: x['name'][0].upper())
+		elif t.gconcat:
+			renderer.regroupf = concatGroups
 		if t.nsorted:
 			renderer.sorturl = sortByName
 
