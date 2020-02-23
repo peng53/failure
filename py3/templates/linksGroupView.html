@@ -4,16 +4,15 @@
 		<script>
 			function toggleGroup(id){
 				var ele = document.getElementById('g'+id).getElementsByClassName('urls')[0];
-				if (ele.style.display === 'block' || ele.style.display === null){
-					ele.style.display = 'none';
-				} else {
-					ele.style.display = 'block';
-				}
+				ele.style.display = ele.style.display == "none" ? "block" : "none";
+				//location.hash = '#g' + id;
 			}
 		</script>
 		<style>
 			body {
 				background: #fff;
+				overflow-x: hidden;
+				margin: 0 30px;
 			}
 			h1#top {
 				margin: 0 auto;
@@ -26,8 +25,6 @@
 			}
 			div.urls {
 				padding: 2px;
-				display: block;
-				font-size: 1em;
 			}
 			div.group {
 				border: 1px inset #000;
@@ -35,7 +32,6 @@
 				margin-bottom: 10px;
 			}
 			div.groupName {
-				display: block;
 				background: #000;
 				font-size: 1.2em;
 				padding: 2px;
@@ -49,19 +45,23 @@
 				left: 0;
 				top: 0;
 				overflow-y: auto;
-				text-align: center;
+				max-height: 98%;
+				width: 30px;
 			}
 			div#groups a {
 				text-decoration: none;
 				font-size: 1.8em;
 			}
-			@media screen and (max-width: 510px){
-				div#groups {
-					position: static;
-				}
-				div.urls {
-					display: none;
-				}
+			div#groups ul li:nth-child(even) a {
+				background: yellow;
+			}
+			div#groups ul li:nth-child(odd) a {
+				background: red;
+			}
+			div#groups ul {
+					list-style-type: none;
+					padding: 0;
+					margin: 0;
 			}
 		</style>
 	</head>
@@ -72,7 +72,7 @@
 		{% if group['urls']|length > 0 %}
 		<div id='g{{ loop.index0 }}' class='group'>
 			<div class='groupName' {% if 'desc' in group %}title="{{ group['desc'] }}"{% endif %}>
-					<a href='#' onclick='toggleGroup({{ loop.index0 }})'>{{ group['name'] }}</a> <a class='top' href="#top">^</a><br />
+			<a onclick='toggleGroup({{ loop.index0 }})' href='javascript:void(0);'>{{ group['name'] }} <a class='top' href="#top">^</a><br />
 			</div>
 			<div class='urls'>
 			{% for url in group['urls'] %}
@@ -84,11 +84,13 @@
 		{% endfor %}
 	</div>
 	<div id='groups'>
+		<ul>
 		{% for n in range(0,data|length,5) %}
 		{% if data[n]['urls']|length > 0 %}
-		<a href='#g{{ n }}' title="{{ data[n]['name'] }}">*</a><br />
+		<li><a href='#g{{ n }}' title="{{ data[n]['name'] }}">*</a></li>
 		{% endif %}
 		{% endfor %}
+		</ul>
 	</div>
 	</body>
 </html>
