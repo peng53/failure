@@ -70,6 +70,21 @@ def getDomain(url: str):
 		endIndex = len(url)
 	return url[startIndex:startIndex+endIndex]
 
+def getCountry(url: str):
+	urlStartPat = re.compile('^((http://)|(https://))?(www\.)?')
+	startIndex = urlStartPat.search(url).span()[1]
+	# skip past the http / www
+	endIndex = url[startIndex:].find('/')
+	# find end of top level
+	if endIndex==-1:
+		# Url does not end in '/'
+		endIndex = len(url)
+	else:
+		endIndex += startIndex 
+	startIndex += url[startIndex:endIndex].rfind('.')
+	# find period separating domain and country
+	return url[startIndex+1:endIndex]
+
 
 def sortByProp(data, keys):
 	for g in data['groups']:
@@ -129,8 +144,9 @@ class MainParser:
 		self.stdFilterArg()
 
 	def regroupArg(self):
-		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain instead')
-		self.parser.add_argument('--gletter', action='store_true', help='Group URLS by letter instead')
+		self.parser.add_argument('--gdomain', action='store_true', help='Group URLS by domain')
+		self.parser.add_argument('--gcountry', action='store_true', help='Group URLS by country')
+		self.parser.add_argument('--gletter', action='store_true', help='Group URLS by letter')
 		self.parser.add_argument('--gconcat', action='store_true', help='Group URLS in single group')
 		self.parser.add_argument('--sorted', action='append', help='Sort URLS by a property (per group)', default=[])
 	
@@ -170,6 +186,8 @@ class MainParser:
 		renderer.outGroupFilters = MainParser.parseUserFilters(t.fg)
 		if t.gdomain:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: getDomain(x['url']))
+		elif t.gcountry:
+			renderer.regroupf = lambda d: groupByF(d, lambda x: getCountry(x['url']))
 		elif t.gletter:
 			renderer.regroupf = lambda d: groupByF(d, lambda x: x['name'][0].upper())
 		elif t.gconcat:
@@ -185,7 +203,6 @@ class MainParser:
 		for f in filters:
 			kv = f.split('=', maxsplit=1)
 			if len(kv)==2:
-				#generatedFilters.append(hasKeyAndValue(*kv))
 				generatedFilters.append(HasKeyAndValue(*kv).passes)
 		return generatedFilters
 
