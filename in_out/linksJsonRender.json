@@ -19,7 +19,11 @@
 		"urls": [
 			{"name": "XlinkName4", "url": "https://url.dom"},
 			{"name": "FWebsite X", "url": "www.http.dom"},
-			{"name": "GWebsite Y", "url": "http://notsecure.dom"}
+			{"name": "GWebsite Y", "url": "http://notsecure.dom"},
+			{"name": "DUP NAME", "url": "4950950845"},
+			{"name": "DUP NAME", "url": "495095084_"},
+			{"name": "134134143", "url": "DUP URL"},
+			{"name": "13413414_", "url": "DUP URL"}
 		]
 	},
 	{"name": "empty_group",

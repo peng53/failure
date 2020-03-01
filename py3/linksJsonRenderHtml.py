@@ -95,7 +95,20 @@ def output2file(output, outputFile):
 	with open(outputFile, 'w') as o:
 		o.write(output)
 
-
+class UniqueSetContainer:
+	def __init__(self, key, verbose=False):
+		self.items = set()
+		self.key = key
+		self.verbose = verbose
+	
+	def isUnique(self, item):
+		if item[self.key] in self.items:
+			if self.verbose:
+				print('id: {}, dropped {}: {}'.format(id(self),self.key, item))
+			return False
+		else:
+			self.items.add(item[self.key])
+			return True
 
 class MainParser:
 	def __init__(self):
@@ -128,6 +141,7 @@ class MainParser:
 
 	def stdFilterArg(self):
 		self.parser.add_argument('--dropEmpty', action='store_true', help='Drop empty groups')
+		self.parser.add_argument('--unique', action='append', help='Keep only first occurances of either url or name', choices=('url','name'), default=[])
 
 
 	def parse(self, args) -> None:
@@ -145,7 +159,9 @@ class MainParser:
 				data['groups'].extend(json.load(f)['groups'])
 
 		renderer = LinksRenderer(self.templates[t.template])
-		renderer.urlFilters = MainParser.parseUserFilters(t.uf)
+		for a in t.unique:
+			renderer.urlFilters.append(UniqueSetContainer(a).isUnique)
+		renderer.urlFilters.extend(MainParser.parseUserFilters(t.uf))
 
 		if t.dropEmpty:
 			renderer.inGroupFilters.append(lambda d: len(d['urls'])>0)
