@@ -185,11 +185,17 @@ class MainParser:
 		for f in filters:
 			kv = f.split('=', maxsplit=1)
 			if len(kv)==2:
-				generatedFilters.append(hasKeyAndValue(*kv))
+				#generatedFilters.append(hasKeyAndValue(*kv))
+				generatedFilters.append(HasKeyAndValue(*kv).passes)
 		return generatedFilters
+
+class HasKeyAndValue:
+	def __init__(self, key, value):
+		self.key, self.value = key, value
 	
-def hasKeyAndValue(k, v):
-	return (lambda u: k in u and v in u[k])
+	def passes(self, item):
+		return self.key in item and self.value in item[self.key]
+
 
 if __name__=='__main__':
 	m = MainParser()
