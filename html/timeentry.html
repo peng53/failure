@@ -31,22 +31,51 @@
 			}
 		</style>
 		<script>
+			var starts, stops, diffs;
 			function calc(i){
 				console.log(i);
+				if (starts[i].value.length === 0 || stops[i].value.length === 0){
+					return;
+				}
+				
+				let d1 = starts[i].value.split(':',2);
+				let d2 = stops[i].value.split(':', 2);
+				let diff;
+				if (d1[0] > d2[0]){
+					diff = d1[0]-d2[0];
+				} else {
+					diff = d2[0]-d1[0];
+				}
+				diff += (d2[1]-d1[1])/60
+				diffs[i].value = diff.toFixed(2);
+
+				if (i<2){
+					return;
+				}
+				if (starts[i-1].value.length > 0){
+					return;
+				}
+				
 			}
-			function createTimesTable(rows){
+			function createTimesTable(start, rows){
 				let timesdiv = document.getElementById('times');
 				let table = document.createElement('table');
 				table.innerHTML = "<tr><th>Code</th><th>Start</th><th>Stop</th><th>Hrs</th></tr>";
 				timesdiv.appendChild(table);
-				for (let i=0; i<rows; ++i){
+				let stop = rows+start;
+				for (let i=start; i<stop; ++i){
 					let row = table.insertRow(-1);
 					row.innerHTML = "<tr><td><input class='code' /></td><td><input class='start' /></td><td><input class='stop' onblur=calc("+i+") /></td><td><input class='diff' /></td></tr>";
 				}
 			}
 			function main(){
-				createTimesTable(10);
-				createTimesTable(10);
+				createTimesTable(0,10);
+				createTimesTable(10,10);
+				
+				diffs =  document.getElementsByClassName('diff');
+				starts = document.getElementsByClassName('start');
+				stops = document.getElementsByClassName('stop');
+				
 				let codes = document.getElementsByClassName('code');
 				let cnt = codes.length;
 				for (let i=0; i<cnt; ++i){
