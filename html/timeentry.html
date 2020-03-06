@@ -4,16 +4,21 @@
 			body {
 				background: #fff;
 				color: #000;
-				font-family: sans;
+				font-family: monospace;
 			}
 			table th, table td {
 				text-align: center;
 			}
 			input.code, input.start, input.stop, input.diff {
-				width: 3em;
 				text-align: right;
 				background: #fff;
 				color: #000;
+			}
+			input.code {
+				width: 2em;
+			}
+			input.start, input.stop, input.diff {
+				width: 3em;
 			}
 			div#times table {
 				float: left;
@@ -33,13 +38,13 @@
 		<script>
 			var starts, stops, diffs, codes;
 			function getDiff(i){
-				let d1 = starts[i].value.split(':',2);
-				let d2 = stops[i].value.split(':', 2);
+				let d1 = starts[i].value.split(':',2).map(Number);
+				let d2 = stops[i].value.split(':', 2).map(Number);
 				let diff;
 				diff = d2[0]-d1[0];
 				console.log(d1);
 				console.log(d2);
-				if (Number(d1[0]) > Number(d2[0])){
+				if (d1[0] > d2[0]){
 					diff += 12;
 				}
 				diff += (d2[1]-d1[1])/60;
@@ -63,7 +68,7 @@
 				stops[i-1].value = starts[i].value;
 				starts[i-1].value = stops[i-2].value;
 				diffs[i-1].value = getDiff(i-1);
-				codes[i-1].value = 'AUTO';
+				codes[i-1].value = 'ATO';
 			}
 			function createTimesTable(start, rows){
 				let timesdiv = document.getElementById('times');
@@ -73,7 +78,7 @@
 				let stop = rows+start;
 				for (let i=start; i<stop; ++i){
 					let row = table.insertRow(-1);
-					row.innerHTML = "<tr><td><input class='code' /></td><td><input class='start' /></td><td><input class='stop' onblur=calc("+i+") /></td><td><input class='diff' /></td></tr>";
+					row.innerHTML = "<tr><td><input class='code' maxlength=3 /></td><td><input class='start' maxlength=5 /></td><td><input class='stop' maxlength=5 onblur=calc("+i+") /></td><td><input class='diff' maxlength=5 /></td></tr>";
 				}
 			}
 			function main(){
@@ -87,7 +92,7 @@
 				
 				let cnt = codes.length;
 				for (let i=0; i<cnt; ++i){
-					codes[i].value = i+1000;
+					codes[i].value = i+100;
 				}
 			}
 			window.onload = main;
