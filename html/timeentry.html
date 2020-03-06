@@ -1,0 +1,74 @@
+<html>
+	<head>
+		<style>
+			body {
+				background: #fff;
+				color: #000;
+				font-family: sans;
+			}
+			table th, table td {
+				text-align: center;
+			}
+			input.code, input.start, input.stop, input.diff {
+				width: 3em;
+				text-align: right;
+				background: #fff;
+				color: #000;
+			}
+			div#times table {
+				float: left;
+				border: 1px solid #000;
+				border-collapse: collapse;
+			}
+			input {
+				border: 0;
+			}
+			input:hover {
+				background: #ccc;
+			}
+			table tr {
+				border: 1px solid #000;
+			}
+		</style>
+		<script>
+			function calc(i){
+				console.log(i);
+			}
+			function createTimesTable(rows){
+				let timesdiv = document.getElementById('times');
+				let table = document.createElement('table');
+				table.innerHTML = "<tr><th>Code</th><th>Start</th><th>Stop</th><th>Hrs</th></tr>";
+				timesdiv.appendChild(table);
+				for (let i=0; i<rows; ++i){
+					let row = table.insertRow(-1);
+					row.innerHTML = "<tr><td><input class='code' /></td><td><input class='start' /></td><td><input class='stop' onblur=calc("+i+") /></td><td><input class='diff' /></td></tr>";
+				}
+			}
+			function main(){
+				createTimesTable(10);
+				createTimesTable(10);
+				let codes = document.getElementsByClassName('code');
+				let cnt = codes.length;
+				for (let i=0; i<cnt; ++i){
+					codes[i].value = i+1000;
+				}
+			}
+			window.onload = main;
+		</script>
+	</head>
+	<body>
+	<div id='times'>
+		<!--
+	<table>
+	<tr>
+		<th>Code</th>
+		<th>Start</th>
+		<th>Stop</th>
+		<th>Hrs</th>
+	</tr>
+	<tr><td><input class='code' /></td><td><input class='start' /></td><td><input class='stop' /></td><td><input class='diff' /></td></tr>
+	</table>
+	-->
+	</div>
+	</body>
+</html>
