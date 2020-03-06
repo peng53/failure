@@ -31,31 +31,39 @@
 			}
 		</style>
 		<script>
-			var starts, stops, diffs;
-			function calc(i){
-				console.log(i);
-				if (starts[i].value.length === 0 || stops[i].value.length === 0){
-					return;
-				}
-				
+			var starts, stops, diffs, codes;
+			function getDiff(i){
 				let d1 = starts[i].value.split(':',2);
 				let d2 = stops[i].value.split(':', 2);
 				let diff;
-				if (d1[0] > d2[0]){
-					diff = d1[0]-d2[0];
-				} else {
-					diff = d2[0]-d1[0];
+				diff = d2[0]-d1[0];
+				console.log(d1);
+				console.log(d2);
+				if (Number(d1[0]) > Number(d2[0])){
+					diff += 12;
 				}
-				diff += (d2[1]-d1[1])/60
-				diffs[i].value = diff.toFixed(2);
+				diff += (d2[1]-d1[1])/60;
+				return diff.toFixed(2);
+			}
+			function calc(i){
+				console.log(i);
+				if (starts[i].value.length == 0 || stops[i].value.length == 0 ){
+					return;
+				}
+				
+				diffs[i].value = getDiff(i);
 
 				if (i<2){
 					return;
 				}
-				if (starts[i-1].value.length > 0){
+				if (starts[i-1].value.length != 0 || stops[i-2].value.length == 0){
 					return;
 				}
-				
+				// Attempt to find inbetween row above
+				stops[i-1].value = starts[i].value;
+				starts[i-1].value = stops[i-2].value;
+				diffs[i-1].value = getDiff(i-1);
+				codes[i-1].value = 'AUTO';
 			}
 			function createTimesTable(start, rows){
 				let timesdiv = document.getElementById('times');
@@ -75,8 +83,8 @@
 				diffs =  document.getElementsByClassName('diff');
 				starts = document.getElementsByClassName('start');
 				stops = document.getElementsByClassName('stop');
+				codes = document.getElementsByClassName('code');
 				
-				let codes = document.getElementsByClassName('code');
 				let cnt = codes.length;
 				for (let i=0; i<cnt; ++i){
 					codes[i].value = i+1000;
