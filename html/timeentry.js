@@ -26,16 +26,40 @@ function calc(i){
 	diffs[i-1].value = getDiff(starts[i-1].value, stops[i-1].value);
 	codes[i-1].value = 'ATO';
 }
+function saya(event){
+	calc(event.target['index']);
+}
 function createTimesTable(start, rows){
 	let timesdiv = document.getElementById('times');
 	let table = document.createElement('table');
-	table.innerHTML = "<tr><th>Code</th><th>Start</th><th>Stop</th><th>Hrs</th></tr>";
+	table.innerHTML = "<thead><tr><th>Code</th><th>Start</th><th>Stop</th><th>Hrs</th></tr></thead>";
+	let tbody = document.createElement('tbody');
 	for (let i=start, stop=rows+start; i<stop; ++i){
-		let row = table.insertRow(-1);
-		row.innerHTML = "<tr><td><input class='code' maxlength=3 /></td><td><input class='start' maxlength=5 /></td><td><input class='stop' maxlength=5 onblur=calc("+i+") /></td><td><input class='diff' maxlength=5 /></td></tr>";
+		tbody.appendChild(createTimeRow(i));
 	}
+	table.appendChild(tbody);
 	timesdiv.appendChild(table);
 }
+
+function createTimeRow(i){
+	let row = document.createElement('tr');
+	makeIntoInputCell(row.insertCell(0), 'code', 3);
+	makeIntoInputCell(row.insertCell(1), 'start', 5);
+	let stop = makeIntoInputCell(row.insertCell(2), 'stop', 5);
+	stop['index'] = i;
+	stop.addEventListener('blur', saya);
+	makeIntoInputCell(row.insertCell(3), 'diff', 5);
+	return row;
+}
+
+function makeIntoInputCell(cell, clss, length){
+	let input = document.createElement('input');
+	input.classList.add(clss);
+	input.maxLength = length;
+	cell.appendChild(input);
+	return input;
+}
+
 function main(){
 	createTimesTable(0,10);
 	createTimesTable(10,10);
