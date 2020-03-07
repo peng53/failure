@@ -27,7 +27,8 @@ function calc(i){
 function saya(event){
 	calc(event.target['index']);
 }
-function createTimesTable(start, rows){
+function createTimesTable(rows){
+	let start = ((codes === undefined)? 0 : codes.length);
 	let timesdiv = document.getElementById('times');
 	let table = document.createElement('table');
 	table.innerHTML = "<thead><tr><th>Code</th><th>Start</th><th>Stop</th><th>Hrs</th></tr></thead>";
@@ -67,8 +68,8 @@ function buildElTables(){
 }
 
 function main(){
-	createTimesTable(0,10);
-	createTimesTable(10,10);
+	createTimesTable(15);
+	createTimesTable(10);
 	for (let i=0, cnt=codes.length; i<cnt; ++i){
 		codes[i].value = i+100;
 	}
