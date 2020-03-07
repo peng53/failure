@@ -1,10 +1,8 @@
-//var TimeEntry = {
-//	starts, stops, diffs, codes
-//};
-var starts, stops, diffs, codes;
+var treg = new RegExp(/\D/);
+var codes, starts, stops, diffs;
 function getDiff(start, stop){
-	let d1 = start.split(':',2).map(Number);
-	let d2 = stop.split(':', 2).map(Number);
+	let d1 = start.split(treg,2).map(Number);
+	let d2 = stop.split(treg, 2).map(Number);
 	let diff = d2[0]-d1[0];
 	if (d1[0] > d2[0]){
 		diff += 12;
@@ -39,6 +37,7 @@ function createTimesTable(start, rows){
 	}
 	table.appendChild(tbody);
 	timesdiv.appendChild(table);
+	buildElTables();
 }
 
 function createTimeRow(i){
@@ -60,17 +59,17 @@ function makeIntoInputCell(cell, clss, length){
 	return input;
 }
 
+function buildElTables(){
+	codes = document.getElementsByClassName('code');
+	starts = document.getElementsByClassName('start');
+	stops = document.getElementsByClassName('stop');
+	diffs = document.getElementsByClassName('diff');
+}
+
 function main(){
 	createTimesTable(0,10);
 	createTimesTable(10,10);
-	
-	diffs =  document.getElementsByClassName('diff');
-	starts = document.getElementsByClassName('start');
-	stops = document.getElementsByClassName('stop');
-	codes = document.getElementsByClassName('code');
-	
-	let cnt = codes.length;
-	for (let i=0; i<cnt; ++i){
+	for (let i=0, cnt=codes.length; i<cnt; ++i){
 		codes[i].value = i+100;
 	}
 }
