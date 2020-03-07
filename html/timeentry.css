@@ -1,0 +1,33 @@
+body {
+	background: #fff;
+	color: #000;
+	font-family: monospace;
+}
+table th, table td {
+	text-align: center;
+}
+input.code, input.start, input.stop, input.diff {
+	text-align: right;
+	background: #fff;
+	color: #000;
+}
+input.code {
+	width: 2em;
+}
+input.start, input.stop, input.diff {
+	width: 3em;
+}
+div#times table {
+	float: left;
+	border: 1px solid #000;
+	border-collapse: collapse;
+}
+input {
+	border: 0;
+}
+input:hover {
+	background: #ccc;
+}
+table tr {
+	border: 1px solid #000;
+}
