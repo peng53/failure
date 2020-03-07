@@ -1,3 +1,4 @@
+var codesEnum = [];
 var treg = new RegExp(/\D/);
 var codes, starts, stops, diffs;
 function getDiff(start, stop){
@@ -39,6 +40,7 @@ function createTimesTable(rows){
 	table.appendChild(tbody);
 	timesdiv.appendChild(table);
 	buildElTables();
+	return table;
 }
 
 function createTimeRow(i){
@@ -67,9 +69,28 @@ function buildElTables(){
 	diffs = document.getElementsByClassName('diff');
 }
 
+function createTotalsTable(){
+	let totalsdiv = document.getElementById('totals');
+	let table = document.createElement('table');
+	table.innerHTML = "<thead><tr><th>Code</th><th>Hrs</th></tr></thead>";
+	let tbody = document.createElement('tbody');
+	for (let i=0, l=codesEnum.length; i<l; ++i){
+		tbody.appendChild(createTotalsRow(i,codesEnum[i]));
+	}
+	table.appendChild(tbody);
+	totalsdiv.appendChild(table);
+}
+function createTotalsRow(i, label){
+	let row = document.createElement('tr');
+	makeIntoInputCell(row.insertCell(0), 'codee', 12).value = label;
+	makeIntoInputCell(row.insertCell(1), 'total', 5).value = '0.00';
+	return row;
+}
+
 function main(){
-	createTimesTable(15);
-	createTimesTable(10);
+	createTimesTable(16).style.cssFloat = 'left';
+	createTimesTable(15).style.cssFloat = 'left';
+	createTotalsTable();
 	for (let i=0, cnt=codes.length; i<cnt; ++i){
 		codes[i].value = i+100;
 	}
