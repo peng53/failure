@@ -88,8 +88,14 @@ function createTotalsRow(i, label){
 }
 
 function main(){
-	createTimesTable(16).style.cssFloat = 'left';
-	createTimesTable(15).style.cssFloat = 'left';
+	let t = createTimesTable(16);
+	t.style.cssFloat = 'left';
+	t.style.width = '2.5in';
+	
+	t = createTimesTable(15);
+	t.style.cssFloat = 'left';
+	t.style.width = '2.5in';
+	
 	createTotalsTable();
 	for (let i=0, cnt=codes.length; i<cnt; ++i){
 		codes[i].value = i+100;

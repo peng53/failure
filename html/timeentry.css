@@ -6,11 +6,16 @@
     margin: 0;  
 } 
 body {
+	display: grid;
+	grid-template-areas: 
+		'content side'
+		'notes side';
+	grid-template-columns: 5.6in 2.7in;;
 	background: #fff;
 	color: #000;
 	font-family: sans;
 	font-size: 1.2em;
-	margin: 0px;
+	margin: 0.1in;
 }
 input.code, input.start, input.stop, input.diff, input.total, input.codee {
 	background: #fff;
@@ -18,14 +23,15 @@ input.code, input.start, input.stop, input.diff, input.total, input.codee {
 	font-size: 1em;
 }
 input.code, input.start, input.stop, input.diff, input.total {
+	width: 100%;
 	text-align: right;
 }
 input.start, input.stop, input.diff, input.total {
-	width: 3em;
+	/* width: 3em; */
 }
 input.codee {
 	text-align: left;
-	width: 7em;
+	/*width: 7em; */
 }
 input.code {
 	width: 2em;
@@ -40,12 +46,24 @@ div#times table {
 div#totals table {
 	border: 1px solid #000;
 	border-collapse: collapse;
-	margin: 2px;
+	/* margin: 2px; */
 	text-align: left;
 	font-size: 1em;
 }
+div#totals {
+	grid-area: side;
+}
+
 div#times {
-	float: left;
+	grid-area: content;
+	padding-right: 2px;
+}
+div#notes {
+	grid-area: notes;
+}
+div#notes textarea {
+	width: 100%;
+	height: 100%;
 }
 input {
 	border: 0;
