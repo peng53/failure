@@ -1,0 +1,29 @@
+<html>
+<head>
+	<title>:-) :-)</title>
+	<link rel='stylesheet' type='text/css' href='timestables.css' />
+	<script src='timestables.js'></script>
+</head>
+<body>
+<div id='wrapper'>
+<div id='entry'>
+<table id='timestable'>
+<thead>
+<tr><th>Code</th><th>Start</th><th>Stop</th><th>Hrs</th></tr>
+</thead>
+<tbody id='times'>
+</tbody>
+</table>
+<center>
+	<button onclick='addRows(5)'>Add Rows</button>
+	<button onclick='exportRows()'>Export Rows</button>
+</center>
+</div>
+<div id='output'>
+<textarea id='otd'></textarea></div>
+</div>
+</body>
+<script>
+	addRows(10);
+</script>
+</html>

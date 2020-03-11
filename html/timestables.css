@@ -1,0 +1,37 @@
+input {
+	width: 4em;
+	border: 1px dotted #ccc;
+	text-align: right;
+	background: #fff;
+}
+input:focus {
+	background: yellow;
+}
+div#wrapper {
+	display: grid;
+	grid-template-areas: 'entry output';
+	grid-template-columns: min-content auto;
+}
+div#entry {
+	grid-area: entry;
+	border: 1px solid #ccc;
+	background: #fff;
+}
+table#timestable {
+}
+div#output {
+	grid-area: output;
+	border: 1px solid #ccc;
+}
+div#output textarea {
+	width: 100%;
+	height: 100%;
+	font-family: monospace;
+	font-size: 1.5em;
+	background: beige;
+}
+body {
+	margin: 0;
+	background: #fff;
+	color: #000;
+}
