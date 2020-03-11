@@ -56,8 +56,7 @@ function addRows(count){
 		++rowCount;
 	}
 	buildElTables();
-	let entry = document.getElementById('entry');
-	entry.scrollTop = entry.scrollHeight;
+	window.scrollTo(0,document.body.scrollHeight);
 }
 function addRow(table, index){
 	let row = table.insertRow(-1);
