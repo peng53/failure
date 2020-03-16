@@ -1,0 +1,120 @@
+<html>
+<head>
+	<style>
+	body {
+		margin: 0;
+		background: gray;
+	}
+	textarea {
+		border: 1px dashed beige;
+		
+	}
+	div#buttons {
+		height: 30px;
+	}
+	div#inputs {
+		height: 90%;
+	}
+	div#inputs textarea {
+		background: #ccc;
+		overflow: scroll;
+	}
+	textarea#notes {
+		box-sizing: border-box;
+		height: 100%;
+		width: 60%;
+		font-family: monospace;
+		font-size: 1.2em;
+		float:left;
+	}
+	textarea#out {
+		box-sizing: border-box;
+		height: 100%;
+		width: 40%;
+		font-family: monospace;
+		font-size: 1.2em;
+		float:left;
+	}
+	</style>
+</head>
+<body>
+<div id='buttons'>
+<button onclick='insertTime()'>Time</button>
+<button onclick='formatNotes()'>Out</button>
+<button onclick='quickInsert(100)'>Meeting</button>
+</div>
+<div id='inputs'>
+<textarea id='notes'>
+</textarea>
+<textarea id='out'>
+</textarea>
+</div>
+</body>
+<script>
+function formatNotes(){
+	let lines = document.getElementById('notes').value.split('\n');
+	let outv = document.getElementById('out');
+	let codes = {'PROD' : 0};
+	let ts, te, code, out, diff;
+	outv.value = 'CODE START   STOP  DIFF\n';
+	for (let i=0,m=lines.length;i<m;i+=4){
+		// lines[i+3] is ignored as an empty line
+		if (lines[i].length === 0 || lines[i+1].length === 0 || lines[i+2].length === 0){
+			console.log('Invalid at line = '+i);
+			break;
+		}
+		ts = new Date(Date.parse(lines[i]));
+		if (te){
+			diff = (ts - te)/60000;
+			if (diff > 0){
+				codes['PROD'] += diff;
+				out = leftPadded("ATO",4,' ') + ' ' + niceTime(te,':') +'  '+ niceTime(ts,':') + ' ' + leftPadded((diff/60).toFixed(2),5,' ') +'\n'; 
+				outv.value += out;
+			}
+		}
+		code = lines[i+1];
+		te = new Date(Date.parse(lines[i+2]));
+		diff = (te - ts)/60000;
+		if (diff > 0){
+			if (!(code in codes)){
+				codes[code] = 0;
+			}
+			codes[code] += diff;
+			out = leftPadded(code,4,' ') + ' ' + niceTime(ts,':') +'  '+ niceTime(te,':') + ' ' + leftPadded((diff/60).toFixed(2),5,' ') +'\n'; 
+			outv.value += out;
+		}
+	}
+	outv.value += '\nTotals\n';
+	for (let code in codes){
+		outv.value += code +': '+ codes[code]+'\n';
+	}
+}
+function niceTime(td, sep){
+	let out = ''
+	if (td.getHours()<10){
+		out += ' ';
+	}
+	out += td.getHours();
+	out += sep;
+	if (td.getMinutes()<10){
+		out += '0';
+	}
+	out += td.getMinutes();
+	return out;
+}
+function leftPadded(val, len, pad){
+	return pad.repeat(len-val.length)+val;
+}
+function quickInsert(what){
+	let notes = document.getElementById('notes');
+	notes.value += what + '\n';
+}
+function insertTime(){
+	let notes = document.getElementById('notes');
+	let d = new Date();
+	notes.value += (d.toLocaleTimeString(undefined,{'hour':'numeric','minute':'2-digit'})+' '+d.toLocaleDateString() + '\n');
+}
+let notes = document.getElementById('notes');
+//notes.addEventListener('keyup', timemac);
+</script>
+</html>
