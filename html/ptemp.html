@@ -1,0 +1,180 @@
+<html>
+<head>
+<style>
+	body {
+		font-family: monospace;
+		font-size: 1.2em;
+	}
+	@page { 
+		size: auto;   /* auto is the initial value */ 
+		/* this affects the margin in the printer settings */ 
+		margin: 1mm 1mm 1mm 1mm;
+	} 
+	@media print {    
+		.no-print, .no-print * {
+			display: none !important;
+		}
+	}
+	div.boxedInput {
+		text-align: center;
+		border: 1px solid #999;
+		/*min-width: 120px;*/
+		padding: 2px;
+		margin-bottom: 5px;
+		margin-right: 5px;
+		background: white;
+		color: black;
+	}
+	div.boxedInput input {
+		background: #999;
+		border: 0;
+		width: 100%;
+	}
+	div.rowgrouped {
+		border: 0px solid white;
+		clear: both;
+		margin: 0 auto;
+		width: 8.5in;
+	}
+	div.colgrouped {
+		float: left;
+		margin-right: 5px;
+	}
+	div.vcheckbox {
+		float: left;
+	}
+	table#shift td, table#shiftime td {
+		text-align: center;
+		font-family: monospace;
+		font-size: 1.2em;
+	}
+	table#reftable td, table#reftable th, table.timestable td, table.timestable th {
+		border: 1px solid #999;
+		font-family: monospace;
+		font-size: 1.2em;
+		background: white;
+	}
+	table#reftable th {
+		text-align: center;
+	}
+	table {
+		border-collapse: collapse;
+		border: 0;
+	}
+	div#col1 {
+		width: 2in;
+	}
+	div#col2 {
+		width: 2.3in;
+	}
+	input.code, input.start, input.stop, input.diff {
+		width: 0.5in;
+		border: 0;
+	}
+	div#times table {
+		margin-right: 5px;
+	}
+	
+</style>
+<script src='timeentry.js'></script>
+</head>
+<div class='rowgrouped'>
+<div class='colgrouped' id='col1'>
+	<div class='boxedInput'>
+	Last Name<br />
+	<input id='lname'>
+	</div>
+
+	<div class='boxedInput'>
+		<center>
+	First Name<br />
+	<input id='fname'>
+	</center>
+	</div>
+
+	<div class='boxedInput'>
+	ID<br />
+	<input id='userid'>
+	</div>
+</div>
+
+<div class='colgrouped' id='col2'>
+	<div class='boxedInput'>
+	<center>
+		<table id='shift'>
+		<tr><td colspan=3>Shift</td></tr>
+		<tr>
+			<td><label for='cbfirst'>First</label></td>
+			<td><label for='cbsecond'>Second</label></td>
+			<td><label for='cbthird'>Third</label></td>
+		</tr>
+		<tr>
+			<td><input type='checkbox' id='cbfirst'></td>
+			<td><input type='checkbox' id='cbsecond'></td>
+			<td><input type='checkbox' id='cbthird'></td>
+		</tr>
+	</table>
+	</center>
+	</div>
+	<div class='boxedInput'>
+	Date<br />
+	<input id='date'>
+	</div>
+	
+	<div class='boxedInput'>
+	<table id='shiftime'>
+		<tr><td>Start</td><td>End</td></tr>
+		<tr><td><input id='startt'></td><td><input id='endt'></td></tr>
+	</table>
+	</div>
+</div>
+
+<div class='colgrouped'>
+	<div class='boxedInput'>
+	<table id='reftable'>
+	<tr><th colspan=8>Hours</th></tr>
+	<tr><td>aa</td><td>0.01</td><td>ff</td><td>0.06</td><td>kk</td><td>0.11</td><td>pp</td><td>0.16</td></tr>
+	<tr><td>bb</td><td>0.02</td><td>gg</td><td>0.07</td><td>ll</td><td>0.12</td><td>qq</td><td>0.17</td></tr>
+	<tr><td>cc</td><td>0.03</td><td>hh</td><td>0.08</td><td>mm</td><td>0.13</td><td>rr</td><td>0.18</td></tr>
+	<tr><td>dd</td><td>0.04</td><td>ii</td><td>0.09</td><td>nn</td><td>0.14</td><td>ss</td><td>0.19</td></tr>
+	<tr><td>ee</td><td>0.05</td><td>jj</td><td>0.10</td><td>oo</td><td>0.15</td><td>tt</td><td>0.20</td></tr>
+	</table>
+	</div>
+</div>
+
+</div>
+
+
+<div class='rowgrouped'>
+<div class='colgrouped'>
+
+<div id='times'></div>
+
+</div>
+
+<div class='colgrouped'>
+<div id='totals'>Totals</div>
+</div>
+
+</div>
+
+<script>
+function main(){
+	let t = createTimesTable(16);
+	t.classList.add('timestable');
+	t.style.cssFloat = 'left';
+	t.style.borderCollapse = 'collapse';
+	//t.style.width = '2.5in';
+	
+	t = createTimesTable(16);
+	t.classList.add('timestable');
+	t.style.cssFloat = 'left';
+	t.style.borderCollapse = 'collapse';
+	//t.style.width = '2.5in';
+}
+main();
+</script>
+
+
+
+</html>
