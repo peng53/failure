@@ -1,9 +1,9 @@
 <html>
 <head>
 <style>
-	body {
-		font-family: monospace;
-		font-size: 1.2em;
+	table td {
+		font-size: 0.8em;
+		font-family: sans;
 	}
 	@page { 
 		size: auto;   /* auto is the initial value */ 
@@ -18,20 +18,13 @@
 	div.boxedInput {
 		text-align: center;
 		border: 1px solid #999;
-		/*min-width: 120px;*/
 		padding: 2px;
 		margin-bottom: 5px;
 		margin-right: 5px;
 		background: white;
 		color: black;
 	}
-	div.boxedInput input {
-		background: #999;
-		border: 0;
-		width: 100%;
-	}
 	div.rowgrouped {
-		border: 0px solid white;
 		clear: both;
 		margin: 0 auto;
 		width: 8.5in;
@@ -43,36 +36,41 @@
 	div.vcheckbox {
 		float: left;
 	}
-	table#shift td, table#shiftime td {
-		text-align: center;
-		font-family: monospace;
-		font-size: 1.2em;
+	div#col1 {
+		width: 3.0in;
 	}
-	table#reftable td, table#reftable th, table.timestable td, table.timestable th {
-		border: 1px solid #999;
-		font-family: monospace;
-		font-size: 1.2em;
-		background: white;
+	div#col2 {
+		width: 1.7in;
 	}
-	table#reftable th {
-		text-align: center;
+	div#col3 {
+		width: 6.0in;
+	}
+	div#col4 {
+		width: 2.2in;
+	}
+	div#times table {
+		width: 3.0in;
+	}
+	div#totals table{
+		width: 2.2in;
+	}
+	input {
+		border: 0;
 	}
 	table {
 		border-collapse: collapse;
 		border: 0;
+		width: 100%;
 	}
-	div#col1 {
-		width: 2in;
+	table th {
+		background: #eee;
+		text-align: center;
 	}
-	div#col2 {
-		width: 2.3in;
+	div#times td, div#times th {
+		border: 1px solid #eee;
 	}
-	input.code, input.start, input.stop, input.diff {
-		width: 0.5in;
-		border: 0;
-	}
-	div#times table {
-		margin-right: 5px;
+	td input {
+		width: 100%;
 	}
 	
 </style>
@@ -81,28 +79,32 @@
 <div class='rowgrouped'>
 <div class='colgrouped' id='col1'>
 	<div class='boxedInput'>
-	Last Name<br />
-	<input id='lname'>
+	<table>
+	<tr><th>Last Name</th></tr>
+	<tr><td><input id='lname'></td></tr>
+	</table>
 	</div>
 
 	<div class='boxedInput'>
-		<center>
-	First Name<br />
-	<input id='fname'>
-	</center>
+	<table>
+	<tr><th>First Name</th></tr>
+	<tr><td><input id='fname'></td></tr>
+	</table>
 	</div>
 
 	<div class='boxedInput'>
-	ID<br />
-	<input id='userid'>
+	<table>
+	<tr><th>ID</th><th>Date</th></tr>
+	<tr><td><input id='userid'></td><td><input id='date'></td></tr>
+	</table>
 	</div>
 </div>
 
 <div class='colgrouped' id='col2'>
 	<div class='boxedInput'>
 	<center>
-		<table id='shift'>
-		<tr><td colspan=3>Shift</td></tr>
+		<table>
+		<tr><th colspan=3>Shift</th></tr>
 		<tr>
 			<td><label for='cbfirst'>First</label></td>
 			<td><label for='cbsecond'>Second</label></td>
@@ -116,14 +118,10 @@
 	</table>
 	</center>
 	</div>
-	<div class='boxedInput'>
-	Date<br />
-	<input id='date'>
-	</div>
 	
 	<div class='boxedInput'>
-	<table id='shiftime'>
-		<tr><td>Start</td><td>End</td></tr>
+	<table>
+		<tr><th>Start</th><th>End</th></tr>
 		<tr><td><input id='startt'></td><td><input id='endt'></td></tr>
 	</table>
 	</div>
@@ -146,31 +144,34 @@
 
 
 <div class='rowgrouped'>
-<div class='colgrouped'>
+<div class='colgrouped' id='col3'>
 
 <div id='times'></div>
-
+<textarea style='width: 100%;'>Notes:</textarea>
 </div>
 
-<div class='colgrouped'>
-<div id='totals'>Totals</div>
+<div class='colgrouped' id='col4'>
+<div id='totals'></div>
 </div>
 
 </div>
 
 <script>
 function main(){
-	let t = createTimesTable(16);
+	let t = createTimesTable(20);
 	t.classList.add('timestable');
 	t.style.cssFloat = 'left';
 	t.style.borderCollapse = 'collapse';
-	//t.style.width = '2.5in';
 	
-	t = createTimesTable(16);
+	t = createTimesTable(20);
 	t.classList.add('timestable');
 	t.style.cssFloat = 'left';
 	t.style.borderCollapse = 'collapse';
-	//t.style.width = '2.5in';
+
+	for (let i=101, j=125; i<j; ++i){
+		codesEnum.push(i);
+	}
+	createTotalsTable();
 }
 main();
 </script>
