@@ -7,16 +7,17 @@
 	<div id='page'>
 	<div id='times'><h3>Summary of Time</h3></div>
 	<div id='totals'><h3>Totals</h3></div>
+	<button onclick='totalUp()'>Total Up!</button>
 	</div>
 	</body>
 	<script>
 		function main(){
-			for (let i=100, j=110; i<j; ++i){
-				codesEnum.push('a'+i);
-			}
+			codesEnum.push('a'+97);
+			codesEnum.push('a'+10);
+			
 			let timesdiv = document.getElementById('times');
-			let t = createTimesTable(timesdiv, 10);
-			t = createTimesTable(timesdiv, 10);
+			let t = createTimesTable(timesdiv, 19);
+			t = createTimesTable(timesdiv, 19);
 
 			createTotalsTable(document.getElementById('totals'));
 			for (let i=0, cnt=codes.length; i<cnt; ++i){

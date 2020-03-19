@@ -1,15 +1,20 @@
 var codesEnum = [];
+var codesMap = {};
 var treg = new RegExp(/\D/);
 var codes, starts, stops, diffs;
 function getDiff(start, stop){
+	return (getDiffMinutes(start,stop)/60).toFixed(2);
+}
+function getDiffMinutes(start, stop){
 	let d1 = start.split(treg,2).map(Number);
 	let d2 = stop.split(treg, 2).map(Number);
 	let diff = d2[0]-d1[0];
 	if (d1[0] > d2[0]){
 		diff += 12;
 	}
-	diff += (d2[1]-d1[1])/60;
-	return diff.toFixed(2);
+	diff *= 60;
+	diff += (d2[1]-d1[1]);
+	return diff;
 }
 function calc(i){
 	if (starts[i].value.length == 0 || stops[i].value.length == 0 ){
@@ -74,14 +79,41 @@ function createTotalsTable(parent){
 	let tbody = document.createElement('tbody');
 	for (let i=0, l=codesEnum.length; i<l; ++i){
 		tbody.appendChild(createTotalsRow(i,codesEnum[i]));
+		codesMap[codesEnum[i]] = i;
 	}
 	table.appendChild(tbody);
 	parent.appendChild(table);
 }
 function createTotalsRow(i, label){
 	let row = document.createElement('tr');
-	makeIntoInputCell(row.insertCell(0), 'codee', 12).value = label;
-	makeIntoInputCell(row.insertCell(1), 'total', 5).value = '0.00';
+	row.insertCell(0).appendChild(document.createTextNode(label));
+	//makeIntoInputCell(row.insertCell(0), 'codee', 12).value = label;
+	makeIntoInputCell(row.insertCell(1), 'total', 5).value = '';
 	return row;
 }
 
+function rowIsValid(i){
+	return (codes[i].value && starts[i].value && stops[i].value);
+}
+
+function totalUp(){
+	let totals = {};
+	let diff;
+	for (let i=0,l=codes.length; i<l; ++i){
+		if (rowIsValid(i)){
+			diff = getDiffMinutes(starts[i].value, stops[i].value);
+			if (diff > 0){
+				if (!(codes[i].value in totals)){
+					totals[codes[i].value] = 0;
+				}
+				totals[codes[i].value] += diff;
+			}
+		}
+	}
+	let totalRows = document.getElementsByClassName('total');
+	for (key in totals){
+		if (key in codesMap){
+			totalRows[codesMap[key]].value = (totals[key]/60).toFixed(2);
+		}
+	}
+}
