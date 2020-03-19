@@ -28,9 +28,8 @@ function calc(i){
 function saya(event){
 	calc(event.target['index']);
 }
-function createTimesTable(rows){
+function createTimesTable(parent, rows){
 	let start = ((codes === undefined)? 0 : codes.length);
-	let timesdiv = document.getElementById('times');
 	let table = document.createElement('table');
 	table.innerHTML = "<thead><tr><th>Code</th><th>Start</th><th>Stop</th><th>Hrs</th></tr></thead>";
 	let tbody = document.createElement('tbody');
@@ -38,7 +37,7 @@ function createTimesTable(rows){
 		tbody.appendChild(createTimeRow(i));
 	}
 	table.appendChild(tbody);
-	timesdiv.appendChild(table);
+	parent.appendChild(table);
 	buildElTables();
 	return table;
 }
@@ -69,8 +68,7 @@ function buildElTables(){
 	diffs = document.getElementsByClassName('diff');
 }
 
-function createTotalsTable(){
-	let totalsdiv = document.getElementById('totals');
+function createTotalsTable(parent){
 	let table = document.createElement('table');
 	table.innerHTML = "<thead><tr><th>Code</th><th>Hrs</th></tr></thead>";
 	let tbody = document.createElement('tbody');
@@ -78,7 +76,7 @@ function createTotalsTable(){
 		tbody.appendChild(createTotalsRow(i,codesEnum[i]));
 	}
 	table.appendChild(tbody);
-	totalsdiv.appendChild(table);
+	parent.appendChild(table);
 }
 function createTotalsRow(i, label){
 	let row = document.createElement('tr');
@@ -87,17 +85,3 @@ function createTotalsRow(i, label){
 	return row;
 }
 
-function main(){
-	let t = createTimesTable(16);
-	t.style.cssFloat = 'left';
-	t.style.width = '2.5in';
-	
-	t = createTimesTable(15);
-	t.style.cssFloat = 'left';
-	t.style.width = '2.5in';
-	
-	createTotalsTable();
-	for (let i=0, cnt=codes.length; i<cnt; ++i){
-		codes[i].value = i+100;
-	}
-}

@@ -1,77 +1,49 @@
-@page  
-{ 
-    size: auto;   /* auto is the initial value */ 
-
-    /* this affects the margin in the printer settings */ 
-    margin: 0;  
-} 
+/*
+ * Using 0.25 in margins left and right
+ */
 body {
-	display: grid;
-	grid-template-areas: 
-		'content side'
-		'notes side';
-	grid-template-columns: 5.6in 2.7in;;
-	background: #fff;
-	color: #000;
-	font-family: sans;
-	font-size: 1.2em;
-	margin: 0.1in;
+	margin: 0.25in 0.25in 0in;
+	
 }
-input.code, input.start, input.stop, input.diff, input.total, input.codee {
-	background: #fff;
-	color: #000;
-	font-size: 1em;
+div#page {
+	width: 8.0in;
+	clear: both;
+
 }
-input.code, input.start, input.stop, input.diff, input.total {
-	width: 100%;
-	text-align: right;
-}
-input.start, input.stop, input.diff, input.total {
-	/* width: 3em; */
-}
-input.codee {
-	text-align: left;
-	/*width: 7em; */
-}
-input.code {
-	width: 2em;
-}
-div#times table {
-	border: 1px solid #000;
-	border-collapse: collapse;
-	margin: 2px;
-	font-size: 1em;
+div#page h3 {
+	margin: 0;
 	text-align: center;
+	background: #ddd;
 }
-div#totals table {
-	border: 1px solid #000;
-	border-collapse: collapse;
-	/* margin: 2px; */
-	text-align: left;
-	font-size: 1em;
+div#times {
+	float: left;
+	width: 5.5in;
+	margin: 0;
 }
 div#totals {
-	grid-area: side;
+	float: right;
+	width: 2.5in;
+	margin: 0;
 }
-
-div#times {
-	grid-area: content;
-	padding-right: 2px;
+div#times table {
+	width: 2.75in;
+	float: left;
+	border: 1px solid #eee;
 }
-div#notes {
-	grid-area: notes;
+div#totals table {
+	width: 2.5in;
+	border: 1px solid #eee;
 }
-div#notes textarea {
+div#times input, div#totals input {
 	width: 100%;
-	height: 100%;
-}
-input {
 	border: 0;
-	font-size: 10pt;
 }
-input:hover {
-	background: #ccc;
+table {
+	border-collapse: collapse;
 }
-table tr {
-	border: 1px solid #000;
+table td {
+	background: white;
+}
+table th {
+	background: #eee;
 }
