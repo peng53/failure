@@ -158,12 +158,13 @@
 
 <script>
 function main(){
-	let t = createTimesTable(20);
+	let timesdiv = document.getElementById('times');
+	let t = createTimesTable(timesdiv, 20);
 	t.classList.add('timestable');
 	t.style.cssFloat = 'left';
 	t.style.borderCollapse = 'collapse';
 	
-	t = createTimesTable(20);
+	t = createTimesTable(timesdiv, 20);
 	t.classList.add('timestable');
 	t.style.cssFloat = 'left';
 	t.style.borderCollapse = 'collapse';
@@ -171,7 +172,7 @@ function main(){
 	for (let i=101, j=125; i<j; ++i){
 		codesEnum.push(i);
 	}
-	createTotalsTable();
+	createTotalsTable(document.getElementById('totals'));
 }
 main();
 </script>
