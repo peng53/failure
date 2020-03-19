@@ -1,6 +1,14 @@
 <html>
 <head>
 <style>
+	div#page {
+		height: 10.75in;
+		width: 8in;
+		background: white;
+	}
+	body {
+		margin: 0.25in 0.25in 0in;
+	}
 	table td {
 		font-size: 0.8em;
 		font-family: sans;
@@ -8,122 +16,132 @@
 	@page { 
 		size: auto;   /* auto is the initial value */ 
 		/* this affects the margin in the printer settings */ 
-		margin: 1mm 1mm 1mm 1mm;
+		margin: 0.25in 0.25in 0in;
 	} 
 	@media print {    
 		.no-print, .no-print * {
 			display: none !important;
 		}
 	}
-	div.boxedInput {
-		text-align: center;
-		border: 1px solid #999;
-		padding: 2px;
-		margin-bottom: 5px;
-		margin-right: 5px;
-		background: white;
-		color: black;
-	}
 	div.rowgrouped {
-		clear: both;
-		margin: 0 auto;
-		width: 8.5in;
+		width: 8in;
+		float: left;
 	}
 	div.colgrouped {
 		float: left;
-		margin-right: 5px;
-	}
-	div.vcheckbox {
-		float: left;
-	}
-	div#col1 {
-		width: 3.0in;
-	}
-	div#col2 {
-		width: 1.7in;
-	}
-	div#col3 {
-		width: 6.0in;
-	}
-	div#col4 {
-		width: 2.2in;
-	}
-	div#times table {
-		width: 3.0in;
-	}
-	div#totals table{
-		width: 2.2in;
 	}
 	input {
-		border: 0;
-	}
-	table {
-		border-collapse: collapse;
-		border: 0;
 		width: 100%;
+		border: 0;
+		background: none;
 	}
-	table th {
+
+	div#times table {
+		width: 2.75in;
+		border: 1px solid #ddd;
+	}
+	div#totals table{
+		width: 2.5in;
+	}
+	table td, table th {
+		font-size: 0.9em;
+		background: #eee;
+	}
+	td input {
+		text-align: right;
+	}
+
+
+	div.boxedInput {
+		background: white;
+		margin-bottom: 1em;
+	}
+	div#col1 {
+		width: 2.5in;
+		padding: 0.2em;
+	}
+	div.col1half {
+		float: left;
+		width: 1.25in;
+	}
+	div#col2 {
+		width: 2in;
+		padding: 0.2em;
+	}
+	div.col2half {
+		width: 1in;
+		float: left;
+	}
+	div#shift label {
+		float: left;
+		padding: 0 0.5em;
+		text-align: center;
+	}
+	div#shift {
+		height: 4em;
+	}
+	h4 {
+		margin: 0;
 		background: #eee;
 		text-align: center;
 	}
-	div#times td, div#times th {
-		border: 1px solid #eee;
-	}
-	td input {
-		width: 100%;
-	}
-	
 </style>
 <script src='timeentry.js'></script>
 </head>
+<body>
+<div id='page'>
+	
 <div class='rowgrouped'>
 <div class='colgrouped' id='col1'>
 	<div class='boxedInput'>
-	<table>
-	<tr><th>Last Name</th></tr>
-	<tr><td><input id='lname'></td></tr>
-	</table>
+	<h4><label for='lname'>Last Name</label></h4>
+	<input id='lname'>
 	</div>
 
 	<div class='boxedInput'>
-	<table>
-	<tr><th>First Name</th></tr>
-	<tr><td><input id='fname'></td></tr>
-	</table>
+	<h4><label for='fname'>First Name</label></h4>
+	<input id='fname'>
 	</div>
 
 	<div class='boxedInput'>
-	<table>
-	<tr><th>ID</th><th>Date</th></tr>
-	<tr><td><input id='userid'></td><td><input id='date'></td></tr>
-	</table>
+		<div class='col1half'>
+		<h4><label for='userid'>ID</label></h4>
+		<input id='userid'>
+		</div>
+		<div class='col1half'>
+		<h4><label for='date'>Date</label></h4>
+		<input id='date'>
+		</div>
 	</div>
 </div>
 
 <div class='colgrouped' id='col2'>
 	<div class='boxedInput'>
-	<center>
-		<table>
-		<tr><th colspan=3>Shift</th></tr>
-		<tr>
-			<td><label for='cbfirst'>First</label></td>
-			<td><label for='cbsecond'>Second</label></td>
-			<td><label for='cbthird'>Third</label></td>
-		</tr>
-		<tr>
-			<td><input type='checkbox' id='cbfirst'></td>
-			<td><input type='checkbox' id='cbsecond'></td>
-			<td><input type='checkbox' id='cbthird'></td>
-		</tr>
-	</table>
-	</center>
+		<div id='shift'>
+		<h4>Shift</h4>
+		<center>
+		<label for='s1st'>First<br />
+			<input type='radio' id="s1st" name='shift' value='s1st' />
+		</label>
+		<label for='s2nd'>Second<br />
+			<input type='radio' id="s2nd" name='shift' value='s2nd' />
+		</label>
+		<label for='s3rd'>Third<br />
+			<input type='radio' id="s3rd" name='shift' value='s3rd' />
+		</label>
+		</center>
+		</div>
 	</div>
-	
+
 	<div class='boxedInput'>
-	<table>
-		<tr><th>Start</th><th>End</th></tr>
-		<tr><td><input id='startt'></td><td><input id='endt'></td></tr>
-	</table>
+		<div class='col2half'>
+		<h4><label for='startt'>Start</label></h4>
+		<input id='startt'>
+		</div>
+		<div class='col2half'>
+		<h4><label for='endt'>End</label></h4>
+		<input id='endt'>
+		</div>
 	</div>
 </div>
 
@@ -146,15 +164,18 @@
 <div class='rowgrouped'>
 <div class='colgrouped' id='col3'>
 
-<div id='times'></div>
+<div id='times'><h4>Summary</h4></div>
 <textarea style='width: 100%;'>Notes:</textarea>
 </div>
 
 <div class='colgrouped' id='col4'>
-<div id='totals'></div>
+<div id='totals'><h4>Totals</h4></div>
 </div>
 
 </div>
+
+</div>
+</body>
 
 <script>
 function main(){
@@ -169,7 +190,7 @@ function main(){
 	t.style.cssFloat = 'left';
 	t.style.borderCollapse = 'collapse';
 
-	for (let i=101, j=125; i<j; ++i){
+	for (let i=101, j=124; i<j; ++i){
 		codesEnum.push(i);
 	}
 	createTotalsTable(document.getElementById('totals'));
