@@ -67,13 +67,7 @@
 		let dx = xinterval*xscale;
 		ctx.setLineDash([2,3]);
 		ctx.strokeStyle = 'teal';
-		for (let x=x0-dx; x>0; x-=dx){
-			ctx.beginPath();
-			ctx.moveTo(x,0);
-			ctx.lineTo(x,height);
-			ctx.stroke();
-		}
-		for (let x=x0+dx; x<width; x+=dx){
+		for (let x=Math.ceil(xmin/xinterval)*xscale; x<width; x+= dx){
 			ctx.beginPath();
 			ctx.moveTo(x,0);
 			ctx.lineTo(x,height);
@@ -81,14 +75,14 @@
 		}
 	}
 
-	function plotPoints(xvalues, yvalues, xscale, yscale, xmin, xmax, ymin, ymax){
+	function plotPoints(points, xscale, yscale, xmin, xmax, ymin, ymax){
 		let ctx = document.getElementById('mycan').getContext('2d');
 		let x, y;
 		ctx.fillStyle = 'blue';
 		ctx.beginPath();
-		for (let i=0, l=xvalues.length; i<l; ++i){
-			x = transformX(xvalues[i], xscale, xmin);
-			y = transformY(yvalues[i], yscale, ymax);
+		for (let i=0, l=points.length; i<l; ++i){
+			x = transformX(points[i].x, xscale, xmin);
+			y = transformY(points[i].y, yscale, ymax);
 			circlePtAt(ctx,x,y);
 		}
 		ctx.setLineDash([]);
@@ -96,8 +90,19 @@
 		ctx.stroke();
 	}
 
+	function getMinAndMax(values){
+		
+	}
+	function Point(x,y){
+		this.x = x;
+		this.y = y;
+	}
 	let xvalues = Array(-4,-3,-2,-1,0,1,2,3,4);
 	let yvalues = Array(-64,-27,-8,-1,0,1,8,27,64);
+	let points = Array();
+	for (let i=0, l=xvalues.length; i<l; ++i){
+		points.push(new Point(xvalues[i],yvalues[i]));
+	}
 	let xmin = -5, xmax = 5;
 	let ymin = -70, ymax = 70;
 
@@ -113,7 +118,7 @@
 
 	gridLines(xscale, xmin, xmax, can.width, 1, yscale, ymin, ymax, can.height, 5);
 	originLines(xscale, xmin, can.width, yscale, ymax, can.height);
-	plotPoints(xvalues, yvalues, xscale, yscale, xmin, xmax, ymin, ymax);
+	plotPoints(points, xscale, yscale, xmin, xmax, ymin, ymax);
 </script>
 </html>
 
