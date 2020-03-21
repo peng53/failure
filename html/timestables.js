@@ -77,8 +77,18 @@ function addInputCell(row, col, clss, maxlength, index){
 	cell.appendChild(input);
 	return input;
 }
+function rowHasData(i){
+	return (starts[i].value && stops[i].value && diffs[i].value && codes[i].value);
+}
+function getFormatedRow(i){
+	return "ROW";
+}
 function exportRows(){
 	let out = document.getElementById('otd');
-	out.value += 'ROW';
-	out.value += '\n';
+	for (let i=0; i<rowCount; ++i){
+		if (rowHasData(i)){
+			out.value += getFormatedRow(i);
+			out.value += '\n';
+		}
+	}
 }
