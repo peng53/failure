@@ -90,21 +90,38 @@
 		ctx.stroke();
 	}
 
-	function getMinAndMax(values){
-		
+	function getMinAndMax(values, getter){
+		let m = getter(values[0]);
+		let M = m;
+		let v;
+		for (let i=1; i<values.length; ++i){
+			v = getter(values[i]);
+			if (v<m){
+				m = v;
+			} else if (v>M){
+				M = v;
+			}
+		}
+		return [m, M];
 	}
+
 	function Point(x,y){
 		this.x = x;
 		this.y = y;
 	}
+	
 	let xvalues = Array(-4,-3,-2,-1,0,1,2,3,4);
 	let yvalues = Array(-64,-27,-8,-1,0,1,8,27,64);
 	let points = Array();
 	for (let i=0, l=xvalues.length; i<l; ++i){
 		points.push(new Point(xvalues[i],yvalues[i]));
 	}
-	let xmin = -5, xmax = 5;
-	let ymin = -70, ymax = 70;
+	points.sort((a,b) => a.x-b.x);
+
+
+	let xview = [points[0].x, points[points.length-1].x];
+	let yview = getMinAndMax(points, (point) => point.y);
+	console.log(yview);
 
 	let can = document.getElementById('mycan');
 	let ctx = can.getContext('2d');
@@ -112,13 +129,14 @@
 	ctx.rect(0,0,can.width, can.height);
 	ctx.fill();
 	
-	let xscale = calculateScale(xmin, xmax, can.width);
-	let yscale = calculateScale(ymin, ymax, can.height);
+	let xscale = calculateScale(xview[0], xview[1], can.width);
+	let yscale = calculateScale(yview[0], yview[1], can.height);
 	
 
-	gridLines(xscale, xmin, xmax, can.width, 1, yscale, ymin, ymax, can.height, 5);
-	originLines(xscale, xmin, can.width, yscale, ymax, can.height);
-	plotPoints(points, xscale, yscale, xmin, xmax, ymin, ymax);
+	gridLines(xscale, xview[0], xview[1], can.width, 1, yscale, yview[0], yview[1], can.height, 5);
+	originLines(xscale, xview[0], can.width, yscale, yview[1], can.height);
+	plotPoints(points, xscale, yscale, xview[0], xview[1], yview[0], yview[1]);
+
 </script>
 </html>
 
