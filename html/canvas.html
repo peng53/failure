@@ -45,35 +45,33 @@
 		ctx.lineTo(can.width, y0);
 		ctx.stroke();
 	}
+	
+	function drawALine(ctx, x0, x, y0, y){
+		ctx.beginPath();
+		ctx.moveTo(x0,y0);
+		ctx.lineTo(x,y);
+		ctx.stroke();
+	}
+	
 	function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can){
 		let ctx = can.getContext('2d');
-		let x0 = transformX(0, xscale, xview[0]);
-		let y0 = transformY(0, yscale, yview[1]);
-		let dy = yinterval*yscale;
 
 		ctx.setLineDash([3,2]);
 		ctx.strokeStyle = 'lime';
+		let dy = yinterval*yscale;
+		let y0 = transformY(0, yscale, yview[1]);
 		for (let y=y0-dy; y>0; y-=dy){
-			ctx.beginPath();
-			ctx.moveTo(0,y);
-			ctx.lineTo(can.width, y);
-			ctx.stroke();
+			drawALine(ctx, 0, can.width, y, y);
 		}
 		for (let y=y0+dy; y<can.height; y+=dy){
-			ctx.beginPath();
-			ctx.moveTo(0,y);
-			ctx.lineTo(can.width, y);
-			ctx.stroke();
+			drawALine(ctx, 0, can.width, y, y);
 		}
 
-		let dx = xinterval*xscale;
 		ctx.setLineDash([2,3]);
 		ctx.strokeStyle = 'teal';
+		let dx = xinterval*xscale;
 		for (let x=Math.ceil(xview[0]/xinterval)*xscale; x<can.width; x+= dx){
-			ctx.beginPath();
-			ctx.moveTo(x,0);
-			ctx.lineTo(x,can.height);
-			ctx.stroke();
+			drawALine(ctx, x, x, 0, can.height);
 		}
 	}
 
