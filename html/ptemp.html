@@ -1,0 +1,203 @@
+<html>
+<head>
+<style>
+	div#page {
+		height: 10.75in;
+		width: 8in;
+		background: white;
+	}
+	body {
+		margin: 0.25in 0.25in 0in;
+	}
+	table td {
+		font-size: 0.8em;
+		font-family: sans;
+	}
+	@page { 
+		size: auto;   /* auto is the initial value */ 
+		/* this affects the margin in the printer settings */ 
+		margin: 0.25in 0.25in 0in;
+	} 
+	@media print {    
+		.no-print, .no-print * {
+			display: none !important;
+		}
+	}
+	div.rowgrouped {
+		width: 8in;
+		float: left;
+	}
+	div.colgrouped {
+		float: left;
+	}
+	input {
+		width: 100%;
+		border: 0;
+		background: none;
+	}
+
+	div#times table {
+		width: 2.75in;
+		border: 1px solid #ddd;
+	}
+	div#totals table{
+		width: 2.5in;
+	}
+	table td, table th {
+		font-size: 0.9em;
+		background: #eee;
+	}
+	td input {
+		text-align: right;
+	}
+
+
+	div.boxedInput {
+		background: white;
+		margin-bottom: 1em;
+	}
+	div#col1 {
+		width: 2.5in;
+		padding: 0.2em;
+	}
+	div.col1half {
+		float: left;
+		width: 1.25in;
+	}
+	div#col2 {
+		width: 2in;
+		padding: 0.2em;
+	}
+	div.col2half {
+		width: 1in;
+		float: left;
+	}
+	div#shift label {
+		float: left;
+		padding: 0 0.5em;
+		text-align: center;
+	}
+	div#shift {
+		height: 4em;
+	}
+	h4 {
+		margin: 0;
+		background: #eee;
+		text-align: center;
+	}
+</style>
+<script src='timeentry.js'></script>
+</head>
+<body>
+<div id='page'>
+	
+<div class='rowgrouped'>
+<div class='colgrouped' id='col1'>
+	<div class='boxedInput'>
+	<h4><label for='lname'>Last Name</label></h4>
+	<input id='lname'>
+	</div>
+
+	<div class='boxedInput'>
+	<h4><label for='fname'>First Name</label></h4>
+	<input id='fname'>
+	</div>
+
+	<div class='boxedInput'>
+		<div class='col1half'>
+		<h4><label for='userid'>ID</label></h4>
+		<input id='userid'>
+		</div>
+		<div class='col1half'>
+		<h4><label for='date'>Date</label></h4>
+		<input id='date'>
+		</div>
+	</div>
+</div>
+
+<div class='colgrouped' id='col2'>
+	<div class='boxedInput'>
+		<div id='shift'>
+		<h4>Shift</h4>
+		<center>
+		<label for='s1st'>First<br />
+			<input type='radio' id="s1st" name='shift' value='s1st' />
+		</label>
+		<label for='s2nd'>Second<br />
+			<input type='radio' id="s2nd" name='shift' value='s2nd' />
+		</label>
+		<label for='s3rd'>Third<br />
+			<input type='radio' id="s3rd" name='shift' value='s3rd' />
+		</label>
+		</center>
+		</div>
+	</div>
+
+	<div class='boxedInput'>
+		<div class='col2half'>
+		<h4><label for='startt'>Start</label></h4>
+		<input id='startt'>
+		</div>
+		<div class='col2half'>
+		<h4><label for='endt'>End</label></h4>
+		<input id='endt'>
+		</div>
+	</div>
+</div>
+
+<div class='colgrouped'>
+	<div class='boxedInput'>
+	<table id='reftable'>
+	<tr><th colspan=8>Hours</th></tr>
+	<tr><td>aa</td><td>0.01</td><td>ff</td><td>0.06</td><td>kk</td><td>0.11</td><td>pp</td><td>0.16</td></tr>
+	<tr><td>bb</td><td>0.02</td><td>gg</td><td>0.07</td><td>ll</td><td>0.12</td><td>qq</td><td>0.17</td></tr>
+	<tr><td>cc</td><td>0.03</td><td>hh</td><td>0.08</td><td>mm</td><td>0.13</td><td>rr</td><td>0.18</td></tr>
+	<tr><td>dd</td><td>0.04</td><td>ii</td><td>0.09</td><td>nn</td><td>0.14</td><td>ss</td><td>0.19</td></tr>
+	<tr><td>ee</td><td>0.05</td><td>jj</td><td>0.10</td><td>oo</td><td>0.15</td><td>tt</td><td>0.20</td></tr>
+	</table>
+	</div>
+</div>
+
+</div>
+
+
+<div class='rowgrouped'>
+<div class='colgrouped' id='col3'>
+
+<div id='times'><h4>Summary</h4></div>
+<textarea style='width: 100%;'>Notes:</textarea>
+</div>
+
+<div class='colgrouped' id='col4'>
+<div id='totals'><h4>Totals</h4></div>
+</div>
+
+</div>
+
+</div>
+</body>
+
+<script>
+function main(){
+	let timesdiv = document.getElementById('times');
+	let t = createTimesTable(timesdiv, 20);
+	t.classList.add('timestable');
+	t.style.cssFloat = 'left';
+	t.style.borderCollapse = 'collapse';
+	
+	t = createTimesTable(timesdiv, 20);
+	t.classList.add('timestable');
+	t.style.cssFloat = 'left';
+	t.style.borderCollapse = 'collapse';
+
+	for (let i=101, j=124; i<j; ++i){
+		codesEnum.push(i);
+	}
+	createTotalsTable(document.getElementById('totals'));
+}
+main();
+</script>
+
+
+
+</html>

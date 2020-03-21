@@ -1,0 +1,115 @@
+<html>
+<style>
+	body {
+		margin: 0;
+	}
+	canvas {
+
+	}
+</style>
+
+<canvas id='mycan' width='400px' height='300px'></canvas>
+
+<script>
+	function transformX(x, scale, xOffset){
+		// Transforms to pixel coord
+		return scale * (x-xOffset);
+	}
+	function transformY(y, scale, yOffset){
+		// Transforms to pixel coord
+		return scale * (yOffset-y);
+	}
+	function calculateScale(minval, maxval, outputLength){
+		return outputLength / Math.abs(maxval - minval);
+	}
+
+	function circlePtAt(ctx,x,y){
+		//ctx.beginPath();
+		ctx.arc(x,y,1,0,2* Math.PI);
+		//ctx.stroke();
+	}
+
+	function originLines(xscale, xmin, width, yscale, ymax, height){
+		// vertical line
+		let x0 = transformX(0, xscale, xmin);
+		let y0 = transformY(0, yscale, ymax);
+		ctx.setLineDash([]);
+		ctx.strokeStyle = 'red';
+		ctx.beginPath();
+		ctx.moveTo(x0,0);
+		ctx.lineTo(x0, height);
+		ctx.stroke();
+		ctx.moveTo(0,y0);
+		ctx.lineTo(width, y0);
+		ctx.stroke();
+	}
+	function gridLines(xscale, xmin, xmax, width, xinterval, yscale, ymin, ymax, height, yinterval){
+		let ctx = document.getElementById('mycan').getContext('2d');
+		let x0 = transformX(0, xscale, xmin);
+		let y0 = transformY(0, yscale, ymax);
+		let dy = yinterval*yscale;
+
+		ctx.setLineDash([3,2]);
+		ctx.strokeStyle = 'lime';
+		for (let y=y0-dy; y>0; y-=dy){
+			ctx.beginPath();
+			ctx.moveTo(0,y);
+			ctx.lineTo(width, y);
+			ctx.stroke();
+		}
+		for (let y=y0+dy; y<height; y+=dy){
+			ctx.beginPath();
+			ctx.moveTo(0,y);
+			ctx.lineTo(width, y);
+			ctx.stroke();
+		}
+
+		let dx = xinterval*xscale;
+		ctx.setLineDash([2,3]);
+		ctx.strokeStyle = 'teal';
+		for (let x=x0-dx; x>0; x-=dx){
+			ctx.beginPath();
+			ctx.moveTo(x,0);
+			ctx.lineTo(x,height);
+			ctx.stroke();
+		}
+		for (let x=x0+dx; x<width; x+=dx){
+			ctx.beginPath();
+			ctx.moveTo(x,0);
+			ctx.lineTo(x,height);
+			ctx.stroke();
+		}
+	}
+	
+	let xvalues = Array(-4,-3,-2,-1,0,1,2,3,4);
+	let yvalues = Array(-64,-27,-8,-1,0,1,8,27,64);
+	let xmin = -5, xmax = 5;
+	let ymin = -70, ymax = 70;
+
+	let can = document.getElementById('mycan');
+	let ctx = can.getContext('2d');
+	ctx.fillStyle = 'white';
+	ctx.rect(0,0,can.width, can.height);
+	ctx.fill();
+	
+	let xscale = calculateScale(xmin, xmax, can.width);
+	let yscale = calculateScale(ymin, ymax, can.height);
+	
+
+	gridLines(xscale, xmin, xmax, can.width, 1, yscale, ymin, ymax, can.height, 5);
+	originLines(xscale, xmin, can.width, yscale, ymax, can.height);
+	let x, y;
+	ctx.fillStyle = 'blue';
+	ctx.beginPath();
+	for (let i=0, l=xvalues.length; i<l; ++i){
+		x = transformX(xvalues[i], xscale, xmin);
+		y = transformY(yvalues[i], yscale, ymax);
+		circlePtAt(ctx,x,y);
+	}
+	ctx.setLineDash([]);
+	ctx.strokeStyle = 'black';
+	ctx.stroke();
+	ctx.endPath();
+</script>
+</html>
+

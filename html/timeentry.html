@@ -4,14 +4,26 @@
 		<script src='timeentry.js'></script>
 	</head>
 	<body>
-	<div id='times'></div>
-	<div id='totals'></div>
-	<div id='notes'><textarea>hello world!</textarea></div>
+	<div id='page'>
+	<div id='times'><h3>Summary of Time</h3></div>
+	<div id='totals'><h3>Totals</h3></div>
+	<button onclick='totalUp()'>Total Up!</button>
+	</div>
 	</body>
 	<script>
-		for (let i=101, j=121; i<j; ++i){
-			codesEnum.push(i);
+		function main(){
+			codesEnum.push('a'+97);
+			codesEnum.push('a'+10);
+			
+			let timesdiv = document.getElementById('times');
+			let t = createTimesTable(timesdiv, 19);
+			t = createTimesTable(timesdiv, 19);
+
+			createTotalsTable(document.getElementById('totals'));
+			for (let i=0, cnt=codes.length; i<cnt; ++i){
+				codes[i].value = 'c'+(i+100);
+			}
 		}
-		window.addEventListener('load', main);
+		main();
 	</script>
 </html>
