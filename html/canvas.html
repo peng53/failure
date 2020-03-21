@@ -19,8 +19,8 @@
 		// Transforms to pixel coord
 		return scale * (yOffset-y);
 	}
-	function calculateScale(minval, maxval, outputLength){
-		return outputLength / Math.abs(maxval - minval);
+	function calculateScale(view, outputLength){
+		return outputLength / Math.abs(view[1] - view[0]);
 	}
 
 	function circlePtAt(ctx,x,y){
@@ -29,24 +29,25 @@
 		//ctx.stroke();
 	}
 
-	function originLines(xscale, xmin, width, yscale, ymax, height){
-		// vertical line
-		let x0 = transformX(0, xscale, xmin);
-		let y0 = transformY(0, yscale, ymax);
+	function originLines(xscale, xview, width, yscale, yview, height){
 		ctx.setLineDash([]);
 		ctx.strokeStyle = 'red';
 		ctx.beginPath();
+		// line x = 0
+		let x0 = transformX(0, xscale, xview[0]);
 		ctx.moveTo(x0,0);
 		ctx.lineTo(x0, height);
 		ctx.stroke();
+		// line y = 0
+		let y0 = transformY(0, yscale, yview[1]);
 		ctx.moveTo(0,y0);
 		ctx.lineTo(width, y0);
 		ctx.stroke();
 	}
-	function gridLines(xscale, xmin, xmax, width, xinterval, yscale, ymin, ymax, height, yinterval){
+	function gridLines(xscale, xview, width, xinterval, yscale, yview, height, yinterval){
 		let ctx = document.getElementById('mycan').getContext('2d');
-		let x0 = transformX(0, xscale, xmin);
-		let y0 = transformY(0, yscale, ymax);
+		let x0 = transformX(0, xscale, xview[0]);
+		let y0 = transformY(0, yscale, yview[1]);
 		let dy = yinterval*yscale;
 
 		ctx.setLineDash([3,2]);
@@ -67,7 +68,7 @@
 		let dx = xinterval*xscale;
 		ctx.setLineDash([2,3]);
 		ctx.strokeStyle = 'teal';
-		for (let x=Math.ceil(xmin/xinterval)*xscale; x<width; x+= dx){
+		for (let x=Math.ceil(xview[0]/xinterval)*xscale; x<width; x+= dx){
 			ctx.beginPath();
 			ctx.moveTo(x,0);
 			ctx.lineTo(x,height);
@@ -75,14 +76,14 @@
 		}
 	}
 
-	function plotPoints(points, xscale, yscale, xmin, xmax, ymin, ymax){
+	function plotPoints(points, xscale, yscale, xview, yview){
 		let ctx = document.getElementById('mycan').getContext('2d');
 		let x, y;
 		ctx.fillStyle = 'blue';
 		ctx.beginPath();
 		for (let i=0, l=points.length; i<l; ++i){
-			x = transformX(points[i].x, xscale, xmin);
-			y = transformY(points[i].y, yscale, ymax);
+			x = transformX(points[i].x, xscale, xview[0]);
+			y = transformY(points[i].y, yscale, yview[1]);
 			circlePtAt(ctx,x,y);
 		}
 		ctx.setLineDash([]);
@@ -121,7 +122,6 @@
 
 	let xview = [points[0].x, points[points.length-1].x];
 	let yview = getMinAndMax(points, (point) => point.y);
-	console.log(yview);
 
 	let can = document.getElementById('mycan');
 	let ctx = can.getContext('2d');
@@ -129,13 +129,13 @@
 	ctx.rect(0,0,can.width, can.height);
 	ctx.fill();
 	
-	let xscale = calculateScale(xview[0], xview[1], can.width);
-	let yscale = calculateScale(yview[0], yview[1], can.height);
+	let xscale = calculateScale(xview, can.width);
+	let yscale = calculateScale(yview, can.height);
 	
 
-	gridLines(xscale, xview[0], xview[1], can.width, 1, yscale, yview[0], yview[1], can.height, 5);
-	originLines(xscale, xview[0], can.width, yscale, yview[1], can.height);
-	plotPoints(points, xscale, yscale, xview[0], xview[1], yview[0], yview[1]);
+	gridLines(xscale, xview, can.width, 1, yscale, yview, can.height, 5);
+	originLines(xscale, xview, can.width, yscale, yview, can.height);
+	plotPoints(points, xscale, yscale, xview, yview);
 
 </script>
 </html>
