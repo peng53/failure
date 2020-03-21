@@ -29,23 +29,24 @@
 		//ctx.stroke();
 	}
 
-	function originLines(xscale, xview, width, yscale, yview, height){
+	function originLines(xscale, xview, yscale, yview, can){
+		let ctx = can.getContext('2d');
 		ctx.setLineDash([]);
 		ctx.strokeStyle = 'red';
 		ctx.beginPath();
 		// line x = 0
 		let x0 = transformX(0, xscale, xview[0]);
 		ctx.moveTo(x0,0);
-		ctx.lineTo(x0, height);
+		ctx.lineTo(x0, can.height);
 		ctx.stroke();
 		// line y = 0
 		let y0 = transformY(0, yscale, yview[1]);
 		ctx.moveTo(0,y0);
-		ctx.lineTo(width, y0);
+		ctx.lineTo(can.width, y0);
 		ctx.stroke();
 	}
-	function gridLines(xscale, xview, width, xinterval, yscale, yview, height, yinterval){
-		let ctx = document.getElementById('mycan').getContext('2d');
+	function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can){
+		let ctx = can.getContext('2d');
 		let x0 = transformX(0, xscale, xview[0]);
 		let y0 = transformY(0, yscale, yview[1]);
 		let dy = yinterval*yscale;
@@ -55,29 +56,29 @@
 		for (let y=y0-dy; y>0; y-=dy){
 			ctx.beginPath();
 			ctx.moveTo(0,y);
-			ctx.lineTo(width, y);
+			ctx.lineTo(can.width, y);
 			ctx.stroke();
 		}
-		for (let y=y0+dy; y<height; y+=dy){
+		for (let y=y0+dy; y<can.height; y+=dy){
 			ctx.beginPath();
 			ctx.moveTo(0,y);
-			ctx.lineTo(width, y);
+			ctx.lineTo(can.width, y);
 			ctx.stroke();
 		}
 
 		let dx = xinterval*xscale;
 		ctx.setLineDash([2,3]);
 		ctx.strokeStyle = 'teal';
-		for (let x=Math.ceil(xview[0]/xinterval)*xscale; x<width; x+= dx){
+		for (let x=Math.ceil(xview[0]/xinterval)*xscale; x<can.width; x+= dx){
 			ctx.beginPath();
 			ctx.moveTo(x,0);
-			ctx.lineTo(x,height);
+			ctx.lineTo(x,can.height);
 			ctx.stroke();
 		}
 	}
 
-	function plotPoints(points, xscale, yscale, xview, yview){
-		let ctx = document.getElementById('mycan').getContext('2d');
+	function plotPoints(points, xscale, yscale, xview, yview, can){
+		let ctx = can.getContext('2d');
 		let x, y;
 		ctx.fillStyle = 'blue';
 		ctx.beginPath();
@@ -110,32 +111,38 @@
 		this.x = x;
 		this.y = y;
 	}
-	
-	let xvalues = Array(-4,-3,-2,-1,0,1,2,3,4);
-	let yvalues = Array(-64,-27,-8,-1,0,1,8,27,64);
-	let points = Array();
-	for (let i=0, l=xvalues.length; i<l; ++i){
-		points.push(new Point(xvalues[i],yvalues[i]));
+	function canvasBg(can){
+		let ctx = can.getContext('2d');
+		ctx.fillStyle = 'white';
+		ctx.rect(0,0,can.width, can.height);
+		ctx.fill();
 	}
-	points.sort((a,b) => a.x-b.x);
 
+	function sortedPointArray(xvals, yvals){
+		let points = Array();
+		for (let i=0, l=xvals.length; i<l; ++i){
+			points.push(new Point(xvals[i],yvals[i]));
+		}
+		points.sort((a,b) => a.x-b.x);
+		return points;
+	}
+
+	let points = sortedPointArray(
+		xvals = Array(-4,-3,-2,-1,0,1,2,3,4),
+		yvals = Array(-64,-27,-8,-1,0,1,8,27,64)
+	);
 
 	let xview = [points[0].x, points[points.length-1].x];
 	let yview = getMinAndMax(points, (point) => point.y);
 
 	let can = document.getElementById('mycan');
-	let ctx = can.getContext('2d');
-	ctx.fillStyle = 'white';
-	ctx.rect(0,0,can.width, can.height);
-	ctx.fill();
-	
 	let xscale = calculateScale(xview, can.width);
 	let yscale = calculateScale(yview, can.height);
 	
-
-	gridLines(xscale, xview, can.width, 1, yscale, yview, can.height, 5);
-	originLines(xscale, xview, can.width, yscale, yview, can.height);
-	plotPoints(points, xscale, yscale, xview, yview);
+	canvasBg(can);
+	gridLines(xscale, xview, xinterval=1, yscale, yview, yinterval=5, can);
+	originLines(xscale, xview, yscale, yview, can);
+	plotPoints(points, xscale, yscale, xview, yview, can);
 
 </script>
 </html>
