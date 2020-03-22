@@ -1,13 +1,49 @@
 <html>
+<head>
 <style>
 	body {
 		margin: 0;
 	}
 	canvas {
-
+	}
+	#topmenu {
+		background: #ddd;
+		width: 100%;
+	}
+	#sidemenu button {
+		border: 0;
+	}
+	#controls {
+		float: left;
+		background: #eee;
+		padding: 0.5em;
+	}
+	#controls textarea {
+		width: 100%;
+		height: 12em;
+	}
+	#controls h3 {
+		margin: 0;
 	}
 </style>
-
+<script>
+	function toggleHide(div){
+		div.style.display = div.style.display == "none" ? "block" : "none";
+	}
+</script>
+</head>
+<div id='topmenu'>
+<button onclick='toggleHide(document.getElementById("controls"))'>CONTROLS</button>
+</div>
+<form id='controls'>
+	<h3>Controls</h3>
+	<label for='xview'>XView<br /><input id='xview' /></label><br />
+	<label for='yview'>YView<br /><input id='yview' /></label><br />
+	<label for='gridxy'>Grid<br /><input id='gridxy' /></label><br />
+	<button onclick=''>Set</button><button onclick=''>Auto</button><br /><br />
+	<label for='points'>Points<br /><textarea id='points'></textarea></label><br />
+	<button onclick=''>Add</button>
+</form>
 <canvas id='mycan' width='400px' height='300px'></canvas>
 
 <script>
@@ -33,17 +69,13 @@
 		let ctx = can.getContext('2d');
 		ctx.setLineDash([]);
 		ctx.strokeStyle = 'red';
-		ctx.beginPath();
 		// line x = 0
 		let x0 = transformX(0, xscale, xview[0]);
-		ctx.moveTo(x0,0);
-		ctx.lineTo(x0, can.height);
-		ctx.stroke();
+		drawALine(ctx,x0,x0,0,can.height);
 		// line y = 0
 		let y0 = transformY(0, yscale, yview[1]);
-		ctx.moveTo(0,y0);
-		ctx.lineTo(can.width, y0);
-		ctx.stroke();
+		drawALine(ctx,0,can.width,y0,y0);
+
 	}
 	
 	function drawALine(ctx, x0, x, y0, y){
@@ -58,12 +90,9 @@
 
 		ctx.setLineDash([3,2]);
 		ctx.strokeStyle = 'lime';
+		let y0 = transformY(yinterval * (Math.floor(yview[1]/yinterval)), yscale, yview[1]);
 		let dy = yinterval*yscale;
-		let y0 = transformY(0, yscale, yview[1]);
-		for (let y=y0-dy; y>0; y-=dy){
-			drawALine(ctx, 0, can.width, y, y);
-		}
-		for (let y=y0+dy; y<can.height; y+=dy){
+		for (let y=y0; y<can.height; y+=dy){
 			drawALine(ctx, 0, can.width, y, y);
 		}
 
