@@ -42,30 +42,17 @@
 	}
 </style>
 <script src='scatterplot.js'></script>
-<script>
-	function toggleHide(div){
-		div.style.display = div.style.display == "none" ? "block" : "none";
-	}
-	function setView(){
-		console.log(getValueFrom('xview'));
-		console.log(getValueFrom('yview'));
-		console.log(getValueFrom('gridxy'));
-	}
-	function getValueFrom(name){
-		return document.getElementById(name).value;
-	}
-</script>
 </head>
 <div id='topmenu'>
-<button onclick='toggleHide(document.getElementById("controls"))'>CONTROLS</button>
-<button onclick='toggleHide(document.getElementById("data"))'>DATA</button>
+<button onclick='showMenu("controls")'>CONTROLS</button>
+<button onclick='showMenu("data")'>DATA</button>
 </div>
 <div id='controls'>
 	<h3>Controls</h3>
 	<label for='xview'>XView<br /><input id='xview' /></label><br />
 	<label for='yview'>YView<br /><input id='yview' /></label><br />
 	<label for='gridxy'>Grid<br /><input id='gridxy' /></label><br />
-	<button onclick='setView();'>Set</button><button onclick=''>Auto</button>
+	<button onclick='setView(maingraph);'>Set</button><button onclick=''>Auto</button>
 </div>
 <div id='data'>
 	<h3>Data</h3>
@@ -79,10 +66,51 @@
 <canvas id='mycan' width='400px' height='300px'></canvas>
 
 <script>
+	var currentMenu = undefined;
+	function showMenu(menu){
+		if (currentMenu === menu){
+			toggleHide(currentMenu);
+			currentMenu = undefined;
+		} else {
+			if (!(currentMenu === undefined)){
+				toggleHide(currentMenu);
+			}
+			currentMenu = menu;
+			toggleHide(currentMenu);
+		}
+	}
+	function toggleHide(ele){
+		let div = document.getElementById(ele);
+		div.style.display = div.style.display == "none" ? "block" : "none";
+	}
+	function validSplit(val, splitchar){
+		let [x,y] = val.split(splitchar, 2);
+		return (x && y) ? [x,y] : [];
+	}
+	function setView(graph){
+		let xview = validSplit(getValueFrom('xview'), ',').map(Number);
+		console.log(xview);
+		if (xview.length>0 && xview[0] < xview[1]){
+			graph.xview = xview;
+		}
+		let yview = validSplit(getValueFrom('yview'), ',').map(Number);
+		if (yview.length>0 && yview[0] < yview[1]){
+			graph.yview = yview;
+		}
+		let gridxy = validSplit(getValueFrom('gridxy'), ',').map(Number);
+		if (gridxy.length>0 && gridxy[0] > 0 && gridxy[1] > 0){
+			graph.gridxy = gridxy;
+		}
+		console.log(graph);
+	}
+	function getValueFrom(name){
+		return document.getElementById(name).value;
+	}
+
 	document.getElementById('controls').style.display = 'none';
 	document.getElementById('data').style.display = 'none';
+
 	var maingraph = new Graph();
-	maingraph.draw();
 	let points = sortedPointArray(
 		xvals = Array(-4,-3,-2,-1,0,1,2,3,4),
 		yvals = Array(-64,-27,-8,-1,0,1,8,27,64)
