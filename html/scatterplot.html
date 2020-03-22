@@ -1,29 +1,44 @@
 <html>
 <head>
+<title>Scatter!!</title>
 <style>
 	body {
 		margin: 0;
+		background: #fff;
 	}
 	canvas {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		margin: auto;
+		z-index: -1;
+	}
+	h3 {
+		margin: 0;
 	}
 	#topmenu {
-		background: #ddd;
+		background: #eee;
 		width: 100%;
 	}
 	#sidemenu button {
 		border: 0;
 	}
-	#controls {
+	#controls, #data {
 		float: left;
 		background: #eee;
 		padding: 0.5em;
+		border: 1px outset gray;
 	}
-	#controls textarea {
+	#data textarea {
+		width: 100%;
+		height: 3em;
+		resize: vertical;
+	}
+	#data select {
 		width: 100%;
 		height: 12em;
-	}
-	#controls h3 {
-		margin: 0;
 	}
 </style>
 <script src='scatterplot.js'></script>
@@ -31,23 +46,43 @@
 	function toggleHide(div){
 		div.style.display = div.style.display == "none" ? "block" : "none";
 	}
+	function setView(){
+		console.log(getValueFrom('xview'));
+		console.log(getValueFrom('yview'));
+		console.log(getValueFrom('gridxy'));
+	}
+	function getValueFrom(name){
+		return document.getElementById(name).value;
+	}
 </script>
 </head>
 <div id='topmenu'>
 <button onclick='toggleHide(document.getElementById("controls"))'>CONTROLS</button>
+<button onclick='toggleHide(document.getElementById("data"))'>DATA</button>
 </div>
-<form id='controls'>
+<div id='controls'>
 	<h3>Controls</h3>
 	<label for='xview'>XView<br /><input id='xview' /></label><br />
 	<label for='yview'>YView<br /><input id='yview' /></label><br />
 	<label for='gridxy'>Grid<br /><input id='gridxy' /></label><br />
-	<button onclick=''>Set</button><button onclick=''>Auto</button><br /><br />
-	<label for='points'>Points<br /><textarea id='points'></textarea></label><br />
-	<button onclick=''>Add</button>
-</form>
+	<button onclick='setView();'>Set</button><button onclick=''>Auto</button>
+</div>
+<div id='data'>
+	<h3>Data</h3>
+	<label for='points'>Input<br /><textarea id='points'></textarea></label><br />
+	<button onclick=''>Add</button><br />
+	<hr />
+	<label for='pointsList'>Displayed<br />
+	<select id='pointsList' name='point' multiple></select></label><br />
+	<button onclick=''>Pop</button><br />
+</div>
 <canvas id='mycan' width='400px' height='300px'></canvas>
 
 <script>
+	document.getElementById('controls').style.display = 'none';
+	document.getElementById('data').style.display = 'none';
+	var maingraph = new Graph();
+	maingraph.draw();
 	let points = sortedPointArray(
 		xvals = Array(-4,-3,-2,-1,0,1,2,3,4),
 		yvals = Array(-64,-27,-8,-1,0,1,8,27,64)

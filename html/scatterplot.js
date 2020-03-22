@@ -57,13 +57,13 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can){
 
 function plotPoints(points, xscale, yscale, xview, yview, can){
 	let ctx = can.getContext('2d');
-	let x, y;
 	ctx.fillStyle = 'blue';
 	ctx.beginPath();
 	for (let i=0, l=points.length; i<l; ++i){
-		x = transformX(points[i].x, xscale, xview[0]);
-		y = transformY(points[i].y, yscale, yview[1]);
-		circlePtAt(ctx,x,y);
+		circlePtAt(
+			ctx,
+			x=transformX(points[i].x, xscale, xview[0]),
+			y=transformY(points[i].y, yscale, yview[1]));
 	}
 	ctx.setLineDash([]);
 	ctx.strokeStyle = 'black';
@@ -85,10 +85,6 @@ function getMinAndMax(values, getter){
 	return [m, M];
 }
 
-function Point(x,y){
-	this.x = x;
-	this.y = y;
-}
 function canvasBg(can){
 	let ctx = can.getContext('2d');
 	ctx.fillStyle = 'white';
@@ -103,4 +99,18 @@ function sortedPointArray(xvals, yvals){
 	}
 	points.sort((a,b) => a.x-b.x);
 	return points;
+}
+
+function Point(x,y){
+	this.x = x;
+	this.y = y;
+}
+function Graph(){
+	this.xview = undefined;
+	this.yview = undefined;
+	this.gridxy = undefined;
+	
+	this.draw = function(){
+		console.log('draw');
+	};
 }
