@@ -1,0 +1,70 @@
+<html>
+<head>
+<style>
+	body {
+		margin: 0;
+	}
+	canvas {
+	}
+	#topmenu {
+		background: #ddd;
+		width: 100%;
+	}
+	#sidemenu button {
+		border: 0;
+	}
+	#controls {
+		float: left;
+		background: #eee;
+		padding: 0.5em;
+	}
+	#controls textarea {
+		width: 100%;
+		height: 12em;
+	}
+	#controls h3 {
+		margin: 0;
+	}
+</style>
+<script src='scatterplot.js'></script>
+<script>
+	function toggleHide(div){
+		div.style.display = div.style.display == "none" ? "block" : "none";
+	}
+</script>
+</head>
+<div id='topmenu'>
+<button onclick='toggleHide(document.getElementById("controls"))'>CONTROLS</button>
+</div>
+<form id='controls'>
+	<h3>Controls</h3>
+	<label for='xview'>XView<br /><input id='xview' /></label><br />
+	<label for='yview'>YView<br /><input id='yview' /></label><br />
+	<label for='gridxy'>Grid<br /><input id='gridxy' /></label><br />
+	<button onclick=''>Set</button><button onclick=''>Auto</button><br /><br />
+	<label for='points'>Points<br /><textarea id='points'></textarea></label><br />
+	<button onclick=''>Add</button>
+</form>
+<canvas id='mycan' width='400px' height='300px'></canvas>
+
+<script>
+	let points = sortedPointArray(
+		xvals = Array(-4,-3,-2,-1,0,1,2,3,4),
+		yvals = Array(-64,-27,-8,-1,0,1,8,27,64)
+	);
+
+	let xview = [points[0].x, points[points.length-1].x];
+	let yview = getMinAndMax(points, (point) => point.y);
+
+	let can = document.getElementById('mycan');
+	let xscale = calculateScale(xview, can.width);
+	let yscale = calculateScale(yview, can.height);
+	
+	canvasBg(can);
+	gridLines(xscale, xview, xinterval=1, yscale, yview, yinterval=5, can);
+	originLines(xscale, xview, yscale, yview, can);
+	plotPoints(points, xscale, yscale, xview, yview, can);
+
+</script>
+</html>
+
