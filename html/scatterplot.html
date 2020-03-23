@@ -55,7 +55,7 @@
 	XView<br /><input id='xviewL' type='number' step='any' /><input id='xviewR' type='number' step='any' /><br />
 	YView<br /><input id='yviewL' type='number' step='any' /><input id='yviewR' type='number' step='any' /><br />
 	Grid<br /><input id='gridx' type='number' step='any' min=0 /><input id='gridy' type='number' step='any' min=0 /><br />
-	<button onclick='drawGraph(maingraph,can);'>Draw</button><button onclick=''>Auto</button>
+	<button onclick='drawGraph(maingraph,can);'>Draw</button><button onclick='guessArgs(maingraph);'>Auto</button>
 </div>
 <div id='data'>
 	<h3>Data</h3>
@@ -75,7 +75,7 @@
 	<hr />
 	<label for='pointsList'>Displayed<br />
 	<select id='pointsList' name='point' multiple></select></label><br />
-	<button onclick=''>Pop</button><br />
+	<button onclick=''>Delete</button><button onclick=''>Clear</button><br />
 </div>
 <canvas id='mycan' width='400px' height='300px'></canvas>
 
@@ -137,16 +137,13 @@
 			setValueTo('yviewR', yview[1]);
 		}
 		let xscale = calculateScale(xview, can.width);
-		console.log(xscale);
 		let yscale = calculateScale(yview, can.height);
-		console.log(yscale);
 		canvasBg(can);
 		if (gridxy){
 			gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 		}
 		originLines(xscale, xview, yscale, yview, can);
 		plotPoints(graph.points, xscale, yscale, xview, yview, can);
-		console.log(graph.points);
 	}
 	
 	function getValueFrom(name){
@@ -160,9 +157,23 @@
 		for (let i=0, l=values.length; i<l; i+=2){
 			if (values[i] && values[i+1]){
 				graph.points.push(new Point(values[i], values[i+1]));
+				addPointToList(values[i],values[i+1])
 			}
 		}
 		graph.points.sort((a,b) => a.x-b.x);
+	}
+	function addPointToList(x,y){
+		let option = document.createElement('option');
+		option.text = x+', '+y;
+		document.getElementById('pointsList').add(option);
+	}
+	function guessArgs(graph){
+		let xview = [graph.points[0].x, graph.points[maingraph.points.length-1].x];
+		setValueTo('xviewL', xview[0]);
+		setValueTo('xviewR', xview[1]);
+		let yview = getMinAndMax(graph.points, (point) => point.y);
+		setValueTo('yviewL', yview[0]);
+		setValueTo('yviewR', yview[1]);
 	}
 
 	document.getElementById('controls').style.display = 'none';
