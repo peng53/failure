@@ -31,6 +31,9 @@
 		padding: 0.5em;
 		border: 1px outset gray;
 	}
+	#controls input {
+		width: 4em;
+	}
 	#data textarea {
 		width: 100%;
 		height: 3em;
@@ -49,9 +52,9 @@
 </div>
 <div id='controls'>
 	<h3>Controls</h3>
-	<label for='xview'>XView<br /><input id='xview' /></label><br />
-	<label for='yview'>YView<br /><input id='yview' /></label><br />
-	<label for='gridxy'>Grid<br /><input id='gridxy' /></label><br />
+	XView<br /><input id='xviewL' type='number' step='any' /><input id='xviewR' type='number' step='any' /><br />
+	YView<br /><input id='yviewL' type='number' step='any' /><input id='yviewR' type='number' step='any' /><br />
+	Grid<br /><input id='gridx' type='number' step='any' /><input id='gridy' type='number' step='any' /><br />
 	<button onclick='setView(maingraph);'>Set</button><button onclick=''>Auto</button>
 </div>
 <div id='data'>
@@ -88,18 +91,26 @@
 		return (x && y) ? [x,y] : [];
 	}
 	function setView(graph){
-		let xview = validSplit(getValueFrom('xview'), ',').map(Number);
-		console.log(xview);
-		if (xview.length>0 && xview[0] < xview[1]){
-			graph.xview = xview;
+		let nm = [getValueFrom('xviewL'), getValueFrom('xviewR')];
+		if (nm[0] && nm[1]){
+			nm = nm.map(Number);
+			if (nm[0] < nm[1]){
+				graph.xview = nm;
+			}
 		}
-		let yview = validSplit(getValueFrom('yview'), ',').map(Number);
-		if (yview.length>0 && yview[0] < yview[1]){
-			graph.yview = yview;
+		nm = [getValueFrom('yviewL'), getValueFrom('yviewR')];
+		if (nm[0] && nm[1]){
+			nm = nm.map(Number);
+			if (nm[0] < nm[1]){
+				graph.yview = nm;
+			}
 		}
-		let gridxy = validSplit(getValueFrom('gridxy'), ',').map(Number);
-		if (gridxy.length>0 && gridxy[0] > 0 && gridxy[1] > 0){
-			graph.gridxy = gridxy;
+		nm = [getValueFrom('gridx'), getValueFrom('gridy')];
+		if (nm[0] && nm[1]){
+			nm = nm.map(Number);
+			if (nm[0]>0 && nm[1]>0){
+				graph.gridxy = nm;
+			}
 		}
 		console.log(graph);
 	}

@@ -11,9 +11,7 @@ function calculateScale(view, outputLength){
 }
 
 function circlePtAt(ctx,x,y){
-	//ctx.beginPath();
 	ctx.arc(x,y,1,0,2* Math.PI);
-	//ctx.stroke();
 }
 
 function originLines(xscale, xview, yscale, yview, can){
