@@ -105,14 +105,6 @@ function Point(x,y){
 	this.y = y;
 }
 function Graph(){
-	this.xview = undefined;
-	this.yview = undefined;
-	this.gridxy = undefined;
 	this.points = [];
-	this.xscale = undefined;
-	this.yscale = undefined;
-	
-	this.draw = function(){
-		console.log('draw');
-	};
+
 }

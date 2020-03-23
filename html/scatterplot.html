@@ -55,7 +55,7 @@
 	XView<br /><input id='xviewL' type='number' step='any' /><input id='xviewR' type='number' step='any' /><br />
 	YView<br /><input id='yviewL' type='number' step='any' /><input id='yviewR' type='number' step='any' /><br />
 	Grid<br /><input id='gridx' type='number' step='any' min=0 /><input id='gridy' type='number' step='any' min=0 /><br />
-	<button onclick='setView(maingraph);'>Set</button><button onclick=''>Auto</button>
+	<button onclick='drawGraph(maingraph,can);'>Draw</button><button onclick=''>Auto</button>
 </div>
 <div id='data'>
 	<h3>Data</h3>
@@ -97,34 +97,51 @@
 		let div = document.getElementById(ele);
 		div.style.display = div.style.display == "none" ? "block" : "none";
 	}
-	function validSplit(val, splitchar){
-		let [x,y] = val.split(splitchar, 2);
-		return (x && y) ? [x,y] : [];
-	}
-	function setView(graph){
+
+	function retrieveArgs(){
+		let xview, yview, gridxy;
 		let nm = [getValueFrom('xviewL'), getValueFrom('xviewR')];
 		if (nm[0] && nm[1]){
 			nm = nm.map(Number);
 			if (nm[0] < nm[1]){
-				graph.xview = nm;
+				xview = nm;
 			}
 		}
 		nm = [getValueFrom('yviewL'), getValueFrom('yviewR')];
 		if (nm[0] && nm[1]){
 			nm = nm.map(Number);
 			if (nm[0] < nm[1]){
-				graph.yview = nm;
+				yview = nm;
 			}
 		}
 		nm = [getValueFrom('gridx'), getValueFrom('gridy')];
 		if (nm[0] && nm[1]){
 			nm = nm.map(Number);
 			if (nm[0]>0 && nm[1]>0){
-				graph.gridxy = nm;
+				gridxy = nm;
 			}
 		}
-		console.log(graph);
+		return [xview, yview, gridxy];
 	}
+	function drawGraph(graph, can){
+		let [xview, yview, gridxy] = retrieveArgs();
+
+		if (xview === undefined){
+			xview = [graph.points[0].x, graph.points[maingraph.points.length-1].x];
+		}
+		if (yview === undefined){
+			yview = getMinAndMax(graph.points, (point) => point.y);
+		}
+		let xscale = calculateScale(xview, can.width);
+		let yscale = calculateScale(yview, can.height);
+		canvasBg(can);
+		if (gridxy){
+			gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
+		}
+		originLines(xscale, xview, yscale, yview, can);
+		plotPoints(graph.points, xscale, yscale, xview, yview, can);
+	}
+	
 	function getValueFrom(name){
 		return document.getElementById(name).value;
 	}
@@ -142,21 +159,8 @@
 	document.getElementById('data').style.display = 'none';
 
 	var maingraph = new Graph();
+	var can = document.getElementById('mycan');
 
-	addPoints(maingraph);
-	maingraph.xview = [maingraph.points[0].x, maingraph.points[maingraph.points.length-1].x];
-	maingraph.yview = getMinAndMax(maingraph.points, (point) => point.y);
-	
-	let can = document.getElementById('mycan');
-	maingraph.xscale = calculateScale(maingraph.xview, can.width);
-	maingraph.yscale = calculateScale(maingraph.yview, can.height);
-	
-	maingraph.gridxy = [1,5];
-	
-	canvasBg(can);
-	gridLines(maingraph.xscale, maingraph.xview, maingraph.gridxy[0], maingraph.yscale, maingraph.yview, maingraph.gridxy[1], can);
-	originLines(maingraph.xscale, maingraph.xview, maingraph.yscale, maingraph.yview, can);
-	plotPoints(maingraph.points, maingraph.xscale, maingraph.yscale, maingraph.xview, maingraph.yview, can);
 
 </script>
 </html>
