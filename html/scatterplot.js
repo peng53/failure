@@ -7,7 +7,7 @@ function transformY(y, scale, yOffset){
 	return scale * (yOffset-y);
 }
 function calculateScale(view, outputLength){
-	return outputLength / Math.abs(view[1] - view[0]);
+	return outputLength / Math.abs(Math.max(view[1] - view[0], 1));
 }
 
 function circlePtAt(ctx,x,y){

@@ -128,22 +128,32 @@
 
 		if (xview === undefined){
 			xview = [graph.points[0].x, graph.points[maingraph.points.length-1].x];
+			setValueTo('xviewL', xview[0]);
+			setValueTo('xviewR', xview[1]);
 		}
 		if (yview === undefined){
 			yview = getMinAndMax(graph.points, (point) => point.y);
+			setValueTo('yviewL', yview[0]);
+			setValueTo('yviewR', yview[1]);
 		}
 		let xscale = calculateScale(xview, can.width);
+		console.log(xscale);
 		let yscale = calculateScale(yview, can.height);
+		console.log(yscale);
 		canvasBg(can);
 		if (gridxy){
 			gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 		}
 		originLines(xscale, xview, yscale, yview, can);
 		plotPoints(graph.points, xscale, yscale, xview, yview, can);
+		console.log(graph.points);
 	}
 	
 	function getValueFrom(name){
 		return document.getElementById(name).value;
+	}
+	function setValueTo(name, val){
+		document.getElementById(name).value = val;
 	}
 	function addPoints(graph){
 		let values = document.getElementById('points').value.split(',').map(Number);
