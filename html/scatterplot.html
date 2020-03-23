@@ -54,13 +54,24 @@
 	<h3>Controls</h3>
 	XView<br /><input id='xviewL' type='number' step='any' /><input id='xviewR' type='number' step='any' /><br />
 	YView<br /><input id='yviewL' type='number' step='any' /><input id='yviewR' type='number' step='any' /><br />
-	Grid<br /><input id='gridx' type='number' step='any' /><input id='gridy' type='number' step='any' /><br />
+	Grid<br /><input id='gridx' type='number' step='any' min=0 /><input id='gridy' type='number' step='any' min=0 /><br />
 	<button onclick='setView(maingraph);'>Set</button><button onclick=''>Auto</button>
 </div>
 <div id='data'>
 	<h3>Data</h3>
-	<label for='points'>Input<br /><textarea id='points'></textarea></label><br />
-	<button onclick=''>Add</button><br />
+	<label for='points'>Input<br />
+	<textarea id='points'>
+-4, -64,
+-3, -27,
+-2, -8,
+-1, -1,
+0, 0,
+1, 1,
+2, 8,
+3, 27,
+4, 64
+	</textarea></label><br />
+	<button onclick='addPoints(maingraph)'>Add</button><br />
 	<hr />
 	<label for='pointsList'>Displayed<br />
 	<select id='pointsList' name='point' multiple></select></label><br />
@@ -117,27 +128,35 @@
 	function getValueFrom(name){
 		return document.getElementById(name).value;
 	}
+	function addPoints(graph){
+		let values = document.getElementById('points').value.split(',').map(Number);
+		for (let i=0, l=values.length; i<l; i+=2){
+			if (values[i] && values[i+1]){
+				graph.points.push(new Point(values[i], values[i+1]));
+			}
+		}
+		graph.points.sort((a,b) => a.x-b.x);
+	}
 
 	document.getElementById('controls').style.display = 'none';
 	document.getElementById('data').style.display = 'none';
 
 	var maingraph = new Graph();
-	let points = sortedPointArray(
-		xvals = Array(-4,-3,-2,-1,0,1,2,3,4),
-		yvals = Array(-64,-27,-8,-1,0,1,8,27,64)
-	);
 
-	let xview = [points[0].x, points[points.length-1].x];
-	let yview = getMinAndMax(points, (point) => point.y);
-
+	addPoints(maingraph);
+	maingraph.xview = [maingraph.points[0].x, maingraph.points[maingraph.points.length-1].x];
+	maingraph.yview = getMinAndMax(maingraph.points, (point) => point.y);
+	
 	let can = document.getElementById('mycan');
-	let xscale = calculateScale(xview, can.width);
-	let yscale = calculateScale(yview, can.height);
+	maingraph.xscale = calculateScale(maingraph.xview, can.width);
+	maingraph.yscale = calculateScale(maingraph.yview, can.height);
+	
+	maingraph.gridxy = [1,5];
 	
 	canvasBg(can);
-	gridLines(xscale, xview, xinterval=1, yscale, yview, yinterval=5, can);
-	originLines(xscale, xview, yscale, yview, can);
-	plotPoints(points, xscale, yscale, xview, yview, can);
+	gridLines(maingraph.xscale, maingraph.xview, maingraph.gridxy[0], maingraph.yscale, maingraph.yview, maingraph.gridxy[1], can);
+	originLines(maingraph.xscale, maingraph.xview, maingraph.yscale, maingraph.yview, can);
+	plotPoints(maingraph.points, maingraph.xscale, maingraph.yscale, maingraph.xview, maingraph.yview, can);
 
 </script>
 </html>

@@ -79,6 +79,7 @@ function getMinAndMax(values, getter){
 		} else if (v>M){
 			M = v;
 		}
+		
 	}
 	return [m, M];
 }
@@ -107,6 +108,9 @@ function Graph(){
 	this.xview = undefined;
 	this.yview = undefined;
 	this.gridxy = undefined;
+	this.points = [];
+	this.xscale = undefined;
+	this.yscale = undefined;
 	
 	this.draw = function(){
 		console.log('draw');
