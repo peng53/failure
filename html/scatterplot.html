@@ -15,7 +15,7 @@
 		margin: auto;
 		z-index: -1;
 	}
-	h3 {
+	h3, h4 {
 		margin: 0;
 	}
 	#topmenu {
@@ -25,13 +25,13 @@
 	#sidemenu button {
 		border: 0;
 	}
-	#controls, #data {
+	#controls, #data, #look {
 		float: left;
 		background: #eee;
 		padding: 0.5em;
 		border: 1px outset gray;
 	}
-	#controls input {
+	#controls input, #look input {
 		width: 4em;
 	}
 	#data textarea {
@@ -49,6 +49,7 @@
 <div id='topmenu'>
 <button onclick='showMenu("controls")'>CONTROLS</button>
 <button onclick='showMenu("data")'>DATA</button>
+<button onclick='showMenu("look")'>LOOK</button>
 </div>
 <div id='controls'>
 	<h3>Controls</h3>
@@ -76,6 +77,19 @@
 	<label for='pointsList'>Displayed<br />
 	<select id='pointsList' name='point' multiple></select></label><br />
 	<button onclick=''>Delete</button><button onclick=''>Clear</button><br />
+</div>
+
+<div id='look'>
+	<h3>Look</h3>
+	<h4>Colors</h4>
+	<label for='ptcolor'>Points<br />
+	<input id='ptcolor' type='color' /></label><br />
+	<label for='grcolor'>Grid<br />
+	<input id='grcolor' type='color' /></label><br />
+	<label for='orcolor'>Origin<br />
+	<input id='orcolor' type='color' /></label><br />
+	<h4>Size</h4>
+	Canvas WxH<br /><input id='canh' type='number' min=50 /><input id='canw' type='number' min=50 /><br />
 </div>
 <canvas id='mycan' width='400px' height='300px'></canvas>
 
@@ -178,6 +192,7 @@
 
 	document.getElementById('controls').style.display = 'none';
 	document.getElementById('data').style.display = 'none';
+	document.getElementById('look').style.display = 'none';
 
 	var maingraph = new Graph();
 	var can = document.getElementById('mycan');
