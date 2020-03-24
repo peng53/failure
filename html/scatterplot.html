@@ -75,7 +75,7 @@
 3, 27,
 4, 64
 	</textarea></label><br />
-	<button onclick='addPoints(maingraph)'>Add</button><br />
+	<button onclick='addPoints(maingraph)'>Add</button><button onclick='saveDataset(maingraph);'>Save</button><br />
 	<hr />
 	<label for='pointsList'>Displayed<br />
 	<select id='pointsList' name='point' multiple></select></label><br />
@@ -214,6 +214,52 @@
 		let index = plist.selectedIndex;
 		plist.remove(index);
 		graph.datasets.pop(index);
+	}
+	function editDataset(graph){
+		let index = document.getElementById('pointsList').selectedIndex;
+		if (index > -1 ){
+			let ds = graph.datasets[index];
+			let out = '';
+			for (let i=0, l=ds.points.length; i<l; ++i){
+				if (i != 0){
+					out += ',\n';
+				}
+				out += ds.points[i].x + ','+ds.points[i].y;
+			}
+			document.getElementById('points').value = out;
+			document.getElementById('ptcolor').value = standardize_color(ds.color);
+			document.getElementById('name').value = ds.name;
+		}
+	}
+	function saveDataset(graph){
+		let index = document.getElementById('pointsList').selectedIndex;
+		if (index > -1){
+			// duplicate code of addPoints..
+			let values = getValueFrom('points').split(',').map(Number);
+			let color = getValueFrom('ptcolor');
+			let name = getValueFrom('name');
+			if (name.length === 0){
+				name = 'Dataset #'+index;
+			}
+			graph.datasets[index].color = color;
+			graph.datasets[index].name = name;
+			graph.datasets[index].points = [];
+			for (let i=0, l=values.length; i<l; i+=2){
+				graph.datasets[index].points.push(new Point(values[i], values[i+1]));
+			}
+			graph.datasets[index].points.sort((a,b) => a.x-b.x);
+			// change the select now..
+			let option = document.getElementById('pointsList')[index];
+			option.text = name;
+			option.style.color = color;
+			document.getElementById('points').value = '';
+		}
+	}
+
+	function standardize_color(str){
+		let ctx = document.createElement('canvas').getContext('2d');
+		ctx.fillStyle = str;
+		return ctx.fillStyle;
 	}
 
 	document.getElementById('controls').style.display = 'none';
