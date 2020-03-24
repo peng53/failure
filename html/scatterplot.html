@@ -90,7 +90,8 @@
 	<label for='orcolor'>Origin<br />
 	<input id='orcolor' type='color' /></label><br />
 	<h4>Size</h4>
-	Canvas WxH<br /><input id='canh' type='number' min=50 /><input id='canw' type='number' min=50 /><br />
+	Canvas WxH<br /><input id='canw' type='number' min=50 step=25 /><input id='canh' type='number' min=50 step=25 /><br />
+	<button onclick='setCanvasSize()'>Set Size</button><br />
 </div>
 <canvas id='mycan' width='400px' height='300px'></canvas>
 
@@ -260,6 +261,13 @@
 		let ctx = document.createElement('canvas').getContext('2d');
 		ctx.fillStyle = str;
 		return ctx.fillStyle;
+	}
+	function setCanvasSize(){
+		let width = getValueFrom('canw');
+		let height = getValueFrom('canh');
+		can.width = width;
+		can.height = height;
+		canvasBg(can);
 	}
 
 	document.getElementById('controls').style.display = 'none';
