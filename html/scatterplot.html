@@ -79,7 +79,7 @@
 	<hr />
 	<label for='pointsList'>Displayed<br />
 	<select id='pointsList' name='point' multiple></select></label><br />
-	<button onclick=''>Delete</button><button onclick=''>Clear</button><br />
+	<button onclick='editDataset(maingraph);'>Edit</button><button onclick='deleteDataset(maingraph);'>Delete</button><button onclick='clearDatasets(maingraph);'>Clear</button><br />
 </div>
 
 <div id='look'>
@@ -201,6 +201,19 @@
 		let yview = getMinAndMaxOverAll(graph.datasets, (point) => point.y);
 		setValueTo('yviewL', yview[0]);
 		setValueTo('yviewR', yview[1]);
+	}
+	function clearDatasets(graph){
+		graph.datasets = [];
+		let options = document.getElementById('pointsList');
+		while (options.length>0){
+			options.remove(0);
+		}
+	}
+	function deleteDataset(graph){
+		let plist = document.getElementById('pointsList');
+		let index = plist.selectedIndex;
+		plist.remove(index);
+		graph.datasets.pop(index);
 	}
 
 	document.getElementById('controls').style.display = 'none';
