@@ -14,10 +14,10 @@ function circlePtAt(ctx,x,y){
 	ctx.arc(x,y,1,0,2* Math.PI);
 }
 
-function originLines(xscale, xview, yscale, yview, can){
+function originLines(xscale, xview, yscale, yview, can, color){
 	let ctx = can.getContext('2d');
 	ctx.setLineDash([]);
-	ctx.strokeStyle = 'red';
+	ctx.strokeStyle = color;
 	// line x = 0
 	let x0 = transformX(0, xscale, xview[0]);
 	drawALine(ctx,x0,x0,0,can.height);
@@ -34,11 +34,11 @@ function drawALine(ctx, x0, x, y0, y){
 	ctx.stroke();
 }
 
-function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can){
+function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can, hcolor, vcolor){
 	let ctx = can.getContext('2d');
 
 	ctx.setLineDash([3,2]);
-	ctx.strokeStyle = 'lime';
+	ctx.strokeStyle = hcolor;
 	let y0 = transformY(yinterval * (Math.floor(yview[1]/yinterval)), yscale, yview[1]);
 	let dy = yinterval*yscale;
 	for (let y=y0; y<can.height; y+=dy){
@@ -46,7 +46,7 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can){
 	}
 
 	ctx.setLineDash([2,3]);
-	ctx.strokeStyle = 'teal';
+	ctx.strokeStyle = vcolor;
 	let dx = xinterval*xscale;
 	for (let x=Math.ceil(xview[0]/xinterval)*xscale; x<can.width; x+= dx){
 		drawALine(ctx, x, x, 0, can.height);
@@ -93,9 +93,9 @@ function getMinAndMaxOverAll(datasets, getter){
 	return [m, M];
 }
 
-function canvasBg(can){
+function canvasBg(can, color){
 	let ctx = can.getContext('2d');
-	ctx.fillStyle = 'white';
+	ctx.fillStyle = color;
 	ctx.fillRect(0,0,can.width, can.height);
 
 }

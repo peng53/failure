@@ -85,10 +85,12 @@
 <div id='look'>
 	<h3>Look</h3>
 	<h4>Colors</h4>
+	<label for='bgcolor'>Background<br />
+	<input id='bgcolor' type='color' value='#ffffff'/></label><br />
 	<label for='grcolor'>Grid<br />
-	<input id='grcolor' type='color' /></label><br />
+	<input id='grcolor' type='color' value='#cccccc' /></label><br />
 	<label for='orcolor'>Origin<br />
-	<input id='orcolor' type='color' /></label><br />
+	<input id='orcolor' type='color' value='#000000' /></label><br />
 	<h4>Size</h4>
 	Canvas WxH<br /><input id='canw' type='number' min=50 step=25 /><input id='canh' type='number' min=50 step=25 /><br />
 	<button onclick='setCanvasSize()'>Set Size</button><br />
@@ -154,11 +156,11 @@
 		}
 		let xscale = calculateScale(xview, can.width);
 		let yscale = calculateScale(yview, can.height);
-		canvasBg(can);
+		canvasBg(can, getValueFrom('bgcolor'));
 		if (gridxy){
-			gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
+			gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can, hcolor=getValueFrom('grcolor'), vcolor=getValueFrom('grcolor'));
 		}
-		originLines(xscale, xview, yscale, yview, can);
+		originLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'));
 		for (let i=0, l=graph.datasets.length; i<l; ++i){
 			plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color);
 		}
@@ -267,7 +269,7 @@
 		let height = getValueFrom('canh');
 		can.width = width;
 		can.height = height;
-		canvasBg(can);
+		canvasBg(can, getValueFrom('bgcolor'));
 	}
 
 	document.getElementById('controls').style.display = 'none';
