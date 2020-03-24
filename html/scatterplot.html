@@ -142,12 +142,13 @@
 		let [xview, yview, gridxy] = retrieveArgs();
 
 		if (xview === undefined){
-			xview = [graph.points[0].x, graph.points[maingraph.points.length-1].x];
+//			xview = [graph.points[0].x, graph.points[maingraph.points.length-1].x];
+			xview = getMinAndMaxOverAll(graph.datasets, (point) => point.x);
 			setValueTo('xviewL', xview[0]);
 			setValueTo('xviewR', xview[1]);
 		}
 		if (yview === undefined){
-			yview = getMinAndMax(graph.points, (point) => point.y);
+			yview = getMinAndMaxOverAll(graph.datasets, (point) => point.y);
 			setValueTo('yviewL', yview[0]);
 			setValueTo('yviewR', yview[1]);
 		}
@@ -170,7 +171,7 @@
 		document.getElementById(name).value = val;
 	}
 	function addPoints(graph){
-		let values = document.getElementById('points').value.split(',').map(Number);
+		let values = getValueFrom('points').split(',').map(Number);
 		let color = getValueFrom('ptcolor');
 		let name = getValueFrom('name');
 		let dsi = graph.datasets.length;
@@ -182,12 +183,11 @@
 		}
 		graph.datasets.push(new Dataset(name, color));
 		for (let i=0, l=values.length; i<l; i+=2){
-			if (values[i] && values[i+1]){
-				graph.datasets[dsi].points.push(new Point(values[i], values[i+1]));
-			}
+			graph.datasets[dsi].points.push(new Point(values[i], values[i+1]));
 		}
 		graph.datasets[dsi].points.sort((a,b) => a.x-b.x);
 		addDatasetToList(graph.datasets[dsi]);
+		document.getElementById('points').value = '';
 	}
 	function addDatasetToList(dataset){
 		let option = document.createElement('option');
@@ -196,10 +196,11 @@
 		document.getElementById('pointsList').add(option);
 	}
 	function guessArgs(graph){
-		let xview = [graph.points[0].x, graph.points[maingraph.points.length-1].x];
+		console.log(graph);
+		let xview = getMinAndMaxOverAll(graph.datasets, (point) => point.x);
 		setValueTo('xviewL', xview[0]);
 		setValueTo('xviewR', xview[1]);
-		let yview = getMinAndMax(graph.points, (point) => point.y);
+		let yview = getMinAndMaxOverAll(graph.datasets, (point) => point.y);
 		setValueTo('yviewL', yview[0]);
 		setValueTo('yviewR', yview[1]);
 	}

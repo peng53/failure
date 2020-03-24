@@ -55,7 +55,6 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can){
 
 function plotPoints(points, xscale, yscale, xview, yview, can, color){
 	let ctx = can.getContext('2d');
-	console.log(color);
 	ctx.beginPath();
 	for (let i=0, l=points.length; i<l; ++i){
 		circlePtAt(
@@ -80,6 +79,18 @@ function getMinAndMax(values, getter){
 			M = v;
 		}
 		
+	}
+	return [m, M];
+}
+
+function getMinAndMaxOverAll(datasets, getter){
+	console.log(datasets);
+	let [m, M] = getMinAndMax(datasets[0].points, getter);
+	let n, N;
+	for (let i=1; i<datasets.length; ++i){
+		[n, N] = getMinAndMax(datasets[i].points, getter);
+		m = Math.min(m, n, N);
+		M = Math.max(M, n, N);
 	}
 	return [m, M];
 }
