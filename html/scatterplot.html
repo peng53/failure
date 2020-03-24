@@ -60,7 +60,10 @@
 </div>
 <div id='data'>
 	<h3>Data</h3>
-	<label for='points'>Input<br />
+	<label for='name'>Name<br /><input id='name' /></label><br />
+	<label for='ptcolor'>Color<br />
+	<input id='ptcolor' type='color' /></label><br />
+	<label for='points'>Points<br />
 	<textarea id='points'>
 -4, -64,
 -3, -27,
@@ -82,8 +85,6 @@
 <div id='look'>
 	<h3>Look</h3>
 	<h4>Colors</h4>
-	<label for='ptcolor'>Points<br />
-	<input id='ptcolor' type='color' /></label><br />
 	<label for='grcolor'>Grid<br />
 	<input id='grcolor' type='color' /></label><br />
 	<label for='orcolor'>Origin<br />
@@ -157,7 +158,9 @@
 			gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 		}
 		originLines(xscale, xview, yscale, yview, can);
-		plotPoints(graph.points, xscale, yscale, xview, yview, can);
+		for (let i=0, l=graph.datasets.length; i<l; ++i){
+			plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color);
+		}
 	}
 	
 	function getValueFrom(name){
@@ -168,17 +171,28 @@
 	}
 	function addPoints(graph){
 		let values = document.getElementById('points').value.split(',').map(Number);
+		let color = getValueFrom('ptcolor');
+		let name = getValueFrom('name');
+		let dsi = graph.datasets.length;
+		if (name.length === 0){
+			name = 'Dataset #'+dsi;
+		}
+		if (color.length === 0){
+			color = 'black';
+		}
+		graph.datasets.push(new Dataset(name, color));
 		for (let i=0, l=values.length; i<l; i+=2){
 			if (values[i] && values[i+1]){
-				graph.points.push(new Point(values[i], values[i+1]));
-				addPointToList(values[i],values[i+1])
+				graph.datasets[dsi].points.push(new Point(values[i], values[i+1]));
 			}
 		}
-		graph.points.sort((a,b) => a.x-b.x);
+		graph.datasets[dsi].points.sort((a,b) => a.x-b.x);
+		addDatasetToList(graph.datasets[dsi]);
 	}
-	function addPointToList(x,y){
+	function addDatasetToList(dataset){
 		let option = document.createElement('option');
-		option.text = x+', '+y;
+		option.text = dataset.name;
+		option.style.color = dataset.color;
 		document.getElementById('pointsList').add(option);
 	}
 	function guessArgs(graph){

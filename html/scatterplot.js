@@ -53,9 +53,9 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can){
 	}
 }
 
-function plotPoints(points, xscale, yscale, xview, yview, can){
+function plotPoints(points, xscale, yscale, xview, yview, can, color){
 	let ctx = can.getContext('2d');
-	ctx.fillStyle = 'blue';
+	console.log(color);
 	ctx.beginPath();
 	for (let i=0, l=points.length; i<l; ++i){
 		circlePtAt(
@@ -64,7 +64,7 @@ function plotPoints(points, xscale, yscale, xview, yview, can){
 			y=transformY(points[i].y, yscale, yview[1]));
 	}
 	ctx.setLineDash([]);
-	ctx.strokeStyle = 'black';
+	ctx.strokeStyle = color;
 	ctx.stroke();
 }
 
@@ -105,6 +105,10 @@ function Point(x,y){
 	this.y = y;
 }
 function Graph(){
+	this.datasets = [];
+}
+function Dataset(name, color){
+	this.name = name;
+	this.color = color;
 	this.points = [];
-
 }
