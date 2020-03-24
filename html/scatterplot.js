@@ -48,7 +48,8 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can, hcol
 	ctx.setLineDash([2,3]);
 	ctx.strokeStyle = vcolor;
 	let dx = xinterval*xscale;
-	for (let x=Math.ceil(xview[0]/xinterval)*xscale; x<can.width; x+= dx){
+	let x0 = transformX(xinterval * (Math.ceil(xview[0]/xinterval)), xscale, xview[0])
+	for (let x=x0; x<can.width; x+= dx){
 		drawALine(ctx, x, x, 0, can.height);
 	}
 }
