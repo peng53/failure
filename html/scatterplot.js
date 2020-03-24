@@ -78,13 +78,11 @@ function getMinAndMax(values, getter){
 		} else if (v>M){
 			M = v;
 		}
-		
 	}
 	return [m, M];
 }
 
 function getMinAndMaxOverAll(datasets, getter){
-	console.log(datasets);
 	let [m, M] = getMinAndMax(datasets[0].points, getter);
 	let n, N;
 	for (let i=1; i<datasets.length; ++i){
@@ -98,8 +96,8 @@ function getMinAndMaxOverAll(datasets, getter){
 function canvasBg(can){
 	let ctx = can.getContext('2d');
 	ctx.fillStyle = 'white';
-	ctx.rect(0,0,can.width, can.height);
-	ctx.fill();
+	ctx.fillRect(0,0,can.width, can.height);
+
 }
 
 function sortedPointArray(xvals, yvals){
