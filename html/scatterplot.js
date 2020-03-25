@@ -54,18 +54,26 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can, hcol
 	}
 }
 
-function plotPoints(points, xscale, yscale, xview, yview, can, color){
+function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
 	let ctx = can.getContext('2d');
 	ctx.beginPath();
+	ctx.strokeStyle = ctx.fillStyle = color;
 	for (let i=0, l=points.length; i<l; ++i){
+		if (noLine){
+			ctx.beginPath();
+		}
 		circlePtAt(
 			ctx,
 			x=transformX(points[i].x, xscale, xview[0]),
 			y=transformY(points[i].y, yscale, yview[1]));
+		if (noLine){
+			ctx.fill();
+		}
 	}
-	ctx.setLineDash([]);
-	ctx.strokeStyle = color;
-	ctx.stroke();
+	if (!noLine){
+		ctx.setLineDash([]);
+		ctx.stroke();
+	}
 }
 
 function getMinAndMax(values, getter){

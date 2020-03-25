@@ -63,7 +63,7 @@ function drawGraph(graph, can){
 	}
 	originLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'));
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
-		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color);
+		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=false);
 	}
 }
 
@@ -116,8 +116,9 @@ function clearDatasets(graph){
 function deleteDataset(graph){
 	let plist = document.getElementById('pointsList');
 	let index = plist.selectedIndex;
+	console.log(index);
 	plist.remove(index);
-	graph.datasets.pop(index);
+	graph.datasets.splice(index,1);
 }
 function editDataset(graph){
 	let index = document.getElementById('pointsList').selectedIndex;

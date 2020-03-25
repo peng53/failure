@@ -25,7 +25,7 @@
 	<input id='ptcolor' type='color' /></label><br />
 	<label for='points'>Points<br />
 	<textarea id='points'></textarea></label><br />
-	<button onclick='addPoints(maingraph)'>Add</button><button onclick='saveDataset(maingraph);'>Save</button><br />
+	<button onclick='addPoints(maingraph)'>Add New</button><button onclick='saveDataset(maingraph);'>Modify</button><br />
 	<hr />
 	<label for='pointsList'>Displayed<br />
 	<select id='pointsList' name='point' multiple></select></label><br />
@@ -42,19 +42,23 @@
 	<label for='orcolor'>Origin<br />
 	<input id='orcolor' type='color' value='#000000' /></label><br />
 	<h4>Size</h4>
-	Canvas WxH<br /><input id='canw' type='number' min=50 step=25 /><input id='canh' type='number' min=50 step=25 /><br />
+	Canvas WxH<br /><input id='canw' type='number' min=50 step=25 />x<input id='canh' type='number' min=50 step=25 /><br />
 	<button onclick='setCanvasSize()'>Set Size</button><br />
 </div>
 <canvas id='mycan' width='400px' height='300px'></canvas>
 
 <script>
+
+	var maingraph = new Graph();
+	var can = document.getElementById('mycan');
+
 	// Hiding menus
 	document.getElementById('controls').style.display = 'none';
 	document.getElementById('data').style.display = 'none';
 	document.getElementById('look').style.display = 'none';
 
-	var maingraph = new Graph();
-	var can = document.getElementById('mycan');
+	document.getElementById('canh').value = can.height;
+	document.getElementById('canw').value = can.width;
 
 	/* Testing datasets */
 	maingraph.datasets.push(new Dataset('x', 'red'));
