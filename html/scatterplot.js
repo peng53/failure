@@ -58,14 +58,14 @@ function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
 	let ctx = can.getContext('2d');
 	ctx.beginPath();
 	ctx.strokeStyle = ctx.fillStyle = color;
+	let x,y;
 	for (let i=0, l=points.length; i<l; ++i){
+		x=transformX(points[i].x, xscale, xview[0]);
+		y=transformY(points[i].y, yscale, yview[1]);
 		if (noLine){
-			ctx.beginPath();
+			ctx.moveTo(x,y);
 		}
-		circlePtAt(
-			ctx,
-			x=transformX(points[i].x, xscale, xview[0]),
-			y=transformY(points[i].y, yscale, yview[1]));
+		circlePtAt(ctx,x,y);
 		if (noLine){
 			ctx.fill();
 		}
@@ -125,8 +125,36 @@ function Point(x,y){
 function Graph(){
 	this.datasets = [];
 }
-function Dataset(name, color){
+function Dataset(name, color, connectPoints){
 	this.name = name;
 	this.color = color;
 	this.points = [];
+	this.connectPoints = connectPoints
+}
+
+function SumAccumulator(){
+	this.total = 0;
+	this.count = 0;
+	this.add = function(n){
+		this.total += n;
+		++this.count;
+	};
+}
+
+function linearLeastSquares(points){
+	// Returns slope and y-intercept from linear least squares on points.
+	// Using equation from https://www.mathsisfun.com/data/least-squares-regression.html
+	let N = points.length;
+	let sumXY = new SumAccumulator();
+	points.forEach(p => sumXY.add(p.x*p.y));
+	let sumX = new SumAccumulator();
+	points.forEach(p => sumX.add(p.x));
+	let sumY = new SumAccumulator();
+	points.forEach(p => sumY.add(p.y));
+	let sumX2 = new SumAccumulator();
+	points.forEach(p => sumX2.add(p.x*p.x));
+	
+	let m = (((N*sumXY.total) - (sumX.total*sumY.total)) / ((N*sumX2.total) - (sumX.total*sumX.total)));
+	let b = (sumY.total - (m*sumX.total)) / N;
+	return [m,b];
 }

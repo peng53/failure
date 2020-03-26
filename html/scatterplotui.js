@@ -63,7 +63,7 @@ function drawGraph(graph, can){
 	}
 	originLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'));
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
-		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=false);
+		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=(!graph.datasets[i].connectPoints));
 	}
 }
 
@@ -84,7 +84,7 @@ function addPoints(graph){
 	if (color.length === 0){
 		color = 'black';
 	}
-	graph.datasets.push(new Dataset(name, color));
+	graph.datasets.push(new Dataset(name, color, getValueFrom('connectPoints')));
 	for (let i=0, l=values.length; i<l; i+=2){
 		graph.datasets[dsi].points.push(new Point(values[i], values[i+1]));
 	}
@@ -134,6 +134,7 @@ function editDataset(graph){
 		document.getElementById('points').value = out;
 		document.getElementById('ptcolor').value = standardize_color(ds.color);
 		document.getElementById('name').value = ds.name;
+		document.getElementById('connectPoints').checked = ds.connectPoints;
 	}
 }
 function saveDataset(graph){
@@ -148,7 +149,9 @@ function saveDataset(graph){
 		}
 		graph.datasets[index].color = color;
 		graph.datasets[index].name = name;
+		graph.datasets[index].connectPoints = document.getElementById('connectPoints').checked;
 		graph.datasets[index].points = [];
+		
 		for (let i=0, l=values.length; i<l; i+=2){
 			graph.datasets[index].points.push(new Point(values[i], values[i+1]));
 		}

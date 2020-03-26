@@ -23,6 +23,7 @@
 	<label for='name'>Name<br /><input id='name' /></label><br />
 	<label for='ptcolor'>Color<br />
 	<input id='ptcolor' type='color' /></label><br />
+	<label for='connectPoints'>Connect Points<br /><input id='connectPoints' type='checkbox' /></label><br />
 	<label for='points'>Points<br />
 	<textarea id='points'></textarea></label><br />
 	<button onclick='addPoints(maingraph)'>Add New</button><button onclick='saveDataset(maingraph);'>Modify</button><br />
@@ -61,12 +62,12 @@
 	document.getElementById('canw').value = can.width;
 
 	/* Testing datasets */
-	maingraph.datasets.push(new Dataset('x', 'red'));
+	maingraph.datasets.push(new Dataset('x', 'red', false));
 	for (let x=0; x<10; x++){
 		maingraph.datasets[0].points.push(new Point(x,x));
 	}
 	addDatasetToList(maingraph.datasets[0]);
-	maingraph.datasets.push(new Dataset('x2', 'green'));
+	maingraph.datasets.push(new Dataset('x2', 'green', true));
 	for (let x=0; x<10; x++){
 		maingraph.datasets[1].points.push(new Point(x,x*x));
 	}
