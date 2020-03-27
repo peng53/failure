@@ -96,8 +96,8 @@ function getMinAndMaxOverAll(datasets, getter){
 	let n, N;
 	for (let i=1; i<datasets.length; ++i){
 		[n, N] = getMinAndMax(datasets[i].points, getter);
-		m = Math.min(m, n, N);
-		M = Math.max(M, n, N);
+		m = Math.min(m, n);
+		M = Math.max(M, N);
 	}
 	return [m, M];
 }
@@ -153,7 +153,7 @@ function linearLeastSquares(points){
 	points.forEach(p => sumY.add(p.y));
 	let sumX2 = new SumAccumulator();
 	points.forEach(p => sumX2.add(p.x*p.x));
-	
+
 	let m = (((N*sumXY.total) - (sumX.total*sumY.total)) / ((N*sumX2.total) - (sumX.total*sumX.total)));
 	let b = (sumY.total - (m*sumX.total)) / N;
 	return [m,b];

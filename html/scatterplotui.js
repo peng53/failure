@@ -17,44 +17,30 @@ function toggleHide(ele){
 	div.style.display = div.style.display == "none" ? "block" : "none";
 }
 
-function retrieveArgs(){
-	let xview, yview, gridxy;
-	let nm = [getValueFrom('xviewL'), getValueFrom('xviewR')];
-	if (nm[0] && nm[1]){
-		nm = nm.map(Number);
-		if (nm[0] < nm[1]){
-			xview = nm;
-		}
-	}
-	nm = [getValueFrom('yviewL'), getValueFrom('yviewR')];
-	if (nm[0] && nm[1]){
-		nm = nm.map(Number);
-		if (nm[0] < nm[1]){
-			yview = nm;
-		}
-	}
-	nm = [getValueFrom('gridx'), getValueFrom('gridy')];
-	if (nm[0] && nm[1]){
-		nm = nm.map(Number);
-		if (nm[0]>0 && nm[1]>0){
-			gridxy = nm;
-		}
-	}
+function retrieveArgs(graph){
+	let nm = [getValueFrom('xviewL'), getValueFrom('xviewR')].map(Number);
+	let xview = (nm.some(isNaN) || nm[0] >= nm[1])
+		? guessXview(graph)
+		: nm;
+	nm = [getValueFrom('yviewL'), getValueFrom('yviewR')].map(Number);
+	let yview = (nm.some(isNaN) || nm[0] >= nm[1])
+		? guessYview(graph)
+		: nm;
+	nm = [getValueFrom('gridx'), getValueFrom('gridy')].map(Number);
+	let gridxy = (nm.some(isNaN) || nm.some(v => v<0))
+		? undefined
+		: nm;
 	return [xview, yview, gridxy];
 }
+function setViews(xview, yview){
+	setValueTo('xviewL', xview[0]);
+	setValueTo('xviewR', xview[1]);
+	setValueTo('yviewL', yview[0]);
+	setValueTo('yviewR', yview[1]);
+}
 function drawGraph(graph, can){
-	let [xview, yview, gridxy] = retrieveArgs();
-
-	if (xview === undefined){
-		xview = getMinAndMaxOverAll(graph.datasets, (point) => point.x);
-		setValueTo('xviewL', xview[0]);
-		setValueTo('xviewR', xview[1]);
-	}
-	if (yview === undefined){
-		yview = getMinAndMaxOverAll(graph.datasets, (point) => point.y);
-		setValueTo('yviewL', yview[0]);
-		setValueTo('yviewR', yview[1]);
-	}
+	let [xview, yview, gridxy] = retrieveArgs(graph);
+	setViews(xview, yview);
 	let xscale = calculateScale(xview, can.width);
 	let yscale = calculateScale(yview, can.height);
 	canvasBg(can, getValueFrom('bgcolor'));
@@ -110,12 +96,13 @@ function addDatasetToList(dataset){
 	document.getElementById('pointsList').add(option);
 }
 function guessArgs(graph){
-	let xview = getMinAndMaxOverAll(graph.datasets, (point) => point.x);
-	setValueTo('xviewL', xview[0]);
-	setValueTo('xviewR', xview[1]);
-	let yview = getMinAndMaxOverAll(graph.datasets, (point) => point.y);
-	setValueTo('yviewL', yview[0]);
-	setValueTo('yviewR', yview[1]);
+	setViews(guessXview(graph),guessYview(graph));
+}
+function guessXview(graph){
+	return getMinAndMaxOverAll(graph.datasets, (point) => point.x);
+}
+function guessYview(graph){
+	return getMinAndMaxOverAll(graph.datasets, (point) => point.y);
 }
 function clearDatasets(graph){
 	graph.datasets = [];
@@ -182,9 +169,7 @@ function standardize_color(str){
 	return ctx.fillStyle;
 }
 function setCanvasSize(){
-	let width = getValueFrom('canw');
-	let height = getValueFrom('canh');
-	can.width = width;
-	can.height = height;
+	can.width = getValueFrom('canw');
+	can.height = getValueFrom('canh');
 	canvasBg(can, getValueFrom('bgcolor'));
 }
