@@ -74,24 +74,35 @@ function setValueTo(name, val){
 	document.getElementById(name).value = val;
 }
 function addPoints(graph){
-	let values = getValueFrom('points').split(',').map(Number);
+	let numbers = getValueFrom('points');
+	if (numbers.length === 0){
+		return;
+	}
 	let color = getValueFrom('ptcolor');
 	let name = getValueFrom('name');
 	let dsi = graph.datasets.length;
 	if (name.length === 0){
 		name = 'Dataset #'+dsi;
 	}
-	if (color.length === 0){
-		color = 'black';
-	}
 	graph.datasets.push(new Dataset(name, color, getValueFrom('connectPoints')));
-	for (let i=0, l=values.length; i<l; i+=2){
-		graph.datasets[dsi].points.push(new Point(values[i], values[i+1]));
-	}
+	parseStrToArray(numbersStr, graph.datasets[dsi].points);
 	graph.datasets[dsi].points.sort((a,b) => a.x-b.x);
 	addDatasetToList(graph.datasets[dsi]);
-	document.getElementById('points').value = '';
+	setValueTo('points') = '';
 }
+
+function parseStrToArray(str, arr){
+	// Parse string of comma separated x,y coordinates to array of Points
+	let numbers = str.split(',').map(Number);
+	for (let i=0,l=numbers.length; i<l; i+=2){
+		if (isNaN(numbers[i]) || isNaN(numbers[i+1])){
+			console.log('Skipping values '+i+', '+i+1);
+			continue;
+		}
+		arr.push(new Point(numbers[i], numbers[i+1]));
+	}
+}
+
 function addDatasetToList(dataset){
 	let option = document.createElement('option');
 	option.text = dataset.name;
@@ -131,9 +142,9 @@ function editDataset(graph){
 			}
 			out += ds.points[i].x + ','+ds.points[i].y;
 		}
-		document.getElementById('points').value = out;
-		document.getElementById('ptcolor').value = standardize_color(ds.color);
-		document.getElementById('name').value = ds.name;
+		setValueTo('points', out);
+		setValueTo('ptcolor', standardize_color(ds.color));
+		setValueTo('name', ds.name);
 		document.getElementById('connectPoints').checked = ds.connectPoints;
 	}
 }
@@ -141,7 +152,10 @@ function saveDataset(graph){
 	let index = document.getElementById('pointsList').selectedIndex;
 	if (index > -1){
 		// duplicate code of addPoints..
-		let values = getValueFrom('points').split(',').map(Number);
+		let values = getValueFrom('points');
+		if (values.length === 0){
+			return;
+		}
 		let color = getValueFrom('ptcolor');
 		let name = getValueFrom('name');
 		if (name.length === 0){
@@ -151,16 +165,14 @@ function saveDataset(graph){
 		graph.datasets[index].name = name;
 		graph.datasets[index].connectPoints = document.getElementById('connectPoints').checked;
 		graph.datasets[index].points = [];
-		
-		for (let i=0, l=values.length; i<l; i+=2){
-			graph.datasets[index].points.push(new Point(values[i], values[i+1]));
-		}
+
+		parseStrToArray(values, graph.datasets[index].points);
 		graph.datasets[index].points.sort((a,b) => a.x-b.x);
 		// change the select now..
 		let option = document.getElementById('pointsList')[index];
 		option.text = name;
 		option.style.color = color;
-		document.getElementById('points').value = '';
+		setValueTo('points', '');
 	}
 }
 
