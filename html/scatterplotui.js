@@ -46,6 +46,7 @@ function drawGraph(graph, can){
 	canvasBg(can, getValueFrom('bgcolor'));
 	if (gridxy){
 		gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can, hcolor=getValueFrom('grcolor'), vcolor=getValueFrom('grcolor'));
+		tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 	}
 	originLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'));
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
