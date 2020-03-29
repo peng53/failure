@@ -141,7 +141,6 @@ class XYPlane:
 			self.d['exp'].delete(0,'end')
 			self.d['name'].delete(0,'end')
 			self.d['color'].delete(0,'end')
-			#for g in self.G.XYs: print id(g.d)
 		except Exception as e: print(e)
 
 	def poly_pop(self):
@@ -176,27 +175,6 @@ class XYPlane:
 			if isinstance(v,float): o['px'] = o['py'] = v
 			else: o['px'], o['py'] = v
 		self.G.set_opts(o)
-		#try:
-			#v = map(float,self.entry_get('view').split(','))
-			#if len(v)==4: o['view'] = R(*v)
-			#elif len(v)==2: o['view'] = R(v[0],v[1],v[0],v[1])
-		#except Exception as e: pass
-		#try:
-			#v = map(float,self.entry_get('grid').split(','))
-			#if len(v)==1: o['grid'] = v*2
-			#elif len(v)==2: o['grid'] = v
-		#except Exception as e: pass
-		#try:
-			#v = map(float,self.entry_get('pad').split(','))
-			#if len(v)==1: o['px'] = o['py'] = v[0]
-			#elif len(v)==2: o['px'], o['py'] = v
-		#except Exception as e: pass
-		#try:
-			#v = map(float,self.entry_get('tick').split(','))
-			#if len(v)==1: o['tick'] = v*2
-			#elif len(v)==2: o['tick'] = v
-		#except Exception as e: pass
-		#self.G.set_opts(o)
 
 	def make_canvas(self):
 		self.gopts()

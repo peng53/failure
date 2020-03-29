@@ -24,7 +24,6 @@ function originLines(xscale, xview, yscale, yview, can, color){
 	// line y = 0
 	let y0 = transformY(0, yscale, yview[1]);
 	drawALine(ctx,0,can.width,y0,y0);
-
 }
 
 function drawALine(ctx, x0, x, y0, y){
@@ -52,6 +51,31 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can, hcol
 	for (let x=x0; x<can.width; x+= dx){
 		drawALine(ctx, x, x, 0, can.height);
 	}
+}
+
+function tickNumbers(xscale, xview, xinterval, yscale, yview, yinterval, can){
+	let ctx = can.getContext('2d');
+	let y0 = transformY(0, yscale, yview[1]);
+	let x0 = transformX(0, xscale, xview[0]);
+	let fontSize = 12; // in pixels!
+	ctx.font =  fontSize+'px Arial';
+	ctx.fillStyle = 'red';
+	ctx.textAlign = 'center';
+	if (yinterval > 0){
+		for (let y=closestMultiple(yview[0], yinterval); y <= yview[1]; y += yinterval){
+			ctx.fillText(y, x0, 6+ transformY(y, yscale, yview[1]));
+		}
+	}
+	y0 += fontSize+2; // lower it so its under the originline
+	if (xinterval > 0){
+		for (let x=closestMultiple(xview[0], xinterval); x <= xview[1]; x += xinterval){
+			ctx.fillText(x, transformX(x, xscale, xview[0]), y0);
+		}
+	}
+}
+
+function closestMultiple(n, m){
+	return ((n%m)>m/2) ? n+m - n%m : n-n%m;
 }
 
 function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
@@ -107,8 +131,8 @@ function getMinAndMaxOverAll(datasets, getter){
 	let n, N;
 	for (let i=1; i<datasets.length; ++i){
 		[n, N] = getMinAndMax(datasets[i].points, getter);
-		m = Math.min(m, n, N);
-		M = Math.max(M, n, N);
+		m = Math.min(m, n);
+		M = Math.max(M, N);
 	}
 	return [m, M];
 }

@@ -17,49 +17,36 @@ function toggleHide(ele){
 	div.style.display = div.style.display == "none" ? "block" : "none";
 }
 
-function retrieveArgs(){
-	let xview, yview, gridxy;
-	let nm = [getValueFrom('xviewL'), getValueFrom('xviewR')];
-	if (nm[0] && nm[1]){
-		nm = nm.map(Number);
-		if (nm[0] < nm[1]){
-			xview = nm;
-		}
-	}
-	nm = [getValueFrom('yviewL'), getValueFrom('yviewR')];
-	if (nm[0] && nm[1]){
-		nm = nm.map(Number);
-		if (nm[0] < nm[1]){
-			yview = nm;
-		}
-	}
-	nm = [getValueFrom('gridx'), getValueFrom('gridy')];
-	if (nm[0] && nm[1]){
-		nm = nm.map(Number);
-		if (nm[0]>0 && nm[1]>0){
-			gridxy = nm;
-		}
-	}
+function retrieveArgs(graph){
+	let nm = [getValueFrom('xviewL'), getValueFrom('xviewR')].map(Number);
+	let xview = (nm.some(isNaN) || nm[0] >= nm[1])
+		? guessXview(graph)
+		: nm;
+	nm = [getValueFrom('yviewL'), getValueFrom('yviewR')].map(Number);
+	let yview = (nm.some(isNaN) || nm[0] >= nm[1])
+		? guessYview(graph)
+		: nm;
+	nm = [getValueFrom('gridx'), getValueFrom('gridy')].map(Number);
+	let gridxy = (nm.some(isNaN) || nm.some(v => v<0))
+		? undefined
+		: nm;
 	return [xview, yview, gridxy];
 }
+function setViews(xview, yview){
+	setValueTo('xviewL', xview[0]);
+	setValueTo('xviewR', xview[1]);
+	setValueTo('yviewL', yview[0]);
+	setValueTo('yviewR', yview[1]);
+}
 function drawGraph(graph, can){
-	let [xview, yview, gridxy] = retrieveArgs();
-
-	if (xview === undefined){
-		xview = getMinAndMaxOverAll(graph.datasets, (point) => point.x);
-		setValueTo('xviewL', xview[0]);
-		setValueTo('xviewR', xview[1]);
-	}
-	if (yview === undefined){
-		yview = getMinAndMaxOverAll(graph.datasets, (point) => point.y);
-		setValueTo('yviewL', yview[0]);
-		setValueTo('yviewR', yview[1]);
-	}
+	let [xview, yview, gridxy] = retrieveArgs(graph);
+	setViews(xview, yview);
 	let xscale = calculateScale(xview, can.width);
 	let yscale = calculateScale(yview, can.height);
 	canvasBg(can, getValueFrom('bgcolor'));
 	if (gridxy){
 		gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can, hcolor=getValueFrom('grcolor'), vcolor=getValueFrom('grcolor'));
+		tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 	}
 	originLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'));
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
@@ -74,25 +61,35 @@ function setValueTo(name, val){
 	document.getElementById(name).value = val;
 }
 function addPoints(graph){
-	let values = getValueFrom('points').split(',').map(Number);
+	let numbers = getValueFrom('points');
+	if (numbers.length === 0){
+		return;
+	}
 	let color = getValueFrom('ptcolor');
 	let name = getValueFrom('name');
 	let dsi = graph.datasets.length;
 	if (name.length === 0){
 		name = 'Dataset #'+dsi;
 	}
-	if (color.length === 0){
-		color = 'black';
-	}
 	graph.datasets.push(new Dataset(name, color, getValueFrom('connectPoints')));
-	for (let i=0, l=values.length; i<l; i+=2){
-		graph.datasets[dsi].points.push(new Point(values[i], values[i+1]));
-	}
+	parseStrToArray(numbersStr, graph.datasets[dsi].points);
 	graph.datasets[dsi].points.sort((a,b) => a.x-b.x);
 	addDatasetToList(graph.datasets[dsi]);
-	console.log(linearLeastSquares(graph.datasets[dsi].points));
-	document.getElementById('points').value = '';
+	setValueTo('points') = '';
 }
+
+function parseStrToArray(str, arr){
+	// Parse string of comma separated x,y coordinates to array of Points
+	let numbers = str.split(',').map(Number);
+	for (let i=0,l=numbers.length; i<l; i+=2){
+		if (isNaN(numbers[i]) || isNaN(numbers[i+1])){
+			console.log('Skipping values '+i+', '+i+1);
+			continue;
+		}
+		arr.push(new Point(numbers[i], numbers[i+1]));
+	}
+}
+
 function addDatasetToList(dataset){
 	let option = document.createElement('option');
 	option.text = dataset.name;
@@ -100,12 +97,13 @@ function addDatasetToList(dataset){
 	document.getElementById('pointsList').add(option);
 }
 function guessArgs(graph){
-	let xview = getMinAndMaxOverAll(graph.datasets, (point) => point.x);
-	setValueTo('xviewL', xview[0]);
-	setValueTo('xviewR', xview[1]);
-	let yview = getMinAndMaxOverAll(graph.datasets, (point) => point.y);
-	setValueTo('yviewL', yview[0]);
-	setValueTo('yviewR', yview[1]);
+	setViews(guessXview(graph),guessYview(graph));
+}
+function guessXview(graph){
+	return getMinAndMaxOverAll(graph.datasets, (point) => point.x);
+}
+function guessYview(graph){
+	return getMinAndMaxOverAll(graph.datasets, (point) => point.y);
 }
 function clearDatasets(graph){
 	graph.datasets = [];
@@ -132,9 +130,9 @@ function editDataset(graph){
 			}
 			out += ds.points[i].x + ','+ds.points[i].y;
 		}
-		document.getElementById('points').value = out;
-		document.getElementById('ptcolor').value = standardize_color(ds.color);
-		document.getElementById('name').value = ds.name;
+		setValueTo('points', out);
+		setValueTo('ptcolor', standardize_color(ds.color));
+		setValueTo('name', ds.name);
 		document.getElementById('connectPoints').checked = ds.connectPoints;
 	}
 }
@@ -142,7 +140,10 @@ function saveDataset(graph){
 	let index = document.getElementById('pointsList').selectedIndex;
 	if (index > -1){
 		// duplicate code of addPoints..
-		let values = getValueFrom('points').split(',').map(Number);
+		let values = getValueFrom('points');
+		if (values.length === 0){
+			return;
+		}
 		let color = getValueFrom('ptcolor');
 		let name = getValueFrom('name');
 		if (name.length === 0){
@@ -152,16 +153,14 @@ function saveDataset(graph){
 		graph.datasets[index].name = name;
 		graph.datasets[index].connectPoints = document.getElementById('connectPoints').checked;
 		graph.datasets[index].points = [];
-		
-		for (let i=0, l=values.length; i<l; i+=2){
-			graph.datasets[index].points.push(new Point(values[i], values[i+1]));
-		}
+
+		parseStrToArray(values, graph.datasets[index].points);
 		graph.datasets[index].points.sort((a,b) => a.x-b.x);
 		// change the select now..
 		let option = document.getElementById('pointsList')[index];
 		option.text = name;
 		option.style.color = color;
-		document.getElementById('points').value = '';
+		setValueTo('points', '');
 	}
 }
 
@@ -171,9 +170,7 @@ function standardize_color(str){
 	return ctx.fillStyle;
 }
 function setCanvasSize(){
-	let width = getValueFrom('canw');
-	let height = getValueFrom('canh');
-	can.width = width;
-	can.height = height;
+	can.width = getValueFrom('canw');
+	can.height = getValueFrom('canh');
 	canvasBg(can, getValueFrom('bgcolor'));
 }
