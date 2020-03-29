@@ -90,6 +90,7 @@ function addPoints(graph){
 	}
 	graph.datasets[dsi].points.sort((a,b) => a.x-b.x);
 	addDatasetToList(graph.datasets[dsi]);
+	console.log(linearLeastSquares(graph.datasets[dsi].points));
 	document.getElementById('points').value = '';
 }
 function addDatasetToList(dataset){

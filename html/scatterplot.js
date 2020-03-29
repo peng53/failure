@@ -74,6 +74,17 @@ function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
 		ctx.setLineDash([]);
 		ctx.stroke();
 	}
+	// linearLeastSquares test!
+	let [m,b] = linearLeastSquares(points);
+	ctx.strokeStyle = 'cyan';
+	ctx.setLineDash([4,4]);
+	drawALine(
+		ctx,
+		transformX(xview[0], xscale, xview[0]),
+		transformX(xview[1], xscale, xview[0]),
+		transformY(m*xview[0]+b, yscale, yview[1]),
+		transformY(m*xview[1]+b, yscale, yview[1])
+	);
 }
 
 function getMinAndMax(values, getter){
@@ -106,7 +117,6 @@ function canvasBg(can, color){
 	let ctx = can.getContext('2d');
 	ctx.fillStyle = color;
 	ctx.fillRect(0,0,can.width, can.height);
-
 }
 
 function sortedPointArray(xvals, yvals){
@@ -132,29 +142,16 @@ function Dataset(name, color, connectPoints){
 	this.connectPoints = connectPoints
 }
 
-function SumAccumulator(){
-	this.total = 0;
-	this.count = 0;
-	this.add = function(n){
-		this.total += n;
-		++this.count;
-	};
-}
-
 function linearLeastSquares(points){
 	// Returns slope and y-intercept from linear least squares on points.
 	// Using equation from https://www.mathsisfun.com/data/least-squares-regression.html
 	let N = points.length;
-	let sumXY = new SumAccumulator();
-	points.forEach(p => sumXY.add(p.x*p.y));
-	let sumX = new SumAccumulator();
-	points.forEach(p => sumX.add(p.x));
-	let sumY = new SumAccumulator();
-	points.forEach(p => sumY.add(p.y));
-	let sumX2 = new SumAccumulator();
-	points.forEach(p => sumX2.add(p.x*p.x));
+	let sumXY = points.reduce((total,p) => total + p.x*p.y, 0);
+	let sumX = points.reduce((total,p) => total + p.x, 0);
+	let sumY = points.reduce((total,p) => total + p.y, 0);
+	let sumX2 = points.reduce((total,p) => total + p.x*p.x, 0);
 	
-	let m = (((N*sumXY.total) - (sumX.total*sumY.total)) / ((N*sumX2.total) - (sumX.total*sumX.total)));
-	let b = (sumY.total - (m*sumX.total)) / N;
+	let m = (((N*sumXY) - (sumX*sumY)) / ((N*sumX2) - (sumX*sumX)));
+	let b = (sumY - (m*sumX)) / N;
 	return [m,b];
 }
