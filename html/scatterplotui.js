@@ -30,7 +30,15 @@ function retrieveArgs(graph){
 	let gridxy = (nm.some(isNaN) || nm.some(v => v<0))
 		? undefined
 		: nm;
-	return [xview, yview, gridxy];
+	nm = [getValueFrom('axisx'), getValueFrom('axisy')].map(Number);
+	let axisxy = nm.some(isNaN)
+		? undefined
+		: nm;
+	nm = [getValueFrom('axisxn'), getValueFrom('axisyn')].map(Number);
+	let axisxyn = (nm.some(isNaN) || nm.some(v => v<=0))
+		? undefined
+		: nm;
+	return [xview, yview, gridxy, axisxy, axisxyn];
 }
 function setViews(xview, yview){
 	setValueTo('xviewL', xview[0]);
@@ -39,23 +47,27 @@ function setViews(xview, yview){
 	setValueTo('yviewR', yview[1]);
 }
 function drawGraph(graph, can){
-	let [xview, yview, gridxy] = retrieveArgs(graph);
+	let [xview, yview, gridxy, axisxy, axisxyn] = retrieveArgs(graph);
 	setViews(xview, yview);
 	let xscale = calculateScale(xview, can.width);
 	let yscale = calculateScale(yview, can.height);
 	canvasBg(can, getValueFrom('bgcolor'));
 	if (gridxy){
 		gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can, hcolor=getValueFrom('grcolor'), vcolor=getValueFrom('grcolor'));
-		tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
+		//tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 	}
-	originLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'));
+	if (axisxy){
+		axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'), axisxy, axisxyn);
+	}
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
 		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=(!graph.datasets[i].connectPoints));
 	}
 }
 
 function getValueFrom(name){
-	return document.getElementById(name).value;
+	return (document.getElementById(name).value.length > 0)
+		? document.getElementById(name).value
+		: undefined;
 }
 function setValueTo(name, val){
 	document.getElementById(name).value = val;

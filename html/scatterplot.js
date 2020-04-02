@@ -14,16 +14,39 @@ function circlePtAt(ctx,x,y){
 	ctx.arc(x,y,1,0,2* Math.PI);
 }
 
-function originLines(xscale, xview, yscale, yview, can, color){
+function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
 	let ctx = can.getContext('2d');
 	ctx.setLineDash([]);
 	ctx.strokeStyle = color;
+	console.log(xy);
+	let x0, y0;
 	// line x = 0
-	let x0 = transformX(0, xscale, xview[0]);
-	drawALine(ctx,x0,x0,0,can.height);
+	if (xy[0] >= xview[0] && xy[0] <= xview[1]){
+		x0 = transformX(xy[0], xscale, xview[0]);
+		drawALine(ctx,x0,x0,0,can.height);
+	}
 	// line y = 0
-	let y0 = transformY(0, yscale, yview[1]);
-	drawALine(ctx,0,can.width,y0,y0);
+	if (xy[1] >= yview[0] && xy[1] <= yview[1]){
+		y0 = transformY(xy[1], yscale, yview[1]);
+		drawALine(ctx,0,can.width,y0,y0);
+	}
+	if (x0 && y0 && xyn && !xyn.some(isNaN)){
+		// both axis are visible so draw numbers..
+		let fontSize = 12; // in pixels!
+		ctx.font =  fontSize+'px Arial';
+		ctx.textAlign = 'center';
+		ctx.fillStyle = 'orange';
+		//ctx.rotate(90 * Math.PI/180);
+		for (let y=closestMultiple(xy[1], xyn[1]); y <= yview[1]; y += xyn[1]){
+			ctx.fillText(y, x0, 6+ transformY(y, yscale, yview[1]));
+		}
+		//ctx.rotate(-90 * Math.PI/180);
+		ctx.fillStyle = 'teal';
+		y0 += fontSize/2;
+		for (let x=closestMultiple(xy[0], xyn[0]); x <= xview[1]; x += xyn[0]){
+			ctx.fillText(x, transformX(x, xscale, xview[0]), y0);
+		}
+	}
 }
 
 function drawALine(ctx, x0, x, y0, y){
