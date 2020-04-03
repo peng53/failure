@@ -35,31 +35,34 @@ function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
 	}
 	if (x0 && y0 && xyn && !xyn.some(isNaN)){
 		// both axis are visible so draw numbers..
-		let fontSize = 12; // in pixels!
-		ctx.font =  fontSize+'px monospace';
-		ctx.textAlign = 'right';
-		ctx.fillStyle = 'orange';
-		ctx.textBaseline = 'middle';
-		//x0 -= 2;
-		//ctx.rotate(90 * Math.PI/180);
-		let y=closestMultiple(yview[0], xyn[1]);
-		let x=closestMultiple(xview[0], xyn[0]);
-		let dx = xscale * xyn[0];
-		let dy = yscale * xyn[1];
-		for (let sy = transformY(y, yscale, yview[1]); y <= yview[1]; y += xyn[1]){
-			ctx.fillText(y, x0, sy);
-			sy -= dy;
-		}
-		//ctx.rotate(-90 * Math.PI/180);
-		ctx.textAlign = 'center';
-		ctx.fillStyle = 'teal';
-		ctx.textBaseline = 'hanging';
-		//y0 += fontSize/2;
-		//0 += 2;
-		for (let sx = transformX(x, xscale, xview[0]); x <= xview[1]; x += xyn[0]){
-			ctx.fillText(x, sx, y0);
-			sx += dx;
-		}
+		tickNumbers(x0, y0, xview, yview, xscale, yscale, xyn, ctx);
+
+	}
+}
+
+function tickNumbers(xInt, yInt, xview, yview, xscale, yscale, xyIntervals, ctx){
+	let x0 = xInt, y0 = yInt;
+	let fontSize = 12; // in pixels!
+	ctx.font =  fontSize+'px monospace';
+	ctx.textAlign = 'right';
+	ctx.fillStyle = 'orange';
+	ctx.textBaseline = 'middle';
+	//ctx.rotate(90 * Math.PI/180);
+	let y=closestMultiple(yview[0], xyIntervals[1]);
+	let x=closestMultiple(xview[0], xyIntervals[0]);
+	let dx = xscale * xyIntervals[0];
+	let dy = yscale * xyIntervals[1];
+	for (let sy = transformY(y, yscale, yview[1]); y <= yview[1]; y += xyIntervals[1]){
+		ctx.fillText(y, x0, sy);
+		sy -= dy;
+	}
+	//ctx.rotate(-90 * Math.PI/180);
+	ctx.textAlign = 'center';
+	ctx.fillStyle = 'teal';
+	ctx.textBaseline = 'hanging';
+	for (let sx = transformX(x, xscale, xview[0]); x <= xview[1]; x += xyIntervals[0]){
+		ctx.fillText(x, sx, y0);
+		sx += dx;
 	}
 }
 
@@ -87,27 +90,6 @@ function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can, hcol
 	let x0 = transformX(xinterval * (Math.ceil(xview[0]/xinterval)), xscale, xview[0])
 	for (let x=x0; x<can.width; x+= dx){
 		drawALine(ctx, x, x, 0, can.height);
-	}
-}
-
-function tickNumbers(xscale, xview, xinterval, yscale, yview, yinterval, can){
-	let ctx = can.getContext('2d');
-	let y0 = transformY(0, yscale, yview[1]);
-	let x0 = transformX(0, xscale, xview[0]);
-	let fontSize = 12; // in pixels!
-	ctx.font =  fontSize+'px Arial';
-	ctx.fillStyle = 'red';
-	ctx.textAlign = 'center';
-	if (yinterval > 0){
-		for (let y=closestMultiple(yview[0], yinterval); y <= yview[1]; y += yinterval){
-			ctx.fillText(y, x0, 6+ transformY(y, yscale, yview[1]));
-		}
-	}
-	y0 += fontSize+2; // lower it so its under the originline
-	if (xinterval > 0){
-		for (let x=closestMultiple(xview[0], xinterval); x <= xview[1]; x += xinterval){
-			ctx.fillText(x, transformX(x, xscale, xview[0]), y0);
-		}
 	}
 }
 
