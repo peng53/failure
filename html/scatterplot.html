@@ -16,7 +16,7 @@
 	XView<br /><input id='xviewL' type='number' step='any' /><input id='xviewR' type='number' step='any' /><br />
 	YView<br /><input id='yviewL' type='number' step='any' /><input id='yviewR' type='number' step='any' /><br />
 	Grid<br /><input id='gridx' type='number' step='any' min=0 /><input id='gridy' type='number' step='any' min=0 /><br />
-	Axis (x &amp; y)<br /><input id='axisx' type='number' step='any' /><input id='axisy' type='number' step='any' /><br />
+	Axis (x &amp; y)<br /><input id='axisx' type='number' step='any' value=0 /><input id='axisy' type='number' step='any' value=0 /><br />
 	Axis Numbers (x &amp; y)<br /><input id='axisxn' type='number' step='any' min=0 /><input id='axisyn' type='number' step='any' min=0 /><br />
 	<button onclick='drawGraph(maingraph,can);'>Draw</button><button onclick='guessArgs(maingraph);'>Auto</button>
 </div>
@@ -42,11 +42,13 @@
 	<input id='bgcolor' type='color' value='#ffffff'/></label><br />
 	<label for='grcolor'>Grid<br />
 	<input id='grcolor' type='color' value='#cccccc' /></label><br />
-	<label for='orcolor'>Origin<br />
-	<input id='orcolor' type='color' value='#000000' /></label><br />
+	<label for='orcolorx'>Origin (x, y)<br />
+	<input id='orcolorx' type='color' value='#000000' /><br />
+	<input id='orcolory' type='color' value='#000000' /></label><br />
 	<h4>Size</h4>
-	Canvas WxH<br /><input id='canw' type='number' min=50 step=25 />x<input id='canh' type='number' min=50 step=25 /><br />
-	<button onclick='setCanvasSize()'>Set Size</button><br />
+	Canvas WxH<br /><input id='canw' type='number' min=50 />x<input id='canh' type='number' min=50 /><br />
+	<button onclick='setCanvasSize()'>Set Size</button>
+	<button onclick='maxCanvasSize()'>Maximize</button><br />
 </div>
 <canvas id='mycan' width='400px' height='300px'></canvas>
 

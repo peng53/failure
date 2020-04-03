@@ -57,7 +57,7 @@ function drawGraph(graph, can){
 		//tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 	}
 	if (axisxy){
-		axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolor'), axisxy, axisxyn);
+		axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolorx'), axisxy, axisxyn);
 	}
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
 		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=(!graph.datasets[i].connectPoints));
@@ -185,4 +185,9 @@ function setCanvasSize(){
 	can.width = getValueFrom('canw');
 	can.height = getValueFrom('canh');
 	canvasBg(can, getValueFrom('bgcolor'));
+}
+function maxCanvasSize(){
+	let topMenu = document.getElementById('topmenu');
+	setValueTo('canw', window.innerWidth);
+	setValueTo('canh', window.innerHeight - topMenu.offsetHeight);
 }

@@ -13,6 +13,9 @@ function calculateScale(view, outputLength){
 function circlePtAt(ctx,x,y){
 	ctx.arc(x,y,1,0,2* Math.PI);
 }
+function dotPtAt(ctx,x,y){
+	ctx.fillRect(x-1,y-1,2,2);
+}
 
 function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
 	let ctx = can.getContext('2d');
@@ -33,18 +36,29 @@ function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
 	if (x0 && y0 && xyn && !xyn.some(isNaN)){
 		// both axis are visible so draw numbers..
 		let fontSize = 12; // in pixels!
-		ctx.font =  fontSize+'px Arial';
-		ctx.textAlign = 'center';
+		ctx.font =  fontSize+'px monospace';
+		ctx.textAlign = 'right';
 		ctx.fillStyle = 'orange';
+		ctx.textBaseline = 'middle';
+		//x0 -= 2;
 		//ctx.rotate(90 * Math.PI/180);
-		for (let y=closestMultiple(xy[1], xyn[1]); y <= yview[1]; y += xyn[1]){
-			ctx.fillText(y, x0, 6+ transformY(y, yscale, yview[1]));
+		let y=closestMultiple(yview[0], xyn[1]);
+		let x=closestMultiple(xview[0], xyn[0]);
+		let dx = xscale * xyn[0];
+		let dy = yscale * xyn[1];
+		for (let sy = transformY(y, yscale, yview[1]); y <= yview[1]; y += xyn[1]){
+			ctx.fillText(y, x0, sy);
+			sy -= dy;
 		}
 		//ctx.rotate(-90 * Math.PI/180);
+		ctx.textAlign = 'center';
 		ctx.fillStyle = 'teal';
-		y0 += fontSize/2;
-		for (let x=closestMultiple(xy[0], xyn[0]); x <= xview[1]; x += xyn[0]){
-			ctx.fillText(x, transformX(x, xscale, xview[0]), y0);
+		ctx.textBaseline = 'hanging';
+		//y0 += fontSize/2;
+		//0 += 2;
+		for (let sx = transformX(x, xscale, xview[0]); x <= xview[1]; x += xyn[0]){
+			ctx.fillText(x, sx, y0);
+			sx += dx;
 		}
 	}
 }
@@ -106,16 +120,22 @@ function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
 	ctx.beginPath();
 	ctx.strokeStyle = ctx.fillStyle = color;
 	let x,y;
+	let firstPt = true;
+	if (!noLine){
+		ctx.beginPath();
+	}
 	for (let i=0, l=points.length; i<l; ++i){
 		x=transformX(points[i].x, xscale, xview[0]);
 		y=transformY(points[i].y, yscale, yview[1]);
-		if (noLine){
-			ctx.moveTo(x,y);
+		if (!noLine){
+			if (firstPt){
+				ctx.moveTo(x,y);
+				firstPt = false;
+			} else {
+				ctx.lineTo(x,y);
+			}
 		}
-		circlePtAt(ctx,x,y);
-		if (noLine){
-			ctx.fill();
-		}
+		dotPtAt(ctx,x,y);
 	}
 	if (!noLine){
 		ctx.setLineDash([]);
@@ -123,7 +143,8 @@ function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
 	}
 	// linearLeastSquares test!
 	let [m,b] = linearLeastSquares(points);
-	ctx.strokeStyle = 'cyan';
+	ctx.globalAlpha = 0.4;
+	ctx.strokeStyle = '#FF0000';
 	ctx.setLineDash([4,4]);
 	drawALine(
 		ctx,
@@ -132,6 +153,7 @@ function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
 		transformY(m*xview[0]+b, yscale, yview[1]),
 		transformY(m*xview[1]+b, yscale, yview[1])
 	);
+	ctx.globalAlpha = 1;
 }
 
 function getMinAndMax(values, getter){
