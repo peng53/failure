@@ -21,7 +21,6 @@ function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
 	let ctx = can.getContext('2d');
 	ctx.setLineDash([]);
 	ctx.strokeStyle = color;
-	console.log(xy);
 	let x0, y0;
 	// line x = 0
 	if (xy[0] >= xview[0] && xy[0] <= xview[1]){

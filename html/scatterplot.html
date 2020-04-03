@@ -13,26 +13,26 @@
 
 <div id='controls'>
 	<h3>Controls</h3>
-	XView<br /><input id='xviewL' type='number' step='any' /><input id='xviewR' type='number' step='any' /><br />
-	YView<br /><input id='yviewL' type='number' step='any' /><input id='yviewR' type='number' step='any' /><br />
-	Grid<br /><input id='gridx' type='number' step='any' min=0 /><input id='gridy' type='number' step='any' min=0 /><br />
-	Axis (x &amp; y)<br /><input id='axisx' type='number' step='any' value=0 /><input id='axisy' type='number' step='any' value=0 /><br />
-	Axis Numbers (x &amp; y)<br /><input id='axisxn' type='number' step='any' min=0 /><input id='axisyn' type='number' step='any' min=0 /><br />
-	<button onclick='drawGraph(maingraph,can);'>Draw</button><button onclick='guessArgs(maingraph);'>Auto</button>
+	<span title='Horizontal viewpoint.'>XView (min &amp; max)</span><br /><input id='xviewL' type='number' step='any' /><input id='xviewR' type='number' step='any' /><br />
+	<span title='Vertical viewpoint.'>YView (min &amp; max)</span><br /><input id='yviewL' type='number' step='any' /><input id='yviewR' type='number' step='any' /><br />
+	<span title='Gridline intervals; 0 to disable.'>Grid (x &amp; y)</span><br /><input id='gridx' type='number' step='any' min=0 /><input id='gridy' type='number' step='any' min=0 /><br />
+	<span title='Point to place x/y axis.'>Axis (x &amp; y)</span><br /><input id='axisx' type='number' step='any' value=0 /><input id='axisy' type='number' step='any' value=0 /><br />
+	<span title='Axis number intervals; 0 to disable.'>Axis Numbers (x &amp; y)</span><br /><input id='axisxn' type='number' step='any' min=0 /><input id='axisyn' type='number' step='any' min=0 /><br />
+	<button title='Create graph from data and parameters.' onclick='drawGraph(maingraph,can);'>Draw</button><button title='Guess viewpoints based on data.' onclick='guessArgs(maingraph);'>Auto</button>
 </div>
 <div id='data'>
 	<h3>Data</h3>
-	<label for='name'>Name<br /><input id='name' /></label><br />
+	<label title='Name of dataset (for displayed).' for='name'>Name<br /><input id='name' /></label><br />
 	<label for='ptcolor'>Color<br />
-	<input id='ptcolor' type='color' /></label><br />
-	<label for='connectPoints'>Connect Points<br /><input id='connectPoints' type='checkbox' /></label><br />
-	<label for='points'>Points<br />
+	<input title='Color of points in dataset.' id='ptcolor' type='color' /></label><br />
+	<label title='Whether or not to connect the points.' for='connectPoints'>Connect Points<br /><input id='connectPoints' type='checkbox' /></label><br />
+	<label title='Comma separated points of dataset' for='points'>Points<br />
 	<textarea id='points'></textarea></label><br />
-	<button onclick='addPoints(maingraph)'>Add New</button><button onclick='saveDataset(maingraph);'>Modify</button><br />
+	<button title='Add above as a new dataset.' onclick='addPoints(maingraph)'>Add New</button><button title='Saves above to dataset selected in "displayed".' onclick='saveDataset(maingraph);'>Modify</button><br />
 	<hr />
-	<label for='pointsList'>Displayed<br />
+	<label title='All datasets that will be drawn.' for='pointsList'>Displayed<br />
 	<select id='pointsList' name='point' multiple></select></label><br />
-	<button onclick='editDataset(maingraph);'>Edit</button><button onclick='deleteDataset(maingraph);'>Delete</button><button onclick='clearDatasets(maingraph);'>Clear</button><br />
+	<button title='Copies first selected dataset to above inputs.' onclick='editDataset(maingraph);'>Edit</button><button title='Removes selected dataset. (no confirm)' onclick='deleteDataset(maingraph);'>Delete</button><button title='Deletes all datasets. (no confirm)' onclick='clearDatasets(maingraph);'>Clear</button><br />
 </div>
 
 <div id='look'>
