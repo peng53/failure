@@ -41,10 +41,12 @@
 	ctx.textBaseline = 'bottom';
 	ctx.rotate(-90*Math.PI/180);
 	ctx.beginPath();
+	let sy;
 	for (let y=10; y<60; y+=10){
-		ctx.fillText(y, yscale*y, 0);
-		ctx.moveTo(y*yscale,-2);
-		ctx.lineTo(y*yscale,2);
+		sy = yscale*y;
+		ctx.fillText(y, sy, 0);
+		ctx.moveTo(sy,-2);
+		ctx.lineTo(sy,2);
 	}
 	ctx.stroke();
 	ctx.restore();
