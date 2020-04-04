@@ -3,10 +3,11 @@
 <script>
 	var can = document.getElementById('mycanvas');
 	var ctx = can.getContext('2d');
-
+	/* General transform */
 	ctx.translate(can.width/2, can.height/2);
 	ctx.scale(1,-1);
 
+	/* Axis drawing */
 	ctx.strokeStyle = 'black';
 	ctx.globalAlpha = 0.5;
 	ctx.moveTo(0,-can.height/2);
@@ -15,16 +16,38 @@
 	ctx.lineTo(can.width/2,0); // line from left to right
 	ctx.stroke();
 	ctx.globalAlpha = 1;
+
+	/* Draw the points */
+	ctx.save();
 	ctx.fillStyle = 'red';
 	let xscale = 4;
 	let yscale = 4;
-	let dotSize = 2;
+	let dotSize = 0.5;
+	ctx.scale(xscale, yscale);
 	for (let xy=-10; xy < 10; ++xy){
-		ctx.fillRect(xscale*xy,yscale*xy,dotSize,dotSize);
+		ctx.fillRect(xy,xy,dotSize,dotSize);
 	}
 	ctx.fillStyle = 'blue';
 	for (let xy=-10; xy < 10; ++xy){
-		ctx.fillRect(xscale*xy,yscale*(xy**2),dotSize,dotSize);
+		ctx.fillRect(xy,(xy**2),dotSize,dotSize);
 	}
+	ctx.restore();
+
+	/* Numbers */
+	ctx.save();
+	ctx.scale(1,-1);
+	ctx.textAlign = 'center';
+	ctx.fillStyle = 'black';
+	ctx.textBaseline = 'bottom';
+	ctx.rotate(-90*Math.PI/180);
+	ctx.beginPath();
+	for (let y=10; y<60; y+=10){
+		ctx.fillText(y, yscale*y, 0);
+		ctx.moveTo(y*yscale,-2);
+		ctx.lineTo(y*yscale,2);
+	}
+	ctx.stroke();
+	ctx.restore();
+
 </script>
 </html>
