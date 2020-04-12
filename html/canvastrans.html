@@ -1,52 +1,76 @@
 <html>
-<canvas id='mycanvas' height=400 width=500 style='border: 1px solid red'/>
+<canvas id='mycanvas' height=400 width=500 style='border: 1px solid red; image-rendering: pixelated;'/>
 <script>
+	function Point(x,y){
+		this.x = x;
+		this.y = y;
+	}
+	
 	var can = document.getElementById('mycanvas');
 	var ctx = can.getContext('2d');
+	/* My points */
+	var mypoints = [];
+	for (let xy=-10; xy<11; ++xy){
+		mypoints.push(new Point(xy, xy**2));
+	}
+	var xview = [-10, 10];
+	var yview = [0, 100];
+	
+	var xscale = can.width / Math.abs(Math.max(xview[1] - xview[0], 1));
+	var yscale = can.height / Math.abs(Math.max(yview[1] - yview[0], 1));
+	
 	/* General transform */
-	ctx.translate(can.width/2, can.height/2);
-	ctx.scale(1,-1);
+	ctx.scale(xscale, -yscale);
+	ctx.translate(-xview[0], -yview[1]);
 
-	/* Axis drawing */
-	ctx.strokeStyle = 'black';
-	ctx.globalAlpha = 0.5;
-	ctx.moveTo(0,-can.height/2);
-	ctx.lineTo(0,can.height/2); // line from bottom to top
-	ctx.moveTo(-can.width/2,0);
-	ctx.lineTo(can.width/2,0); // line from left to right
-	ctx.stroke();
-	ctx.globalAlpha = 1;
 
 	/* Draw the points */
 	ctx.save();
-	ctx.fillStyle = 'red';
-	let xscale = 4;
-	let yscale = 4;
-	let dotSize = 0.5;
-	ctx.scale(xscale, yscale);
-	for (let xy=-10; xy < 10; ++xy){
-		ctx.fillRect(xy,xy,dotSize,dotSize);
-	}
 	ctx.fillStyle = 'blue';
-	for (let xy=-10; xy < 10; ++xy){
-		ctx.fillRect(xy,(xy**2),dotSize,dotSize);
+	let dotSizeX = 3/xscale;
+	let dotSizeY = 3/yscale;
+	console.log(dotSizeX,dotSizeY);
+	for (let i=0; i<mypoints.length; ++i){
+		ctx.fillRect(mypoints[i].x,mypoints[i].y,dotSizeX,dotSizeY);
 	}
-	ctx.restore();
+
+	/* Axis drawing */
+	ctx.strokeStyle = 'black';
+	ctx.lineWidth = Math.min(dotSizeX, dotSizeY);
+	ctx.globalAlpha = 0.5;
+	ctx.beginPath();
+	// vertical line
+	let xint = 0;
+	ctx.moveTo(xint,yview[0]);
+	ctx.lineTo(xint,yview[1]); // line from bottom to top
+	// horizontal line
+	let yint = 5;
+	ctx.moveTo(xview[0],yint);
+	ctx.lineTo(xview[1],yint); // line from left to right
+	ctx.stroke();
+	ctx.globalAlpha = 1;
+
 
 	/* Numbers */
 	ctx.save();
-	ctx.scale(1,-1);
 	ctx.textAlign = 'center';
 	ctx.fillStyle = 'black';
 	ctx.textBaseline = 'bottom';
+	ctx.beginPath();
+
+	for (let x=xview[0]; x<=xview[1]; x+=1){
+		ctx.fillText(x, x, yint);
+	}
+	ctx.stroke();
+
 	ctx.rotate(-90*Math.PI/180);
 	ctx.beginPath();
 	let sy;
-	for (let y=10; y<60; y+=10){
-		sy = yscale*y;
-		ctx.fillText(y, sy, 0);
-		ctx.moveTo(sy,-2);
-		ctx.lineTo(sy,2);
+	for (let y=1; y<100; y+=1){
+		console.log(y);
+		ctx.fillText(y, y, xint);
+		ctx.moveTo(y,xint);
+		ctx.lineTo(y,xint);
 	}
 	ctx.stroke();
 	ctx.restore();
