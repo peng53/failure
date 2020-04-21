@@ -84,10 +84,10 @@ function addPoints(graph){
 		name = 'Dataset #'+dsi;
 	}
 	graph.datasets.push(new Dataset(name, color, getValueFrom('connectPoints')));
-	parseStrToArray(numbersStr, graph.datasets[dsi].points);
+	parseStrToArray(numbers, graph.datasets[dsi].points);
 	graph.datasets[dsi].points.sort((a,b) => a.x-b.x);
 	addDatasetToList(graph.datasets[dsi]);
-	setValueTo('points') = '';
+	setValueTo('points','');
 }
 
 function parseStrToArray(str, arr){
