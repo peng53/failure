@@ -1,11 +1,30 @@
 <html>
-	<canvas id='rd' width='768px' height='500px' style='border: 1px solid black'></canvas>
-	<script>
-		function closestMultiple(n, m){
-			return ((n%m)>m/2) ? n+m - n%m : n-n%m;
+	<style>
+		#rd, #pt {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		margin: auto;
 		}
-		function calculateScale(view, outputLength){
-			return outputLength / Math.abs(Math.max(view[1] - view[0], 1));
+		#rd {
+		z-index: -1;
+		}
+		#pt {
+		z-index: 5;
+		}
+	</style>
+	<button onclick='toggleLayer("rd");'>Show/hide Axis</button>
+	<button onclick='toggleLayer("pt");'>Show/hide Points</button>
+	<button onclick='points_trial3([-10, 10], [-11, 99])'>Randomize Points</button>
+	<canvas id='rd' width='400px' height='500px'></canvas>
+	<canvas id='pt' width='400px' height='500px'></canvas>
+	<script src='scatterplot.js'></script>
+	<script>
+		function toggleLayer(layer){
+			let can = document.getElementById(layer);
+			can.style.display = can.style.display == "none" ? "block" : "none";
 		}
 		function trial1(){
 			let xview = [-10, 10];
@@ -110,6 +129,36 @@
 			ctx.strokeStyle = 'black';
 			ctx.stroke();
 		}
+		function randomNumber(min, max) {
+			return Math.random() * (max - min) + min;
+		}
+		function points_trial3(xview, yview){
+			let can = document.getElementById('pt');
+			let ctx = can.getContext('2d');
+			ctx.clearRect(0, 0, can.width, can.height);
+			let xscale = calculateScale(xview, can.width);
+			let yscale = calculateScale(yview, can.height);
+			let sx, sy;
+			let firstPt = true;
+			ctx.beginPath();
+			for (let x=xview[0];x<=xview[1];++x){
+				sx = transformX(x, xscale, xview[0]);
+				sy = transformY(randomNumber(yview[0],yview[1]), yscale, yview[1]);
+				dotPtAt(
+					ctx,
+					sx,
+					sy
+				);
+				if (firstPt){
+					ctx.moveTo(sx,sy);
+					firstPt = false;
+				} else {
+					ctx.lineTo(sx,sy);
+				}
+			}
+			ctx.stroke();
+		}
 		trial2(0,0);
+		points_trial3([-10, 10], [-11, 99]);
 	</script>
 </html>
