@@ -42,6 +42,18 @@ function drawYAxis(can, yview, dy, noshow){
 	ctx.rotate(-90* Math.PI/180);
 	let dZ = yscale*dy;
 	ctx.beginPath();
+	for (let y=closestMultiple(yview[0],dy), ry=can.height; y<=yview[1]; y+=dy){
+		if (y != noshow){
+			ctx.strokeStyle = (y>=0) ? 'black' : 'red';
+			ctx.strokeText(Math.abs(y),-ry,-10);
+		}
+		ctx.moveTo(-ry, -2);
+		ctx.lineTo(-ry, 2);
+		console.log(y,ry);
+		ry -= dZ;
+		
+	}
+	/*
 	for (let y=closestMultiple(yview[1],dy), ry=0; y>=yview[0]; y-=dy){
 		if (y != noshow){
 			ctx.strokeStyle = (y>=0) ? 'black' : 'red';
@@ -51,6 +63,7 @@ function drawYAxis(can, yview, dy, noshow){
 		ctx.lineTo(ry, 2);
 		ry -= dZ;
 	}
+	*/
 	ctx.strokeStyle = 'black';
 	ctx.stroke();
 }
