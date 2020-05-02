@@ -57,7 +57,8 @@ function drawGraph(graph, can){
 		//tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 	}
 	if (axisxy){
-		axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolorx'), axisxy, axisxyn);
+		//axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolorx'), axisxy, axisxyn);
+		axisLines(xview, yview, axisxy, axisxyn, color=getValueFrom('orcolorx'));
 	}
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
 		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=(!graph.datasets[i].connectPoints));
@@ -182,9 +183,17 @@ function standardize_color(str){
 	return ctx.fillStyle;
 }
 function setCanvasSize(){
-	can.width = getValueFrom('canw');
-	can.height = getValueFrom('canh');
+	let can = document.getElementById('mycan');
+	let axis = document.getElementById('axisl');
+	let newHeight = getValueFrom('canh');
+	let newWidth = getValueFrom('canw');
+	can.width = newWidth;
+	can.height = newHeight;
 	canvasBg(can, getValueFrom('bgcolor'));
+	axis.width = newWidth;
+	axis.height = newHeight;
+	let ctx = axis.getContext('2d');
+	ctx.clearRect(0, 0, axis.width, axis.height);
 }
 function maxCanvasSize(){
 	let topMenu = document.getElementById('topmenu');

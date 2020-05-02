@@ -16,7 +16,63 @@ function circlePtAt(ctx,x,y){
 function dotPtAt(ctx,x,y){
 	ctx.fillRect(x-1,y-1,2,2);
 }
+function axisLines(xview, yview, intercepts, intervals, color){
+	let can = document.getElementById('axisl');
+	let ctx = can.getContext('2d');
+	let xscale = calculateScale(xview, can.width);
+	let yscale = calculateScale(yview, can.height);
 
+	ctx.save();
+	ctx.translate(0, yscale*(yview[1]-intercepts[1]));
+	ctx.strokeStyle = 'gray';
+	ctx.beginPath();
+	ctx.moveTo(0,0);
+	ctx.lineTo(can.width,0);
+	ctx.stroke();
+	// then we draw from minimal closestMultiple to until we hit bounds.
+	ctx.textBaseline = 'middle';
+	ctx.textAlign = 'center';
+	ctx.font = '10pt Courier';
+	let dZ = xscale*intervals[0];
+	ctx.beginPath();
+	for (let x=closestMultiple(xview[0],intervals[0]), rx=0; x <=xview[1]; x+=intervals[0]){
+		ctx.strokeStyle = (x>=0) ? 'black' : 'red';
+		ctx.strokeText(Math.abs(x), rx, 10);
+		ctx.moveTo(rx, -2);
+		ctx.lineTo(rx, 2);
+		rx += dZ;
+	}
+	ctx.strokeStyle = 'black';
+	ctx.stroke();
+	ctx.restore();
+	// now we move from upper left rightwards.
+	// note: this translate relies on the default translation to be upper left.
+	ctx.textBaseline = 'middle';
+	ctx.textAlign = 'center';
+	ctx.font = '10pt Courier';
+	ctx.translate(xscale*(intercepts[0]-xview[0]), 0);
+	ctx.beginPath();
+	ctx.moveTo(0,0);
+	ctx.lineTo(0,can.height);
+	ctx.strokeStyle = 'gray';
+	ctx.stroke();
+	ctx.rotate(-90* Math.PI/180);
+	dZ = yscale*intervals[1];
+	ctx.beginPath();
+	for (let y=closestMultiple(yview[1],intervals[1]), ry=0; y>=yview[0]; y-=intervals[1]){
+		if (y != intercepts[1]){
+			ctx.strokeStyle = (y>=0) ? 'black' : 'red';
+			ctx.strokeText(Math.abs(y), ry,-10);
+		}
+		ctx.moveTo(ry, -2);
+		ctx.lineTo(ry, 2);
+		ry -= dZ;
+	}
+	ctx.strokeStyle = 'black';
+	ctx.stroke();
+	ctx.restore();
+}
+/*
 function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
 	let ctx = can.getContext('2d');
 	ctx.setLineDash([]);
@@ -38,7 +94,7 @@ function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
 
 	}
 }
-
+*/
 function tickNumbers(xInt, yInt, xview, yview, xscale, yscale, xyIntervals, ctx){
 	let x0 = xInt, y0 = yInt;
 	let fontSize = 12; // in pixels!
