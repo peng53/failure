@@ -17,16 +17,16 @@ function dotPtAt(ctx,x,y){
 	ctx.fillRect(x-1,y-1,2,2);
 }
 
-function drawXAxis(can, xview, dx){
+function drawXAxis(can, xview, dx, offset){
 	let xscale = calculateScale(xview, can.width);
 	let ctx = can.getContext('2d');
-	ctx.strokeStyle = 'gray';
+	//ctx.strokeStyle = 'gray';
 	drawALine(ctx,0,can.width,0,0);
 	let dZ = xscale*dx;
 	ctx.beginPath();
 	for (let x=closestMultiple(xview[0],dx), rx=0; x <=xview[1]; x+=dx){
 		ctx.strokeStyle = (x>=0) ? 'black' : 'red';
-		ctx.strokeText(Math.abs(x), rx, 10);
+		ctx.strokeText(Math.abs(x), rx, offset);
 		ctx.moveTo(rx, -2);
 		ctx.lineTo(rx, 2);
 		rx += dZ;
@@ -34,10 +34,10 @@ function drawXAxis(can, xview, dx){
 	ctx.strokeStyle = 'black';
 	ctx.stroke();
 }
-function drawYAxis(can, yview, dy, noshow){
+function drawYAxis(can, yview, dy, offset, noshow){
 	let ctx = can.getContext('2d');
 	let yscale = calculateScale(yview, can.height);
-	ctx.strokeStyle = 'gray';
+	//ctx.strokeStyle = 'gray';
 	drawALine(ctx,0,0,0,can.height);
 	ctx.rotate(-90* Math.PI/180);
 	let dZ = yscale*dy;
@@ -45,44 +45,34 @@ function drawYAxis(can, yview, dy, noshow){
 	for (let y=closestMultiple(yview[0],dy), ry=can.height; y<=yview[1]; y+=dy){
 		if (y != noshow){
 			ctx.strokeStyle = (y>=0) ? 'black' : 'red';
-			ctx.strokeText(Math.abs(y),-ry,-10);
+			ctx.strokeText(Math.abs(y),-ry,-offset);
 		}
 		ctx.moveTo(-ry, -2);
 		ctx.lineTo(-ry, 2);
-		console.log(y,ry);
 		ry -= dZ;
 		
 	}
-	/*
-	for (let y=closestMultiple(yview[1],dy), ry=0; y>=yview[0]; y-=dy){
-		if (y != noshow){
-			ctx.strokeStyle = (y>=0) ? 'black' : 'red';
-			ctx.strokeText(Math.abs(y), ry,-10);
-		}
-		ctx.moveTo(ry, -2);
-		ctx.lineTo(ry, 2);
-		ry -= dZ;
-	}
-	*/
 	ctx.strokeStyle = 'black';
 	ctx.stroke();
 }
-function axisLines(xview, yview, intercepts, intervals, color){
+function axisLines(xview, yview, intercepts, intervals, hcolor, vcolor, fontsize){
 	let can = document.getElementById('axisl');
 	let ctx = can.getContext('2d');
 	ctx.clearRect(0, 0, can.width, can.height);
 	ctx.textBaseline = 'middle';
 	ctx.textAlign = 'center';
-	ctx.font = '10pt Courier';
+	ctx.font = fontsize.toString()+'pt Courier';
 
 	ctx.save();
 	ctx.translate(0, calculateScale(yview, can.height)*(yview[1]-intercepts[1]));
-	drawXAxis(can,xview,intervals[0]);
+	ctx.strokeStyle = hcolor;
+	drawXAxis(can,xview,intervals[0], fontsize);
 	ctx.restore();
 
 	ctx.save();
 	ctx.translate(calculateScale(xview, can.width)*(intercepts[0]-xview[0]), 0);
-	drawYAxis(can,yview,intervals[1],noshow=intercepts[1]);
+	ctx.strokeStyle = vcolor;
+	drawYAxis(can,yview,intervals[1], fontsize, noshow=intercepts[1]);
 	ctx.restore();
 }
 

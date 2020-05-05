@@ -56,9 +56,9 @@ function drawGraph(graph, can){
 		gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can, hcolor=getValueFrom('grcolor'), vcolor=getValueFrom('grcolor'));
 		//tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 	}
-	if (axisxy){
+	if (axisxy && axisxyn){
 		//axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolorx'), axisxy, axisxyn);
-		axisLines(xview, yview, axisxy, axisxyn, color=getValueFrom('orcolorx'));
+		axisLines(xview, yview, axisxy, axisxyn, hcolor=getValueFrom('orcolorx'), vcolor=getValueFrom('orcolory'), fontsize=getValueFrom('alfontsize'));
 	}
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
 		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=(!graph.datasets[i].connectPoints));
