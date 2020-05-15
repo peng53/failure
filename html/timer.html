@@ -1,69 +1,94 @@
 <html>
+<head>
+<meta charset='utf-8'/>
 <style>
 	#timeleft {
 		margin: 0 auto;
 		text-align: center;
-	}
-	#timeleft input {
 		font-size: 4em;
 	}
+	#timeleft input {
+		font-size: 1em;
+		font-family: monospace;
+		background: orange;
+		text-align: center;
+		-webkit-appearance: none;
+		-moz-appearance: textfield;
+		margin: 0;
+	}
+	#controls,#addtimecontrols  {
+		margin: 0 auto;
+		text-align: center;
+		font-size: 2em;
+	}
+	#ssbutton, #addtimecontrols button {
+		font-size: 1em;
+		font-family: monospace;
+	}
+	#ssbutton {
+		background: red;
+	}
+	#addtimecontrols button {
+		background: green;
+		font-size: 0.5em;
+		color: white;
+	}
+	button, input {
+		border-radius: 0.5em;
+		padding: 0.5em;
+		border: none;
+	}
 </style>
-<div id='timeleft'>
-<input id='hleft' size=3 />
-<input id='mleft' size=3 />
-<input id='sleft' size=2 />
+</head>
+<div id='widget'>
+<div id='timeleft'><input id='hleft' type=number value=0 min=0 max=99 size=2 />:<input id='mleft' type=number value=0 min=0 max=59 size=2 />.<input id='sleft' type=number value=0 min=0 max=59 size=2 />
+<button id='ssbutton' onclick='startTime();'>►</button>
 </div>
 <br />
-<div id='settings' style='margin: 0 auto; text-align: center;'>
-<input id='hrs' type=number size=5 value=0 min=0 max=99 /> HRS
-<input id='min' type=number size=5 value=0 min=0 max=59 /> MINS
-<input id='sec' type=number size=5 value=0 min=0 max=59 /> SECS
-<button onclick='main();'>Start</button>
+<div id='controls'>
+
+</div>
+<br />
+<div id='addtimecontrols'>
+<button id='add5'>&#43;5mins</button>
+<button id='add10'>&#43;10mins</button>
+<button id='add30'>&#43;30mins</button>
+
 </div>
 <script>
-var endTime = undefined;
 var timeEvent = undefined;
-function main(){
-	let hr = hrs.value;
-	let mins = min.value;
-	let secs = sec.value;
-	console.log(hr,mins,secs);
-	let start = new Date();
-	let diff = hr*3600000 + mins*60000 + secs*1000;
-	console.log(start);
-	endTime = new Date(start.getTime() + diff);
+function startTime(){
 	if (timeEvent){
 		clearInterval(timeEvent);
 	}
-	timeEvent = setInterval(updateTime, 500);
+	timeEvent = setInterval(updateTime, 1000);
 	updateTime();
+	ssbutton.innerText = '\u25A0';
+	ssbutton.onclick = endTime;
+}
+function endTime(){
+	if (timeEvent){
+		clearInterval(timeEvent);
+		timeEvent = undefined;
+		ssbutton.innerText = '\u25BA';
+		ssbutton.onclick = startTime;
+	}
 }
 function updateTime(){
 	console.log("CALL!");
-	let nowTime = new Date();
-	let diff = endTime - nowTime;
-	if (diff <= 1000){
+	if (sleft.value > 0){
+		sleft.value--;
+	} else if (mleft.value > 0){
+		mleft.value--;
+		sleft.value = 59;
+	} else if (hleft.value > 0){
+		hleft.value--;
+		mleft.value = 59;
+		sleft.value = 59;
+	} else {
 		clearInterval(timeEvent);
 		timeEvent = undefined;
 	}
-	let hrs = 0;
-	while (diff >= 3600000){
-		diff -= 3600000;
-		hrs++;
-	}
-	let mins = 0;
-	while ( diff >=60000){
-		diff -= 60000;
-		mins++;
-	}
-	let secs = 0;
-	while (diff>=1000){
-		diff -= 1000;
-		secs++;
-	}
-	hleft.value = hrs.toString();
-	mleft.value = mins.toString();
-	sleft.value = secs.toString();
 }
 </script>
 </html>
