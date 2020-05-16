@@ -2,15 +2,23 @@
 <head>
 <meta charset='utf-8'/>
 <style>
+	body {
+		margin: 0;
+		font-size: 1em;
+		font-family: monospace;
+		}
+	#widget {
+		padding: 1em;
+		border: 1px grey solid;
+		margin: 0;
+		font-size: 1em;
+		font-family: monospace;
+	}
 	#timeleft {
 		margin: 0 auto;
 		text-align: center;
-		font-size: 4em;
 	}
 	#timeleft input {
-		font-size: 1em;
-		font-family: monospace;
-		background: orange;
 		text-align: center;
 		-webkit-appearance: none;
 		-moz-appearance: textfield;
@@ -19,43 +27,33 @@
 	#controls,#addtimecontrols  {
 		margin: 0 auto;
 		text-align: center;
-		font-size: 2em;
 	}
 	#ssbutton, #addtimecontrols button {
-		font-size: 1em;
-		font-family: monospace;
-	}
-	#ssbutton {
-		background: red;
 	}
 	#addtimecontrols button {
-		background: green;
-		font-size: 0.5em;
-		color: white;
 	}
 	button, input {
 		border-radius: 5px;
 		padding: 0.5em;
 		border: none;
+		font-family: monospace;
+	}
+	.secstyle {
+		background: yellow;
+	}
+	.minstyle {
+		background: orange;
+	}
+	.hrstyle {
+		background: red;
+	}
+	.smallft {
+		font-size: 2em;
+	}
+	.medft {
+		font-size: 4em;
 	}
 </style>
-</head>
-<div id='widget'>
-<div id='timeleft'>
-<input id='hleft' type=number value=0 min=0 max=99 size=2 onblur='setEndTime()' />:
-<input id='mleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime()' />.
-<input id='sleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime()' />
-<button id='ssbutton' onclick='startTime();'>►</button>
-</div>
-<br />
-<div id='controls'></div>
-<br />
-<div id='addtimecontrols'>
-<button id='add5' onclick='addM(5)'>&#43;5mins</button>
-<button id='add10' onclick='addM(10)'>&#43;10mins</button>
-<button id='add30' onclick='addM(30)'>&#43;30mins</button>
-
-</div>
 <script>
 var timeEvent = undefined;
 var endTime = undefined;
@@ -109,17 +107,28 @@ function updateTime(){
 		timeEvent = undefined;
 	}
 }
-function addM(mins){
-	setEndTime(0,mins,0);
+function addTime(hrs, mins, secs){
+	setEndTime(hrs,mins,secs);
 	resyncTime();
-	//let nmin = Number(mleft.value)+Number(mins);
-	//if (nmin >= 60){
-	//	let nhrs = Math.floor(nmin/60) + Number(hleft.value);
-	//	nmin %= 60;
-	//	hleft.value = nhrs;
-	//}
-	//mleft.value = nmin;
-	//resyncTime();
 }
 </script>
+</head>
+<div id='widget'>
+<div id='timeleft'>
+<input class='hrstyle medft' id='hleft' type=number value=0 min=0 max=99 size=2 onblur='setEndTime()' />:
+<input class='minstyle medft' id='mleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime()' />.
+<input class='secstyle smallft' id='sleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime()' />
+<button class='hrstyle' id='ssbutton' onclick='startTime();'>►</button>
+</div>
+<br />
+<div id='controls'></div>
+<br />
+<div id='addtimecontrols'>
+<button class='hrstyle' onclick='addTime(hrs=1, mins=0)'>&#43;1</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=30)'>&#43;30</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=10)'>&#43;10</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=5)'>&#43;5</button>
+<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=30)'>&#43;30</button>
+<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=10)'>&#43;10</button>
+</div>
 </html>
