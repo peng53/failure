@@ -39,13 +39,16 @@
 		font-family: monospace;
 	}
 	.secstyle {
-		background: yellow;
+		background: #515151;
+		color: white;
 	}
 	.minstyle {
-		background: orange;
+		background: #313131;
+		color: white;
 	}
 	.hrstyle {
-		background: red;
+		background: #111;
+		color: white;
 	}
 	.smallft {
 		font-size: 2em;
@@ -58,6 +61,9 @@
 var timeEvent = undefined;
 var endTime = undefined;
 function startTime(){
+	if (sleft.value === '0' && mleft.value === '0' && hleft.value === '0'){
+		return;
+	}
 	if (timeEvent){
 		clearInterval(timeEvent);
 	}
@@ -113,22 +119,25 @@ function addTime(hrs, mins, secs){
 }
 </script>
 </head>
+<body>
 <div id='widget'>
 <div id='timeleft'>
-<input class='hrstyle medft' id='hleft' type=number value=0 min=0 max=99 size=2 onblur='setEndTime()' />:
-<input class='minstyle medft' id='mleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime()' />.
-<input class='secstyle smallft' id='sleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime()' />
+<input class='hrstyle medft' id='hleft' type=number value=0 min=0 max=99 size=2 onblur='setEndTime(0,0,0)' />:
+<input class='minstyle medft' id='mleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime(0,0,0)' />.
+<input class='secstyle smallft' id='sleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime(0,0,0)' />
 <button class='hrstyle' id='ssbutton' onclick='startTime();'>►</button>
 </div>
 <br />
 <div id='controls'></div>
 <br />
 <div id='addtimecontrols'>
-<button class='hrstyle' onclick='addTime(hrs=1, mins=0)'>&#43;1</button>
-<button class='minstyle' onclick='addTime(hrs=0, mins=30)'>&#43;30</button>
-<button class='minstyle' onclick='addTime(hrs=0, mins=10)'>&#43;10</button>
-<button class='minstyle' onclick='addTime(hrs=0, mins=5)'>&#43;5</button>
+<button class='hrstyle' onclick='addTime(hrs=1, mins=0, secs=0)'>&#43;1</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=30, secs=0)'>&#43;30</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=10, secs=0)'>&#43;10</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=5, secs=0)'>&#43;5</button>
 <button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=30)'>&#43;30</button>
 <button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=10)'>&#43;10</button>
 </div>
+</div>
+</body>
 </html>
