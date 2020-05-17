@@ -1,60 +1,32 @@
 <html>
 <head>
+<title>timer.html</title>
 <meta charset='utf-8'/>
 <style>
 	body {
-		margin: 0;
-		font-size: 1em;
-		font-family: monospace;
-		}
-	#widget {
-		padding: 1em;
-		border: 1px grey solid;
-		margin: 0;
-		font-size: 1em;
-		font-family: monospace;
-	}
-	#timeleft {
-		margin: 0 auto;
 		text-align: center;
 	}
-	#timeleft input {
+	#widget {
+		display: inline-block;
+		margin: 0 auto;
+		background: #ddd;
+	}
+	#hleft, #mleft, #sleft, #endhh, #endmm {
 		text-align: center;
 		-webkit-appearance: none;
 		-moz-appearance: textfield;
 		margin: 0;
 	}
-	#controls,#addtimecontrols  {
-		margin: 0 auto;
+	.ctbox {
+		background: #eee;
+		margin: 0.5em;
+		padding-bottom: 1em;
 		text-align: center;
 	}
-	#ssbutton, #addtimecontrols button {
-	}
-	#addtimecontrols button {
-	}
-	button, input {
-		border-radius: 5px;
-		padding: 0.5em;
-		border: none;
-		font-family: monospace;
-	}
-	.secstyle {
-		background: #515151;
-		color: white;
-	}
-	.minstyle {
-		background: #313131;
-		color: white;
-	}
-	.hrstyle {
-		background: #111;
-		color: white;
-	}
-	.smallft {
-		font-size: 2em;
-	}
-	.medft {
-		font-size: 4em;
+	h3 {
+		margin: 0 0 10px 0;
+		background: #000;
+		color: #fff;
 	}
 </style>
 <script>
@@ -87,8 +59,13 @@ function stopTime(){
 	}
 }
 function resyncTime(){
+	console.log('resyncTime');
 	let nowTime = new Date();
 	let diff = endTime-nowTime;
+	if (diff < 0){
+		diff = 0;
+		stopTime();
+	}
 	hleft.value = Math.floor(diff/3600000);
 	diff %= 3600000;
 	mleft.value = Math.floor(diff/60000);
@@ -96,7 +73,7 @@ function resyncTime(){
 	sleft.value = Math.floor(diff/1000);
 }
 function updateTime(){
-	console.log("CALL!");
+	console.log('updateTime');
 	if (sleft.value > 0){
 		sleft.value--;
 	} else if (mleft.value > 0){
@@ -117,26 +94,54 @@ function addTime(hrs, mins, secs){
 	setEndTime(hrs,mins,secs);
 	resyncTime();
 }
+function setEndTimeFromTime(){
+	let n = new Date();
+	let hh = Number(endhh.value);
+	if (rpm.checked){
+		hh += 12;
+	}
+	endTime = new Date(n.getFullYear(), n.getMonth(), n.getDate(), hh, endmm.value);
+	resyncTime();
+}
+function switchSyncModes(){
+	console.log('switch?');
+	if (timeEvent){
+		if (document.visibilityState === 'visible'){
+			resyncTime();
+			clearInterval(timeEvent);
+			timeEvent = setInterval(updateTime, 1000);
+		} else {
+			clearInterval(timeEvent);
+		}
+	}
+}
+document.addEventListener('visibilitychange', switchSyncModes);
 </script>
 </head>
 <body>
 <div id='widget'>
-<div id='timeleft'>
+<div class='ctbox'>
+<h3>Timer</h3>
 <input class='hrstyle medft' id='hleft' type=number value=0 min=0 max=99 size=2 onblur='setEndTime(0,0,0)' />:
 <input class='minstyle medft' id='mleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime(0,0,0)' />.
 <input class='secstyle smallft' id='sleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime(0,0,0)' />
 <button class='hrstyle' id='ssbutton' onclick='startTime();'>►</button>
 </div>
-<br />
-<div id='controls'></div>
-<br />
-<div id='addtimecontrols'>
-<button class='hrstyle' onclick='addTime(hrs=1, mins=0, secs=0)'>&#43;1</button>
-<button class='minstyle' onclick='addTime(hrs=0, mins=30, secs=0)'>&#43;30</button>
-<button class='minstyle' onclick='addTime(hrs=0, mins=10, secs=0)'>&#43;10</button>
-<button class='minstyle' onclick='addTime(hrs=0, mins=5, secs=0)'>&#43;5</button>
-<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=30)'>&#43;30</button>
-<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=10)'>&#43;10</button>
+<div class='ctbox'>
+<h3>Add Time</h3>
+<button class='hrstyle' onclick='addTime(hrs=1, mins=0, secs=0)'>&#43;<br />1hr</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=30, secs=0)'>&#43;<br />30m</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=10, secs=0)'>&#43;<br />10m</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=5, secs=0)'>&#43;<br />5m</button>
+<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=30)'>&#43;<br />30s</button>
+<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=10)'>&#43;<br />10s</button>
+</div>
+<div class='ctbox'>
+<h3>Set Time</h3>
+<input type=number id='endhh' min=1 max=12 size=2 />:<input type=number id='endmm' min=0 max=59 size=2 />
+<input type='radio' name='pmam' id='ram' value='ram' /><label for='ram'>AM</label>
+<input type='radio' name='pmam' id='rpm' value='rpm' checked=true /><label for='rpm'>PM</label>
+<button onclick='setEndTimeFromTime()'>Set</button>
 </div>
 </div>
 </body>
