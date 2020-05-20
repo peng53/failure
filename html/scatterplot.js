@@ -17,52 +17,63 @@ function dotPtAt(ctx,x,y){
 	ctx.fillRect(x-1,y-1,2,2);
 }
 
-function axisLines(xscale, xview, yscale, yview, can, color, xy, xyn){
+function drawXAxis(can, xview, dx, offset){
+	let xscale = calculateScale(xview, can.width);
 	let ctx = can.getContext('2d');
-	ctx.setLineDash([]);
-	ctx.strokeStyle = color;
-	let x0, y0;
-	// line x = 0
-	if (xy[0] >= xview[0] && xy[0] <= xview[1]){
-		x0 = transformX(xy[0], xscale, xview[0]);
-		drawALine(ctx,x0,x0,0,can.height);
+	//ctx.strokeStyle = 'gray';
+	drawALine(ctx,0,can.width,0,0);
+	let dZ = xscale*dx;
+	ctx.beginPath();
+	for (let x=closestMultiple(xview[0],dx), rx=0; x <=xview[1]; x+=dx){
+		ctx.strokeStyle = (x>=0) ? 'black' : 'red';
+		ctx.strokeText(Math.abs(x), rx, offset);
+		ctx.moveTo(rx, -2);
+		ctx.lineTo(rx, 2);
+		rx += dZ;
 	}
-	// line y = 0
-	if (xy[1] >= yview[0] && xy[1] <= yview[1]){
-		y0 = transformY(xy[1], yscale, yview[1]);
-		drawALine(ctx,0,can.width,y0,y0);
-	}
-	if (x0 && y0 && xyn && !xyn.some(isNaN)){
-		// both axis are visible so draw numbers..
-		tickNumbers(x0, y0, xview, yview, xscale, yscale, xyn, ctx);
-
-	}
+	ctx.strokeStyle = 'black';
+	ctx.stroke();
 }
-
-function tickNumbers(xInt, yInt, xview, yview, xscale, yscale, xyIntervals, ctx){
-	let x0 = xInt, y0 = yInt;
-	let fontSize = 12; // in pixels!
-	ctx.font =  fontSize+'px monospace';
-	ctx.textAlign = 'right';
-	ctx.fillStyle = 'orange';
+function drawYAxis(can, yview, dy, offset, noshow){
+	let ctx = can.getContext('2d');
+	let yscale = calculateScale(yview, can.height);
+	//ctx.strokeStyle = 'gray';
+	drawALine(ctx,0,0,0,can.height);
+	ctx.rotate(-90* Math.PI/180);
+	let dZ = yscale*dy;
+	ctx.beginPath();
+	for (let y=closestMultiple(yview[0],dy), ry=can.height; y<=yview[1]; y+=dy){
+		if (y != noshow){
+			ctx.strokeStyle = (y>=0) ? 'black' : 'red';
+			ctx.strokeText(Math.abs(y),-ry,-offset);
+		}
+		ctx.moveTo(-ry, -2);
+		ctx.lineTo(-ry, 2);
+		ry -= dZ;
+		
+	}
+	ctx.strokeStyle = 'black';
+	ctx.stroke();
+}
+function axisLines(xview, yview, intercepts, intervals, hcolor, vcolor, fontsize){
+	let can = document.getElementById('axisl');
+	let ctx = can.getContext('2d');
+	ctx.clearRect(0, 0, can.width, can.height);
 	ctx.textBaseline = 'middle';
-	//ctx.rotate(90 * Math.PI/180);
-	let y=closestMultiple(yview[0], xyIntervals[1]);
-	let x=closestMultiple(xview[0], xyIntervals[0]);
-	let dx = xscale * xyIntervals[0];
-	let dy = yscale * xyIntervals[1];
-	for (let sy = transformY(y, yscale, yview[1]); y <= yview[1]; y += xyIntervals[1]){
-		ctx.fillText(y, x0, sy);
-		sy -= dy;
-	}
-	//ctx.rotate(-90 * Math.PI/180);
 	ctx.textAlign = 'center';
-	ctx.fillStyle = 'teal';
-	ctx.textBaseline = 'hanging';
-	for (let sx = transformX(x, xscale, xview[0]); x <= xview[1]; x += xyIntervals[0]){
-		ctx.fillText(x, sx, y0);
-		sx += dx;
-	}
+	ctx.font = fontsize.toString()+'pt Courier';
+
+	ctx.save();
+	ctx.translate(0, calculateScale(yview, can.height)*(yview[1]-intercepts[1]));
+	ctx.strokeStyle = hcolor;
+	drawXAxis(can,xview,intervals[0], fontsize);
+	ctx.restore();
+
+	ctx.save();
+	ctx.translate(calculateScale(xview, can.width)*(intercepts[0]-xview[0]), 0);
+	ctx.strokeStyle = vcolor;
+	drawYAxis(can,yview,intervals[1], fontsize, noshow=intercepts[1]);
+	ctx.restore();
 }
 
 function drawALine(ctx, x0, x, y0, y){

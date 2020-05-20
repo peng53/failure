@@ -1,0 +1,148 @@
+<html>
+<head>
+<title>timer.html</title>
+<meta charset='utf-8'/>
+<style>
+	body {
+		text-align: center;
+	}
+	#widget {
+		display: inline-block;
+		margin: 0 auto;
+		background: #ddd;
+	}
+	#hleft, #mleft, #sleft, #endhh, #endmm {
+		text-align: center;
+		-webkit-appearance: none;
+		-moz-appearance: textfield;
+		margin: 0;
+	}
+	.ctbox {
+		background: #eee;
+		margin: 0.5em;
+		padding-bottom: 1em;
+		text-align: center;
+	}
+	h3 {
+		margin: 0 0 10px 0;
+		background: #000;
+		color: #fff;
+	}
+</style>
+<script>
+var timeEvent = undefined;
+var endTime = undefined;
+function startTime(){
+	if (sleft.value === '0' && mleft.value === '0' && hleft.value === '0'){
+		return;
+	}
+	if (timeEvent){
+		clearInterval(timeEvent);
+	}
+	timeEvent = setInterval(updateTime, 1000);
+	updateTime();
+	ssbutton.innerText = '\u25A0';
+	ssbutton.onclick = stopTime;
+	setEndTime(0, 0, 0);
+}
+function setEndTime(hrs=0, mins=0, secs=0){
+	let nowTime = new Date();
+	let diff = (hrs+Number(hleft.value))*3600000 + (mins+Number(mleft.value))*60000 + (secs+Number(sleft.value))*1000;
+	endTime = new Date(nowTime.getTime() + diff);
+}
+function stopTime(){
+	if (timeEvent){
+		clearInterval(timeEvent);
+		timeEvent = undefined;
+		ssbutton.innerText = '\u25BA';
+		ssbutton.onclick = startTime;
+	}
+}
+function resyncTime(){
+	console.log('resyncTime');
+	let nowTime = new Date();
+	let diff = endTime-nowTime;
+	if (diff < 0){
+		diff = 0;
+		stopTime();
+	}
+	hleft.value = Math.floor(diff/3600000);
+	diff %= 3600000;
+	mleft.value = Math.floor(diff/60000);
+	diff %= 60000;
+	sleft.value = Math.floor(diff/1000);
+}
+function updateTime(){
+	console.log('updateTime');
+	if (sleft.value > 0){
+		sleft.value--;
+	} else if (mleft.value > 0){
+		mleft.value--;
+		sleft.value = 59;
+		resyncTime();
+	} else if (hleft.value > 0){
+		hleft.value--;
+		mleft.value = 59;
+		sleft.value = 59;
+		resyncTime();
+	} else {
+		clearInterval(timeEvent);
+		timeEvent = undefined;
+	}
+}
+function addTime(hrs, mins, secs){
+	setEndTime(hrs,mins,secs);
+	resyncTime();
+}
+function setEndTimeFromTime(){
+	let n = new Date();
+	let hh = Number(endhh.value);
+	if (rpm.checked){
+		hh += 12;
+	}
+	endTime = new Date(n.getFullYear(), n.getMonth(), n.getDate(), hh, endmm.value);
+	resyncTime();
+}
+function switchSyncModes(){
+	console.log('switch?');
+	if (timeEvent){
+		if (document.visibilityState === 'visible'){
+			resyncTime();
+			clearInterval(timeEvent);
+			timeEvent = setInterval(updateTime, 1000);
+		} else {
+			clearInterval(timeEvent);
+		}
+	}
+}
+document.addEventListener('visibilitychange', switchSyncModes);
+</script>
+</head>
+<body>
+<div id='widget'>
+<div class='ctbox'>
+<h3>Timer</h3>
+<input class='hrstyle medft' id='hleft' type=number value=0 min=0 max=99 size=2 onblur='setEndTime(0,0,0)' />:
+<input class='minstyle medft' id='mleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime(0,0,0)' />.
+<input class='secstyle smallft' id='sleft' type=number value=0 min=0 max=59 size=2 onblur='setEndTime(0,0,0)' />
+<button class='hrstyle' id='ssbutton' onclick='startTime();'>►</button>
+</div>
+<div class='ctbox'>
+<h3>Add Time</h3>
+<button class='hrstyle' onclick='addTime(hrs=1, mins=0, secs=0)'>&#43;<br />1hr</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=30, secs=0)'>&#43;<br />30m</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=10, secs=0)'>&#43;<br />10m</button>
+<button class='minstyle' onclick='addTime(hrs=0, mins=5, secs=0)'>&#43;<br />5m</button>
+<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=30)'>&#43;<br />30s</button>
+<button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=10)'>&#43;<br />10s</button>
+</div>
+<div class='ctbox'>
+<h3>Set Time</h3>
+<input type=number id='endhh' min=1 max=12 size=2 />:<input type=number id='endmm' min=0 max=59 size=2 />
+<input type='radio' name='pmam' id='ram' value='ram' /><label for='ram'>AM</label>
+<input type='radio' name='pmam' id='rpm' value='rpm' checked=true /><label for='rpm'>PM</label>
+<button onclick='setEndTimeFromTime()'>Set</button>
+</div>
+</div>
+</body>
+</html>

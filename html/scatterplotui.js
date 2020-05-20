@@ -56,8 +56,9 @@ function drawGraph(graph, can){
 		gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can, hcolor=getValueFrom('grcolor'), vcolor=getValueFrom('grcolor'));
 		//tickNumbers(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can);
 	}
-	if (axisxy){
-		axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolorx'), axisxy, axisxyn);
+	if (axisxy && axisxyn){
+		//axisLines(xscale, xview, yscale, yview, can, color=getValueFrom('orcolorx'), axisxy, axisxyn);
+		axisLines(xview, yview, axisxy, axisxyn, hcolor=getValueFrom('orcolorx'), vcolor=getValueFrom('orcolory'), fontsize=getValueFrom('alfontsize'));
 	}
 	for (let i=0, l=graph.datasets.length; i<l; ++i){
 		plotPoints(graph.datasets[i].points, xscale, yscale, xview, yview, can, graph.datasets[i].color, noLine=(!graph.datasets[i].connectPoints));
@@ -84,10 +85,10 @@ function addPoints(graph){
 		name = 'Dataset #'+dsi;
 	}
 	graph.datasets.push(new Dataset(name, color, getValueFrom('connectPoints')));
-	parseStrToArray(numbersStr, graph.datasets[dsi].points);
+	parseStrToArray(numbers, graph.datasets[dsi].points);
 	graph.datasets[dsi].points.sort((a,b) => a.x-b.x);
 	addDatasetToList(graph.datasets[dsi]);
-	setValueTo('points') = '';
+	setValueTo('points','');
 }
 
 function parseStrToArray(str, arr){
@@ -182,9 +183,17 @@ function standardize_color(str){
 	return ctx.fillStyle;
 }
 function setCanvasSize(){
-	can.width = getValueFrom('canw');
-	can.height = getValueFrom('canh');
+	let can = document.getElementById('mycan');
+	let axis = document.getElementById('axisl');
+	let newHeight = getValueFrom('canh');
+	let newWidth = getValueFrom('canw');
+	can.width = newWidth;
+	can.height = newHeight;
 	canvasBg(can, getValueFrom('bgcolor'));
+	axis.width = newWidth;
+	axis.height = newHeight;
+	let ctx = axis.getContext('2d');
+	ctx.clearRect(0, 0, axis.width, axis.height);
 }
 function maxCanvasSize(){
 	let topMenu = document.getElementById('topmenu');

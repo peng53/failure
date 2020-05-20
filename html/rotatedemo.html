@@ -1,0 +1,164 @@
+<html>
+	<style>
+		#rd, #pt {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		margin: auto;
+		}
+		#rd {
+		z-index: -1;
+		}
+		#pt {
+		z-index: 5;
+		}
+	</style>
+	<button onclick='toggleLayer("rd");'>Show/hide Axis</button>
+	<button onclick='toggleLayer("pt");'>Show/hide Points</button>
+	<button onclick='points_trial3([-10, 10], [-11, 99])'>Randomize Points</button>
+	<canvas id='rd' width='400px' height='500px'></canvas>
+	<canvas id='pt' width='400px' height='500px'></canvas>
+	<script src='scatterplot.js'></script>
+	<script>
+		function toggleLayer(layer){
+			let can = document.getElementById(layer);
+			can.style.display = can.style.display == "none" ? "block" : "none";
+		}
+		function trial1(){
+			let xview = [-10, 10];
+			let yview = [-10, 10];
+			let xaxis = 1;
+			let yaxis = 0;
+			let can = document.getElementById('rd');
+			let xscale = calculateScale(xview, can.width);
+			let yscale = calculateScale(yview, can.height);
+			let ctx = can.getContext('2d');
+			ctx.save();
+			ctx.textBaseline = 'middle';
+			ctx.textAlign = 'center';
+			ctx.font = '10pt Courier';
+			ctx.translate(
+				(xaxis-xview[0])*xscale,
+				(yview[1]-yaxis)*yscale
+			);
+			let xinterval = 1;
+			let yinterval = 1;
+			ctx.beginPath();
+			ctx.moveTo(xaxis*xscale,yview[0]*yscale);
+			ctx.lineTo(xaxis*xscale,can.height);
+			ctx.moveTo(xview[0]*xscale,yaxis*yscale);
+			ctx.lineTo(can.width,yaxis*yscale);
+			ctx.stroke();
+			ctx.strokeStyle = 'red';
+			let rx = (xview[0]-xaxis)*xscale;
+			for (let x=closestMultiple(xview[0],xinterval); x<=xview[1]; x+= xinterval){
+				ctx.strokeText(x, rx, yaxis*yscale);
+				rx += xinterval*xscale;
+			}
+			ctx.rotate(-90 * Math.PI/180);
+			ctx.strokeStyle = 'blue';
+			let ry = (yview[1]-yaxis)*yscale;
+			for (let y=closestMultiple(yview[1],yinterval); y>=yview[0]; y-= yinterval){
+				//if (y!=xaxis){
+					ctx.strokeText(y, ry, xaxis*xscale);
+				//}
+				ry -= yinterval*yscale;
+			}
+			ctx.restore();
+		}
+		function trial2(xaxis, yaxis){
+			let xview = [-10, 10];
+			let yview = [-11, 99];
+			let can = document.getElementById('rd');
+			let xscale = calculateScale(xview, can.width);
+			let yscale = calculateScale(yview, can.height);
+			let xinterval = 1;
+			let yinterval = 9;
+			let ctx = can.getContext('2d');
+			ctx.save();
+			// for the xaxis, we just need to lower it to the yint.
+			// e.g. upper left corner to where ever it will intersect.
+			ctx.translate(0, yscale*(yview[1]-yaxis));
+			ctx.strokeStyle = 'gray';
+			ctx.beginPath();
+			ctx.moveTo(0,0);
+			ctx.lineTo(can.width,0);
+			ctx.stroke();
+			// then we draw from minimal closestMultiple to until we hit bounds.
+			ctx.textBaseline = 'middle';
+			ctx.textAlign = 'center';
+			ctx.font = '10pt Courier';
+			let dZ = xscale*xinterval;
+			ctx.beginPath();
+			for (let x=closestMultiple(xview[0],xinterval), rx=0; x <=xview[1]; x+=xinterval){
+				ctx.strokeStyle = (x>=0) ? 'black' : 'red';
+				ctx.strokeText(Math.abs(x), rx, 10);
+				ctx.moveTo(rx, -2);
+				ctx.lineTo(rx, 2);
+				rx += dZ;
+			}
+			ctx.strokeStyle = 'black';
+			ctx.stroke();
+			ctx.restore();
+			// now we move from upper left rightwards.
+			// note: this translate relies on the default translation to be upper left.
+			ctx.textBaseline = 'middle';
+			ctx.textAlign = 'center';
+			ctx.font = '10pt Courier';
+			ctx.translate(xscale*(xaxis-xview[0]), 0);
+			ctx.beginPath();
+			ctx.moveTo(0,0);
+			ctx.lineTo(0,can.height);
+			ctx.strokeStyle = 'gray';
+			ctx.stroke();
+			ctx.rotate(-90* Math.PI/180);
+			dZ = yscale*yinterval;
+			ctx.beginPath();
+			for (let y=closestMultiple(yview[1],yinterval), ry=0; y>=yview[0]; y-=yinterval){
+				if (y != yaxis){
+					ctx.strokeStyle = (y>=0) ? 'black' : 'red';
+					ctx.strokeText(Math.abs(y), ry,-10);
+				}
+				ctx.moveTo(ry, -2);
+				ctx.lineTo(ry, 2);
+				ry -= dZ;
+				console.log(y,ry);
+			}
+			ctx.strokeStyle = 'black';
+			ctx.stroke();
+		}
+		function randomNumber(min, max) {
+			return Math.random() * (max - min) + min;
+		}
+		function points_trial3(xview, yview){
+			let can = document.getElementById('pt');
+			let ctx = can.getContext('2d');
+			ctx.clearRect(0, 0, can.width, can.height);
+			let xscale = calculateScale(xview, can.width);
+			let yscale = calculateScale(yview, can.height);
+			let sx, sy;
+			let firstPt = true;
+			ctx.beginPath();
+			for (let x=xview[0];x<=xview[1];++x){
+				sx = transformX(x, xscale, xview[0]);
+				sy = transformY(randomNumber(yview[0],yview[1]), yscale, yview[1]);
+				dotPtAt(
+					ctx,
+					sx,
+					sy
+				);
+				if (firstPt){
+					ctx.moveTo(sx,sy);
+					firstPt = false;
+				} else {
+					ctx.lineTo(sx,sy);
+				}
+			}
+			ctx.stroke();
+		}
+		trial2(0,0);
+		points_trial3([-10, 10], [-11, 99]);
+	</script>
+</html>

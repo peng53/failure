@@ -9,6 +9,7 @@
 <button onclick='showMenu("controls")'>CONTROLS</button>
 <button onclick='showMenu("data")'>DATA</button>
 <button onclick='showMenu("look")'>LOOK</button>
+<button onclick='showMenu("layers")'>LAYERS</button>
 </div>
 
 <div id='controls'>
@@ -40,7 +41,6 @@
 	<select id='pointsList' name='point' multiple></select></label><br />
 	<button title='Copies first selected dataset to above inputs.' onclick='editDataset(maingraph);'>Edit</button><button title='Removes selected dataset. (no confirm)' onclick='deleteDataset(maingraph);'>Delete</button><button title='Deletes all datasets. (no confirm)' onclick='clearDatasets(maingraph);'>Clear</button><br />
 </div>
-
 <div id='look'>
 	<h3>Look</h3>
 	<h4>Colors</h4>
@@ -55,8 +55,18 @@
 	Canvas WxH<br /><input id='canw' type='number' min=50 />x<input id='canh' type='number' min=50 /><br />
 	<button onclick='setCanvasSize()'>Set Size</button>
 	<button onclick='maxCanvasSize()'>Maximize</button><br />
+	Axis Label Font Size<br />
+	<input id='alfontsize' type='number' min=5 value=10 />
+	
 </div>
+<div id='layers'>
+	<h3>Layers</h3>
+	<input type='checkbox' onclick='toggleHide("mycan")' checked=true />Main<br />
+	<input type='checkbox' onclick='toggleHide("axisl")' checked=true />Axis
+</div>
+
 <canvas id='mycan' width='400px' height='300px'></canvas>
+<canvas id='axisl' width='400px' height='300px'></canvas>
 
 <script>
 
@@ -67,6 +77,7 @@
 	document.getElementById('controls').style.display = 'none';
 	document.getElementById('data').style.display = 'none';
 	document.getElementById('look').style.display = 'none';
+	document.getElementById('layers').style.display = 'none';
 
 	document.getElementById('canh').value = can.height;
 	document.getElementById('canw').value = can.width;
