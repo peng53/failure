@@ -38,7 +38,7 @@ h3, h4 {
 	border: 1px ridge gray;
 }
 #controls span:hover, #data label:hover {
-	text-decoration: underline;
+	text-decoration: underline dotted red;
 }
 #controls input, #look input {
 	width: 4em;
