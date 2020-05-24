@@ -1,0 +1,50 @@
+<html>
+<style>
+	#mines {
+	}
+</style>
+<canvas id='mines' width='420px' height='420px' />
+<script>
+	var can = document.getElementById('mines');
+	var ctx = can.getContext('2d');
+	ctx.font = '10pt monospace';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	let r = 0;
+	let mdim = 400;
+	let mcell = 20;
+	let moff = mcell/2;
+	let mmines = new Array(mcell*mcell);
+	// mmines is an Array of mine's priority
+	for (let i=0; i<mmines.length; ++i){
+		mmines[i] = i;
+	}
+	// Durstenfeld' shuffle
+	let j = 0;
+	let t;
+	for (let i=mmines.length-1; i>0; --i){
+		j = Math.floor(Math.random()*i);
+		t = mmines[j];
+		mmines[j] = mmines[i];
+		mmines[i] = t;
+	}
+	
+	console.log(mmines.splice(0,10));
+	ctx.strokeStyle = 'blue';
+	for (let d=mcell; d<mdim; d+=mcell){
+		ctx.moveTo(0,d);
+		ctx.lineTo(mdim,d);
+		ctx.moveTo(d,0);
+		ctx.lineTo(d,mdim);
+	}
+	ctx.stroke();
+	for (let y=0; y<mdim; y+=mcell){
+		for (let x=0; x<mdim; x+=mcell){
+			r = Math.floor(Math.random()*9);
+			ctx.strokeStyle = r==0 ? 'red' : 'black';
+			ctx.strokeText(r, x+moff, y+moff, mcell);
+		}
+	}
+</script>
+
+</html>
