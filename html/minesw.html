@@ -1,50 +1,135 @@
 <html>
+<head>
 <style>
 	#mines {
+		border: 1px solid black;
 	}
 </style>
-<canvas id='mines' width='420px' height='420px' />
+</head>
+<body>
+<canvas id='mines' width='400px' height='400px'></canvas>
+</body>
+
+<script>
+	function Mines2d(width, height){
+		this.A = new Array(height);
+		for (let r=0; r<height; ++r){
+			this.A[r] = new Array(width);
+			for (let c=0; c<width; ++c){
+				this.A[r][c] = 0;
+			}
+		}
+		this.width = width;
+		this.height = height;
+		this.plantMine = function(r,c){
+			this.A[r][c] = 9;
+			this.plantWarning(r-1,c-1);
+			this.plantWarning(r-1,c);
+			this.plantWarning(r-1,c+1);
+			this.plantWarning(r,c-1);
+			this.plantWarning(r,c+1);
+			this.plantWarning(r+1,c-1);
+			this.plantWarning(r+1,c);
+			this.plantWarning(r+1,c+1);
+		};
+		this.plantWarning = function(r,c){
+			if (r>=0 && r<this.height && c>=0 && c<this.width && this.A[r][c] !== 9){
+				++this.A[r][c];
+			}
+		};
+	}
+	
+</script>
+<script>
+	// Durstenfeld' shuffle
+	function shuffleArray(A){
+		let j;
+		let tempValue;
+		for (let i=A.length-1; i>0; --i){
+			j = Math.floor(Math.random()*i);
+			tempValue = A[j];
+			A[j] = A[i];
+			A[i] = tempValue;
+		}
+	}
+</script>
 <script>
 	var can = document.getElementById('mines');
 	var ctx = can.getContext('2d');
-	ctx.font = '10pt monospace';
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	let r = 0;
-	let mdim = 400;
-	let mcell = 20;
-	let moff = mcell/2;
-	let mmines = new Array(mcell*mcell);
-	// mmines is an Array of mine's priority
-	for (let i=0; i<mmines.length; ++i){
-		mmines[i] = i;
+
+	function drawTileLines(mdim, mcell){
+		ctx.strokeStyle = 'blue';
+		for (let d=mcell; d<mdim; d+=mcell){
+			ctx.moveTo(0,d);
+			ctx.lineTo(mdim,d);
+			ctx.moveTo(d,0);
+			ctx.lineTo(d,mdim);
+		}
+		ctx.stroke();
 	}
-	// Durstenfeld' shuffle
-	let j = 0;
-	let t;
-	for (let i=mmines.length-1; i>0; --i){
-		j = Math.floor(Math.random()*i);
-		t = mmines[j];
-		mmines[j] = mmines[i];
-		mmines[i] = t;
-	}
-	
-	console.log(mmines.splice(0,10));
-	ctx.strokeStyle = 'blue';
-	for (let d=mcell; d<mdim; d+=mcell){
-		ctx.moveTo(0,d);
-		ctx.lineTo(mdim,d);
-		ctx.moveTo(d,0);
-		ctx.lineTo(d,mdim);
-	}
-	ctx.stroke();
-	for (let y=0; y<mdim; y+=mcell){
-		for (let x=0; x<mdim; x+=mcell){
-			r = Math.floor(Math.random()*9);
-			ctx.strokeStyle = r==0 ? 'red' : 'black';
-			ctx.strokeText(r, x+moff, y+moff, mcell);
+	function drawNumbers(mdim, mcell, moff, mfield){
+		let colors = ['red','orange','yellow','green','blue','purple','pink','grey','black'];
+		ctx.font = '10pt monospace';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		let r;
+		for (let y=0; y<mdim; y+=mcell){
+			for (let x=0; x<mdim; x+=mcell){
+				r = Math.floor(Math.random()*9);
+				ctx.strokeStyle = colors[r];
+				ctx.strokeText(r, x+moff, y+moff, mcell);
+			}
 		}
 	}
+	function revealNumber(row, col, mfield, cellSize, cellOff){
+		let t = mfield.A[row][col];
+		let x = cellSize * col;
+		let y = cellSize * row;
+		let colors = ['#bbb','#aaa','#999','#888','#777','#666','#444','#333','#111','#000'];
+		ctx.strokeStyle = colors[t];
+		if (t == 9){
+			t = '*';
+		}
+		ctx.strokeText(t, x+cellOff, y+cellOff, cellSize);
+	}
+</script>
+<script>
+
+	let mdim = can.width; 
+	let mcell = 20; // size of graphical cell in pixels
+	let moff = mcell/2; // offset to center of cell
+	function setupMinefield(width, height, mineCt){
+		let mineLoc = new Array(width*height);
+		// mineLoc is an Array of mine's priority
+		for (let i=0; i<mineLoc.length; ++i){
+			mineLoc[i] = i;
+		}
+		shuffleArray(mineLoc);
+		let mfield = new Mines2d(width, height);
+		let r, c;
+		for (let i=0; i<mineCt; ++i){
+			r = Math.floor(mineLoc[i] / height);
+			c = mineLoc[i] % width;
+			mfield.plantMine(r,c);
+		}
+		
+		return mfield;
+	}
+	drawTileLines(mdim,mcell);
+	//drawNumbers(mdim,mcell,moff);
+	let myfield = setupMinefield(mdim/mcell, mdim/mcell, 50);
+	for (let r = myfield.height; r>0; --r){
+		console.log(myfield.A[r-1]);
+	}
+	ctx.font = mcell.toString()+'px monospace';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	for (let r = 0; r < myfield.height; ++r){
+		for (let c = 0; c < myfield.width; ++c){
+			revealNumber(r,c,myfield,mcell,moff);
+		}
+	}
+
 </script>
 
 </html>
