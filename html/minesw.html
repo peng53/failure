@@ -2,12 +2,24 @@
 <head>
 <style>
 	#mines {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		margin: auto;
 		border: 1px solid black;
 	}
 </style>
 </head>
 <body>
-<canvas id='mines' width='400px' height='400px'></canvas>
+<canvas
+	id='mines'
+	width='500px'
+	height='500px'
+	data-cellsize=50
+	data-nmines=4
+></canvas>
 </body>
 
 <script>
@@ -82,8 +94,7 @@
 <script>
 	// Durstenfeld' shuffle
 	function shuffleArray(A){
-		let j;
-		let tempValue;
+		let j,tempValue;
 		for (let i=A.length-1; i>0; --i){
 			j = Math.floor(Math.random()*i);
 			tempValue = A[j];
@@ -96,29 +107,17 @@
 	const can = document.getElementById('mines');
 	const ctx = can.getContext('2d');
 
-	function drawTileLines(mdim, mcell){
+	function drawTileLines(width,height, mcell){
 		ctx.strokeStyle = 'blue';
-		for (let d=mcell; d<mdim; d+=mcell){
-			ctx.moveTo(0,d);
-			ctx.lineTo(mdim,d);
-			ctx.moveTo(d,0);
-			ctx.lineTo(d,mdim);
+		for (let x=mcell; x<width; x+=mcell){
+			ctx.moveTo(x,0);
+			ctx.lineTo(x,height);
+		}
+		for (let y=mcell; y<height; y+=mcell){
+			ctx.moveTo(0,y);
+			ctx.lineTo(width,y);
 		}
 		ctx.stroke();
-	}
-	function drawNumbers(mdim, mcell, moff, mfield){
-		let colors = ['red','orange','yellow','green','blue','purple','pink','grey','black'];
-		ctx.font = '10pt monospace';
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-		let r;
-		for (let y=0; y<mdim; y+=mcell){
-			for (let x=0; x<mdim; x+=mcell){
-				r = Math.floor(Math.random()*9);
-				ctx.strokeStyle = colors[r];
-				ctx.strokeText(r, x+moff, y+moff, mcell);
-			}
-		}
 	}
 	function revealNumber(row, col, mfield, cellSize, cellOff){
 		let t = mfield.A[row][col];
@@ -144,18 +143,23 @@
 	}
 </script>
 <script>
-	function setupMinefield(width, height, mineCt){
-		let mineLoc = new Array(width*height);
+	function setupMinefield(cols, rows, mineCt){
+		let mineLocLen = cols*rows;
+		if (mineLocLen <= mineCt){
+			alert('# of mines is equal or greater than dimensions');
+			return;
+		}
+		let mineLoc = new Array(mineLocLen);
 		// mineLoc is an Array of mine's priority
 		for (let i=0; i<mineLoc.length; ++i){
 			mineLoc[i] = i;
 		}
 		shuffleArray(mineLoc);
-		let mfield = new Mines2d(width, height);
+		let mfield = new Mines2d(cols, rows);
 		let r, c;
 		for (let i=0; i<mineCt; ++i){
-			r = Math.floor(mineLoc[i] / height);
-			c = mineLoc[i] % width;
+			r = Math.floor(mineLoc[i] / cols);
+			c = mineLoc[i] % cols;
 			mfield.plantMine(r,c);
 		}
 		
@@ -170,22 +174,19 @@
 		}
 	}
 
-	const mcell = 38; // size of graphical cell in pixels
-	const mdim = can.width-(can.width%mcell); 
+	const mcell = Number(can.dataset.cellsize); // size of graphical cell in pixels
+	const mwidth = can.width-(can.width%mcell);
+	const mheight = can.height-(can.height%mcell);
+	
 	const moff = mcell/2; // offset to center of cell
-	const mcount = mdim/mcell;
-	let myfield = setupMinefield(mdim/mcell, mdim/mcell, mcount);
+	const mcount = Number(can.dataset.nmines);
+	let myfield = setupMinefield(mwidth/mcell, mheight/mcell, mcount);
 
 	ctx.font = mcell.toString()+'px monospace';
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
-	//for (let r = 0; r < myfield.rows; ++r){
-		//for (let c = 0; c < myfield.cols; ++c){
-			//revealNumber(r,c,myfield,mcell,moff);
-		//}
-	//}
-	drawTileLines(mdim,mcell);
+	drawTileLines(mwidth,mheight,mcell);
 	can.addEventListener('mousedown', function(e) {
 		getCursorPosition(can, e)
 	});
