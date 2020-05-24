@@ -11,16 +11,14 @@
 </body>
 
 <script>
-	function Mines2d(width, height){
-		this.A = new Array(height);
-		for (let r=0; r<height; ++r){
-			this.A[r] = new Array(width);
-			for (let c=0; c<width; ++c){
-				this.A[r][c] = 0;
-			}
+	function Mines2d(cols, rows){
+		this.A = new Array(rows);
+		for (let r=0; r<rows; ++r){
+			this.A[r] = new Array(cols);
+			arrSetValues(this.A[r], 0);
 		}
-		this.width = width;
-		this.height = height;
+		this.cols = cols;
+		this.rows = rows;
 		this.plantMine = function(r,c){
 			this.A[r][c] = 9;
 			this.plantWarning(r-1,c-1);
@@ -33,10 +31,15 @@
 			this.plantWarning(r+1,c+1);
 		};
 		this.plantWarning = function(r,c){
-			if (r>=0 && r<this.height && c>=0 && c<this.width && this.A[r][c] !== 9){
+			if (r>=0 && r<this.rows && c>=0 && c<this.cols && this.A[r][c] !== 9){
 				++this.A[r][c];
 			}
 		};
+	}
+	function arrSetValues(arr, val){
+		for (let i=arr.length-1; i>=0; --i){
+			arr[i] = val;
+		}
 	}
 	
 </script>
@@ -54,8 +57,8 @@
 	}
 </script>
 <script>
-	var can = document.getElementById('mines');
-	var ctx = can.getContext('2d');
+	const can = document.getElementById('mines');
+	const ctx = can.getContext('2d');
 
 	function drawTileLines(mdim, mcell){
 		ctx.strokeStyle = 'blue';
@@ -86,18 +89,20 @@
 		let x = cellSize * col;
 		let y = cellSize * row;
 		let colors = ['#bbb','#aaa','#999','#888','#777','#666','#444','#333','#111','#000'];
-		ctx.strokeStyle = colors[t];
+		ctx.fillStyle = colors[t];
 		if (t == 9){
-			t = '*';
+			t = 'M';
 		}
-		ctx.strokeText(t, x+cellOff, y+cellOff, cellSize);
+		ctx.fillText(t, x+cellOff, y+cellOff, cellSize);
+	}
+	function getCursorPosition(canvas, event) {
+		const rect = canvas.getBoundingClientRect();
+		const x = event.clientX - rect.left;
+		const y = event.clientY - rect.top;
+		touchCanvas(x,y);
 	}
 </script>
 <script>
-
-	let mdim = can.width; 
-	let mcell = 20; // size of graphical cell in pixels
-	let moff = mcell/2; // offset to center of cell
 	function setupMinefield(width, height, mineCt){
 		let mineLoc = new Array(width*height);
 		// mineLoc is an Array of mine's priority
@@ -115,21 +120,31 @@
 		
 		return mfield;
 	}
-	drawTileLines(mdim,mcell);
-	//drawNumbers(mdim,mcell,moff);
-	let myfield = setupMinefield(mdim/mcell, mdim/mcell, 50);
-	for (let r = myfield.height; r>0; --r){
-		console.log(myfield.A[r-1]);
+	function touchCanvas(x, y){
+		let c = Math.floor(x/mcell);
+		let r = Math.floor(y/mcell);
+		revealNumber(r,c,myfield,mcell,moff);
 	}
+
+	const mcell = 38; // size of graphical cell in pixels
+	const mdim = can.width-(can.width%mcell); 
+	const moff = mcell/2; // offset to center of cell
+	const mcount = mdim/mcell;
+	let myfield = setupMinefield(mdim/mcell, mdim/mcell, mcount);
+
 	ctx.font = mcell.toString()+'px monospace';
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
-	for (let r = 0; r < myfield.height; ++r){
-		for (let c = 0; c < myfield.width; ++c){
-			revealNumber(r,c,myfield,mcell,moff);
-		}
-	}
 
+	//for (let r = 0; r < myfield.rows; ++r){
+		//for (let c = 0; c < myfield.cols; ++c){
+			//revealNumber(r,c,myfield,mcell,moff);
+		//}
+	//}
+	drawTileLines(mdim,mcell);
+	can.addEventListener('mousedown', function(e) {
+		getCursorPosition(can, e)
+	});
 </script>
 
 </html>
