@@ -15,10 +15,10 @@
 <body>
 <canvas
 	id='mines'
-	width='250px'
-	height='250px'
-	data-cellsize=25
-	data-nmines=10
+	width='1000px'
+	height='600px'
+	data-cellsize=20
+	data-nmines=30
 ></canvas>
 </body>
 <script src='queue.js'></script>
@@ -72,49 +72,66 @@ function expandScanline(line, fl, matching){
 		++j;
 	}
 	line.x1 = j;
+	return line;
 }
 function floodFill(fl, row, col, matching){
 	let q = new Queue();
-	q.put(new Scanline(col,col,row));
+	q.put(expandScanline(new Scanline(col,col,row),fl,matching));
 	let r,c0,c1,line;
 	let t0, t1, b0, b1;
 	let tl = false, bl = false;
 	while (q.len > 0){
 		line = q.get();
-		expandScanline(line,fl,matching);
 		r = line.r, c0 = line.x0, c1 = line.x1;
+		// reveal the borders
+		if (c0>0 && fl.A[r][c0-1]!=9 && fl.A[r][c0-1]!='c'){
+			revealNumber(r,c0-1,fl,mcell,moff);
+		}
+		if (c1+1<fl.cols && fl.A[r][c1+1]!=9 && fl.A[r][c0-1]!='c'){
+			revealNumber(r,c1+1,fl,mcell,moff);
+		}
 		for (;c0<=c1;++c0){
 			revealNumber(r,c0,fl,mcell,moff);
 			fl.A[r][c0] = 'c';
-			if (r>0 && fl.A[r-1][c0]==matching){
-				if (!tl){
-					tl = true;
-					t0 = t1 = c0;
-				} else if (t1+1==c0){
-					++t1;
+			if (r>0){
+				if (fl.A[r-1][c0]==matching){
+					if (!tl){
+						tl = true;
+						t0 = t1 = c0;
+					} else if (t1+1==c0){
+						++t1;
+					} else {
+						q.put(expandScanline(new Scanline(t0,t1,r-1),fl,matching));
+						t0 = t1 = c0;
+					}
 				} else {
-					q.put(new Scanline(t0,t1,r-1));
-					t0 = t1 = c0;
+					revealNumber(r-1,c0,fl,mcell,moff);
+					fl.A[r-1][c0] = 'c';
 				}
 			}
-			if (r<fl.rows-1 && fl.A[r+1][c0]==matching){
-				if (!bl){
-					bl = true;
-					b0 = b1 = c0;
-				} else if (b1+1==c0){
-					++b1;
+			if (r<fl.rows-1){
+				if (fl.A[r+1][c0]==matching){
+					if (!bl){
+						bl = true;
+						b0 = b1 = c0;
+					} else if (b1+1==c0){
+						++b1;
+					} else {
+						q.put(expandScanline(new Scanline(b0,b1,r+1),fl,matching));
+						b0 = b1 = c0;
+					}
 				} else {
-					q.put(new Scanline(b0,b1,r+1));
-					b0 = b1 = c0;
+					revealNumber(r+1,c0,fl,mcell,moff);
+					fl.A[r+1][c0] = 'c';
 				}
 			}
 		}
 		if (tl){
-			q.put(new Scanline(t0,t1,r-1));
+			q.put(expandScanline(new Scanline(t0,t1,r-1),fl,matching));
 			tl = false;
 		}
 		if (bl){
-			q.put(new Scanline(b0,b1,r+1));
+			q.put(expandScanline(new Scanline(b0,b1,r+1),fl,matching));
 			bl = false;
 		}
 	}
@@ -175,6 +192,9 @@ function floodFill(fl, row, col, matching){
 	}
 	function revealNumber(row, col, mfield, cellSize, cellOff){
 		let t = mfield.A[row][col];
+		if (t=='c'){
+			return;
+		}
 		let x = cellSize * col;
 		let y = cellSize * row;
 		let colors = ['#bbb','#aaa','#999','#888','#777','#666','#444','#333','#111','#000'];
