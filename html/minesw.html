@@ -15,14 +15,16 @@
 <body>
 <canvas
 	id='mines'
-	width='500px'
-	height='500px'
-	data-cellsize=50
-	data-nmines=4
+	width='250px'
+	height='250px'
+	data-cellsize=25
+	data-nmines=10
 ></canvas>
 </body>
-
+<script src='queue.js'></script>
 <script>
+	'use strict';
+	/* primative internals */
 	function Mines2d(cols, rows){
 		this.A = new Array(rows);
 		for (let r=0; r<rows; ++r){
@@ -53,45 +55,75 @@
 			arr[i] = val;
 		}
 	}
-	
-	function QNode(val){
-		this.v = val;
-		this.next = undefined;
+
+	function Scanline(x0,x1,r){
+		this.x0 = x0;
+		this.x1 = x1;
+		this.r = r;
 	}
-	function Queue(){
-		this.head = undefined;
-		this.tail = undefined;
-		this.enqueue = function(val){
-			let n = new QNode(val);
-			if (this.tail === undefined){
-				this.tail = n;
-				if (this.head === undefined){
-					this.head = this.tail;
+function expandScanline(line, fl, matching){
+	// expands line left and right to matching vals
+	let r = line.r, i = line.x0, j = line.x1;
+	while (i>0 && fl.A[r][i-1]==matching){
+		--i;
+	}
+	line.x0 = i;
+	while (j<fl.rows-1 && fl.A[r][j+1]==matching){
+		++j;
+	}
+	line.x1 = j;
+}
+function floodFill(fl, row, col, matching){
+	let q = new Queue();
+	q.put(new Scanline(col,col,row));
+	let r,c0,c1,line;
+	let t0, t1, b0, b1;
+	let tl = false, bl = false;
+	while (q.len > 0){
+		line = q.get();
+		expandScanline(line,fl,matching);
+		r = line.r, c0 = line.x0, c1 = line.x1;
+		for (;c0<=c1;++c0){
+			revealNumber(r,c0,fl,mcell,moff);
+			fl.A[r][c0] = 'c';
+			if (r>0 && fl.A[r-1][c0]==matching){
+				if (!tl){
+					tl = true;
+					t0 = t1 = c0;
+				} else if (t1+1==c0){
+					++t1;
+				} else {
+					q.put(new Scanline(t0,t1,r-1));
+					t0 = t1 = c0;
 				}
-			} else {
-				this.tail.next = n;
-				this.tail = this.tail.next;
 			}
-		};
-		this.dequeue = function(){
-			let r = this.head;
-			if (r !== undefined){
-			//	if (this.head.next === undefined){
-			//		this.head = undefined;
-			//	}	else {
-			//		this.head = this.head.next;
-			//	}
-				this.head = (this.head.next === undefined) ? undefined : this.head.next;
-				return r.v;
+			if (r<fl.rows-1 && fl.A[r+1][c0]==matching){
+				if (!bl){
+					bl = true;
+					b0 = b1 = c0;
+				} else if (b1+1==c0){
+					++b1;
+				} else {
+					q.put(new Scanline(b0,b1,r+1));
+					b0 = b1 = c0;
+				}
 			}
-		};
-		this.peek = function(){
-			return (this.head === undefined) ? undefined : this.head.v;
-		};
+		}
+		if (tl){
+			q.put(new Scanline(t0,t1,r-1));
+			tl = false;
+		}
+		if (bl){
+			q.put(new Scanline(b0,b1,r+1));
+			bl = false;
+		}
 	}
-	
+}
 </script>
+
 <script>
+	'use strict';
+	/* data setup */
 	// Durstenfeld' shuffle
 	function shuffleArray(A){
 		let j,tempValue;
@@ -102,11 +134,33 @@
 			A[i] = tempValue;
 		}
 	}
+	function setupMinefield(cols, rows, mineCt){
+		let mineLocLen = cols*rows;
+		if (mineLocLen <= mineCt){
+			alert('# of mines is equal or greater than dimensions');
+			return;
+		}
+		let mineLoc = new Array(mineLocLen);
+		// mineLoc is an Array of mine's priority
+		for (let i=0; i<mineLoc.length; ++i){
+			mineLoc[i] = i;
+		}
+		shuffleArray(mineLoc);
+		let mfield = new Mines2d(cols, rows);
+		let r, c;
+		for (let i=0; i<mineCt; ++i){
+			r = Math.floor(mineLoc[i] / cols);
+			c = mineLoc[i] % cols;
+			mfield.plantMine(r,c);
+		}
+		
+		return mfield;
+	}
 </script>
-<script>
-	const can = document.getElementById('mines');
-	const ctx = can.getContext('2d');
 
+<script>
+	'use strict';
+	/* drawing */
 	function drawTileLines(width,height, mcell){
 		ctx.strokeStyle = 'blue';
 		for (let x=mcell; x<width; x+=mcell){
@@ -130,10 +184,11 @@
 		}
 		ctx.fillText(t, x+cellOff, y+cellOff, cellSize);
 	}
+	/* ui interaction */
 	function floodReveal(r,c,mfield,cellSize,cellOff){
 		// needs same args as the function(s) it calls..
 		revealNumber(r,c,myfield,cellSize,cellOff);
-		
+		floodFill(myfield,r,c,0);
 	}
 	function getCursorPosition(canvas, event) {
 		const rect = canvas.getBoundingClientRect();
@@ -141,38 +196,25 @@
 		const y = event.clientY - rect.top;
 		touchCanvas(x,y);
 	}
-</script>
-<script>
-	function setupMinefield(cols, rows, mineCt){
-		let mineLocLen = cols*rows;
-		if (mineLocLen <= mineCt){
-			alert('# of mines is equal or greater than dimensions');
-			return;
-		}
-		let mineLoc = new Array(mineLocLen);
-		// mineLoc is an Array of mine's priority
-		for (let i=0; i<mineLoc.length; ++i){
-			mineLoc[i] = i;
-		}
-		shuffleArray(mineLoc);
-		let mfield = new Mines2d(cols, rows);
-		let r, c;
-		for (let i=0; i<mineCt; ++i){
-			r = Math.floor(mineLoc[i] / cols);
-			c = mineLoc[i] % cols;
-			mfield.plantMine(r,c);
-		}
-		
-		return mfield;
-	}
 	function touchCanvas(x, y){
 		// myfield,mcell, and moff needs to be in an accessible location.
 		let c = Math.floor(x/mcell);
 		let r = Math.floor(y/mcell);
 		if (c < myfield.cols && r < myfield.rows){
-			floodReveal(r,c,myfield,mcell,moff);
+			if (myfield.A[r][c] == 0){
+				floodReveal(r,c,myfield,mcell,moff);
+			} else if (myfield.A[r][c] == 'c'){
+			} else {
+				revealNumber(r,c,myfield,mcell,moff);
+			}
 		}
 	}
+</script>
+
+<script>
+	'use strict';
+	const can = document.getElementById('mines');
+	const ctx = can.getContext('2d');
 
 	const mcell = Number(can.dataset.cellsize); // size of graphical cell in pixels
 	const mwidth = can.width-(can.width%mcell);
@@ -181,15 +223,16 @@
 	const moff = mcell/2; // offset to center of cell
 	const mcount = Number(can.dataset.nmines);
 	let myfield = setupMinefield(mwidth/mcell, mheight/mcell, mcount);
+	can.addEventListener('mousedown', function(e) {
+		getCursorPosition(can, e)
+	});
 
 	ctx.font = mcell.toString()+'px monospace';
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
 	drawTileLines(mwidth,mheight,mcell);
-	can.addEventListener('mousedown', function(e) {
-		getCursorPosition(can, e)
-	});
+
 </script>
 
 </html>
