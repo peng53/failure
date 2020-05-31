@@ -17,8 +17,8 @@
 	id='mines'
 	width='500px'
 	height='500px'
-	data-cellsize=25
-	data-nmines=25
+	data-cellsize=50
+	data-nmines=10
 ></canvas>
 </body>
 <script src='queue.js'></script>
@@ -174,8 +174,9 @@ function fill2(field, row, col, mcell, moff){
 function fillh(field, q, mcell, moff){
 	let line = q.get();
 	ANALYZEARRAY.push(['reveal0',line.r,line.x0,line.x1]);
-	
+	console.log('got line', line.r, line.x0, line.x1);
 	let i = line.x0, j = line.x1, r = line.r;
+	console.log('reveal: ', r, i, j);
 	for (let k = i; k<=j; ++k){ // line[i..j] is known to be a sequence of 0s
 		revealNumber(r,k,field,mcell,moff);
 	}
@@ -189,8 +190,6 @@ function checkLine(field, row, start, stop, q, mcell, moff){
 	if (row<0 || row>=field.rows){
 		return;
 	}
-	/*
-	// expand left-right;
 	while (start-1>=0 && field.A[row][start-1] == 0){
 		--start;
 	}
@@ -203,6 +202,34 @@ function checkLine(field, row, start, stop, q, mcell, moff){
 	if (stop+1<field.cols && field.A[row][stop+1] != 'c'){
 		revealNumber(row,stop+1,field,mcell,moff);
 	}
+	let x0, x1, xL = false;
+	for (; start <= stop; ++start){
+		if (field.A[row][start] == 0){
+			if (!xL){
+				xL = true;
+				x0 = x1 = start;
+			} else if (x1+1 == start){
+				// continue the line.
+				++x1;
+			} else {
+				// end line.
+				q.put(new Scanline(x0,x1,row));
+				console.log('putting line', row, x0, x1);
+				x0 = x1 = start;
+			}
+		} else {
+			revealNumber(row,start,field,mcell,moff);
+			if (xL){
+				q.put(new Scanline(x0,x1,row));
+				xL = false;
+			}
+		}
+	}
+	if (xL){
+		q.put(new Scanline(x0,x1,row));
+		console.log('putting line', row, x0, x1);
+	}
+	/*
 	let k;
 	while (start <= stop){
 		start = revealRun(field, row, start, stop, mcell, moff);
