@@ -15,10 +15,10 @@
 <body>
 <canvas
 	id='mines'
-	width='1000px'
-	height='600px'
-	data-cellsize=20
-	data-nmines=30
+	width='500px'
+	height='500px'
+	data-cellsize=25
+	data-nmines=25
 ></canvas>
 </body>
 <script src='queue.js'></script>
@@ -61,19 +61,29 @@
 		this.x1 = x1;
 		this.r = r;
 	}
-function expandScanline(line, fl, matching){
-	// expands line left and right to matching vals
-	let r = line.r, i = line.x0, j = line.x1;
-	while (i>0 && fl.A[r][i-1]==matching){
-		--i;
+	function expandScanline(line, fl, matching){
+		// expands line left and right to matching vals
+		let r = line.r, i = line.x0, j = line.x1;
+		while (i>0 && fl.A[r][i-1]==matching){
+			--i;
+		}
+		line.x0 = i;
+		while (j<fl.rows-1 && fl.A[r][j+1]==matching){
+			++j;
+		}
+		line.x1 = j;
+		return line;
 	}
-	line.x0 = i;
-	while (j<fl.rows-1 && fl.A[r][j+1]==matching){
-		++j;
+	function revealScanlineSides(line, field, mcell, moff){
+		// reveals the left and right sides of a scanline.
+		let r = line.r, i = line.x0, j = line.x1;
+		if (i > 0){
+			revealNumber(r, i-1, field, mcell, moff);
+		}
+		if (j+1 < field.cols){
+			revealNumber(r, j+1, field, mcell, moff);
+		}
 	}
-	line.x1 = j;
-	return line;
-}
 function floodFill(fl, row, col, matching){
 	let q = new Queue();
 	q.put(expandScanline(new Scanline(col,col,row),fl,matching));
@@ -83,13 +93,7 @@ function floodFill(fl, row, col, matching){
 	while (q.len > 0){
 		line = q.get();
 		r = line.r, c0 = line.x0, c1 = line.x1;
-		// reveal the borders
-		if (c0>0 && fl.A[r][c0-1]!=9 && fl.A[r][c0-1]!='c'){
-			revealNumber(r,c0-1,fl,mcell,moff);
-		}
-		if (c1+1<fl.cols && fl.A[r][c1+1]!=9 && fl.A[r][c0-1]!='c'){
-			revealNumber(r,c1+1,fl,mcell,moff);
-		}
+		revealScanlineSides(line, fl, mcell, moff);
 		for (;c0<=c1;++c0){
 			revealNumber(r,c0,fl,mcell,moff);
 			fl.A[r][c0] = 'c';
@@ -106,7 +110,7 @@ function floodFill(fl, row, col, matching){
 					}
 				} else {
 					revealNumber(r-1,c0,fl,mcell,moff);
-					fl.A[r-1][c0] = 'c';
+					//fl.A[r-1][c0] = 'c';
 				}
 			}
 			if (r<fl.rows-1){
@@ -122,7 +126,7 @@ function floodFill(fl, row, col, matching){
 					}
 				} else {
 					revealNumber(r+1,c0,fl,mcell,moff);
-					fl.A[r+1][c0] = 'c';
+					//fl.A[r+1][c0] = 'c';
 				}
 			}
 		}
@@ -136,6 +140,100 @@ function floodFill(fl, row, col, matching){
 		}
 	}
 }
+
+function analyzeArray(){
+	let d = {};
+	let v;
+	let m = 0;
+	for (let i=ANALYZEARRAY.length-1; i>=0; --i){
+		v = ANALYZEARRAY[i].toString();
+		if (d[v] === undefined){
+			d[v] = 1;
+		} else {
+			d[v]++;
+		}
+		m = Math.max(m, d[v]);
+	}
+	console.log(d,m);
+	
+}
+
+function fill2(field, row, col, mcell, moff){
+	ANALYZEARRAY = [];
+	let q = new Queue();
+	q.put(expandScanline(new Scanline(col,col,row),field,0));
+	while (q.len > 0){
+		fillh(field, q, mcell, moff);
+	}
+	
+	
+	/* ANALYZEARRAY NOT PART OF ALGO */
+	analyzeArray();
+}
+
+function fillh(field, q, mcell, moff){
+	let line = q.get();
+	ANALYZEARRAY.push(['reveal0',line.r,line.x0,line.x1]);
+	
+	let i = line.x0, j = line.x1, r = line.r;
+	for (let k = i; k<=j; ++k){ // line[i..j] is known to be a sequence of 0s
+		revealNumber(r,k,field,mcell,moff);
+	}
+	checkLine(field, r-1, i, j, q, mcell, moff);
+	checkLine(field, r+1, i, j, q, mcell, moff);
+}
+
+function checkLine(field, row, start, stop, q, mcell, moff){
+	ANALYZEARRAY.push(['tocheck',row,start,stop]);
+	// for use with lines above/below 0 sequences.
+	if (row<0 || row>=field.rows){
+		return;
+	}
+	/*
+	// expand left-right;
+	while (start-1>=0 && field.A[row][start-1] == 0){
+		--start;
+	}
+	while (stop+1<field.cols && field.A[row][stop+1] == 0){
+		++stop;
+	}
+	if (start-1>=0 && field.A[row][start-1] != 'c'){
+		revealNumber(row,start-1,field,mcell,moff);
+	}
+	if (stop+1<field.cols && field.A[row][stop+1] != 'c'){
+		revealNumber(row,stop+1,field,mcell,moff);
+	}
+	let k;
+	while (start <= stop){
+		start = revealRun(field, row, start, stop, mcell, moff);
+		// reveal all non 0s..
+		if (start>stop){
+			console.log('no 0s', stop, row);
+			return;
+		}
+		// start a line of 0s
+		k = start;
+		while (k+1 <= stop && field.A[row][k+1] == 0){
+			++k;
+		}
+		// put that line to queue.
+		q.put(new Scanline(start,k,row));
+		console.log('putting line', start, k, row);
+		//ANALYZEARRAY.push(['tocheck',row,start,k]);
+		start = k+1;
+	}
+	*/
+}
+
+
+function revealRun(field, row, leftBound, rightBound, mcell, moff){
+	for (; leftBound <= rightBound && field.A[row][leftBound] != 0; leftBound++){
+		revealNumber(row,leftBound,field,mcell,moff);
+	}
+	console.log('returning bound of', leftBound, rightBound, row);
+	return leftBound;
+}
+
 </script>
 
 <script>
@@ -203,12 +301,14 @@ function floodFill(fl, row, col, matching){
 			t = 'M';
 		}
 		ctx.fillText(t, x+cellOff, y+cellOff, cellSize);
+		mfield.A[row][col] = 'c';
 	}
 	/* ui interaction */
 	function floodReveal(r,c,mfield,cellSize,cellOff){
 		// needs same args as the function(s) it calls..
 		revealNumber(r,c,myfield,cellSize,cellOff);
-		floodFill(myfield,r,c,0);
+		//floodFill(myfield,r,c,0);
+		fill2(myfield, r, c, mcell, moff);
 	}
 	function getCursorPosition(canvas, event) {
 		const rect = canvas.getBoundingClientRect();
@@ -233,6 +333,9 @@ function floodFill(fl, row, col, matching){
 
 <script>
 	'use strict';
+	
+	var ANALYZEARRAY = [];
+	
 	const can = document.getElementById('mines');
 	const ctx = can.getContext('2d');
 
@@ -244,7 +347,7 @@ function floodFill(fl, row, col, matching){
 	const mcount = Number(can.dataset.nmines);
 	let myfield = setupMinefield(mwidth/mcell, mheight/mcell, mcount);
 	can.addEventListener('mousedown', function(e) {
-		getCursorPosition(can, e)
+		getCursorPosition(can, e);
 	});
 
 	ctx.font = mcell.toString()+'px monospace';
