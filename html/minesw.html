@@ -160,7 +160,8 @@ function analyzeArray(){
 
 function fill2(field, row, col, mcell, moff){
 	ANALYZEARRAY = [];
-	let q = new Queue();
+	//let q = new Queue();
+	let q = new NaiveQueue();
 	q.put(expandScanline(new Scanline(col,col,row),field,0));
 	while (q.len > 0){
 		fillh(field, q, mcell, moff);

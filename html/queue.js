@@ -36,3 +36,19 @@ function Queue(){
 		return n.v;
 	};
 }
+
+function NaiveQueue(){
+	this.data = [];
+	this.len = 0;
+	this.put = function(val){
+		++this.len;
+		this.data.push(val);
+	};
+	this.get = function(){
+		if (this.len>0){
+			--this.len;
+			let val = this.data.shift();
+			return val;
+		}
+	};
+}
