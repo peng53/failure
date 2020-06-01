@@ -15,233 +15,65 @@
 <body>
 <canvas
 	id='mines'
-	width='500px'
-	height='500px'
+	width='400px'
+	height='400px'
 	data-cellsize=20
 	data-nmines=10
 ></canvas>
+<br /><button onclick='clearField()'>Clear</button>
+<br /><button onclick='revealField()'>RevealAll</button>
 </body>
 <script src='queue.js'></script>
 <script>
 	'use strict';
 	/* primative internals */
-	function Mines2d(cols, rows){
-		this.A = new Array(rows);
-		for (let r=0; r<rows; ++r){
-			this.A[r] = new Array(cols);
-			arrSetValues(this.A[r], 0);
-		}
+	function Mines2d(cols, rows, cellSize){
+		this.A = RectArray(rows,cols, 0);
+		this.visible = RectArray(rows,cols, false);
 		this.cols = cols;
 		this.rows = rows;
+		this.cellSize = cellSize;
+
 		this.plantMine = function(r,c){
 			this.A[r][c] = 9;
-			this.plantWarning(r-1,c-1);
-			this.plantWarning(r-1,c);
-			this.plantWarning(r-1,c+1);
-			this.plantWarning(r,c-1);
-			this.plantWarning(r,c+1);
-			this.plantWarning(r+1,c-1);
-			this.plantWarning(r+1,c);
-			this.plantWarning(r+1,c+1);
+			let notTop = r>0, notLeft = c>0, notRight = c<this.cols, notBottom = r+1<this.rows;
+			if (notTop){
+				this.plantWarning(r-1,c);
+				if (notLeft) this.plantWarning(r-1,c-1);
+				if (notRight) this.plantWarning(r-1,c+1);
+			}
+			if (notBottom){
+				this.plantWarning(r+1,c);
+				if (notLeft) this.plantWarning(r+1,c-1);
+				if (notRight) this.plantWarning(r+1,c+1);
+			}
+			if (notLeft) this.plantWarning(r,c-1);
+			if (notRight) this.plantWarning(r,c+1);
 		};
+
 		this.plantWarning = function(r,c){
-			if (r>=0 && r<this.rows && c>=0 && c<this.cols && this.A[r][c] !== 9){
+			if (this.A[r][c] !== 9){
 				++this.A[r][c];
 			}
 		};
 	}
-	function arrSetValues(arr, val){
-		for (let i=arr.length-1; i>=0; --i){
-			arr[i] = val;
-		}
-	}
-
-	function Scanline(x0,x1,r){
-		this.x0 = x0;
-		this.x1 = x1;
-		this.r = r;
-	}
-	function expandScanline(line, fl, matching){
-		// expands line left and right to matching vals
-		let r = line.r, i = line.x0, j = line.x1;
-		while (i>0 && fl.A[r][i-1]==matching){
-			--i;
-		}
-		line.x0 = i;
-		while (j<fl.rows-1 && fl.A[r][j+1]==matching){
-			++j;
-		}
-		line.x1 = j;
-		return line;
-	}
-	function revealScanlineSides(line, field, mcell, moff){
-		// reveals the left and right sides of a scanline.
-		let r = line.r, i = line.x0, j = line.x1;
-		if (i > 0){
-			revealNumber(r, i-1, field, mcell, moff);
-		}
-		if (j+1 < field.cols){
-			revealNumber(r, j+1, field, mcell, moff);
-		}
-	}
-function floodFill(fl, row, col, matching){
-	let q = new Queue();
-	q.put(expandScanline(new Scanline(col,col,row),fl,matching));
-	let r,c0,c1,line;
-	let t0, t1, b0, b1;
-	let tl = false, bl = false;
-	while (q.len > 0){
-		line = q.get();
-		r = line.r, c0 = line.x0, c1 = line.x1;
-		revealScanlineSides(line, fl, mcell, moff);
-		for (;c0<=c1;++c0){
-			revealNumber(r,c0,fl,mcell,moff);
-			fl.A[r][c0] = 'c';
-			if (r>0){
-				if (fl.A[r-1][c0]==matching){
-					if (!tl){
-						tl = true;
-						t0 = t1 = c0;
-					} else if (t1+1==c0){
-						++t1;
-					} else {
-						q.put(expandScanline(new Scanline(t0,t1,r-1),fl,matching));
-						t0 = t1 = c0;
-					}
-				} else {
-					revealNumber(r-1,c0,fl,mcell,moff);
-					//fl.A[r-1][c0] = 'c';
-				}
-			}
-			if (r<fl.rows-1){
-				if (fl.A[r+1][c0]==matching){
-					if (!bl){
-						bl = true;
-						b0 = b1 = c0;
-					} else if (b1+1==c0){
-						++b1;
-					} else {
-						q.put(expandScanline(new Scanline(b0,b1,r+1),fl,matching));
-						b0 = b1 = c0;
-					}
-				} else {
-					revealNumber(r+1,c0,fl,mcell,moff);
-					//fl.A[r+1][c0] = 'c';
-				}
-			}
-		}
-		if (tl){
-			q.put(expandScanline(new Scanline(t0,t1,r-1),fl,matching));
-			tl = false;
-		}
-		if (bl){
-			q.put(expandScanline(new Scanline(b0,b1,r+1),fl,matching));
-			bl = false;
-		}
-	}
-}
-
-function analyzeArray(){
-	let d = {};
-	let v;
-	let m = 0;
-	for (let i=ANALYZEARRAY.length-1; i>=0; --i){
-		v = ANALYZEARRAY[i].toString();
-		if (d[v] === undefined){
-			d[v] = 1;
-		} else {
-			d[v]++;
-		}
-		m = Math.max(m, d[v]);
-	}
-	console.log(d,m);
 	
-}
-
-function fill2(field, row, col, mcell, moff){
-	ANALYZEARRAY = [];
-	//let q = new Queue();
-	let q = new NaiveQueue();
-	q.put(expandScanline(new Scanline(col,col,row),field,0));
-	while (q.len > 0){
-		fillh(field, q, mcell, moff);
+	function RectArray(rows, cols, v){
+		let a = new Array(rows);
+		for (let r = 0; r<rows; ++r){
+			a[r] = ArrayWithValue(cols,v);
+		}
+		return a;
 	}
 	
-	
-	/* ANALYZEARRAY NOT PART OF ALGO */
-	analyzeArray();
-}
-
-function fillh(field, q, mcell, moff){
-	let line = q.get();
-	ANALYZEARRAY.push(['reveal0',line.r,line.x0,line.x1]);
-	console.log('got line', line.r, line.x0, line.x1);
-	let i = line.x0, j = line.x1, r = line.r;
-	console.log('reveal: ', r, i, j);
-	for (let k = i; k<=j; ++k){ // line[i..j] is known to be a sequence of 0s
-		revealNumber(r,k,field,mcell,moff);
-	}
-	checkLine(field, r-1, i, j, q, mcell, moff);
-	checkLine(field, r+1, i, j, q, mcell, moff);
-}
-
-	function drawSquare(row, col, cellSize, cellOff){
-		let x = cellSize * col;
-		let y = cellSize * row;
-		ctx.alpha = 0.10;
-		ctx.fillRect(x,y,cellOff,cellOff);
-	}
-
-function checkLine(field, row, start, stop, q, mcell, moff){
-	if (row<0 || row>=field.rows){
-		return;
-	}
-	ANALYZEARRAY.push(['tocheck',row,start,stop]);
-	// for use with lines above/below 0 sequences.
-	ctx.fillStyle = 'red';
-	for (let i = start; i<=stop; ++i){
-		drawSquare(row, i, mcell, moff);
-	}
-	ctx.fillStyle = 'blue';
-	while (start-1>=0 && field.A[row][start-1]==0){
-		--start;
-		drawSquare(row, start, mcell, moff);
-	}
-	while (stop+1<field.cols && field.A[row][stop+1]==0){
-		++stop;
-		drawSquare(row, stop, mcell, moff);
-	}
-	let i;
-	ctx.fillStyle = 'green';
-	while (start<=stop){
-		// two cases:
-		if (field.A[row][start]==0){
-			for (i = start; i<=stop && field.A[row][i]==0; ++i){
-				drawSquare(row, i, mcell, moff);
-				continue;
-			}
-			console.log('before put', q.len);
-			q.put(new Scanline(start,i,row));
-			start = i;
-			console.log('after put', q.len);
-		} else {
-			while (start<=stop && field.A[row][i]!=0 && field.A[row][i]!='c'){
-				revealNumber(row,start,field,mcell,moff);
-				++start;
-			}
+	function ArrayWithValue(size, val){
+		let a = new Array(size);
+		for (let i=0;i<size;++i){
+			a[i]=val;
 		}
-		start++;
+		return a;
 	}
-}
-
-
-function revealRun(field, row, leftBound, rightBound, mcell, moff){
-	for (; leftBound <= rightBound && field.A[row][leftBound] != 0; leftBound++){
-		revealNumber(row,leftBound,field,mcell,moff);
-	}
-	console.log('returning bound of', leftBound, rightBound, row);
-	return leftBound;
-}
+	
 
 </script>
 
@@ -258,7 +90,7 @@ function revealRun(field, row, leftBound, rightBound, mcell, moff){
 			A[i] = tempValue;
 		}
 	}
-	function setupMinefield(cols, rows, mineCt){
+	function setupMinefield(cols, rows, mineCt, cellSize){
 		let mineLocLen = cols*rows;
 		if (mineLocLen <= mineCt){
 			alert('# of mines is equal or greater than dimensions');
@@ -270,7 +102,7 @@ function revealRun(field, row, leftBound, rightBound, mcell, moff){
 			mineLoc[i] = i;
 		}
 		shuffleArray(mineLoc);
-		let mfield = new Mines2d(cols, rows);
+		let mfield = new Mines2d(cols, rows, cellSize);
 		let r, c;
 		for (let i=0; i<mineCt; ++i){
 			r = Math.floor(mineLoc[i] / cols);
@@ -285,8 +117,8 @@ function revealRun(field, row, leftBound, rightBound, mcell, moff){
 <script>
 	'use strict';
 	/* drawing */
-	function drawTileLines(width,height, mcell){
-		ctx.strokeStyle = 'blue';
+	function drawTileLines(width,height,mcell,color){
+		ctx.strokeStyle = color;
 		for (let x=mcell; x<width; x+=mcell){
 			ctx.moveTo(x,0);
 			ctx.lineTo(x,height);
@@ -297,20 +129,19 @@ function revealRun(field, row, leftBound, rightBound, mcell, moff){
 		}
 		ctx.stroke();
 	}
-	function revealNumber(row, col, mfield, cellSize, cellOff){
-		let t = mfield.A[row][col];
-		if (t=='c'){
-			return;
+	function revealNumber(row, col, mfield){
+		if (!mfield.visible[row][col]){
+			let t = mfield.A[row][col];
+			let x = mfield.cellSize * col;
+			let y = mfield.cellSize * row;
+			ctx.fillStyle = mineNumberColors[t];
+			if (t == 9){
+				t = 'M';
+			}
+			let offset = mfield.cellSize/2;
+			ctx.fillText(t, x+offset, y+offset, mfield.cellSize);
+			mfield.visible[row][col] = true;
 		}
-		let x = cellSize * col;
-		let y = cellSize * row;
-		let colors = ['#bbb','#aaa','#999','#888','#777','#666','#444','#333','#111','#000'];
-		ctx.fillStyle = colors[t];
-		if (t == 9){
-			t = 'M';
-		}
-		ctx.fillText(t, x+cellOff, y+cellOff, cellSize);
-		mfield.A[row][col] = 'c';
 	}
 	/* ui interaction */
 	function floodReveal(r,c,mfield,cellSize,cellOff){
@@ -323,17 +154,40 @@ function revealRun(field, row, leftBound, rightBound, mcell, moff){
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
 		const y = event.clientY - rect.top;
-		touchCanvas(x,y);
+		if (window.event.ctrlKey){
+			XYtoCRcall(x,y, function(c, r){
+				myfield.plantMine(r,c);
+			});
+		} else {
+			XYtoCRcall(x,y, function(c, r){
+				touchCanvas(r,c)
+			});
+		}
 	}
-	function touchCanvas(x, y){
-		// myfield,mcell, and moff needs to be in an accessible location.
-		let c = Math.floor(x/mcell);
-		let r = Math.floor(y/mcell);
+	function XYtoCRcall(x,y,f){
+		let c = Math.floor(x/myfield.cellSize);
+		let r = Math.floor(y/myfield.cellSize);
 		if (c < myfield.cols && r < myfield.rows){
-			if (myfield.A[r][c] == 0){
-				floodReveal(r,c,myfield,mcell,moff);
-			} else if (myfield.A[r][c] == 'c'){
-			} else {
+			f(c,r);
+		}
+	}
+	function touchCanvas(r,c){
+		if (myfield.A[r][c] == 0){
+			floodReveal(r,c,myfield,mcell,moff);
+		} else if (myfield.A[r][c] == 'c'){
+		} else {
+			revealNumber(r,c,myfield,mcell,moff);
+		}
+	}
+	function clearField(){
+		ctx.clearRect(0,0,can.width,can.height);
+		myfield.A = RectArray(myfield.rows,myfield.cols, 0);
+		myfield.visible = RectArray(myfield.rows,myfield.cols, false);
+		drawTileLines(mwidth,mheight,mcell,'green');
+	}
+	function revealField(){
+		for (let r=0;r<myfield.rows;++r){
+			for (let c=0;c<myfield.cols;++c){
 				revealNumber(r,c,myfield,mcell,moff);
 			}
 		}
@@ -354,7 +208,8 @@ function revealRun(field, row, leftBound, rightBound, mcell, moff){
 	
 	const moff = mcell/2; // offset to center of cell
 	const mcount = Number(can.dataset.nmines);
-	let myfield = setupMinefield(mwidth/mcell, mheight/mcell, mcount);
+	const mineNumberColors = ['#bbb','#aaa','#999','#888','#777','#666','#444','#333','#111','#000'];
+	let myfield = setupMinefield(mwidth/mcell, mheight/mcell, mcount, mcell);
 	can.addEventListener('mousedown', function(e) {
 		getCursorPosition(can, e);
 	});
@@ -363,7 +218,10 @@ function revealRun(field, row, leftBound, rightBound, mcell, moff){
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
-	drawTileLines(mwidth,mheight,mcell);
+	drawTileLines(mwidth,mheight,mcell,'green');
+	
+	revealField();
+	//*/
 
 </script>
 
