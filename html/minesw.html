@@ -90,9 +90,18 @@
 				this.mf.visible[this.r][c] = true;
 			}
 		};
+		this.revealEnds = function(){
+			if (this.c0>0){
+				revealNumber(this.r,this.c0-1);
+			}
+			if (this.c1+1<this.mf.cols){
+				revealNumber(this.r,this.c1+1);
+			}
+		}
 	}
 
 	function getZeroLines(field, r, c0, c1, ifnot, out){
+		if (r<0 || r>=field.rows) return;
 		let start, end;
 		for (let c=c0; c<=c1; ++c){
 			if (field.visible[r][c]) continue;
@@ -113,6 +122,7 @@
 			out.push(new ZeroLine(field, r, start, end));
 		}
 	}
+
 
 	function revealNumber(row, col){
 		if (!myfield.visible[row][col]){
@@ -215,12 +225,6 @@
 		ctx.fillRect(x,y,myfield.cellSize,myfield.cellSize);
 	}
 	/* ui interaction */
-	function floodReveal(r,c,mfield,cellSize,cellOff){
-		// needs same args as the function(s) it calls..
-		revealNumber(r,c);
-		//floodFill(myfield,r,c,0);
-		fill2(myfield, r, c, mcell, moff);
-	}
 	function getCursorPosition(canvas, event) {
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
@@ -255,15 +259,19 @@
 
 	function floodReveal(row, col){
 		// Reveal tiles around row, col- which is known to be not visible and a 0.
-		let sl = new ZeroLine(myfield, row, col, col);
-		sl.expand(0);
-		sl.reveal();
-		let h = [];
-		getZeroLines(myfield, sl.r-1, sl.c0, sl.c1, revealNumber, h);
-		getZeroLines(myfield, sl.r+1, sl.c0, sl.c1, revealNumber, h);
-		h.forEach(v=>v.expand(0));
-		h.forEach(v=>v.reveal());
+		let q = new NaiveQueue();
+		let s;
+		q.push(new ZeroLine(myfield, row, col, col));
+		while (q.len>0){
+			s = q.get();
+			s.expand(0);
+			s.reveal();
+			s.revealEnds();
+			getZeroLines(myfield,s.r-1,s.c0,s.c1,revealNumber,q);
+			getZeroLines(myfield,s.r+1,s.c0,s.c1,revealNumber,q);
+		}
 	}
+
 	function clearField(){
 		ctx.clearRect(0,0,can.width,can.height);
 		myfield.A = RectArray(myfield.rows,myfield.cols, 0);

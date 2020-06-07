@@ -44,6 +44,7 @@ function NaiveQueue(){
 		++this.len;
 		this.data.push(val);
 	};
+	this.push = this.put;
 	this.get = function(){
 		if (this.len>0){
 			--this.len;
