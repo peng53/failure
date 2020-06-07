@@ -22,6 +22,8 @@
 ></canvas>
 <br /><button onclick='clearField()'>Clear</button>
 <br /><button onclick='revealField()'>RevealAll</button>
+<br /><input id='minecount' type='number' value=10 />
+<br /><button onclick='remine()'>Re-Mine</button>
 </body>
 <script src='queue.js'></script>
 <script>
@@ -58,8 +60,74 @@
 		};
 	}
 	
+	function ZeroLine(field, row, start, end){
+		this.mf = field;
+		this.r = row;
+		this.c0 = start;
+		this.c1 = (end===undefined) ? start : end;
+		
+		this.expand = function(match, adj){
+			// Expands scanline on both sides.
+			for (; this.c0-1>=0 && this.mf.A[this.r][this.c0-1] == match; --this.c0){
+				continue;
+			}
+			for (; this.c1+1<this.mf.cols && this.mf.A[this.r][this.c1+1] == match; ++this.c1){
+				continue;
+			}
+			return this;
+		};
+		this.reveal = function(){
+			// Reveals all tiles of this scanline.
+			if (this.mf.visible[this.r][this.c]) return;
+			const y = this.mf.cellSize * this.r;
+			const offset = this.mf.cellSize/2;
+			ctx.fillStyle = mineNumberColors[0];
+			let x = this.mf.cellSize * this.c0;
+			for (let c=this.c0; c<=this.c1; ++c){
+				ctx.fillRect(x,y,this.mf.cellSize,this.mf.cellSize);
+				ctx.strokeText('0', x+offset, y+offset, this.mf.cellSize);
+				x += this.mf.cellSize;
+				this.mf.visible[this.r][c] = true;
+			}
+		};
+	}
+
+	function getZeroLines(field, r, c0, c1, ifnot, out){
+		let start, end;
+		for (let c=c0; c<=c1; ++c){
+			if (field.visible[r][c]) continue;
+			if (field.A[r][c] != 0){
+				ifnot(r,c);
+			} else {
+				if (start === undefined){
+					start = end = c;
+				} else if (end+1==c){
+					++end;
+				} else {
+					out.push(new ZeroLine(field, r, start, end));
+					start = end = c;
+				}
+			}
+		}
+		if (end){
+			out.push(new ZeroLine(field, r, start, end));
+		}
+	}
+
+	function revealNumber(row, col){
+		if (!myfield.visible[row][col]){
+			const x = myfield.cellSize * col;
+			const y = myfield.cellSize * row;
+			const offset = myfield.cellSize/2;
+			const t = myfield.A[row][col];
+			drawSquareTile(row, col, mineNumberColors[t]);
+			ctx.strokeText(t==9? 'M' : t, x+offset, y+offset, myfield.cellSize);
+			myfield.visible[row][col] = true;
+		}
+	}
+
 	function RectArray(rows, cols, v){
-		let a = new Array(rows);
+		const a = new Array(rows);
 		for (let r = 0; r<rows; ++r){
 			a[r] = ArrayWithValue(cols,v);
 		}
@@ -67,7 +135,7 @@
 	}
 	
 	function ArrayWithValue(size, val){
-		let a = new Array(size);
+		const a = new Array(size);
 		for (let i=0;i<size;++i){
 			a[i]=val;
 		}
@@ -90,27 +158,25 @@
 			A[i] = tempValue;
 		}
 	}
-	function setupMinefield(cols, rows, mineCt, cellSize){
-		let mineLocLen = cols*rows;
+	function setupMinefield(mfield, mineCt){
+		const mineLocLen = mfield.cols*mfield.rows;
 		if (mineLocLen <= mineCt){
 			alert('# of mines is equal or greater than dimensions');
 			return;
 		}
-		let mineLoc = new Array(mineLocLen);
+		const mineLoc = new Array(mineLocLen);
 		// mineLoc is an Array of mine's priority
 		for (let i=0; i<mineLoc.length; ++i){
 			mineLoc[i] = i;
 		}
 		shuffleArray(mineLoc);
-		let mfield = new Mines2d(cols, rows, cellSize);
+		
 		let r, c;
 		for (let i=0; i<mineCt; ++i){
-			r = Math.floor(mineLoc[i] / cols);
-			c = mineLoc[i] % cols;
+			r = Math.floor(mineLoc[i] / mfield.cols);
+			c = mineLoc[i] % mfield.cols;
 			mfield.plantMine(r,c);
 		}
-		
-		return mfield;
 	}
 </script>
 
@@ -118,6 +184,7 @@
 	'use strict';
 	/* drawing */
 	function drawTileLines(width,height,mcell,color){
+		const t = ctx.strokeStyle;
 		ctx.strokeStyle = color;
 		for (let x=mcell; x<width; x+=mcell){
 			ctx.moveTo(x,0);
@@ -128,25 +195,29 @@
 			ctx.lineTo(width,y);
 		}
 		ctx.stroke();
+		ctx.strokeStyle = t;
 	}
-	function revealNumber(row, col, mfield){
-		if (!mfield.visible[row][col]){
-			let t = mfield.A[row][col];
-			let x = mfield.cellSize * col;
-			let y = mfield.cellSize * row;
-			ctx.fillStyle = mineNumberColors[t];
-			if (t == 9){
-				t = 'M';
-			}
-			let offset = mfield.cellSize/2;
-			ctx.fillText(t, x+offset, y+offset, mfield.cellSize);
-			mfield.visible[row][col] = true;
+	function revealNumber(row, col){
+		if (!myfield.visible[row][col]){
+			const x = myfield.cellSize * col;
+			const y = myfield.cellSize * row;
+			const offset = myfield.cellSize/2;
+			const t = myfield.A[row][col];
+			drawSquareTile(row, col, mineNumberColors[t]);
+			ctx.strokeText(t==9? 'M' : t, x+offset, y+offset, myfield.cellSize);
+			myfield.visible[row][col] = true;
 		}
+	}
+	function drawSquareTile(row, col, color){
+		const x = myfield.cellSize * col;
+		const y = myfield.cellSize * row;
+		ctx.fillStyle = color;
+		ctx.fillRect(x,y,myfield.cellSize,myfield.cellSize);
 	}
 	/* ui interaction */
 	function floodReveal(r,c,mfield,cellSize,cellOff){
 		// needs same args as the function(s) it calls..
-		revealNumber(r,c,myfield,cellSize,cellOff);
+		revealNumber(r,c);
 		//floodFill(myfield,r,c,0);
 		fill2(myfield, r, c, mcell, moff);
 	}
@@ -165,63 +236,81 @@
 		}
 	}
 	function XYtoCRcall(x,y,f){
-		let c = Math.floor(x/myfield.cellSize);
-		let r = Math.floor(y/myfield.cellSize);
+		const c = Math.floor(x/myfield.cellSize);
+		const r = Math.floor(y/myfield.cellSize);
 		if (c < myfield.cols && r < myfield.rows){
 			f(c,r);
 		}
 	}
 	function touchCanvas(r,c){
-		if (myfield.A[r][c] == 0){
-			floodReveal(r,c,myfield,mcell,moff);
-		} else if (myfield.A[r][c] == 'c'){
-		} else {
-			revealNumber(r,c,myfield,mcell,moff);
+		if (myfield.visible[r][c]){
+			return;
 		}
+		if (myfield.A[r][c] == 0){
+			floodReveal(r,c);
+		} else {
+			revealNumber(r,c);
+		}
+	}
+
+	function floodReveal(row, col){
+		// Reveal tiles around row, col- which is known to be not visible and a 0.
+		let sl = new ZeroLine(myfield, row, col, col);
+		sl.expand(0);
+		sl.reveal();
+		let h = [];
+		getZeroLines(myfield, sl.r-1, sl.c0, sl.c1, revealNumber, h);
+		getZeroLines(myfield, sl.r+1, sl.c0, sl.c1, revealNumber, h);
+		h.forEach(v=>v.expand(0));
+		h.forEach(v=>v.reveal());
 	}
 	function clearField(){
 		ctx.clearRect(0,0,can.width,can.height);
 		myfield.A = RectArray(myfield.rows,myfield.cols, 0);
 		myfield.visible = RectArray(myfield.rows,myfield.cols, false);
-		drawTileLines(mwidth,mheight,mcell,'green');
+		drawTileLines(mwidth,mheight,cellSize,'green');
 	}
 	function revealField(){
 		for (let r=0;r<myfield.rows;++r){
 			for (let c=0;c<myfield.cols;++c){
-				revealNumber(r,c,myfield,mcell,moff);
+				revealNumber(r,c);
 			}
 		}
+	}
+	function remine(){
+		clearField();
+		setupMinefield(myfield, Number(minecount.value));
 	}
 </script>
 
 <script>
 	'use strict';
 	
-	var ANALYZEARRAY = [];
+	const ANALYZEARRAY = [];
 	
 	const can = document.getElementById('mines');
 	const ctx = can.getContext('2d');
 
-	const mcell = Number(can.dataset.cellsize); // size of graphical cell in pixels
-	const mwidth = can.width-(can.width%mcell);
-	const mheight = can.height-(can.height%mcell);
+	const cellSize = Number(can.dataset.cellsize); // size of graphical cell in pixels
+	const mwidth = can.width-(can.width%cellSize);
+	const mheight = can.height-(can.height%cellSize);
+
+	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','#111','#111','#111','#111','maroon'];
+	const myfield = new Mines2d(mwidth/cellSize, mheight/cellSize, cellSize);
 	
-	const moff = mcell/2; // offset to center of cell
-	const mcount = Number(can.dataset.nmines);
-	const mineNumberColors = ['#bbb','#aaa','#999','#888','#777','#666','#444','#333','#111','#000'];
-	let myfield = setupMinefield(mwidth/mcell, mheight/mcell, mcount, mcell);
+	
 	can.addEventListener('mousedown', function(e) {
 		getCursorPosition(can, e);
 	});
 
-	ctx.font = mcell.toString()+'px monospace';
+	ctx.font = cellSize.toString()+'px monospace';
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
+	ctx.strokeStyle = 'white';
 
-	drawTileLines(mwidth,mheight,mcell,'green');
-	
+	setupMinefield(myfield, Number(minecount.value));
+	drawTileLines(mwidth,mheight,cellSize,'green');
 	revealField();
-	//*/
 
 </script>
 
