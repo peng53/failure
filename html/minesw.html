@@ -1,14 +1,21 @@
 <html>
 <head>
 <style>
-	#mines {
+	canvas {
 		position: absolute;
 		top: 0;
 		bottom: 0;
 		left: 0;
 		right: 0;
 		margin: auto;
-		border: 1px solid black;
+		border: 1px solid grey;
+	}
+	#mines {
+		z-index: -2;
+	}
+	#osd {
+		z-index: -1;
+		
 	}
 </style>
 </head>
@@ -19,11 +26,17 @@
 	height='400px'
 	data-cellsize=20
 	data-nmines=10
+></canvas><canvas
+	id='osd'
+	width='400px'
+	height='400px'
+	tabindex= 1
 ></canvas>
 <br /><button onclick='clearField()'>Clear</button>
 <br /><button onclick='revealField()'>RevealAll</button>
 <br /><input id='minecount' type='number' value=10 />
 <br /><button onclick='remine()'>Re-Mine</button>
+<br /><button onclick='osd.focus()'>Refocus</button>
 </body>
 <script src='queue.js'></script>
 <script>
@@ -76,7 +89,7 @@
 			}
 			return this;
 		};
-		this.reveal = function(){
+		this.reveal = function(revealEnds){
 			// Reveals all tiles of this scanline.
 			if (this.mf.visible[this.r][this.c]) return;
 			const y = this.mf.cellSize * this.r;
@@ -89,15 +102,11 @@
 				x += this.mf.cellSize;
 				this.mf.visible[this.r][c] = true;
 			}
+			if (revealEnds){
+				if (this.c0>0) revealNumber(this.r,this.c0-1);
+				if (this.c1+1<this.mf.cols) revealNumber(this.r,this.c1+1);
+			}
 		};
-		this.revealEnds = function(){
-			if (this.c0>0){
-				revealNumber(this.r,this.c0-1);
-			}
-			if (this.c1+1<this.mf.cols){
-				revealNumber(this.r,this.c1+1);
-			}
-		}
 	}
 
 	function getZeroLines(field, r, c0, c1, ifnot, out){
@@ -265,8 +274,7 @@
 		while (q.len>0){
 			s = q.get();
 			s.expand(0);
-			s.reveal();
-			s.revealEnds();
+			s.reveal(true);
 			getZeroLines(myfield,s.r-1,s.c0,s.c1,revealNumber,q);
 			getZeroLines(myfield,s.r+1,s.c0,s.c1,revealNumber,q);
 		}
@@ -288,6 +296,44 @@
 	function remine(){
 		clearField();
 		setupMinefield(myfield, Number(minecount.value));
+		osd.focus();
+	}
+	
+	/* osd stuff */
+	function OsdSelection(rows, cols){
+		this.mr = rows;
+		this.mc = cols;
+		this.r = 0;
+		this.c = 0;
+		this.sq = function(){
+			const x = myfield.cellSize * this.c;
+			const y = myfield.cellSize * this.r;
+			octx.fillRect(x,y,myfield.cellSize,myfield.cellSize);
+		};
+	}
+	function osdKeys(ev){
+		const key = ev.key;
+		if (key == 'ArrowRight'){
+			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.c = (osdSelection.c+1)%osdSelection.mc;
+			osdSelection.sq();
+		} else if (key == 'ArrowLeft'){
+			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.c = (osdSelection.c-1>=0) ? osdSelection.c-1 : osdSelection.mc-1;
+			osdSelection.sq();
+		} else if (key == 'ArrowDown'){
+			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.r = (osdSelection.r+1)%osdSelection.mr;
+			osdSelection.sq();
+		} else if (key == 'ArrowUp'){
+			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.r = (osdSelection.r-1>=0) ? osdSelection.r-1 : osdSelection.mr-1;
+			osdSelection.sq();
+		} else if (key == 'Enter'){
+			touchCanvas(osdSelection.r,osdSelection.c);
+		} else if (key == 'r'){
+			remine();
+		}
 	}
 </script>
 
@@ -306,10 +352,14 @@
 	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','#111','#111','#111','#111','maroon'];
 	const myfield = new Mines2d(mwidth/cellSize, mheight/cellSize, cellSize);
 	
-	
-	can.addEventListener('mousedown', function(e) {
+	const octx = osd.getContext('2d');
+	octx.fillStyle = 'blue';
+	octx.globalAlpha = 0.5;
+	const osdSelection = new OsdSelection(myfield.rows, myfield.cols);
+	osd.addEventListener('mousedown', function(e) {
 		getCursorPosition(can, e);
 	});
+	osd.addEventListener('keydown', osdKeys);
 
 	ctx.font = cellSize.toString()+'px monospace';
 	ctx.textAlign = 'center';
@@ -319,6 +369,8 @@
 	setupMinefield(myfield, Number(minecount.value));
 	drawTileLines(mwidth,mheight,cellSize,'green');
 	revealField();
+	osdSelection.sq();
+	osd.focus();
 
 </script>
 
