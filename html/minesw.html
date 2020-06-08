@@ -268,7 +268,8 @@
 
 	function floodReveal(row, col){
 		// Reveal tiles around row, col- which is known to be not visible and a 0.
-		let q = new NaiveQueue();
+		//let q = new NaiveQueue();
+		let q = new Queue();
 		let s;
 		q.push(new ZeroLine(myfield, row, col, col));
 		while (q.len>0){
@@ -310,23 +311,26 @@
 			const y = myfield.cellSize * this.r;
 			octx.fillRect(x,y,myfield.cellSize,myfield.cellSize);
 		};
+		this.clear = function(){
+			octx.clearRect(myfield.cellSize*this.c,myfield.cellSize*this.r,myfield.cellSize,myfield.cellSize);
+		};
 	}
 	function osdKeys(ev){
 		const key = ev.key;
 		if (key == 'ArrowRight'){
-			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.clear();
 			osdSelection.c = (osdSelection.c+1)%osdSelection.mc;
 			osdSelection.sq();
 		} else if (key == 'ArrowLeft'){
-			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.clear();
 			osdSelection.c = (osdSelection.c-1>=0) ? osdSelection.c-1 : osdSelection.mc-1;
 			osdSelection.sq();
 		} else if (key == 'ArrowDown'){
-			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.clear();
 			osdSelection.r = (osdSelection.r+1)%osdSelection.mr;
 			osdSelection.sq();
 		} else if (key == 'ArrowUp'){
-			octx.clearRect(myfield.cellSize*osdSelection.c,myfield.cellSize*osdSelection.r,myfield.cellSize,myfield.cellSize);
+			osdSelection.clear();
 			osdSelection.r = (osdSelection.r-1>=0) ? osdSelection.r-1 : osdSelection.mr-1;
 			osdSelection.sq();
 		} else if (key == 'Enter'){
