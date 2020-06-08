@@ -251,11 +251,16 @@
 	function XYtoCRcall(x,y,f){
 		const c = Math.floor(x/myfield.cellSize);
 		const r = Math.floor(y/myfield.cellSize);
+		console.log(r,c);
 		if (c < myfield.cols && r < myfield.rows){
 			f(c,r);
 		}
 	}
 	function touchCanvas(r,c){
+		osdSelection.clear();
+		osdSelection.r = r;
+		osdSelection.c = c;
+		osdSelection.sq();
 		if (myfield.visible[r][c]){
 			return;
 		}
@@ -362,6 +367,7 @@
 	const osdSelection = new OsdSelection(myfield.rows, myfield.cols);
 	osd.addEventListener('mousedown', function(e) {
 		getCursorPosition(can, e);
+		console.log(e);
 	});
 	osd.addEventListener('keydown', osdKeys);
 
@@ -372,7 +378,6 @@
 
 	setupMinefield(myfield, Number(minecount.value));
 	drawTileLines(mwidth,mheight,cellSize,'green');
-	revealField();
 	osdSelection.sq();
 	osd.focus();
 
