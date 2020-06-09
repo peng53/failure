@@ -251,7 +251,6 @@
 	function XYtoCRcall(x,y,f){
 		const c = Math.floor(x/myfield.cellSize);
 		const r = Math.floor(y/myfield.cellSize);
-		console.log(r,c);
 		if (c < myfield.cols && r < myfield.rows){
 			f(c,r);
 		}
@@ -344,6 +343,27 @@
 			remine();
 		}
 	}
+	
+	function drawState(field){
+		// draws the current state of the field.
+		drawTileLines(mwidth,mheight,cellSize,'green');
+		let x, y =0, t, offset = field.cellSize/2;
+		y = 0;
+		ctx.strokeStyle = 'white';
+		for (let r=0; r<field.rows; ++r){
+			x = 0;
+			for (let c=0; c<field.cols; ++c){
+				if (field.visible[r][c]){
+					t = field.A[r][c];
+					ctx.fillStyle = mineNumberColors[t];
+					ctx.fillRect(x,y,field.cellSize,field.cellSize);
+					ctx.strokeText((t==9) ? 'M' : t, x+offset, y+offset, field.cellSize);
+				}
+				x += field.cellSize;
+			}
+			y += field.cellSize;
+		}
+	}
 </script>
 
 <script>
@@ -367,7 +387,6 @@
 	const osdSelection = new OsdSelection(myfield.rows, myfield.cols);
 	osd.addEventListener('mousedown', function(e) {
 		getCursorPosition(can, e);
-		console.log(e);
 	});
 	osd.addEventListener('keydown', osdKeys);
 
