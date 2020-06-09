@@ -9,6 +9,11 @@
 		right: 0;
 		margin: auto;
 		border: 1px solid grey;
+		image-rendering: crisp-edges;
+		
+		width: 300px;
+		height: 300px;
+		
 	}
 	#mines {
 		z-index: -2;
@@ -20,23 +25,24 @@
 </style>
 </head>
 <body>
+<button onclick='clearField()'>Clear</button>
+<button onclick='revealField()'>RevealAll</button>
+<input id='minecount' type='number' value=10 />
+<button onclick='remine()'>Re-Mine</button>
+<button onclick='osd.focus()'>Refocus</button>
 <canvas
 	id='mines'
-	width='400px'
-	height='400px'
+	width='200px'
+	height='200px'
 	data-cellsize=20
-	data-nmines=10
+	data-nmines=5
 ></canvas><canvas
 	id='osd'
-	width='400px'
-	height='400px'
+	width='200px'
+	height='200px'
 	tabindex= 1
 ></canvas>
-<br /><button onclick='clearField()'>Clear</button>
-<br /><button onclick='revealField()'>RevealAll</button>
-<br /><input id='minecount' type='number' value=10 />
-<br /><button onclick='remine()'>Re-Mine</button>
-<br /><button onclick='osd.focus()'>Refocus</button>
+
 </body>
 <script src='queue.js'></script>
 <script>
@@ -238,6 +244,7 @@
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
 		const y = event.clientY - rect.top;
+		console.log(x,y);
 		if (window.event.ctrlKey){
 			XYtoCRcall(x,y, function(c, r){
 				myfield.plantMine(r,c);
@@ -249,8 +256,10 @@
 		}
 	}
 	function XYtoCRcall(x,y,f){
-		const c = Math.floor(x/myfield.cellSize);
-		const r = Math.floor(y/myfield.cellSize);
+		const sx = can.clientWidth/can.width;
+		const sy = can.clientHeight/can.height;
+		const c = Math.floor(x/(myfield.cellSize*sx));
+		const r = Math.floor(y/(myfield.cellSize*sy));
 		if (c < myfield.cols && r < myfield.rows){
 			f(c,r);
 		}
