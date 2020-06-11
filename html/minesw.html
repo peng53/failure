@@ -386,7 +386,7 @@
 		}
 	}
 	
-	function drawState(field){
+	function drawState(field, ctx){
 		// draws the current state of the field.
 		drawTileLines(mwidth,mheight,cellSize,'green');
 		let x, y =0, t, offset = field.cellSize/2;
@@ -406,8 +406,16 @@
 			y += field.cellSize;
 		}
 	}
-	function setTableTileStates(field){
+	function setTableTileStates(field, tableMap){
+		let t;
 		for (let r=0;r<field.rows;++r){
+			for (let c=0;c<field.cols;++c){
+				if (field.visible[r][c]){
+					t = field.A[r][c];
+					tableMap[r][c].style.backgroundColor = mineNumberColors[t];
+					tableMap[r][c].textContent = (t==9) ? 'M' : t;
+				}
+			}
 		}
 	}
 	function createTableRow(row, cols, rowNumber){
@@ -427,6 +435,17 @@
 	}
 	function sayRowCol(row,col){
 		console.log(row,col);
+	}
+	function mapTable(ele, rows, cols){
+		// maps table to 2 index array
+		let out = new Array(rows);
+		for (let r=0;r<rows;++r){
+			out[r] = new Array(cols);
+			for (let c=0;c<cols;++c){
+				out[r][c] =ele.childNodes[0].childNodes[r].childNodes[c];
+			}
+		}
+		return out;
 	}
 
 </script>
@@ -468,6 +487,7 @@
 	mtable.dataset.cols = myfield.cols;
 	mtable.dataset.mines = Number(minecount.value);
 	fillTableWithRows();
+	let mtableCells = mapTable(mtable, myfield.rows, myfield.cols);
 
 </script>
 
