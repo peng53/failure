@@ -1,30 +1,23 @@
 <html>
 <head>
 <style>
-	body {
-		margin: 0;
-	}
+	body { margin: 0; }
+	
 	canvas {
 		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: 0;
-		right: 0;
+		top: 0; bottom: 0;
+		left: 0; right: 0;
 		margin: auto;
 		border: 1px solid grey;
 		image-rendering: crisp-edges;
 		
-		width: 300px;
-		height: 300px;
+		width: 400px; height: 400px;
 		
 	}
-	#mines {
-		z-index: -2;
-	}
-	#osd {
-		z-index: -1;
-		
-	}
+	#mines { z-index: -2; }
+	
+	#osd { z-index: -1; }
+	
 	#menu {
 		margin: 0;
 		padding: 0;
@@ -33,9 +26,8 @@
 		border: 0;
 		float: left;
 	}
-	#menu button:hover {
-		background: yellow;
-	}
+	#menu button:hover { background: yellow; }
+	
 	#mtable {
 		border: 1px orange solid;
 		border-collapse: collapse;
@@ -47,10 +39,9 @@
 		width: 1em;
 		height: 1em;
 		text-align: center;
+		border: 1px green solid;
 	}
-	#mtable td:hover {
-		background: cyan;
-	}
+	#mtable td:hover { background: cyan; }
 </style>
 </head>
 <body>
@@ -64,14 +55,12 @@
 </div>
 <canvas
 	id='mines'
-	width='200px'
-	height='200px'
+	data-cols=9
+	data-rows=8
 	data-cellsize=20
 	data-nmines=5
 ></canvas><canvas
 	id='osd'
-	width='200px'
-	height='200px'
 	tabindex= 1
 ></canvas>
 <br>
@@ -81,12 +70,11 @@
 <script>
 	'use strict';
 	/* primative internals */
-	function Mines2d(cols, rows, cellSize){
+	function Mines2d(cols, rows){
 		this.A = RectArray(rows,cols, 0);
 		this.visible = RectArray(rows,cols, false);
 		this.cols = cols;
 		this.rows = rows;
-		this.cellSize = cellSize;
 
 		this.plantMine = function(r,c){
 			this.A[r][c] = 9;
@@ -162,9 +150,6 @@
 		}
 	}
 
-
-
-
 	function RectArray(rows, cols, v){
 		const a = new Array(rows);
 		for (let r = 0; r<rows; ++r){
@@ -180,7 +165,6 @@
 		}
 		return a;
 	}
-	
 
 </script>
 
@@ -221,11 +205,10 @@
 
 <script>
 	'use strict';
-	
 
 	function MineCanvaFuncs(can, field, cellSize){
 		this.can = can;
-		this.ctx = ctx;
+		this.ctx = can.getContext('2d');
 		this.sqSize = cellSize;
 		this.off = cellSize/2;
 		this.F = field;
@@ -287,6 +270,16 @@
 		this.clearField = function(){
 			this.ctx.clearRect(0,0,this.can.width,this.can.height);
 			this.tLines('green');
+		};
+		this.setup = function(){
+			this.can.width = this.sqSize*this.F.cols;
+			this.can.height =this.sqSize*this.F.rows;
+			this.tLines('green');
+
+			this.ctx.font = cellSize.toString()+'px monospace';
+			this.ctx.textAlign = 'center';
+			this.ctx.textBaseline = 'middle';
+			this.ctx.strokeStyle = 'white';
 		};
 	}
 	function MineTableFuncs(tableEle, field){
@@ -377,7 +370,7 @@
 
 
 
-	/* ui interaction */
+	/* canvas interaction */
 	function getCursorPosition(canvas, event) {
 		const rect = canvas.getBoundingClientRect();
 		const x = event.clientX - rect.left;
@@ -396,8 +389,8 @@
 	function XYtoCRcall(x,y,f){
 		const sx = can.clientWidth/can.width;
 		const sy = can.clientHeight/can.height;
-		const c = Math.floor(x/(myfield.cellSize*sx));
-		const r = Math.floor(y/(myfield.cellSize*sy));
+		const c = Math.floor(x/(cellSize*sx));
+		const r = Math.floor(y/(cellSize*sy));
 		if (c < myfield.cols && r < myfield.rows){
 			f(c,r);
 		}
@@ -432,8 +425,6 @@
 		}
 	}
 
-
-
 	function revealField(){
 		for (let r=0;r<myfield.rows;++r){
 			for (let c=0;c<myfield.cols;++c){
@@ -456,12 +447,12 @@
 		this.r = 0;
 		this.c = 0;
 		this.sq = function(){
-			const x = myfield.cellSize * this.c;
-			const y = myfield.cellSize * this.r;
-			octx.fillRect(x,y,myfield.cellSize,myfield.cellSize);
+			const x = cellSize * this.c;
+			const y = cellSize * this.r;
+			octx.fillRect(x,y,cellSize+1,cellSize+1);
 		};
 		this.clear = function(){
-			octx.clearRect(myfield.cellSize*this.c,myfield.cellSize*this.r,myfield.cellSize,myfield.cellSize);
+			octx.clearRect(cellSize*this.c,cellSize*this.r,cellSize+1,cellSize+1);
 		};
 	}
 	function osdKeys(ev){
@@ -493,19 +484,27 @@
 
 <script>
 	'use strict';
+	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','#111','#111','#111','#111','maroon'];
 	
-	const ANALYZEARRAY = [];
-	
+
 	const can = document.getElementById('mines');
-	const ctx = can.getContext('2d');
+	//const ctx = can.getContext('2d');
+
+	const COLS = Number(can.dataset.cols);
+	const ROWS = Number(can.dataset.rows);
+
+	const myfield = new Mines2d(COLS, ROWS);
+	setupMinefield(myfield, Number(minecount.value));
 
 	const cellSize = Number(can.dataset.cellsize); // size of graphical cell in pixels
-	const mwidth = can.width-(can.width%cellSize);
-	const mheight = can.height-(can.height%cellSize);
+	osd.width = cellSize*COLS;
+	osd.height = cellSize*ROWS;
+	const mcf = new MineCanvaFuncs(can,myfield,cellSize);
+	mcf.setup();
 
-	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','#111','#111','#111','#111','maroon'];
-	const myfield = new Mines2d(mwidth/cellSize, mheight/cellSize, cellSize);
-	
+	const mtf = new MineTableFuncs(mtable, myfield);
+
+
 	const octx = osd.getContext('2d');
 	octx.fillStyle = 'blue';
 	octx.globalAlpha = 0.5;
@@ -514,25 +513,8 @@
 		getCursorPosition(can, e);
 	});
 	osd.addEventListener('keydown', osdKeys);
-
-	ctx.font = cellSize.toString()+'px monospace';
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.strokeStyle = 'white';
-
-
-
-	setupMinefield(myfield, Number(minecount.value));
-	const mcf = new MineCanvaFuncs(can,myfield,cellSize);
-	mcf.tLines('green');
 	osdSelection.sq();
 	osd.focus();
-	mtable.dataset.rows = myfield.rows;
-	mtable.dataset.cols = myfield.cols;
-	mtable.dataset.mines = Number(minecount.value);
-
-	const mtf = new MineTableFuncs(mtable, myfield);
-
 
 </script>
 
