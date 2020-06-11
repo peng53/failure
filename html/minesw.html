@@ -55,7 +55,7 @@
 </head>
 <body>
 <div id='menu'>
-<button onclick='mcf.clearField()'>Clear</button>
+<button onclick='clearField()'>Clear</button>
 <button onclick='revealField()'>RevealAll</button>
 <input id='minecount' type='number' value=10 size=4 />
 <button onclick='remine()'>Re-Mine</button>
@@ -286,8 +286,6 @@
 		};
 		this.clearField = function(){
 			this.ctx.clearRect(0,0,this.can.width,this.can.height);
-			this.F.A = RectArray(this.F.rows,this.F.cols, 0);
-			this.F.visible = RectArray(this.F.rows,this.F.cols, false);
 			this.tLines('green');
 		};
 	}
@@ -324,19 +322,34 @@
 		this.createRows();
 		this.cellMap = this.mapTab();
 
+
+		this.revealTile = function(row,col){
+			let t = this.F.A[row][col];
+			this.cellMap[row][col].style.backgroundColor = mineNumberColors[t];
+			this.cellMap[row][col].textContent = (t==9) ? 'M' : t;
+		};
+		this.revealLine = function (row,c0,c1){
+			for (let c=c0;c<=c1;++c){
+				this.revealTile(row,c);
+			}
+		};
 		this.drawState = function(){
-			let t;
 			for (let r=0;r<this.F.rows;++r){
 				for (let c=0;c<this.F.cols;++c){
 					if (this.F.visible[r][c]){
-						t = this.F.A[r][c];
-						this.cellMap[r][c].style.backgroundColor = mineNumberColors[t];
-						this.cellMap[r][c].textContent = (t==9) ? 'M' : t;
+						this.revealTile(r,c);
 					}
 				}
 			}
 		};
-
+		this.resetCells = function(){
+			for (let r=0;r<this.F.rows;++r){
+				for (let c=0;c<this.F.cols;++c){
+					this.cellMap[r][c].style.backgroundColor = 'beige';
+					this.cellMap[r][c].textContent = '?';
+				}
+			}
+		}
 	}
 
 	/* drawing */
@@ -345,6 +358,7 @@
 		// temporary bridge
 		myfield.visible[row][col] = true;
 		mcf.revealTile(row,col);
+		mtf.revealTile(row,col);
 	}
 	function revealLine(row,c0,c1){
 		// temporary bridge
@@ -352,6 +366,13 @@
 			myfield.visible[row][c] = true;
 		}
 		mcf.revealLine(row,c0,c1);
+		mtf.revealLine(row,c0,c1);
+	}
+	function clearField(){
+		myfield.A= RectArray(myfield.rows,myfield.cols, 0);
+		myfield.visible = RectArray(myfield.rows,myfield.cols, false);
+		mcf.clearField();
+		mtf.resetCells();
 	}
 
 
@@ -421,7 +442,8 @@
 		}
 	}
 	function remine(){
-		clearField();
+		mcf.clearField();
+		mtf.resetCells();
 		setupMinefield(myfield, Number(minecount.value));
 		osd.focus();
 	}
