@@ -1,6 +1,9 @@
 <html>
 <head>
 <style>
+	body {
+		margin: 0;
+	}
 	canvas {
 		position: absolute;
 		top: 0;
@@ -22,14 +25,43 @@
 		z-index: -1;
 		
 	}
+	#menu {
+		margin: 0;
+		padding: 0;
+	}
+	#menu button, #menu input{
+		border: 0;
+		float: left;
+	}
+	#menu button:hover {
+		background: yellow;
+	}
+	#mtable {
+		border: 1px orange solid;
+		border-collapse: collapse;
+		float: left;
+	}
+	#mtable td {
+		font: 2em monospace;
+		background: beige;
+		width: 1em;
+		height: 1em;
+		text-align: center;
+	}
+	#mtable td:hover {
+		background: cyan;
+	}
 </style>
 </head>
 <body>
+<div id='menu'>
 <button onclick='clearField()'>Clear</button>
 <button onclick='revealField()'>RevealAll</button>
-<input id='minecount' type='number' value=10 />
+<input id='minecount' type='number' value=10 size=4 />
 <button onclick='remine()'>Re-Mine</button>
 <button onclick='osd.focus()'>Refocus</button>
+<button onclick='mtable.style.display = "block";'>Enable Table</button>
+</div>
 <canvas
 	id='mines'
 	width='200px'
@@ -42,7 +74,8 @@
 	height='200px'
 	tabindex= 1
 ></canvas>
-
+<br>
+<table id='mtable' data-rows=10 data-cols=10 data-mines=10 style='display:none'></table>
 </body>
 <script src='queue.js'></script>
 <script>
@@ -373,6 +406,29 @@
 			y += field.cellSize;
 		}
 	}
+	function setTableTileStates(field){
+		for (let r=0;r<field.rows;++r){
+		}
+	}
+	function createTableRow(row, cols, rowNumber){
+		let col;
+		for (let i=0;i<cols;++i){
+			col = row.insertCell(-1);
+			col.append(document.createTextNode('?'));
+			col.onclick = function(event){sayRowCol(rowNumber,i,event.target)};
+		}
+		return row;
+	}
+	function fillTableWithRows(){
+		let tar = document.getElementById('mtable');
+		for (let i=0;i<tar.dataset.rows;++i){
+			createTableRow(tar.insertRow(-1),tar.dataset.cols, i);
+		}
+	}
+	function sayRowCol(row,col){
+		console.log(row,col);
+	}
+
 </script>
 
 <script>
@@ -408,6 +464,10 @@
 	drawTileLines(mwidth,mheight,cellSize,'green');
 	osdSelection.sq();
 	osd.focus();
+	mtable.dataset.rows = myfield.rows;
+	mtable.dataset.cols = myfield.cols;
+	mtable.dataset.mines = Number(minecount.value);
+	fillTableWithRows();
 
 </script>
 
