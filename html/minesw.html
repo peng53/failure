@@ -55,7 +55,7 @@
 </head>
 <body>
 <div id='menu'>
-<button onclick='clearField()'>Clear</button>
+<button onclick='mcf.clearField()'>Clear</button>
 <button onclick='revealField()'>RevealAll</button>
 <input id='minecount' type='number' value=10 size=4 />
 <button onclick='remine()'>Re-Mine</button>
@@ -130,17 +130,8 @@
 		};
 		this.reveal = function(revealEnds){
 			// Reveals all tiles of this scanline.
-			if (this.mf.visible[this.r][this.c]) return;
-			const y = this.mf.cellSize * this.r;
-			const offset = this.mf.cellSize/2;
-			ctx.fillStyle = mineNumberColors[0];
-			let x = this.mf.cellSize * this.c0;
-			for (let c=this.c0; c<=this.c1; ++c){
-				ctx.fillRect(x,y,this.mf.cellSize,this.mf.cellSize);
-				ctx.strokeText('0', x+offset, y+offset, this.mf.cellSize);
-				x += this.mf.cellSize;
-				this.mf.visible[this.r][c] = true;
-			}
+			if (this.mf.visible[this.r][this.c0]) return;
+			revealLine(this.r,this.c0,this.c1);
 			if (revealEnds){
 				if (this.c0>0) revealNumber(this.r,this.c0-1);
 				if (this.c1+1<this.mf.cols) revealNumber(this.r,this.c1+1);
@@ -172,17 +163,7 @@
 	}
 
 
-	function revealNumber(row, col){
-		if (!myfield.visible[row][col]){
-			const x = myfield.cellSize * col;
-			const y = myfield.cellSize * row;
-			const offset = myfield.cellSize/2;
-			const t = myfield.A[row][col];
-			drawSquareTile(row, col, mineNumberColors[t]);
-			ctx.strokeText(t==9? 'M' : t, x+offset, y+offset, myfield.cellSize);
-			myfield.visible[row][col] = true;
-		}
-	}
+
 
 	function RectArray(rows, cols, v){
 		const a = new Array(rows);
@@ -240,38 +221,92 @@
 
 <script>
 	'use strict';
+	
+
+	function MineCanvaFuncs(can, field, cellSize){
+		this.can = can;
+		this.ctx = ctx;
+		this.sqSize = cellSize;
+		this.off = cellSize/2;
+		this.F = field;
+		this.sq = function(x,y,cnt,color){
+			this.ctx.fillStyle = color;
+			this.ctx.fillRect(x,y,this.sqSize*cnt,this.sqSize);
+		};
+		this.tx = function(x,y,t){
+			this.ctx.strokeText((t==9)? 'M' : t, x, y, this.sqSize);
+		};
+		this.revealTile = function(row, col){
+			const x = this.sqSize * col;
+			const y = this.sqSize * row;
+			const t = this.F.A[row][col];
+			this.sq(x,y,1,mineNumberColors[t]);
+			this.tx(x+this.off,y+this.off,t);
+		};
+		this.revealLine = function(row, c0, c1){
+			const t = this.F.A[row][c0];
+			let y = this.sqSize*row;
+			let x = this.sqSize*c0;
+			this.sq(x, y, 1+c1-c0, mineNumberColors[t]);
+			x += this.off;
+			y += this.off;
+			for (let c=c0;c<=c1;++c){
+				this.tx(x,y,t);
+				x += this.sqSize;
+			}
+		};
+		this.tLines = function(color){
+			for (let x=this.sqSize+1;x<this.can.width;x+=this.sqSize){
+				this.ctx.moveTo(x,0);
+				this.ctx.lineTo(x,this.can.height);
+			}
+			for (let y=this.sqSize+1;y<this.can.height;y+=this.sqSize){
+				this.ctx.moveTo(0,y);
+				this.ctx.lineTo(this.can.width,y);
+			}
+			this.ctx.strokeStyle = color;
+			this.ctx.stroke();
+		};
+		this.drawState = function(){
+			this.tLines('green');
+			let x, y = 0, t;
+			this.ctx.strokeStyle = 'white';
+			for (let r=0;r<this.F.rows;++r){
+				x = 0;
+				for (let c=0;c<this.F.cols;++c){
+					if (this.F.visible[r][c]){
+						t = this.F.A[r][c];
+						this.sq(x,y,1,mineNumberColors[t]);
+						this.tx(x+this.off,y+this.off,t);
+					}
+					x += this.sqSize;
+				}
+				y += this.sqSize;
+			}
+		};
+		this.clearField = function(){
+			this.ctx.clearRect(0,0,this.can.width,this.can.height);
+			this.F.A = RectArray(this.F.rows,this.F.cols, 0);
+			this.F.visible = RectArray(this.F.rows,this.F.cols, false);
+			this.tLines('green');
+		};
+	}
+
 	/* drawing */
-	function drawTileLines(width,height,mcell,color){
-		const t = ctx.strokeStyle;
-		ctx.strokeStyle = color;
-		for (let x=mcell; x<width; x+=mcell){
-			ctx.moveTo(x,0);
-			ctx.lineTo(x,height);
-		}
-		for (let y=mcell; y<height; y+=mcell){
-			ctx.moveTo(0,y);
-			ctx.lineTo(width,y);
-		}
-		ctx.stroke();
-		ctx.strokeStyle = t;
+
+	function revealNumber(row,col){
+		// temporary bridge
+		myfield.visible[row][col] = true;
+		mcf.revealTile(row,col);
 	}
-	function revealNumber(row, col){
-		if (!myfield.visible[row][col]){
-			const x = myfield.cellSize * col;
-			const y = myfield.cellSize * row;
-			const offset = myfield.cellSize/2;
-			const t = myfield.A[row][col];
-			drawSquareTile(row, col, mineNumberColors[t]);
-			ctx.strokeText(t==9? 'M' : t, x+offset, y+offset, myfield.cellSize);
-			myfield.visible[row][col] = true;
+	function revealLine(row,c0,c1){
+		// temporary bridge
+		for (let c=c0;c<=c1;++c){
+			myfield.visible[row][c] = true;
 		}
+		mcf.revealLine(row,c0,c1);
 	}
-	function drawSquareTile(row, col, color){
-		const x = myfield.cellSize * col;
-		const y = myfield.cellSize * row;
-		ctx.fillStyle = color;
-		ctx.fillRect(x,y,myfield.cellSize,myfield.cellSize);
-	}
+
 	/* ui interaction */
 	function getCursorPosition(canvas, event) {
 		const rect = canvas.getBoundingClientRect();
@@ -327,12 +362,8 @@
 		}
 	}
 
-	function clearField(){
-		ctx.clearRect(0,0,can.width,can.height);
-		myfield.A = RectArray(myfield.rows,myfield.cols, 0);
-		myfield.visible = RectArray(myfield.rows,myfield.cols, false);
-		drawTileLines(mwidth,mheight,cellSize,'green');
-	}
+
+
 	function revealField(){
 		for (let r=0;r<myfield.rows;++r){
 			for (let c=0;c<myfield.cols;++c){
@@ -346,6 +377,7 @@
 		osd.focus();
 	}
 	
+
 	/* osd stuff */
 	function OsdSelection(rows, cols){
 		this.mr = rows;
@@ -386,33 +418,18 @@
 		}
 	}
 	
-	function drawState(field, ctx){
-		// draws the current state of the field.
-		drawTileLines(mwidth,mheight,cellSize,'green');
-		let x, y =0, t, offset = field.cellSize/2;
-		y = 0;
-		ctx.strokeStyle = 'white';
-		for (let r=0; r<field.rows; ++r){
-			x = 0;
-			for (let c=0; c<field.cols; ++c){
-				if (field.visible[r][c]){
-					t = field.A[r][c];
-					ctx.fillStyle = mineNumberColors[t];
-					ctx.fillRect(x,y,field.cellSize,field.cellSize);
-					ctx.strokeText((t==9) ? 'M' : t, x+offset, y+offset, field.cellSize);
-				}
-				x += field.cellSize;
-			}
-			y += field.cellSize;
-		}
-	}
+</script>
+
+<script>
+	'use strict';
 	function setTableTileStates(field, tableMap){
 		let t;
 		for (let r=0;r<field.rows;++r){
 			for (let c=0;c<field.cols;++c){
 				if (field.visible[r][c]){
 					t = field.A[r][c];
-					tableMap[r][c].style.backgroundColor = mineNumberColors[t];
+					//tableMap[r][c].style.backgroundColor = mineNumberColors[t];
+					tableMap[r][c].style.setAttribute('background', mineNumberColors[t]);
 					tableMap[r][c].textContent = (t==9) ? 'M' : t;
 				}
 			}
@@ -423,7 +440,7 @@
 		for (let i=0;i<cols;++i){
 			col = row.insertCell(-1);
 			col.append(document.createTextNode('?'));
-			col.onclick = function(event){sayRowCol(rowNumber,i,event.target)};
+			col.onclick = function(){touchCanvas(rowNumber,i)};
 		}
 		return row;
 	}
@@ -479,8 +496,11 @@
 	ctx.textBaseline = 'middle';
 	ctx.strokeStyle = 'white';
 
+
+
 	setupMinefield(myfield, Number(minecount.value));
-	drawTileLines(mwidth,mheight,cellSize,'green');
+	const mcf = new MineCanvaFuncs(can,myfield,cellSize);
+	mcf.tLines('green');
 	osdSelection.sq();
 	osd.focus();
 	mtable.dataset.rows = myfield.rows;
@@ -488,6 +508,7 @@
 	mtable.dataset.mines = Number(minecount.value);
 	fillTableWithRows();
 	let mtableCells = mapTable(mtable, myfield.rows, myfield.cols);
+
 
 </script>
 
