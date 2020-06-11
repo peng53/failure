@@ -291,6 +291,53 @@
 			this.tLines('green');
 		};
 	}
+	function MineTableFuncs(tableEle, field){
+		this.F = field;
+		this.tab = tableEle;
+
+		this.insRow = function(row, rowNumber){
+			let col;
+			for (let i=0;i<this.F.cols;++i){
+				col = row.insertCell(-1);
+				col.append(document.createTextNode('?'));
+				col.onclick = function(){touchCanvas(rowNumber,i)};
+			}
+			return row;
+		};
+		this.createRows = function(){
+			for (let rn=0; rn<this.F.rows;++rn){
+				this.insRow(this.tab.insertRow(-1),rn);
+			}
+		};
+		this.mapTab = function(){
+			// maps table to 2 index array
+			let out = new Array(this.F.rows);
+			for (let r=0;r<this.F.rows;++r){
+				out[r] = new Array(this.F.cols);
+				for (let c=0;c<this.F.cols;++c){
+					out[r][c] =this.tab.childNodes[0].childNodes[r].childNodes[c];
+				}
+			}
+			return out;
+		};
+
+		this.createRows();
+		this.cellMap = this.mapTab();
+
+		this.drawState = function(){
+			let t;
+			for (let r=0;r<this.F.rows;++r){
+				for (let c=0;c<this.F.cols;++c){
+					if (this.F.visible[r][c]){
+						t = this.F.A[r][c];
+						this.cellMap[r][c].style.backgroundColor = mineNumberColors[t];
+						this.cellMap[r][c].textContent = (t==9) ? 'M' : t;
+					}
+				}
+			}
+		};
+
+	}
 
 	/* drawing */
 
@@ -306,6 +353,8 @@
 		}
 		mcf.revealLine(row,c0,c1);
 	}
+
+
 
 	/* ui interaction */
 	function getCursorPosition(canvas, event) {
@@ -422,53 +471,6 @@
 
 <script>
 	'use strict';
-	function setTableTileStates(field, tableMap){
-		let t;
-		for (let r=0;r<field.rows;++r){
-			for (let c=0;c<field.cols;++c){
-				if (field.visible[r][c]){
-					t = field.A[r][c];
-					//tableMap[r][c].style.backgroundColor = mineNumberColors[t];
-					tableMap[r][c].style.setAttribute('background', mineNumberColors[t]);
-					tableMap[r][c].textContent = (t==9) ? 'M' : t;
-				}
-			}
-		}
-	}
-	function createTableRow(row, cols, rowNumber){
-		let col;
-		for (let i=0;i<cols;++i){
-			col = row.insertCell(-1);
-			col.append(document.createTextNode('?'));
-			col.onclick = function(){touchCanvas(rowNumber,i)};
-		}
-		return row;
-	}
-	function fillTableWithRows(){
-		let tar = document.getElementById('mtable');
-		for (let i=0;i<tar.dataset.rows;++i){
-			createTableRow(tar.insertRow(-1),tar.dataset.cols, i);
-		}
-	}
-	function sayRowCol(row,col){
-		console.log(row,col);
-	}
-	function mapTable(ele, rows, cols){
-		// maps table to 2 index array
-		let out = new Array(rows);
-		for (let r=0;r<rows;++r){
-			out[r] = new Array(cols);
-			for (let c=0;c<cols;++c){
-				out[r][c] =ele.childNodes[0].childNodes[r].childNodes[c];
-			}
-		}
-		return out;
-	}
-
-</script>
-
-<script>
-	'use strict';
 	
 	const ANALYZEARRAY = [];
 	
@@ -506,8 +508,8 @@
 	mtable.dataset.rows = myfield.rows;
 	mtable.dataset.cols = myfield.cols;
 	mtable.dataset.mines = Number(minecount.value);
-	fillTableWithRows();
-	let mtableCells = mapTable(mtable, myfield.rows, myfield.cols);
+
+	const mtf = new MineTableFuncs(mtable, myfield);
 
 
 </script>
