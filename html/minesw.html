@@ -11,7 +11,7 @@
 		border: 1px solid grey;
 		image-rendering: crisp-edges;
 		
-		width: 400px; height: 400px;
+		width: auto; height: auto;
 		
 	}
 	#mines { z-index: -2; }
@@ -41,7 +41,7 @@
 		text-align: center;
 		border: 1px green solid;
 	}
-	#mtable td:hover { background: cyan; }
+	#mtable td:hover { background: teal; }
 </style>
 </head>
 <body>
@@ -55,10 +55,10 @@
 </div>
 <canvas
 	id='mines'
-	data-cols=9
-	data-rows=8
-	data-cellsize=20
-	data-nmines=5
+	data-cols=10
+	data-rows=10
+	data-cellsize=16
+	data-nmines=10
 ></canvas><canvas
 	id='osd'
 	tabindex= 1
@@ -249,11 +249,12 @@
 			}
 			this.ctx.strokeStyle = color;
 			this.ctx.stroke();
+			this.ctx.strokeStyle = 'black';
 		};
 		this.drawState = function(){
 			this.tLines('green');
 			let x, y = 0, t;
-			this.ctx.strokeStyle = 'white';
+			this.ctx.strokeStyle = 'black';
 			for (let r=0;r<this.F.rows;++r){
 				x = 0;
 				for (let c=0;c<this.F.cols;++c){
@@ -276,10 +277,9 @@
 			this.can.height =this.sqSize*this.F.rows;
 			this.tLines('green');
 
-			this.ctx.font = cellSize.toString()+'px monospace';
+			this.ctx.font = this.sqSize.toString()+'px monospace';
 			this.ctx.textAlign = 'center';
 			this.ctx.textBaseline = 'middle';
-			this.ctx.strokeStyle = 'white';
 		};
 	}
 	function MineTableFuncs(tableEle, field){
@@ -290,8 +290,9 @@
 			let col;
 			for (let i=0;i<this.F.cols;++i){
 				col = row.insertCell(-1);
-				col.append(document.createTextNode('?'));
-				col.onclick = function(){touchCanvas(rowNumber,i)};
+				col.appendChild(document.createTextNode('?'));
+				col.col = i;
+				col.onclick = function(event){touchCanvas(rowNumber,event.target.col)};
 			}
 			return row;
 		};
@@ -317,6 +318,7 @@
 
 
 		this.revealTile = function(row,col){
+			console.log(row,col);
 			let t = this.F.A[row][col];
 			this.cellMap[row][col].style.backgroundColor = mineNumberColors[t];
 			this.cellMap[row][col].textContent = (t==9) ? 'M' : t;
@@ -338,7 +340,7 @@
 		this.resetCells = function(){
 			for (let r=0;r<this.F.rows;++r){
 				for (let c=0;c<this.F.cols;++c){
-					this.cellMap[r][c].style.backgroundColor = 'beige';
+					this.cellMap[r][c].style = undefined;
 					this.cellMap[r][c].textContent = '?';
 				}
 			}
@@ -371,28 +373,19 @@
 
 
 	/* canvas interaction */
-	function getCursorPosition(canvas, event) {
-		const rect = canvas.getBoundingClientRect();
+	function osdClick(event) {
+		let can = event.target;
+		const rect = can.getBoundingClientRect();
 		const x = event.clientX - rect.left;
 		const y = event.clientY - rect.top;
-		console.log(x,y);
 		if (window.event.ctrlKey){
-			XYtoCRcall(x,y, function(c, r){
+			osdSelection.XYtoCRcall(x,y, function(c, r){
 				myfield.plantMine(r,c);
 			});
 		} else {
-			XYtoCRcall(x,y, function(c, r){
+			osdSelection.XYtoCRcall(x,y, function(c, r){
 				touchCanvas(r,c)
 			});
-		}
-	}
-	function XYtoCRcall(x,y,f){
-		const sx = can.clientWidth/can.width;
-		const sy = can.clientHeight/can.height;
-		const c = Math.floor(x/(cellSize*sx));
-		const r = Math.floor(y/(cellSize*sy));
-		if (c < myfield.cols && r < myfield.rows){
-			f(c,r);
 		}
 	}
 	function touchCanvas(r,c){
@@ -433,6 +426,8 @@
 		}
 	}
 	function remine(){
+		myfield.A = RectArray(myfield.rows,myfield.cols, 0);
+		myfield.visible = RectArray(myfield.rows,myfield.cols, false);
 		mcf.clearField();
 		mtf.resetCells();
 		setupMinefield(myfield, Number(minecount.value));
@@ -441,19 +436,41 @@
 	
 
 	/* osd stuff */
-	function OsdSelection(rows, cols){
+	function OsdSelection(can, rows, cols, cellSize){
 		this.mr = rows;
 		this.mc = cols;
 		this.r = 0;
 		this.c = 0;
+		this.sqSize = cellSize;
+		can.width = cols*cellSize;
+		can.height = rows*cellSize;
+		this.can = can;
+
+		this.ctx = can.getContext('2d');
+		this.ctx.fillStyle = 'blue';
+		this.ctx.globalAlpha = 0.5;
+		
 		this.sq = function(){
-			const x = cellSize * this.c;
-			const y = cellSize * this.r;
-			octx.fillRect(x,y,cellSize+1,cellSize+1);
+			const x = this.sqSize * this.c;
+			const y = this.sqSize * this.r;
+			this.ctx.fillRect(x,y,this.sqSize+1,this.sqSize+1);
 		};
 		this.clear = function(){
-			octx.clearRect(cellSize*this.c,cellSize*this.r,cellSize+1,cellSize+1);
+			this.ctx.clearRect(this.sqSize*this.c,this.sqSize*this.r,this.sqSize+1,this.sqSize+1);
 		};
+		this.XYtoCRcall = 	function(x,y,f){
+			const sx = this.can.clientWidth/this.can.width;
+			const sy = this.can.clientHeight/this.can.height;
+			const c = Math.floor(x/(this.sqSize*sx));
+			const r = Math.floor(y/(this.sqSize*sy));
+			if (c < myfield.cols && r < myfield.rows){
+				f(c,r);
+			}
+		};
+		this.sq();
+		can.addEventListener('mousedown', osdClick);
+		can.addEventListener('keydown', osdKeys);
+		can.focus();
 	}
 	function osdKeys(ev){
 		const key = ev.key;
@@ -484,37 +501,23 @@
 
 <script>
 	'use strict';
-	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','#111','#111','#111','#111','maroon'];
-	
+	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','purple','red','','navy','maroon'];
 
-	const can = document.getElementById('mines');
-	//const ctx = can.getContext('2d');
-
-	const COLS = Number(can.dataset.cols);
-	const ROWS = Number(can.dataset.rows);
+	const COLS = Number(mines.dataset.cols);
+	const ROWS = Number(mines.dataset.rows);
 
 	const myfield = new Mines2d(COLS, ROWS);
 	setupMinefield(myfield, Number(minecount.value));
 
-	const cellSize = Number(can.dataset.cellsize); // size of graphical cell in pixels
-	osd.width = cellSize*COLS;
-	osd.height = cellSize*ROWS;
-	const mcf = new MineCanvaFuncs(can,myfield,cellSize);
+	const cellSize2 = Number(mines.dataset.cellsize); // size of graphical cell in pixels
+	//osd.width = cellSize2*COLS;
+	//osd.height = cellSize2*ROWS;
+	const mcf = new MineCanvaFuncs(mines,myfield,cellSize2);
 	mcf.setup();
 
 	const mtf = new MineTableFuncs(mtable, myfield);
+	const osdSelection = new OsdSelection(osd, ROWS, COLS, cellSize2);
 
-
-	const octx = osd.getContext('2d');
-	octx.fillStyle = 'blue';
-	octx.globalAlpha = 0.5;
-	const osdSelection = new OsdSelection(myfield.rows, myfield.cols);
-	osd.addEventListener('mousedown', function(e) {
-		getCursorPosition(can, e);
-	});
-	osd.addEventListener('keydown', osdKeys);
-	osdSelection.sq();
-	osd.focus();
 
 </script>
 
