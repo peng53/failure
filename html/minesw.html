@@ -34,14 +34,24 @@
 		float: left;
 	}
 	#mtable td {
-		font: 2em monospace;
-		background: beige;
+		font: 1em monospace;
 		width: 1em;
 		height: 1em;
 		text-align: center;
 		border: 1px green solid;
 	}
 	#mtable td:hover { background: teal; }
+	.tiled { background: beige; }
+	.tile0 { background: gold; }
+	.tile1 { background: lime; }
+	.tile2 { background: aqua; }
+	.tile3 { background: fuchsia; }
+	.tile4 { background: orange; }
+	.tile5 { background: purple; }
+	.tile6 { background: red; }
+	.tile7 { background: darkseagreen; }
+	.tile8 { background: navy; }
+	.tile9 { background: maroon; }
 </style>
 </head>
 <body>
@@ -291,6 +301,7 @@
 			for (let i=0;i<this.F.cols;++i){
 				col = row.insertCell(-1);
 				col.appendChild(document.createTextNode('?'));
+				col.classList.add('tiled');
 				col.col = i;
 				col.onclick = function(event){touchCanvas(rowNumber,event.target.col)};
 			}
@@ -318,9 +329,8 @@
 
 
 		this.revealTile = function(row,col){
-			console.log(row,col);
 			let t = this.F.A[row][col];
-			this.cellMap[row][col].style.backgroundColor = mineNumberColors[t];
+			this.cellMap[row][col].className = 'tile'+t.toString();
 			this.cellMap[row][col].textContent = (t==9) ? 'M' : t;
 		};
 		this.revealLine = function (row,c0,c1){
@@ -340,7 +350,7 @@
 		this.resetCells = function(){
 			for (let r=0;r<this.F.rows;++r){
 				for (let c=0;c<this.F.cols;++c){
-					this.cellMap[r][c].style = undefined;
+					this.cellMap[r][c].className = 'tiled';
 					this.cellMap[r][c].textContent = '?';
 				}
 			}
@@ -501,7 +511,7 @@
 
 <script>
 	'use strict';
-	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','purple','red','','navy','maroon'];
+	const mineNumberColors = ['gold','lime','aqua','fuchsia','orange','purple','red','darkseagreen','navy','maroon'];
 
 	const COLS = Number(mines.dataset.cols);
 	const ROWS = Number(mines.dataset.rows);
