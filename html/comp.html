@@ -1,0 +1,126 @@
+
+<table id='visualca'></table>
+<script src='queue.js'></script>
+<script>
+'use strict';
+
+function insRow(row, cols, rowNumber){
+	let col;
+	for (let i=0;i<cols;++i){
+		col = row.insertCell(-1);
+		col.appendChild(document.createTextNode('?'));
+	}
+	return row;
+}
+function createRows(ele,rows,cols){
+	for (let rn=0; rn<rows;++rn){
+		insRow(ele.insertRow(-1),cols, rn);
+	}
+}
+function mapTab(ele, rows, cols){
+	// maps table to 2 index array
+	let out = new Array(rows);
+	for (let r=0;r<rows;++r){
+		out[r] = new Array(cols);
+		for (let c=0;c<cols;++c){
+			out[r][c] = ele.childNodes[0].childNodes[r].childNodes[c];
+		}
+	}
+	return out;
+}
+
+function IJCoord(i,j){
+	this.i = i;
+	this.j = j;
+}
+
+function CompNode(ij, v) {
+	this.v = v;
+	this.ls = new Set();
+	this.ij = [ij];
+	this.mark = false;
+	
+	this.reduce = function(){
+		let nls = new Set();
+		for (let node of this.ls){
+			if (node === this){
+				continue;
+			}
+			if (node.v === this.v){
+				for (let nnode of node.ls){
+					if (nnode!==this){
+						nls.add(nnode);
+						nnode.ls.delete(node);
+						nnode.ls.add(this);
+					}
+				}
+				node.mark = true;
+				node.ls = undefined;
+				this.ij.push.apply(this.ij, node.ij);
+			} else {
+				nls.add(node);
+			}
+		}
+		this.ls = nls;
+	};
+}
+function CompNodeWithNeighbors(ij,v,neighbors){
+	let cn = new CompNode(ij,v);
+	neighbors.forEach(n=>cn.ls.add(n));
+	neighbors.forEach(n=>n.ls.add(cn));
+	return cn;
+}
+function randint(min,max){
+	return Math.floor(Math.random()*(max-min))+min;
+}
+
+function CompNodeArray(rows, cols){
+	let rowCache = new Array(cols);
+	for (let i=0;i<cols;++i){
+		rowCache[i] = undefined;
+	}
+	let t;
+	for (let r=0;r<rows;++r){
+		for (let c=0;c<cols;++c){
+			t = rowCache[c];
+			rowCache[c] = new CompNode(new IJCoord(r,c), randint(0,4));
+			if (t!==undefined){
+				rowCache[c].ls.add(t);
+				t.ls.add(rowCache[c])
+			}
+			if (c!=0){
+				rowCache[c].ls.add(rowCache[c-1]);
+				rowCache[c-1].ls.add(rowCache[c]);
+			}
+		}
+	}
+	return rowCache[0];
+}
+
+let testtree = new CompNode(new IJCoord(0,0),5);
+let wrong = CompNodeWithNeighbors(new IJCoord(1,0),3, [testtree]);
+let right = CompNodeWithNeighbors(new IJCoord(0,1),5, [testtree]);
+
+let lbx = CompNodeArray(50,50);
+createRows(visualca, 50, 50);
+let visT = mapTab(visualca, 50, 50);
+let n;
+let tovisit = [lbx];
+while (tovisit.length>0){
+	n = tovisit.pop();
+	if (n.mark){
+		continue;
+	}
+	n.reduce();
+	n.mark = true;
+	for (let c of n.ls){
+		if (!c.mark){
+		tovisit.push(c);
+		}
+	}
+	n.ij.forEach(c=>visT[c.i][c.j].textContent = n.v);
+}
+
+
+//lbx.ij.forEach(c=>visT[c.i][c.j].textContent = lbx.v);
+</script>
