@@ -1,3 +1,14 @@
+<style>
+#visualca {
+	border-collapse: collapse;
+}
+#visualca td {
+	font: bold 1.5em monospace ;
+	text-align: center;
+	height: 1em;
+	width: 1em;
+}
+</style>
 
 <table id='visualca'></table>
 <script src='queue.js'></script>
@@ -40,28 +51,41 @@ function CompNode(ij, v) {
 	this.ij = [ij];
 	this.mark = false;
 	
+	this.link = function (node){
+		this.ls.add(node);
+		node.ls.add(this);
+	};
+	this.unlink = function(node){
+		this.ls.delete(node);
+		node.ls.delete(this);
+	};
+	
 	this.reduce = function(){
-		let nls = new Set();
-		for (let node of this.ls){
-			if (node === this){
-				continue;
-			}
-			if (node.v === this.v){
-				for (let nnode of node.ls){
-					if (nnode!==this){
-						nls.add(nnode);
-						nnode.ls.delete(node);
-						nnode.ls.add(this);
-					}
+		let matching = [];
+		for (let n of this.ls){
+			if (n.v==this.v) matching.push(n);
+		}
+		let match;
+		matching.forEach(n => this.unlink(n));
+		while (matching.length > 0){
+			match = matching.pop();
+			this.ij.push.apply(this.ij, match.ij);
+			match.ij = [];
+			this.unlink(match);
+			for (let n of match.ls){
+				n.unlink(match);
+				if (n.v==this.v){
+					matching.push(n);
+				} else {
+					this.link(n);
+					
 				}
-				node.mark = true;
-				node.ls = undefined;
-				this.ij.push.apply(this.ij, node.ij);
-			} else {
-				nls.add(node);
 			}
 		}
-		this.ls = nls;
+	};
+	this.neighbors = function(){
+		return Array.from(this.ls);
+		
 	};
 }
 function CompNodeWithNeighbors(ij,v,neighbors){
@@ -83,7 +107,7 @@ function CompNodeArray(rows, cols){
 	for (let r=0;r<rows;++r){
 		for (let c=0;c<cols;++c){
 			t = rowCache[c];
-			rowCache[c] = new CompNode(new IJCoord(r,c), randint(0,4));
+			rowCache[c] = new CompNode(new IJCoord(r,c), randint(0,3));
 			if (t!==undefined){
 				rowCache[c].ls.add(t);
 				t.ls.add(rowCache[c])
@@ -97,30 +121,59 @@ function CompNodeArray(rows, cols){
 	return rowCache[0];
 }
 
-let testtree = new CompNode(new IJCoord(0,0),5);
-let wrong = CompNodeWithNeighbors(new IJCoord(1,0),3, [testtree]);
-let right = CompNodeWithNeighbors(new IJCoord(0,1),5, [testtree]);
-
-let lbx = CompNodeArray(50,50);
-createRows(visualca, 50, 50);
-let visT = mapTab(visualca, 50, 50);
+let lbx = CompNodeArray(25,20);
+createRows(visualca, 25, 20);
+let visT = mapTab(visualca, 25, 20);
+let todo = [];
+todo.push(lbx);
 let n;
-let tovisit = [lbx];
-while (tovisit.length>0){
-	n = tovisit.pop();
-	if (n.mark){
-		continue;
-	}
-	n.reduce();
-	n.mark = true;
-	for (let c of n.ls){
-		if (!c.mark){
-		tovisit.push(c);
+var ncomps = {};
+
+while (todo.length > 0){
+	let n = todo.pop();
+	if (!n.mark){
+		n.reduce();
+		if (n.v in ncomps == false){
+			ncomps[n.v] = [];
 		}
+		ncomps[n.v].push(n);
+		n.ij.forEach(ij => visT[ij.i][ij.j].textContent = n.v);
+		n.ls.forEach(v => todo.push(v));
+		n.mark = true;
 	}
-	n.ij.forEach(c=>visT[c.i][c.j].textContent = n.v);
+}
+let carray = ['red','orange','yellow','green','blue','purple'];
+function colorN(col, n, row){
+	if (n in ncomps && row < ncomps[n].length){
+		ncomps[n][row].ij.forEach(ij => visT[ij.i][ij.j].style.backgroundColor = col);
+	}
+}
+function getRandomColor() {
+// https://stackoverflow.com/questions/1484506/random-color-generator
+	let letters = '0123456789ABCDEF';
+	let color = '#';
+	for (let i = 0; i < 6; i++) {
+		color += letters[Math.floor(Math.random() * 16)];
+	}
+	return color;
+}
+function getRandomColor2(){
+	return 'rgb('+randint(0,256).toString()+','+randint(0,256).toString()+','+randint(0,256).toString()+')';
 }
 
+for (let n in ncomps){
+	for (let i=0;i<ncomps[n].length;++i){
+		setTimeout(
+			function() {
+				let col = getRandomColor2();
+				ncomps[n][i].ij.forEach(ij => {visT[ij.i][ij.j].style.backgroundColor = col;})
+			},
+			100
+		);
+	}
+}
+//for (let i=0;i<carray.length && i<ncomps[0].length;++i){
+//	ncomps[0][i].ij.forEach(ij => visT[ij.i][ij.j].style.backgroundColor = carray[i]);
+//}
 
-//lbx.ij.forEach(c=>visT[c.i][c.j].textContent = lbx.v);
 </script>
