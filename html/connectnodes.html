@@ -49,35 +49,41 @@
 			ctx.strokeText(col[i].n, x, y);
 		}
 	};
-	cnodes.tracePts = function(r0,c0,col0,r1,c1,col1, colorr){
+	cnodes.tracePts = function(r0,c0,col0L,r1,c1,col1L, colorr){
 		const ctx = this.getContext('2d');
-		const cellHeight0 = (this.height)/(col0.length);
-		const cellHeight1 = (this.height)/(col1.length);
+		const cellHeight0 = (this.height)/(col0L);
+		const cellHeight1 = (this.height)/(col1L);
 		const x0 = r0*this.colWidth+this.colWidth/2;
 		const y0 = c0*cellHeight0+cellHeight0/2;
 		const x1 = r1*this.colWidth+this.colWidth/2;
 		const y1 = c1*cellHeight1+cellHeight1/2;
-		ctx.strokeStyle = colorr;
+		const col = ctx.createLinearGradient(x0,y0,x1,y1);
+		col.addColorStop(0,colorr[0]);
+		col.addColorStop(0.5,colorr[1]);
 		ctx.beginPath();
 		ctx.moveTo(x0,y0);
 		ctx.lineTo(x1,y1);
+		ctx.strokeStyle = col;
 		ctx.stroke();
 	};
 	cnodes.colWidth = cnodes.width/colCount;
+
+	let p, r, c, r1, c1;
+	for (let i=0;i<nodeCount;++i){
+		p = getRandomInt(0,nodeCount);
+		if (i==p) continue;
+		[r,c] = nodeRegistry[i];
+		[r1,c1] = nodeRegistry[p];
+		if (r==r1) continue;
+		console.log(i,'to',p);
+		cnodes.tracePts(r,c,rcols.cols[r].length,
+			r1,c1,rcols.cols[r1].length,
+			[rcols.cols[r][c].col, rcols.cols[r1][c1].col]);
+	}
 	for (let i=0;i<colCount;++i){
 		cnodes.drawCol(i, rcols.cols[i]);
 	}
 
-
-	let p;
-	for (let i=0;i<nodeCount;++i){
-		p = getRandomInt(0,nodeCount);
-		if (i==p) continue;
-		if (nodeRegistry[i][0]==nodeRegistry[p][0]) continue;
-		console.log(i,'to',p);
-		cnodes.tracePts(nodeRegistry[i][0],nodeRegistry[i][1],rcols.cols[nodeRegistry[i][0]],
-			nodeRegistry[p][0],nodeRegistry[p][1],rcols.cols[nodeRegistry[p][0]], getRandomColor2());
-	}
 
 </script>
 </html>
