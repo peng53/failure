@@ -1,0 +1,30 @@
+<html>
+<canvas id='cnodes' width=1000px height=600px></canvas>
+<script src='distRamp.js'></script>
+<script>
+	const colCount = 5;
+	let rcols = new RampCols(colCount);
+	for (let i=0;i<20;++i) rcols.ins(i);
+	cnodes.drawCol = function(colNum, col){
+		const ctx = this.getContext('2d');
+		const cellHeight = (this.height)/(col.length);
+		ctx.strokeStyle = 'black';
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.font = '10px monospace';
+		let x,y;
+		for (let i=0;i<col.length;++i){
+			x = colNum*this.colWidth+this.colWidth/2;
+			y = i*cellHeight+cellHeight/2;
+			ctx.beginPath();
+			ctx.arc(x, y, 15, 2*Math.PI, Math.PI);
+			ctx.strokeText(col[i], x, y);
+			ctx.stroke();
+		}
+	};
+	cnodes.colWidth = cnodes.width/colCount;
+	for (let i=0;i<colCount;++i){
+		cnodes.drawCol(i, rcols.cols[i]);
+	}
+</script>
+</html>
