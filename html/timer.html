@@ -10,6 +10,8 @@
 		display: inline-block;
 		margin: 0 auto;
 		background: #ddd;
+		border-radius: 0.5em;
+		padding-bottom: 0.5em;
 	}
 	#hleft, #mleft, #sleft, #endhh, #endmm {
 		text-align: center;
@@ -22,11 +24,14 @@
 		margin: 0.5em;
 		padding-bottom: 1em;
 		text-align: center;
+		border-radius: 0.2em 0.2em 0 0;
 	}
-	h3 {
+	h3, h2 {
 		margin: 0 0 10px 0;
 		background: #000;
 		color: #fff;
+		border-style: none;
+		border-radius: 0.2em 0.2em 0 0;
 	}
 </style>
 <script>
@@ -120,6 +125,7 @@ document.addEventListener('visibilitychange', switchSyncModes);
 </head>
 <body>
 <div id='widget'>
+<h2>Widget</h2>
 <div class='ctbox'>
 <h3>Timer</h3>
 <input class='hrstyle medft' id='hleft' type=number value=0 min=0 max=99 size=2 onblur='setEndTime(0,0,0)' />:
@@ -132,6 +138,7 @@ document.addEventListener('visibilitychange', switchSyncModes);
 <button class='hrstyle' onclick='addTime(hrs=1, mins=0, secs=0)'>&#43;<br />1hr</button>
 <button class='minstyle' onclick='addTime(hrs=0, mins=30, secs=0)'>&#43;<br />30m</button>
 <button class='minstyle' onclick='addTime(hrs=0, mins=10, secs=0)'>&#43;<br />10m</button>
+<br /><br />
 <button class='minstyle' onclick='addTime(hrs=0, mins=5, secs=0)'>&#43;<br />5m</button>
 <button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=30)'>&#43;<br />30s</button>
 <button class='secstyle' onclick='addTime(hrs=0, mins=0, secs=10)'>&#43;<br />10s</button>
