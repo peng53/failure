@@ -66,24 +66,21 @@
 		ctx.strokeStyle = col;
 		ctx.stroke();
 	};
-	cnodes.traceBezierPts = function(r0,c0,col0L,r1,c1,col1L, colorr){
+	cnodes.traceBezierPts = function(r,c0,c1,colL, colorr){
 		const ctx = this.getContext('2d');
-		const cellHeight0 = (this.height)/(col0L);
-		const cellHeight1 = (this.height)/(col1L);
-		const x0 = r0*this.colWidth+this.colWidth/2;
+		const cellHeight0 = (this.height)/(colL);
+		const x0 = r*this.colWidth+this.colWidth/2;
 		const y0 = c0*cellHeight0+cellHeight0/2;
-		const x1 = r1*this.colWidth+this.colWidth/2;
-		const y1 = c1*cellHeight1+cellHeight1/2;
-		const col = ctx.createLinearGradient(x0,y0,x1,y1);
+		const y1 = c1*cellHeight0+cellHeight0/2;
+		const col = ctx.createLinearGradient(x0,y0,x0,y1);
 		const midpt = (y1-y0)/3;
 		col.addColorStop(0,colorr[0]);
 		col.addColorStop(0.5,colorr[1]);
 		ctx.beginPath();
 		ctx.moveTo(x0,y0);
-		ctx.bezierCurveTo(x0-(this.colWidth/2),y0+midpt,x1-(this.colWidth/2),y0+2*midpt, x1,y1);
+		ctx.bezierCurveTo(x0-(this.colWidth/2),y0+midpt,x0-(this.colWidth/2),y0+2*midpt, x0,y1);
 		ctx.strokeStyle = col;
 		ctx.stroke();
-		console.log('123');
 	}
 	cnodes.colWidth = cnodes.width/colCount;
 
@@ -96,9 +93,8 @@
 		[r1,c1] = nodeRegistry[p];
 
 		console.log(i,'to',p);
-		if (r==r1){
-		cnodes.traceBezierPts(r,c,rcols.cols[r].length,
-			r1,c1,rcols.cols[r1].length,
+		if (r==r1 && Math.abs(c1-c)>1){
+		cnodes.traceBezierPts(r,c,c1,rcols.cols[r].length,
 			[rcols.cols[r][c].col, rcols.cols[r1][c1].col]);
 		} else {
 		cnodes.tracePts(r,c,rcols.cols[r].length,
