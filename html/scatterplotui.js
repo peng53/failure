@@ -13,29 +13,29 @@ function showMenu(menu){
 	}
 }
 function toggleHide(ele){
-	let div = document.getElementById(ele);
+	const div = document.getElementById(ele);
 	div.style.display = div.style.display == "none" ? "block" : "none";
 }
 
 function retrieveArgs(graph){
 	let nm = [getValueFrom('xviewL'), getValueFrom('xviewR')].map(Number);
-	let xview = (nm.some(isNaN) || nm[0] >= nm[1])
+	const xview = (nm.some(isNaN) || nm[0] >= nm[1])
 		? guessXview(graph)
 		: nm;
 	nm = [getValueFrom('yviewL'), getValueFrom('yviewR')].map(Number);
-	let yview = (nm.some(isNaN) || nm[0] >= nm[1])
+	const yview = (nm.some(isNaN) || nm[0] >= nm[1])
 		? guessYview(graph)
 		: nm;
 	nm = [getValueFrom('gridx'), getValueFrom('gridy')].map(Number);
-	let gridxy = (nm.some(isNaN) || nm.some(v => v<0))
+	const gridxy = (nm.some(isNaN) || nm.some(v => v<0))
 		? undefined
 		: nm;
 	nm = [getValueFrom('axisx'), getValueFrom('axisy')].map(Number);
-	let axisxy = nm.some(isNaN)
+	const axisxy = nm.some(isNaN)
 		? undefined
 		: nm;
 	nm = [getValueFrom('axisxn'), getValueFrom('axisyn')].map(Number);
-	let axisxyn = (nm.some(isNaN) || nm.some(v => v<=0))
+	const axisxyn = (nm.some(isNaN) || nm.some(v => v<=0))
 		? undefined
 		: nm;
 	return [xview, yview, gridxy, axisxy, axisxyn];
@@ -47,10 +47,10 @@ function setViews(xview, yview){
 	setValueTo('yviewR', yview[1]);
 }
 function drawGraph(graph, can){
-	let [xview, yview, gridxy, axisxy, axisxyn] = retrieveArgs(graph);
+	const [xview, yview, gridxy, axisxy, axisxyn] = retrieveArgs(graph);
 	setViews(xview, yview);
-	let xscale = calculateScale(xview, can.width);
-	let yscale = calculateScale(yview, can.height);
+	const xscale = calculateScale(xview, can.width);
+	const yscale = calculateScale(yview, can.height);
 	canvasBg(can, getValueFrom('bgcolor'));
 	if (gridxy){
 		gridLines(xscale, xview, gridxy[0], yscale, yview, gridxy[1], can, hcolor=getValueFrom('grcolor'), vcolor=getValueFrom('grcolor'));
@@ -74,13 +74,13 @@ function setValueTo(name, val){
 	document.getElementById(name).value = val;
 }
 function addPoints(graph){
-	let numbers = getValueFrom('points');
+	const numbers = getValueFrom('points');
 	if (numbers.length === 0){
 		return;
 	}
-	let color = getValueFrom('ptcolor');
-	let name = getValueFrom('name');
-	let dsi = graph.datasets.length;
+	const color = getValueFrom('ptcolor');
+	const name = getValueFrom('name');
+	const dsi = graph.datasets.length;
 	if (name.length === 0){
 		name = 'Dataset #'+dsi;
 	}
@@ -93,7 +93,7 @@ function addPoints(graph){
 
 function parseStrToArray(str, arr){
 	// Parse string of comma separated x,y coordinates to array of Points
-	let numbers = str.split(',').map(Number);
+	const numbers = str.split(',').map(Number);
 	for (let i=0,l=numbers.length; i<l; i+=2){
 		if (isNaN(numbers[i]) || isNaN(numbers[i+1])){
 			console.log('Skipping values '+i+', '+i+1);
@@ -104,7 +104,7 @@ function parseStrToArray(str, arr){
 }
 
 function addDatasetToList(dataset){
-	let option = document.createElement('option');
+	const option = document.createElement('option');
 	option.text = dataset.name;
 	option.style.color = dataset.color;
 	document.getElementById('pointsList').add(option);
@@ -120,22 +120,22 @@ function guessYview(graph){
 }
 function clearDatasets(graph){
 	graph.datasets = [];
-	let options = document.getElementById('pointsList');
+	const options = document.getElementById('pointsList');
 	while (options.length>0){
 		options.remove(0);
 	}
 }
 function deleteDataset(graph){
-	let plist = document.getElementById('pointsList');
-	let index = plist.selectedIndex;
+	const plist = document.getElementById('pointsList');
+	const index = plist.selectedIndex;
 	console.log(index);
 	plist.remove(index);
 	graph.datasets.splice(index,1);
 }
 function editDataset(graph){
-	let index = document.getElementById('pointsList').selectedIndex;
+	const index = document.getElementById('pointsList').selectedIndex;
 	if (index > -1 ){
-		let ds = graph.datasets[index];
+		const ds = graph.datasets[index];
 		let out = '';
 		for (let i=0, l=ds.points.length; i<l; ++i){
 			if (i != 0){
@@ -150,15 +150,15 @@ function editDataset(graph){
 	}
 }
 function saveDataset(graph){
-	let index = document.getElementById('pointsList').selectedIndex;
+	const index = document.getElementById('pointsList').selectedIndex;
 	if (index > -1){
 		// duplicate code of addPoints..
-		let values = getValueFrom('points');
+		const values = getValueFrom('points');
 		if (values.length === 0){
 			return;
 		}
-		let color = getValueFrom('ptcolor');
-		let name = getValueFrom('name');
+		const color = getValueFrom('ptcolor');
+		const name = getValueFrom('name');
 		if (name.length === 0){
 			name = 'Dataset #'+index;
 		}
@@ -170,7 +170,7 @@ function saveDataset(graph){
 		parseStrToArray(values, graph.datasets[index].points);
 		graph.datasets[index].points.sort((a,b) => a.x-b.x);
 		// change the select now..
-		let option = document.getElementById('pointsList')[index];
+		const option = document.getElementById('pointsList')[index];
 		option.text = name;
 		option.style.color = color;
 		setValueTo('points', '');
@@ -178,25 +178,25 @@ function saveDataset(graph){
 }
 
 function standardize_color(str){
-	let ctx = document.createElement('canvas').getContext('2d');
+	const ctx = document.createElement('canvas').getContext('2d');
 	ctx.fillStyle = str;
 	return ctx.fillStyle;
 }
 function setCanvasSize(){
-	let can = document.getElementById('mycan');
-	let axis = document.getElementById('axisl');
-	let newHeight = getValueFrom('canh');
-	let newWidth = getValueFrom('canw');
+	const can = document.getElementById('mycan');
+	const axis = document.getElementById('axisl');
+	const newHeight = getValueFrom('canh');
+	const newWidth = getValueFrom('canw');
 	can.width = newWidth;
 	can.height = newHeight;
 	canvasBg(can, getValueFrom('bgcolor'));
 	axis.width = newWidth;
 	axis.height = newHeight;
-	let ctx = axis.getContext('2d');
+	const ctx = axis.getContext('2d');
 	ctx.clearRect(0, 0, axis.width, axis.height);
 }
 function maxCanvasSize(){
-	let topMenu = document.getElementById('topmenu');
+	const topMenu = document.getElementById('topmenu');
 	setValueTo('canw', window.innerWidth);
 	setValueTo('canh', window.innerHeight - topMenu.offsetHeight);
 }
