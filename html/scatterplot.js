@@ -18,11 +18,11 @@ function dotPtAt(ctx,x,y){
 }
 
 function drawXAxis(can, xview, dx, offset){
-	let xscale = calculateScale(xview, can.width);
-	let ctx = can.getContext('2d');
+	const xscale = calculateScale(xview, can.width);
+	const ctx = can.getContext('2d');
 	//ctx.strokeStyle = 'gray';
 	drawALine(ctx,0,can.width,0,0);
-	let dZ = xscale*dx;
+	const dZ = xscale*dx;
 	ctx.beginPath();
 	for (let x=closestMultiple(xview[0],dx), rx=0; x <=xview[1]; x+=dx){
 		ctx.strokeStyle = (x>=0) ? 'black' : 'red';
@@ -35,12 +35,12 @@ function drawXAxis(can, xview, dx, offset){
 	ctx.stroke();
 }
 function drawYAxis(can, yview, dy, offset, noshow){
-	let ctx = can.getContext('2d');
-	let yscale = calculateScale(yview, can.height);
+	const ctx = can.getContext('2d');
+	const yscale = calculateScale(yview, can.height);
 	//ctx.strokeStyle = 'gray';
 	drawALine(ctx,0,0,0,can.height);
 	ctx.rotate(-90* Math.PI/180);
-	let dZ = yscale*dy;
+	const dZ = yscale*dy;
 	ctx.beginPath();
 	for (let y=closestMultiple(yview[0],dy), ry=can.height; y<=yview[1]; y+=dy){
 		if (y != noshow){
@@ -56,8 +56,8 @@ function drawYAxis(can, yview, dy, offset, noshow){
 	ctx.stroke();
 }
 function axisLines(xview, yview, intercepts, intervals, hcolor, vcolor, fontsize){
-	let can = document.getElementById('axisl');
-	let ctx = can.getContext('2d');
+	const can = document.getElementById('axisl');
+	const ctx = can.getContext('2d');
 	ctx.clearRect(0, 0, can.width, can.height);
 	ctx.textBaseline = 'middle';
 	ctx.textAlign = 'center';
@@ -84,20 +84,20 @@ function drawALine(ctx, x0, x, y0, y){
 }
 
 function gridLines(xscale, xview, xinterval, yscale, yview, yinterval, can, hcolor, vcolor){
-	let ctx = can.getContext('2d');
+	const ctx = can.getContext('2d');
 
 	ctx.setLineDash([3,2]);
 	ctx.strokeStyle = hcolor;
-	let y0 = transformY(yinterval * (Math.floor(yview[1]/yinterval)), yscale, yview[1]);
-	let dy = yinterval*yscale;
+	const y0 = transformY(yinterval * (Math.floor(yview[1]/yinterval)), yscale, yview[1]);
+	const dy = yinterval*yscale;
 	for (let y=y0; y<can.height; y+=dy){
 		drawALine(ctx, 0, can.width, y, y);
 	}
 
 	ctx.setLineDash([2,3]);
 	ctx.strokeStyle = vcolor;
-	let dx = xinterval*xscale;
-	let x0 = transformX(xinterval * (Math.ceil(xview[0]/xinterval)), xscale, xview[0])
+	const dx = xinterval*xscale;
+	const x0 = transformX(xinterval * (Math.ceil(xview[0]/xinterval)), xscale, xview[0])
 	for (let x=x0; x<can.width; x+= dx){
 		drawALine(ctx, x, x, 0, can.height);
 	}
@@ -108,7 +108,7 @@ function closestMultiple(n, m){
 }
 
 function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
-	let ctx = can.getContext('2d');
+	const ctx = can.getContext('2d');
 	ctx.beginPath();
 	ctx.strokeStyle = ctx.fillStyle = color;
 	let x,y;
@@ -134,7 +134,7 @@ function plotPoints(points, xscale, yscale, xview, yview, can, color, noLine){
 		ctx.stroke();
 	}
 	// linearLeastSquares test!
-	let [m,b] = linearLeastSquares(points);
+	const [m,b] = linearLeastSquares(points);
 	ctx.globalAlpha = 0.4;
 	ctx.strokeStyle = '#FF0000';
 	ctx.setLineDash([4,4]);
@@ -175,13 +175,13 @@ function getMinAndMaxOverAll(datasets, getter){
 }
 
 function canvasBg(can, color){
-	let ctx = can.getContext('2d');
+	const ctx = can.getContext('2d');
 	ctx.fillStyle = color;
 	ctx.fillRect(0,0,can.width, can.height);
 }
 
 function sortedPointArray(xvals, yvals){
-	let points = Array();
+	const points = Array();
 	for (let i=0, l=xvals.length; i<l; ++i){
 		points.push(new Point(xvals[i],yvals[i]));
 	}
@@ -206,13 +206,13 @@ function Dataset(name, color, connectPoints){
 function linearLeastSquares(points){
 	// Returns slope and y-intercept from linear least squares on points.
 	// Using equation from https://www.mathsisfun.com/data/least-squares-regression.html
-	let N = points.length;
-	let sumXY = points.reduce((total,p) => total + p.x*p.y, 0);
-	let sumX = points.reduce((total,p) => total + p.x, 0);
-	let sumY = points.reduce((total,p) => total + p.y, 0);
-	let sumX2 = points.reduce((total,p) => total + p.x*p.x, 0);
+	const N = points.length;
+	const sumXY = points.reduce((total,p) => total + p.x*p.y, 0);
+	const sumX = points.reduce((total,p) => total + p.x, 0);
+	const sumY = points.reduce((total,p) => total + p.y, 0);
+	const sumX2 = points.reduce((total,p) => total + p.x*p.x, 0);
 	
-	let m = (((N*sumXY) - (sumX*sumY)) / ((N*sumX2) - (sumX*sumX)));
-	let b = (sumY - (m*sumX)) / N;
+	const m = (((N*sumXY) - (sumX*sumY)) / ((N*sumX2) - (sumX*sumX)));
+	const b = (sumY - (m*sumX)) / N;
 	return [m,b];
 }

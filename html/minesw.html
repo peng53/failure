@@ -1,5 +1,7 @@
 <html>
 <head>
+<title>minesw.html</title>
+<meta charset="utf-8"/>
 <style>
 	body { margin: 0; }
 	
@@ -81,61 +83,63 @@
 	'use strict';
 	/* primative internals */
 	function Mines2d(cols, rows){
-		this.A = RectArray(rows,cols, 0);
-		this.visible = RectArray(rows,cols, false);
+		this.A = RectArray(rows,cols, 0, Int8Array);
+		this.visible = RectArray(rows,cols, false, Int8Array);
 		this.cols = cols;
 		this.rows = rows;
-
-		this.plantMine = function(r,c){
-			this.A[r][c] = 9;
-			let notTop = r>0, notLeft = c>0, notRight = c<this.cols, notBottom = r+1<this.rows;
-			if (notTop){
-				this.plantWarning(r-1,c);
-				if (notLeft) this.plantWarning(r-1,c-1);
-				if (notRight) this.plantWarning(r-1,c+1);
-			}
-			if (notBottom){
-				this.plantWarning(r+1,c);
-				if (notLeft) this.plantWarning(r+1,c-1);
-				if (notRight) this.plantWarning(r+1,c+1);
-			}
-			if (notLeft) this.plantWarning(r,c-1);
-			if (notRight) this.plantWarning(r,c+1);
-		};
-
-		this.plantWarning = function(r,c){
-			if (this.A[r][c] !== 9){
-				++this.A[r][c];
-			}
-		};
 	}
-	
+
+	Mines2d.prototype.plantWarning = function(r,c){
+		if (this.A[r][c] !== 9){
+			++this.A[r][c];
+		}
+	}
+
+	Mines2d.prototype.plantMine = function(r,c){
+		this.A[r][c] = 9;
+		let notTop = r>0, notLeft = c>0, notRight = c<this.cols, notBottom = r+1<this.rows;
+		if (notTop){
+			this.plantWarning(r-1,c);
+			if (notLeft) this.plantWarning(r-1,c-1);
+			if (notRight) this.plantWarning(r-1,c+1);
+		}
+		if (notBottom){
+			this.plantWarning(r+1,c);
+			if (notLeft) this.plantWarning(r+1,c-1);
+			if (notRight) this.plantWarning(r+1,c+1);
+		}
+		if (notLeft) this.plantWarning(r,c-1);
+		if (notRight) this.plantWarning(r,c+1);
+	}
+
 	function ZeroLine(field, row, start, end){
 		this.mf = field;
 		this.r = row;
 		this.c0 = start;
 		this.c1 = (end===undefined) ? start : end;
-		
-		this.expand = function(match, adj){
-			// Expands scanline on both sides.
-			for (; this.c0-1>=0 && this.mf.A[this.r][this.c0-1] == match; --this.c0){
-				continue;
-			}
-			for (; this.c1+1<this.mf.cols && this.mf.A[this.r][this.c1+1] == match; ++this.c1){
-				continue;
-			}
-			return this;
-		};
-		this.reveal = function(revealEnds){
-			// Reveals all tiles of this scanline.
-			if (this.mf.visible[this.r][this.c0]) return;
-			revealLine(this.r,this.c0,this.c1);
-			if (revealEnds){
-				if (this.c0>0) revealNumber(this.r,this.c0-1);
-				if (this.c1+1<this.mf.cols) revealNumber(this.r,this.c1+1);
-			}
-		};
 	}
+
+	ZeroLine.prototype.expand = function(match, adj){
+		// Expands scanline on both sides.
+		for (; this.c0-1>=0 && this.mf.A[this.r][this.c0-1] == match; --this.c0){
+			continue;
+		}
+		for (; this.c1+1<this.mf.cols && this.mf.A[this.r][this.c1+1] == match; ++this.c1){
+			continue;
+		}
+		return this;
+	}
+
+	ZeroLine.prototype.reveal = function(revealEnds){
+		// Reveals all tiles of this scanline.
+		if (this.mf.visible[this.r][this.c0]) return;
+		revealLine(this.r,this.c0,this.c1);
+		if (revealEnds){
+			if (this.c0>0) revealNumber(this.r,this.c0-1);
+			if (this.c1+1<this.mf.cols) revealNumber(this.r,this.c1+1);
+		}
+	}
+
 
 	function getZeroLines(field, r, c0, c1, ifnot, out){
 		if (r<0 || r>=field.rows) return;
@@ -160,16 +164,16 @@
 		}
 	}
 
-	function RectArray(rows, cols, v){
+	function RectArray(rows, cols, v, atype){
 		const a = new Array(rows);
 		for (let r = 0; r<rows; ++r){
-			a[r] = ArrayWithValue(cols,v);
+			a[r] = ArrayWithValue(cols,v,atype);
 		}
 		return a;
 	}
 	
-	function ArrayWithValue(size, val){
-		const a = new Array(size);
+	function ArrayWithValue(size, val, atype){
+		const a = new atype(size);
 		for (let i=0;i<size;++i){
 			a[i]=val;
 		}
@@ -222,137 +226,136 @@
 		this.sqSize = cellSize;
 		this.off = cellSize/2;
 		this.F = field;
-		this.sq = function(x,y,cnt,color){
-			this.ctx.fillStyle = color;
-			this.ctx.fillRect(x,y,this.sqSize*cnt,this.sqSize);
-		};
-		this.tx = function(x,y,t){
-			this.ctx.strokeText((t==9)? 'M' : t, x, y, this.sqSize);
-		};
-		this.revealTile = function(row, col){
-			const x = this.sqSize * col;
-			const y = this.sqSize * row;
-			const t = this.F.A[row][col];
-			this.sq(x,y,1,mineNumberColors[t]);
-			this.tx(x+this.off,y+this.off,t);
-		};
-		this.revealLine = function(row, c0, c1){
-			const t = this.F.A[row][c0];
-			let y = this.sqSize*row;
-			let x = this.sqSize*c0;
-			this.sq(x, y, 1+c1-c0, mineNumberColors[t]);
-			x += this.off;
-			y += this.off;
-			for (let c=c0;c<=c1;++c){
-				this.tx(x,y,t);
+	}
+
+	MineCanvaFuncs.prototype.sq = function(x,y,cnt,color){
+		this.ctx.fillStyle = color;
+		this.ctx.fillRect(x,y,this.sqSize*cnt,this.sqSize);
+	}
+	MineCanvaFuncs.prototype.tx = function(x,y,t){
+		this.ctx.strokeText((t==9)? 'M' : t, x, y, this.sqSize);
+	}
+	MineCanvaFuncs.prototype.revealTile = function(row, col){
+		const x = this.sqSize * col;
+		const y = this.sqSize * row;
+		const t = this.F.A[row][col];
+		this.sq(x,y,1,mineNumberColors[t]);
+		this.tx(x+this.off,y+this.off,t);
+	}
+	MineCanvaFuncs.prototype.revealLine = function(row, c0, c1){
+		const t = this.F.A[row][c0];
+		let y = this.sqSize*row;
+		let x = this.sqSize*c0;
+		this.sq(x, y, 1+c1-c0, mineNumberColors[t]);
+		x += this.off;
+		y += this.off;
+		for (let c=c0;c<=c1;++c){
+			this.tx(x,y,t);
+			x += this.sqSize;
+		}
+	}
+	MineCanvaFuncs.prototype.tLines = function(color){
+		for (let x=this.sqSize+1;x<this.can.width;x+=this.sqSize){
+			this.ctx.moveTo(x,0);
+			this.ctx.lineTo(x,this.can.height);
+		}
+		for (let y=this.sqSize+1;y<this.can.height;y+=this.sqSize){
+			this.ctx.moveTo(0,y);
+			this.ctx.lineTo(this.can.width,y);
+		}
+		this.ctx.strokeStyle = color;
+		this.ctx.stroke();
+		this.ctx.strokeStyle = 'black';
+	}
+	MineCanvaFuncs.prototype.drawState = function(){
+		this.tLines('green');
+		let x, y = 0, t;
+		this.ctx.strokeStyle = 'black';
+		for (let r=0;r<this.F.rows;++r){
+			x = 0;
+			for (let c=0;c<this.F.cols;++c){
+				if (this.F.visible[r][c]){
+					t = this.F.A[r][c];
+					this.sq(x,y,1,mineNumberColors[t]);
+					this.tx(x+this.off,y+this.off,t);
+				}
 				x += this.sqSize;
 			}
-		};
-		this.tLines = function(color){
-			for (let x=this.sqSize+1;x<this.can.width;x+=this.sqSize){
-				this.ctx.moveTo(x,0);
-				this.ctx.lineTo(x,this.can.height);
-			}
-			for (let y=this.sqSize+1;y<this.can.height;y+=this.sqSize){
-				this.ctx.moveTo(0,y);
-				this.ctx.lineTo(this.can.width,y);
-			}
-			this.ctx.strokeStyle = color;
-			this.ctx.stroke();
-			this.ctx.strokeStyle = 'black';
-		};
-		this.drawState = function(){
-			this.tLines('green');
-			let x, y = 0, t;
-			this.ctx.strokeStyle = 'black';
-			for (let r=0;r<this.F.rows;++r){
-				x = 0;
-				for (let c=0;c<this.F.cols;++c){
-					if (this.F.visible[r][c]){
-						t = this.F.A[r][c];
-						this.sq(x,y,1,mineNumberColors[t]);
-						this.tx(x+this.off,y+this.off,t);
-					}
-					x += this.sqSize;
-				}
-				y += this.sqSize;
-			}
-		};
-		this.clearField = function(){
-			this.ctx.clearRect(0,0,this.can.width,this.can.height);
-			this.tLines('green');
-		};
-		this.setup = function(){
-			this.can.width = this.sqSize*this.F.cols;
-			this.can.height =this.sqSize*this.F.rows;
-			this.tLines('green');
-
-			this.ctx.font = this.sqSize.toString()+'px monospace';
-			this.ctx.textAlign = 'center';
-			this.ctx.textBaseline = 'middle';
-		};
+			y += this.sqSize;
+		}
 	}
+	MineCanvaFuncs.prototype.clearField = function(){
+		this.ctx.clearRect(0,0,this.can.width,this.can.height);
+		this.tLines('green');
+	}
+	MineCanvaFuncs.prototype.setup = function(){
+		this.can.width = this.sqSize*this.F.cols;
+		this.can.height =this.sqSize*this.F.rows;
+		this.tLines('green');
+
+		this.ctx.font = this.sqSize.toString()+'px monospace';
+		this.ctx.textAlign = 'center';
+		this.ctx.textBaseline = 'middle';
+	}
+
 	function MineTableFuncs(tableEle, field){
 		this.F = field;
 		this.tab = tableEle;
-
-		this.insRow = function(row, rowNumber){
-			let col;
-			for (let i=0;i<this.F.cols;++i){
-				col = row.insertCell(-1);
-				col.appendChild(document.createTextNode('?'));
-				col.classList.add('tiled');
-				col.col = i;
-				col.onclick = function(event){touchCanvas(rowNumber,event.target.col)};
-			}
-			return row;
-		};
-		this.createRows = function(){
-			for (let rn=0; rn<this.F.rows;++rn){
-				this.insRow(this.tab.insertRow(-1),rn);
-			}
-		};
-		this.mapTab = function(){
-			// maps table to 2 index array
-			let out = new Array(this.F.rows);
-			for (let r=0;r<this.F.rows;++r){
-				out[r] = new Array(this.F.cols);
-				for (let c=0;c<this.F.cols;++c){
-					out[r][c] =this.tab.childNodes[0].childNodes[r].childNodes[c];
-				}
-			}
-			return out;
-		};
-
 		this.createRows();
 		this.cellMap = this.mapTab();
+	}
 
-
-		this.revealTile = function(row,col){
-			let t = this.F.A[row][col];
-			this.cellMap[row][col].className = 'tile'+t.toString();
-			this.cellMap[row][col].textContent = (t==9) ? 'M' : t;
-		};
-		this.revealLine = function (row,c0,c1){
-			for (let c=c0;c<=c1;++c){
-				this.revealTile(row,c);
+	MineTableFuncs.prototype.insRow = function(row, rowNumber){
+		let col;
+		for (let i=0;i<this.F.cols;++i){
+			col = row.insertCell(-1);
+			col.appendChild(document.createTextNode('?'));
+			col.classList.add('tiled');
+			col.col = i;
+			col.onclick = function(event){touchCanvas(rowNumber,event.target.col)};
+		}
+		return row;
+	}
+	MineTableFuncs.prototype.createRows = function(){
+		for (let rn=0; rn<this.F.rows;++rn){
+			this.insRow(this.tab.insertRow(-1),rn);
+		}
+	}
+	MineTableFuncs.prototype.mapTab = function(){
+		// maps table to 2 index array
+		let out = new Array(this.F.rows);
+		for (let r=0;r<this.F.rows;++r){
+			out[r] = new Array(this.F.cols);
+			for (let c=0;c<this.F.cols;++c){
+				out[r][c] =this.tab.childNodes[0].childNodes[r].childNodes[c];
 			}
-		};
-		this.drawState = function(){
-			for (let r=0;r<this.F.rows;++r){
-				for (let c=0;c<this.F.cols;++c){
-					if (this.F.visible[r][c]){
-						this.revealTile(r,c);
-					}
+		}
+		return out;
+	}
+	MineTableFuncs.prototype.revealTile = function(row,col){
+		let t = this.F.A[row][col];
+		this.cellMap[row][col].className = 'tile'+t.toString();
+		this.cellMap[row][col].textContent = (t==9) ? 'M' : t;
+	}
+	MineTableFuncs.prototype.revealLine = function (row,c0,c1){
+		for (let c=c0;c<=c1;++c){
+			this.revealTile(row,c);
+		}
+	}
+	MineTableFuncs.prototype.drawState = function(){
+		for (let r=0;r<this.F.rows;++r){
+			for (let c=0;c<this.F.cols;++c){
+				if (this.F.visible[r][c]){
+					this.revealTile(r,c);
 				}
 			}
-		};
-		this.resetCells = function(){
-			for (let r=0;r<this.F.rows;++r){
-				for (let c=0;c<this.F.cols;++c){
-					this.cellMap[r][c].className = 'tiled';
-					this.cellMap[r][c].textContent = '?';
-				}
+		}
+	}
+	MineTableFuncs.prototype.resetCells = function(){
+		for (let r=0;r<this.F.rows;++r){
+			for (let c=0;c<this.F.cols;++c){
+				this.cellMap[r][c].className = 'tiled';
+				this.cellMap[r][c].textContent = '?';
 			}
 		}
 	}
@@ -374,8 +377,8 @@
 		mtf.revealLine(row,c0,c1);
 	}
 	function clearField(){
-		myfield.A= RectArray(myfield.rows,myfield.cols, 0);
-		myfield.visible = RectArray(myfield.rows,myfield.cols, false);
+		myfield.A= RectArray(myfield.rows,myfield.cols, 0,Int8Array);
+		myfield.visible = RectArray(myfield.rows,myfield.cols, false,Int8Array);
 		mcf.clearField();
 		mtf.resetCells();
 	}
@@ -436,8 +439,8 @@
 		}
 	}
 	function remine(){
-		myfield.A = RectArray(myfield.rows,myfield.cols, 0);
-		myfield.visible = RectArray(myfield.rows,myfield.cols, false);
+		myfield.A = RectArray(myfield.rows,myfield.cols, 0,Int8Array);
+		myfield.visible = RectArray(myfield.rows,myfield.cols, false,Int8Array);
 		mcf.clearField();
 		mtf.resetCells();
 		setupMinefield(myfield, Number(minecount.value));
@@ -455,33 +458,61 @@
 		can.width = cols*cellSize;
 		can.height = rows*cellSize;
 		this.can = can;
-
 		this.ctx = can.getContext('2d');
 		this.ctx.fillStyle = 'blue';
 		this.ctx.globalAlpha = 0.5;
-		
-		this.sq = function(){
-			const x = this.sqSize * this.c;
-			const y = this.sqSize * this.r;
-			this.ctx.fillRect(x,y,this.sqSize+1,this.sqSize+1);
-		};
-		this.clear = function(){
-			this.ctx.clearRect(this.sqSize*this.c,this.sqSize*this.r,this.sqSize+1,this.sqSize+1);
-		};
-		this.XYtoCRcall = 	function(x,y,f){
-			const sx = this.can.clientWidth/this.can.width;
-			const sy = this.can.clientHeight/this.can.height;
-			const c = Math.floor(x/(this.sqSize*sx));
-			const r = Math.floor(y/(this.sqSize*sy));
-			if (c < myfield.cols && r < myfield.rows){
-				f(c,r);
-			}
-		};
 		this.sq();
 		can.addEventListener('mousedown', osdClick);
 		can.addEventListener('keydown', osdKeys);
 		can.focus();
 	}
+	OsdSelection.prototype.sq = function(){
+		const x = this.sqSize * this.c;
+		const y = this.sqSize * this.r;
+		this.ctx.fillRect(x,y,this.sqSize+1,this.sqSize+1);
+	}
+	OsdSelection.prototype.clear = function(){
+		this.ctx.clearRect(this.sqSize*this.c,this.sqSize*this.r,this.sqSize+1,this.sqSize+1);
+	}
+	OsdSelection.prototype.XYtoCRcall = function(x,y,f){
+		const sx = this.can.clientWidth/this.can.width;
+		const sy = this.can.clientHeight/this.can.height;
+		const c = Math.floor(x/(this.sqSize*sx));
+		const r = Math.floor(y/(this.sqSize*sy));
+		if (c < myfield.cols && r < myfield.rows){
+			f(c,r);
+		}
+	}
+
+	OsdSelection.prototype.sqrc = function(r,c){
+		const x = this.sqSize * c;
+		const y = this.sqSize * r;
+		this.ctx.fillRect(x,y,this.sqSize+1,this.sqSize+1);
+	}
+
+	OsdSelection.prototype.help = function(){
+		let visibleAndInbounds = function(r,c, obj){
+			if (r>=0 && r<myfield.rows && c>=0 && c<myfield.cols && !myfield.visible[r][c]){
+				obj.sqrc(r,c);
+			}
+		};
+		this.ctx.clearRect(0,0,this.can.width,this.can.height);
+		for (let r=0;r<myfield.rows;++r){
+			for (let c=0;c<myfield.cols;++c){
+				if (myfield.visible[r][c] && myfield.A[r][c]==0){
+					visibleAndInbounds(r-1,c-1, this);
+					visibleAndInbounds(r-1,c, this);
+					visibleAndInbounds(r-1,c+1, this);
+					visibleAndInbounds(r,c-1, this);
+					visibleAndInbounds(r,c+1, this);
+					visibleAndInbounds(r+1,c-1, this);
+					visibleAndInbounds(r+1,c, this);
+					visibleAndInbounds(r+1,c+1, this);
+				}
+			}
+		}
+	}
+	
 	function osdKeys(ev){
 		const key = ev.key;
 		if (key == 'ArrowRight'){
@@ -504,6 +535,8 @@
 			touchCanvas(osdSelection.r,osdSelection.c);
 		} else if (key == 'r'){
 			remine();
+		} else if (key == 'h'){
+			osdSelection.help();
 		}
 	}
 	
