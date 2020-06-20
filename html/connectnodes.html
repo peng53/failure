@@ -1,30 +1,83 @@
 <html>
-<canvas id='cnodes' width=1000px height=600px></canvas>
+<style>
+	body { margin: 0;}
+</style>
+<canvas id='cnodes' width=auto height=auto ></canvas>
 <script src='distRamp.js'></script>
 <script>
+	'use strict';
+	
+	function SpecialNode(n){
+		this.n = n;
+		this.col = getRandomColor2();
+	}
+	function getRandomInt(min, max) {
+		min = Math.ceil(min);
+		max = Math.floor(max);
+		return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
+	}
+	function getRandomColor2(){
+		return 'rgb('+getRandomInt(0,256).toString()+','+getRandomInt(0,256).toString()+','+getRandomInt(0,256).toString()+')';
+	}
+
+	cnodes.width = window.innerWidth;
+	cnodes.height = window.innerHeight;
 	const colCount = 5;
+	const nodeCount = 20;
 	let rcols = new RampCols(colCount);
-	for (let i=0;i<20;++i) rcols.ins(i);
+	let node;
+	const nodeRegistry = new Array(nodeCount);
+	for (let i=0;i<nodeCount;++i){
+		node = new SpecialNode(i);
+		nodeRegistry[i] = rcols.ins(node);
+	}
 	cnodes.drawCol = function(colNum, col){
 		const ctx = this.getContext('2d');
 		const cellHeight = (this.height)/(col.length);
-		ctx.strokeStyle = 'black';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 		ctx.font = '10px monospace';
+		ctx.strokeStyle = 'black';
 		let x,y;
 		for (let i=0;i<col.length;++i){
 			x = colNum*this.colWidth+this.colWidth/2;
 			y = i*cellHeight+cellHeight/2;
 			ctx.beginPath();
-			ctx.arc(x, y, 15, 2*Math.PI, Math.PI);
-			ctx.strokeText(col[i], x, y);
-			ctx.stroke();
+			ctx.arc(x, y, 15, 0, 2*Math.PI);
+			ctx.fillStyle = col[i].col;
+			ctx.fill();
+			ctx.strokeText(col[i].n, x, y);
 		}
+	};
+	cnodes.tracePts = function(r0,c0,col0,r1,c1,col1, colorr){
+		const ctx = this.getContext('2d');
+		const cellHeight0 = (this.height)/(col0.length);
+		const cellHeight1 = (this.height)/(col1.length);
+		const x0 = r0*this.colWidth+this.colWidth/2;
+		const y0 = c0*cellHeight0+cellHeight0/2;
+		const x1 = r1*this.colWidth+this.colWidth/2;
+		const y1 = c1*cellHeight1+cellHeight1/2;
+		ctx.strokeStyle = colorr;
+		ctx.beginPath();
+		ctx.moveTo(x0,y0);
+		ctx.lineTo(x1,y1);
+		ctx.stroke();
 	};
 	cnodes.colWidth = cnodes.width/colCount;
 	for (let i=0;i<colCount;++i){
 		cnodes.drawCol(i, rcols.cols[i]);
 	}
+
+
+	let p;
+	for (let i=0;i<nodeCount;++i){
+		p = getRandomInt(0,nodeCount);
+		if (i==p) continue;
+		if (nodeRegistry[i][0]==nodeRegistry[p][0]) continue;
+		console.log(i,'to',p);
+		cnodes.tracePts(nodeRegistry[i][0],nodeRegistry[i][1],rcols.cols[nodeRegistry[i][0]],
+			nodeRegistry[p][0],nodeRegistry[p][1],rcols.cols[nodeRegistry[p][0]], getRandomColor2());
+	}
+
 </script>
 </html>

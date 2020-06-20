@@ -32,3 +32,4 @@ RampCols.prototype.renderAsTable = function(){
 	}
 	return ret;
 }
+
