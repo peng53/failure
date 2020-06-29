@@ -33,3 +33,25 @@ RampCols.prototype.renderAsTable = function(){
 	return ret;
 }
 
+function RampDist(rows){
+	this.rows = new Array(rows);
+	this.reset();
+}
+RampDist.prototype.get = function(){
+	if (this.cur==this.rows.length || 
+		this.cur!=0 && this.rows[this.cur]+1 == this.rows[this.cur-1]){
+		// if not first column AND new count will equal previous column's current count
+		this.cur = 0;
+	}
+	const i = this.cur;
+	const j = this.rows[this.cur];
+	++this.rows[this.cur];
+	++this.cur;
+	return [i,j];
+}
+RampDist.prototype.reset =function(){
+	this.cur = 0;
+	for (let i=0; i<this.rows.length; ++i){
+		this.rows[i] = 0;
+	}
+}

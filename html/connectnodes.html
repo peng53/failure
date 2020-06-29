@@ -4,9 +4,26 @@
 </style>
 <canvas id='cnodes' width=auto height=auto ></canvas>
 <script src='distRamp.js'></script>
+
 <script>
 	'use strict';
-	
+	function CanvasGrid(width, height, rows){
+		this.cellWidth = width/rows.length;
+		this.height = height;
+		this.rows = rows;
+	}
+	CanvasGrid.prototype.rect = function(i,j){
+		const cellHeight = this.height/this.rows[i];
+		return [i*this.cellWidth, j*cellHeight, this.cellWidth, cellHeight];
+	};
+
+	function MappedNode(val, color, i, j){
+		this.val = val;
+		this.color = color;
+		this.i = i;
+		this.j = j;
+	}
+
 	function SpecialNode(n){
 		this.n = n;
 		this.col = getRandomColor2();
@@ -22,8 +39,85 @@
 
 	cnodes.width = window.innerWidth;
 	cnodes.height = window.innerHeight;
-	const colCount = 5;
-	const nodeCount = 20;
+	
+	cnodes.drawNode = function(node, drawer, sizeMultipier){
+		const ctx = this.getContext('2d');
+		const [x,y,w,h] = drawer.rect(node.i,node.j);
+		//const xM = Math.min(w,h)*sizeMultipier;
+		const xM = Math.min(h,w)*sizeMultipier;
+		ctx.fillStyle = node.color;
+		ctx.beginPath();
+		//ctx.strokeRect(x,y,w,h);
+		ctx.arc(x+(w/2),y+(h/2),xM/2,0,2*Math.PI);
+		ctx.fill();
+		ctx.font = (xM/2).toString()+'px monospace';
+		ctx.strokeText(node.val, x+w/2, y+h/2);
+	};
+	cnodes.traceNodes = function(node1, node2, drawer){
+		const ctx = this.getContext('2d');
+		const [x1,y1,w1,h1] = drawer.rect(node1.i,node1.j);
+		const [x2,y2,w2,h2] = drawer.rect(node2.i,node2.j);
+		const col = ctx.createLinearGradient(x1+w1/2,y1+h1/2,x2+w2/2,y2+h2/2);
+		col.addColorStop(0,node1.color);
+		col.addColorStop(0.5,node2.color);
+		ctx.beginPath();
+		ctx.moveTo(x1+w1/2,y1+h1/2);
+		if (node1.i==node2.i && Math.abs(node1.j-node2.j)>1){
+			const midpt = (y2-y1)/2;
+			ctx.bezierCurveTo(
+				x1,y1+(h1/2)+midpt,
+				x1,y2+(h2/2)-midpt,
+				x2+w2/2,y2+h2/2
+			);
+		} else {
+			ctx.lineTo(x2+w2/2,y2+h2/2);
+		}
+		ctx.strokeStyle = col;
+		ctx.stroke();
+	};
+	const colCount = 3;
+	const nodeCount = 30;
+	const nodes = new Array(nodeCount);
+	const dist = new RampDist(colCount);
+	const ctx = cnodes.getContext('2d');
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.lineWidth = 1.5;
+	nodes[0] = new MappedNode('a', getRandomColor2(), 0, 0);
+	nodes[1] = new MappedNode('b', getRandomColor2(), 1, 0);
+	nodes[2] = new MappedNode('c', getRandomColor2(), 0, 1);
+	
+	/*{
+		let r, c;
+		for (let i=0; i < nodeCount; ++i){
+			[r,c] = dist.get();
+			nodes[i] = new MappedNode(i, getRandomColor2(), r, c);
+		}
+	}*/
+	//const drawer = new CanvasGrid(cnodes.width, cnodes.height, dist.rows);
+	const drawer = new CanvasGrid(cnodes.width, cnodes.height, [2,1,0]);
+	/*{
+		let j;
+		for (let i=0;i<nodeCount;++i){
+			j = getRandomInt(0, nodeCount);
+			console.log(i,j);
+			cnodes.traceNodes(nodes[i], nodes[j], drawer);
+		}
+	}
+	ctx.strokeStyle = 'black';
+	for (let i=0; i < nodeCount; ++i){
+		cnodes.drawNode(nodes[i], drawer, 0.4);
+	}*/
+	cnodes.traceNodes(nodes[0], nodes[1], drawer);
+	cnodes.traceNodes(nodes[1], nodes[2], drawer);
+	ctx.strokeStyle = 'black';
+	cnodes.drawNode(nodes[0], drawer, 0.4);
+	cnodes.drawNode(nodes[1], drawer, 0.4);
+	cnodes.drawNode(nodes[2], drawer, 0.4);
+
+	/*
+	
+	
 	let rcols = new RampCols(colCount);
 	let node;
 	const nodeRegistry = new Array(nodeCount);
@@ -34,10 +128,7 @@
 	cnodes.drawCol = function(colNum, col){
 		const ctx = this.getContext('2d');
 		const cellHeight = (this.height)/(col.length);
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-		ctx.font = '10px monospace';
-		ctx.strokeStyle = 'black';
+
 		let x,y;
 		for (let i=0;i<col.length;++i){
 			x = colNum*this.colWidth+this.colWidth/2;
@@ -106,6 +197,6 @@
 		cnodes.drawCol(i, rcols.cols[i]);
 	}
 
-
+	*/
 </script>
 </html>
