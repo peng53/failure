@@ -43,14 +43,13 @@ class DynaForm {
 		div.appendChild(document.createElement('input'));
 		this.div.appendChild(div);
 	}
-	additem(to){
+	getitem(){
 		const item = {};
 		const inputs = this.div.getElementsByTagName('input');
 		this.dtable.cols.forEach(
 			(v,k) => item[k] = inputs[v].value
 		);
-		this.dtable.addRow(item);
-		to.push(item);
+		return item;
 	}
 }
 class DataTable {
@@ -65,7 +64,6 @@ class DataTable {
 		if (this.cols.has(name)){
 			return -1;
 		}
-		console.log('add col', name);
 		const n = this.cols.size;
 		this.cols.set(name, n);
 		document.getElementById('tprops').insertCell(-1).appendChild(document.createTextNode(name));
@@ -73,7 +71,6 @@ class DataTable {
 	}
 	addRow(item){
 		const row = this.table.insertRow(-1);
-		console.log(item);
 		this.cols.forEach(
 			(v,k) => row.insertCell(-1).appendChild(
 				document.createTextNode(
@@ -83,7 +80,6 @@ class DataTable {
 		);
 	}
 }
-
 function exportItems(items){
 	const link = document.createElement('a');
 	link.href = 'data:attachment/text,' + encodeURI(JSON.stringify(items));
@@ -91,59 +87,23 @@ function exportItems(items){
 	link.download = 'out.json';
 	link.click();
 }
-
-function importItems(text, to, myform){
+function importItems(text, to, form, table){
 	if (text.length < 1){
 		alert('0-len JSON data input');
 		return;
 	}
 	const data = JSON.parse(text);
-	let item;
-	for (const ditem of data){
-		to.push(ditem);
-		item = {};
-		for (const key in ditem){
-			if (myform.dtable.prop(key) == -1){
-				myform.addprop(key);
-				myform.dtable.addCol(key);
+	for (const item of data){
+		to.push(item);
+		for (const key in item){
+			if (table.prop(key) == -1){
+				form.addprop(key);
+				table.addCol(key);
 			}
-			item[key] = ditem[key];
 		}
-		myform.dtable.addRow(item);
+		table.addRow(item);
 	}
 }
-const jsonOut = [];
-
-</script>
-<div id='sidebar'>
-<div id='formmaker'>
-<input id='propname' /><br />
-<button onclick='addprop(propname.value)'>Add Property</button>
-</div>
-<hr />
-<div id='formout'>
-<h3>Properties</h3>
-
-</div>
-<button onclick='myform.additem(jsonOut)'>Add Item</button><br />
-<textarea id='rawjson'>
-
-</textarea>
-<button onclick='importItems(rawjson.value, jsonOut, myform);'>Import Items</button>
-</div>
-
-<table id='entries'>
-<thead>
-<tr><th colspan='100%'>Entries</td></tr>
-<tr id='tprops'></tr>
-</thead>
-</table>
-
-<button onclick='exportItems(jsonOut)'>Export Items</button>
-
-<script>
-const mytable = new DataTable(entries);
-const myform = new DynaForm(formout, mytable);
 function addprop(name){
 	if (name.length==0){
 		alert('Property name too short!');
@@ -156,5 +116,45 @@ function addprop(name){
 	myform.addprop(name);
 	mytable.addCol(name);
 }
+function additem(form, table, to){
+	const item = form.getitem();
+	table.addRow(item);
+	to.push(item);
+}
+
+</script>
+
+<div id='sidebar'>
+
+<div id='formmaker'>
+<input id='propname' /><br />
+<button onclick='addprop(propname.value)'>Add Property</button>
+</div>
+
+<hr />
+
+<div id='formout'>
+<h3>Properties</h3>
+</div>
+<button onclick='additem(myform,mytable,jsonOut)'>Add Item</button><br />
+<textarea id='rawjson'></textarea>
+<button onclick='importItems(rawjson.value, jsonOut, myform, mytable);'>Import Items</button>
+
+</div>
+
+<table id='entries'>
+<thead>
+<tr><th colspan='100%'>Entries</td></tr>
+<tr id='tprops'></tr>
+</thead>
+</table>
+
+<button onclick='exportItems(jsonOut)'>Export Items</button>
+
+<script>
+'use strict';
+const jsonOut = [];
+const mytable = new DataTable(entries);
+const myform = new DynaForm(formout, mytable);
 </script>
 </html>
