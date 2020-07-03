@@ -7,6 +7,10 @@
 }
 #formout input {
 }
+#tprops td {
+	color: green;
+}
+#entries th {}
 h3 {
 	margin: 0;
 	background: red;
@@ -33,13 +37,16 @@ class FormMaker {
 		div.appendChild(document.createElement('br'));
 		div.appendChild(document.createElement('input'));
 		this.outH.appendChild(div);
+		tprops.insertCell(-1).appendChild(document.createTextNode(name));
 	}
 }
 function additem(to, formmkObj, from){
 	const obj = {};
 	const fromInp = from.getElementsByTagName('input');
+	const row = entries.insertRow(-1);
 	for (let i=0; i<formmkObj.props.length; ++i){
 		obj[formmkObj.props[i]] = fromInp[i].value;
+		row.insertCell(-1).appendChild(document.createTextNode(fromInp[i].value));
 		fromInp[i].value = '';
 	}
 	to.push(obj);
@@ -54,15 +61,24 @@ function exportItems(items){
 const jsonOut = [];
 
 </script>
+
 <div id='formmaker'>
 <input id='propname' /><br />
 <button onclick='addprop(propname.value)'>Add Property</button>
 </div>
 <div id='formout'>
 <h3>Properties</h3>
+
 </div>
-<button onclick='additem(jsonOut, myform, formout)'>Add Item</button>
+<button onclick='additem(jsonOut, myform, formout)'>Add Item</button><br />
 <button onclick='exportItems(jsonOut)'>Export Items</button>
+<table id='entries'>
+<thead>
+<tr><th colspan='100%'>Entries</td></tr>
+<tr id='tprops'></tr>
+</thead>
+</table>
+
 <script>
 const myform = new FormMaker(formout);
 function addprop(name){
