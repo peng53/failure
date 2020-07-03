@@ -1,19 +1,28 @@
 <html>
 <style>
 #formout {
-	border: 1px solid red;
-	padding: 2px;
-	display: table;
+	width: 100%;
 }
 #formout input {
+	width: 100%;
 }
 #tprops td {
 	color: green;
 }
 #entries th {}
-h3 {
+#sidebar h3 {
 	margin: 0;
-	background: red;
+}
+#sidebar {
+	float: left;
+	width: 200px;
+	margin: 0;
+}
+#entries {
+	
+}
+body {
+	margin: 0;
 }
 </style>
 <script>
@@ -61,24 +70,26 @@ function exportItems(items){
 const jsonOut = [];
 
 </script>
-
+<div id='sidebar'>
 <div id='formmaker'>
 <input id='propname' /><br />
 <button onclick='addprop(propname.value)'>Add Property</button>
 </div>
+<hr />
 <div id='formout'>
 <h3>Properties</h3>
 
 </div>
 <button onclick='additem(jsonOut, myform, formout)'>Add Item</button><br />
-<button onclick='exportItems(jsonOut)'>Export Items</button>
+</div>
+
 <table id='entries'>
 <thead>
 <tr><th colspan='100%'>Entries</td></tr>
 <tr id='tprops'></tr>
 </thead>
 </table>
-
+<button onclick='exportItems(jsonOut)'>Export Items</button>
 <script>
 const myform = new FormMaker(formout);
 function addprop(name){
