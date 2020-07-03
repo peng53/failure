@@ -28,42 +28,62 @@ body {
 }
 </style>
 <script>
+'use strict';
 class DynaForm {
-	constructor(formloc){
-		this.form = formloc;
-		this.props = new Map();
+	constructor(div,dtable){
+		this.div = div;
+		this.dtable = dtable;
 	}
 	addprop(name){
-		if (name.length < 0 || this.props.has(name)){
-			alert('Name too short or already added');
-			return;
-		}
-		const colNum = this.props.size;
-		this.props.set(name,colNum);
 		const div = document.createElement('div');
 		const lab = document.createElement('span');
 		lab.textContent = name;
 		div.appendChild(lab);
 		div.appendChild(document.createElement('br'));
 		div.appendChild(document.createElement('input'));
-		this.form.appendChild(div);
-		tprops.insertCell(-1).appendChild(document.createTextNode(name));
+		this.div.appendChild(div);
+	}
+	additem(to){
+		const item = {};
+		const inputs = this.div.getElementsByTagName('input');
+		this.dtable.cols.forEach(
+			(v,k) => item[k] = inputs[v].value
+		);
+		this.dtable.addRow(item);
+		to.push(item);
 	}
 }
-function populateRow(row, item, colmap){
-	for (const key of colmap.keys()){
-		row.insertCell(-1).appendChild(document.createTextNode(
-			(key in item) ? item[key] : ''
-		));
+class DataTable {
+	constructor(table){
+		this.table = table;
+		this.cols = new Map();
+	}
+	prop(name){
+		return (this.cols.has(name) ? this.cols.get(name) : -1);
+	}
+	addCol(name){
+		if (this.cols.has(name)){
+			return -1;
+		}
+		console.log('add col', name);
+		const n = this.cols.size;
+		this.cols.set(name, n);
+		document.getElementById('tprops').insertCell(-1).appendChild(document.createTextNode(name));
+		return n;
+	}
+	addRow(item){
+		const row = this.table.insertRow(-1);
+		console.log(item);
+		this.cols.forEach(
+			(v,k) => row.insertCell(-1).appendChild(
+				document.createTextNode(
+					(k in item) ? item[k] : ''
+				)
+			)
+		);
 	}
 }
-function additem(to, formmkObj, from){
-	const item = {};
-	const fromInp = from.getElementsByTagName('input');
-	formmkObj.props.forEach((v,k) => item[k] = fromInp[v].value);
-	populateRow(entries.insertRow(-1), item, formmkObj.props);
-	to.push(item);
-}
+
 function exportItems(items){
 	const link = document.createElement('a');
 	link.href = 'data:attachment/text,' + encodeURI(JSON.stringify(items));
@@ -83,12 +103,13 @@ function importItems(text, to, myform){
 		to.push(ditem);
 		item = {};
 		for (const key in ditem){
-			if (myform.props.has(key)==false){
+			if (myform.dtable.prop(key) == -1){
 				myform.addprop(key);
+				myform.dtable.addCol(key);
 			}
 			item[key] = ditem[key];
 		}
-		populateRow(entries.insertRow(-1), item, myform.props);
+		myform.dtable.addRow(item);
 	}
 }
 const jsonOut = [];
@@ -104,7 +125,7 @@ const jsonOut = [];
 <h3>Properties</h3>
 
 </div>
-<button onclick='additem(jsonOut, myform, formout)'>Add Item</button><br />
+<button onclick='myform.additem(jsonOut)'>Add Item</button><br />
 <textarea id='rawjson'>
 
 </textarea>
@@ -117,11 +138,23 @@ const jsonOut = [];
 <tr id='tprops'></tr>
 </thead>
 </table>
+
 <button onclick='exportItems(jsonOut)'>Export Items</button>
+
 <script>
-const myform = new DynaForm(formout);
+const mytable = new DataTable(entries);
+const myform = new DynaForm(formout, mytable);
 function addprop(name){
+	if (name.length==0){
+		alert('Property name too short!');
+		return;
+	}
+	if (mytable.prop(name) !== -1){
+		alert('Property already exists!');
+		return;
+	}
 	myform.addprop(name);
+	mytable.addCol(name);
 }
 </script>
 </html>
