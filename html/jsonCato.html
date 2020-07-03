@@ -17,6 +17,8 @@
 	float: left;
 	width: 200px;
 	margin: 0;
+	overflow: auto;
+	height: 100%;
 }
 #entries {
 	
@@ -30,15 +32,16 @@ class FormMaker {
 	constructor(out){
 		this.outH = out;
 		this.props = [];
-		this.propsSet = new Set();
+		this.propsSet = {};
 	}
 	addprop(name){
-		if (name.length < 0 || this.propsSet.has(name)){
+		if (name.length < 0 || name in this.propsSet){
 			alert('Name too short or already added');
 			return;
 		}
+		const colNum = this.props.length;
 		this.props.push(name);
-		this.propsSet.add(name);
+		this.propsSet[name] = colNum;
 		const div = document.createElement('div');
 		const lab = document.createElement('span');
 		lab.textContent = name;
@@ -67,6 +70,33 @@ function exportItems(items){
 	link.download = 'out.json';
 	link.click();
 }
+function importItems(text, to, myform){
+	const data = JSON.parse(text);
+	let item;
+	let row;
+	let cell;
+	for (let i=0;i<data.length; ++i){
+		to.push(data[i]);
+		item = {};
+		for (let key in data[i]){
+			if (key in myform.propsSet==false){
+				myform.addprop(key);
+			}
+			console.log(key,':',data[i][key], myform.propsSet[key]);
+			item[key] = data[i][key];
+		}
+		row = entries.insertRow(-1);
+		for (let key in myform.propsSet){
+			cell = row.insertCell(-1);
+			if (key in item){
+				cell.appendChild(document.createTextNode(item[key]));
+			} else {
+				cell.appendChild(document.createTextNode());
+			}
+		}
+		to.push(item);
+	}
+}
 const jsonOut = [];
 
 </script>
@@ -81,6 +111,10 @@ const jsonOut = [];
 
 </div>
 <button onclick='additem(jsonOut, myform, formout)'>Add Item</button><br />
+<textarea id='rawjson'>
+
+</textarea>
+<button onclick='importItems(rawjson.value, jsonOut, myform);'>Import Items</button>
 </div>
 
 <table id='entries'>
