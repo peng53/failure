@@ -7,27 +7,51 @@
 
 <script>
 	'use strict';
-	function CanvasGrid(width, height, rows){
-		this.cellWidth = width/rows.length;
-		this.height = height;
-		this.rows = rows;
-	}
-	CanvasGrid.prototype.rect = function(i,j){
-		const cellHeight = this.height/this.rows[i];
-		return [i*this.cellWidth, j*cellHeight, this.cellWidth, cellHeight];
-	};
-
-	function MappedNode(val, color, i, j){
-		this.val = val;
-		this.color = color;
-		this.i = i;
-		this.j = j;
+	
+	class CanvasGrid {
+		constructor(width, height, rows){
+			this.cellWidth = width/rows.length;
+			this.height = height;
+			this.rows = rows;
+		}
+		rect(i,j){
+			const cellHeight = this.height/this.rows[i];
+			return [i*this.cellWidth, j*cellHeight, this.cellWidth, cellHeight];
+		}
 	}
 
-	function SpecialNode(n){
-		this.n = n;
-		this.col = getRandomColor2();
+	class MappedNode {
+		constructor(val, color, i, j){
+			this.val = val;
+			this.color = color;
+			this.i = i;
+			this.j = j;
+		}
 	}
+
+	function calculateOffsets(nodes){
+		const minmax = {};
+		let i;
+		for (let n=0; n<nodes.length; ++n){
+			i = nodes[n].i.toString();
+			if (i in minmax==false){
+				minmax[i] = {'min': nodes[n].j, 'max': nodes[n].j };
+			} else {
+				if (nodes[n].j < minmax[i].min){
+					minmax[i].min = nodes[n].j;
+				} else if (nodes[n].j > minmax[i].max){
+					minmax[i].max = nodes[n].j;
+				}
+			}
+		}
+		return minmax;
+	}
+	
+	function mapWithOffset(canvas, nodes, offsets){
+		const normalized = '';
+		const drawer = new CanvasGrid(canvas.width, canvas.height, );
+	}
+
 	function getRandomInt(min, max) {
 		min = Math.ceil(min);
 		max = Math.floor(max);
@@ -77,126 +101,32 @@
 	};
 	const colCount = 3;
 	const nodeCount = 30;
-	const nodes = new Array(nodeCount);
+	const nodes = new Array();
 	const dist = new RampDist(colCount);
 	const ctx = cnodes.getContext('2d');
+	nodes.push(new MappedNode('a', getRandomColor2(), -1, 2));
+	nodes.push(new MappedNode('b', getRandomColor2(), -1, 3));
+	nodes.push(new MappedNode('c', getRandomColor2(), 0, -3));
+	nodes.push(new MappedNode('d', getRandomColor2(), 0, 5));
+	nodes.push(new MappedNode('e', getRandomColor2(), 3, 6));
+	nodes.push(new MappedNode('f', getRandomColor2(), 3, -7));
+/*
+	nodes.push(new MappedNode('a', getRandomColor2(), 0, 0));
+	nodes.push(new MappedNode('b', getRandomColor2(), 1, 0));
+	nodes.push(new MappedNode('c', getRandomColor2(), 0, 1));
+	const drawer = new CanvasGrid(cnodes.width, cnodes.height, [2,1,0]);
+
+	cnodes.traceNodes(nodes[0], nodes[1], drawer);
+	cnodes.traceNodes(nodes[1], nodes[2], drawer);
+
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 	ctx.lineWidth = 1.5;
-	nodes[0] = new MappedNode('a', getRandomColor2(), 0, 0);
-	nodes[1] = new MappedNode('b', getRandomColor2(), 1, 0);
-	nodes[2] = new MappedNode('c', getRandomColor2(), 0, 1);
-	
-	/*{
-		let r, c;
-		for (let i=0; i < nodeCount; ++i){
-			[r,c] = dist.get();
-			nodes[i] = new MappedNode(i, getRandomColor2(), r, c);
-		}
-	}*/
-	//const drawer = new CanvasGrid(cnodes.width, cnodes.height, dist.rows);
-	const drawer = new CanvasGrid(cnodes.width, cnodes.height, [2,1,0]);
-	/*{
-		let j;
-		for (let i=0;i<nodeCount;++i){
-			j = getRandomInt(0, nodeCount);
-			console.log(i,j);
-			cnodes.traceNodes(nodes[i], nodes[j], drawer);
-		}
-	}
-	ctx.strokeStyle = 'black';
-	for (let i=0; i < nodeCount; ++i){
-		cnodes.drawNode(nodes[i], drawer, 0.4);
-	}*/
-	cnodes.traceNodes(nodes[0], nodes[1], drawer);
-	cnodes.traceNodes(nodes[1], nodes[2], drawer);
 	ctx.strokeStyle = 'black';
 	cnodes.drawNode(nodes[0], drawer, 0.4);
 	cnodes.drawNode(nodes[1], drawer, 0.4);
 	cnodes.drawNode(nodes[2], drawer, 0.4);
+*/
 
-	/*
-	
-	
-	let rcols = new RampCols(colCount);
-	let node;
-	const nodeRegistry = new Array(nodeCount);
-	for (let i=0;i<nodeCount;++i){
-		node = new SpecialNode(i);
-		nodeRegistry[i] = rcols.ins(node);
-	}
-	cnodes.drawCol = function(colNum, col){
-		const ctx = this.getContext('2d');
-		const cellHeight = (this.height)/(col.length);
-
-		let x,y;
-		for (let i=0;i<col.length;++i){
-			x = colNum*this.colWidth+this.colWidth/2;
-			y = i*cellHeight+cellHeight/2;
-			ctx.beginPath();
-			ctx.arc(x, y, 15, 0, 2*Math.PI);
-			ctx.fillStyle = col[i].col;
-			ctx.fill();
-			ctx.strokeText(col[i].n, x, y);
-		}
-	};
-	cnodes.tracePts = function(r0,c0,col0L,r1,c1,col1L, colorr){
-		const ctx = this.getContext('2d');
-		const cellHeight0 = (this.height)/(col0L);
-		const cellHeight1 = (this.height)/(col1L);
-		const x0 = r0*this.colWidth+this.colWidth/2;
-		const y0 = c0*cellHeight0+cellHeight0/2;
-		const x1 = r1*this.colWidth+this.colWidth/2;
-		const y1 = c1*cellHeight1+cellHeight1/2;
-		const col = ctx.createLinearGradient(x0,y0,x1,y1);
-		col.addColorStop(0,colorr[0]);
-		col.addColorStop(0.5,colorr[1]);
-		ctx.beginPath();
-		ctx.moveTo(x0,y0);
-		ctx.lineTo(x1,y1);
-		ctx.strokeStyle = col;
-		ctx.stroke();
-	};
-	cnodes.traceBezierPts = function(r,c0,c1,colL, colorr){
-		const ctx = this.getContext('2d');
-		const cellHeight0 = (this.height)/(colL);
-		const x0 = r*this.colWidth+this.colWidth/2;
-		const y0 = c0*cellHeight0+cellHeight0/2;
-		const y1 = c1*cellHeight0+cellHeight0/2;
-		const col = ctx.createLinearGradient(x0,y0,x0,y1);
-		const midpt = (y1-y0)/3;
-		col.addColorStop(0,colorr[0]);
-		col.addColorStop(0.5,colorr[1]);
-		ctx.beginPath();
-		ctx.moveTo(x0,y0);
-		ctx.bezierCurveTo(x0-(this.colWidth/2),y0+midpt,x0-(this.colWidth/2),y0+2*midpt, x0,y1);
-		ctx.strokeStyle = col;
-		ctx.stroke();
-	}
-	cnodes.colWidth = cnodes.width/colCount;
-
-	let p, r, c, r1, c1;
-	for (let i=0;i<nodeCount;++i){
-		p = getRandomInt(0,nodeCount);
-		if (i==p) continue;
-		
-		[r,c] = nodeRegistry[i];
-		[r1,c1] = nodeRegistry[p];
-
-		console.log(i,'to',p);
-		if (r==r1 && Math.abs(c1-c)>1){
-		cnodes.traceBezierPts(r,c,c1,rcols.cols[r].length,
-			[rcols.cols[r][c].col, rcols.cols[r1][c1].col]);
-		} else {
-		cnodes.tracePts(r,c,rcols.cols[r].length,
-			r1,c1,rcols.cols[r1].length,
-			[rcols.cols[r][c].col, rcols.cols[r1][c1].col]);
-		}
-	}
-	for (let i=0;i<colCount;++i){
-		cnodes.drawCol(i, rcols.cols[i]);
-	}
-
-	*/
 </script>
 </html>
