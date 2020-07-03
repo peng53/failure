@@ -50,15 +50,19 @@ class DynaForm {
 		tprops.insertCell(-1).appendChild(document.createTextNode(name));
 	}
 }
-function additem(to, formmkObj, from){
-	const obj = {};
-	const fromInp = from.getElementsByTagName('input');
-	const row = entries.insertRow(-1);
-	for (let key of formmkObj.props.keys()){
-		obj[key] = fromInp[formmkObj.props.get(key)].value;
-		row.insertCell(-1).appendChild(document.createTextNode(obj[key]));
+function populateRow(row, item, colmap){
+	for (const key of colmap.keys()){
+		row.insertCell(-1).appendChild(document.createTextNode(
+			(key in item) ? item[key] : ''
+		));
 	}
-	to.push(obj);
+}
+function additem(to, formmkObj, from){
+	const item = {};
+	const fromInp = from.getElementsByTagName('input');
+	formmkObj.props.forEach((v,k) => item[k] = fromInp[v].value);
+	populateRow(entries.insertRow(-1), item, formmkObj.props);
+	to.push(item);
 }
 function exportItems(items){
 	const link = document.createElement('a');
@@ -67,29 +71,24 @@ function exportItems(items){
 	link.download = 'out.json';
 	link.click();
 }
+
 function importItems(text, to, myform){
+	if (text.length < 1){
+		alert('0-len JSON data input');
+		return;
+	}
 	const data = JSON.parse(text);
 	let item;
-	let row;
-	let cell;
-	for (let i=0;i<data.length; ++i){
-		to.push(data[i]);
+	for (const ditem of data){
+		to.push(ditem);
 		item = {};
-		for (let key in data[i]){
+		for (const key in ditem){
 			if (myform.props.has(key)==false){
 				myform.addprop(key);
 			}
-			item[key] = data[i][key];
+			item[key] = ditem[key];
 		}
-		row = entries.insertRow(-1);
-		for (let key of myform.props.keys()){
-			cell = row.insertCell(-1);
-			if (key in item){
-				cell.appendChild(document.createTextNode(item[key]));
-			} else {
-				cell.appendChild(document.createTextNode(''));
-			}
-		}
+		populateRow(entries.insertRow(-1), item, myform.props);
 	}
 }
 const jsonOut = [];
