@@ -1,0 +1,72 @@
+<html>
+<style>
+#formout {
+	border: 1px solid red;
+	padding: 2px;
+	display: table;
+}
+#formout input {
+}
+h3 {
+	margin: 0;
+	background: red;
+}
+</style>
+<script>
+class FormMaker {
+	constructor(out){
+		this.outH = out;
+		this.props = [];
+		this.propsSet = new Set();
+	}
+	addprop(name){
+		if (name.length < 0 || this.propsSet.has(name)){
+			alert('Name too short or already added');
+			return;
+		}
+		this.props.push(name);
+		this.propsSet.add(name);
+		const div = document.createElement('div');
+		const lab = document.createElement('span');
+		lab.textContent = name;
+		div.appendChild(lab);
+		div.appendChild(document.createElement('br'));
+		div.appendChild(document.createElement('input'));
+		this.outH.appendChild(div);
+	}
+}
+function additem(to, formmkObj, from){
+	const obj = {};
+	const fromInp = from.getElementsByTagName('input');
+	for (let i=0; i<formmkObj.props.length; ++i){
+		obj[formmkObj.props[i]] = fromInp[i].value;
+		fromInp[i].value = '';
+	}
+	to.push(obj);
+}
+function exportItems(items){
+	const link = document.createElement('a');
+	link.href = 'data:attachment/text,' + encodeURI(JSON.stringify(items));
+	link.target = '_blank';
+	link.download = 'out.json';
+	link.click();
+}
+const jsonOut = [];
+
+</script>
+<div id='formmaker'>
+<input id='propname' /><br />
+<button onclick='addprop(propname.value)'>Add Property</button>
+</div>
+<div id='formout'>
+<h3>Properties</h3>
+</div>
+<button onclick='additem(jsonOut, myform, formout)'>Add Item</button>
+<button onclick='exportItems(jsonOut)'>Export Items</button>
+<script>
+const myform = new FormMaker(formout);
+function addprop(name){
+	myform.addprop(name);
+}
+</script>
+</html>
