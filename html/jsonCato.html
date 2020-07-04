@@ -259,9 +259,6 @@ function createPropTableEntry(proprow, label){
 </tfoot>
 </table>
 
-<!--<table id='inputsTable'>
-<tr id='eprops'></tr>
-</table>-->
 <button onclick='additem(myform,mytable)'>Add</button>
 <button onclick='exportItems(mytable.toArray())'>Export All</button>
 </div>
@@ -270,5 +267,11 @@ function createPropTableEntry(proprow, label){
 'use strict';
 const mytable = new DataTable(entries);
 const myform = new DynaForm(eprops, createPropTableEntry);
+entries.addEventListener('dblclick', e=>{
+	const row = e.target.parentElement;
+	const p = row.parentElement;
+	const rows = Array.prototype.slice.call(p.children);
+	mytable.rowStartEdit(rows.indexOf(row));
+});
 </script>
 </html>
