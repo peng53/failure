@@ -86,7 +86,14 @@ class DataTable {
 			.getElementsByTagName('tr')[0]
 			.insertCell(-1)
 			.appendChild(document.createTextNode(name));
+		this.afterAddCol();
 		return n;
+	}
+	afterAddCol(){
+		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		for (const row of rows){
+			row.insertCell(-1).appendChild(document.createTextNode(''));
+		}
 	}
 	addRow(item){
 		const row = this.table.getElementsByTagName('tbody')[0].insertRow(-1);
@@ -112,7 +119,9 @@ function rowToObj(row, colsMap){
 	const l = row.children.length;
 	for (const [k,v] of colsMap){
 		if (v>=l) break;
-		item[k] = row.children[v].textContent;
+		if (row.children[v].textContent.length >0){
+			item[k] = row.children[v].textContent;
+		}
 	}
 	return item;
 }
