@@ -47,6 +47,9 @@ h3, body {
 #entries tr:nth-child(even){
 	background: #eee;
 }
+td input {
+	width: 100%;
+}
 </style>
 <script>
 'use strict';
@@ -113,6 +116,25 @@ class DataTable {
 		}
 		return out;
 	}
+	rowStartEdit(n){
+		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		if (n>=rows.length) return;
+		let v,input;
+		for (const cell of rows[n].children){
+			v = cell.textContent;
+			cell.textContent = '';
+			input = document.createElement('input');
+			input.value = v;
+			cell.appendChild(input);
+		}
+	}
+	rowEndEdit(n){
+		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		if (n>=rows.length) return;
+		for (const cell of rows[n].children){
+			cell.textContent = cell.firstChild.value;
+		}
+	}
 }
 function rowToObj(row, colsMap){
 	const item = {};
@@ -127,9 +149,10 @@ function rowToObj(row, colsMap){
 }
 function exportItems(items){
 	const link = document.createElement('a');
-	link.href = 'data:attachment/text,' + encodeURI(JSON.stringify(items));
+	link.href = 'data:attachment/text,' + encodeURI(JSON.stringify(items, null, 2));
 	link.target = '_blank';
-	link.download = 'out.json';
+	const filename = prompt('Filename to save as?');
+	link.download = (!filename || filename.length==0) ? 'out.json' : filename;
 	link.click();
 }
 function importItems(text, form, table){
