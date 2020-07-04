@@ -1,30 +1,52 @@
 <html>
 <style>
-#formout {
+#formout, #formout input, #rawjson, #propname {
 	width: 100%;
 }
-#formout input {
-	width: 100%;
+input,textarea {
+	border: 1px gray outset;
+}
+#rawjson {
+	resize: vertical;
 }
 #tprops td {
-	color: green;
+	font-weight: bold;
+	background: #ccc;
+	text-align: justify;
+	font-variant: small-caps;
 }
-#entries th {}
-#sidebar h3 {
+h3, body {
 	margin: 0;
 }
 #sidebar {
+	position: fixed;
 	float: left;
 	width: 200px;
 	margin: 0;
 	overflow: auto;
 	height: 100%;
 }
-#entries {
-	
-}
-body {
+#content {
 	margin: 0;
+	margin-left: 200px;
+	text-align: center;
+}
+.sbrow {
+	margin-bottom: 1em;
+	text-align: center;
+}
+#content h3 {
+	background: beige;
+}
+#sidebar h3 {
+	background: lime;
+}
+#entries {
+	border-collapse: collapse;
+	width: 100%;
+}
+#entries tr:nth-child(even){
+	background: #eee;
 }
 </style>
 <script>
@@ -126,30 +148,36 @@ function additem(form, table, to){
 
 <div id='sidebar'>
 
-<div id='formmaker'>
-<input id='propname' /><br />
-<button onclick='addprop(propname.value)'>Add Property</button>
-</div>
-
-<hr />
-
+<div class='sbrow'>
+<h3>Add an entry..</h3>
 <div id='formout'>
-<h3>Properties</h3>
 </div>
-<button onclick='additem(myform,mytable,jsonOut)'>Add Item</button><br />
+<button onclick='additem(myform,mytable,jsonOut)'>Add</button>
+</div>
+
+<div class='sbrow'>
+<h3>Add a field..</h3>
+<input id='propname' /><br />
+<button onclick='addprop(propname.value)'>New</button>
+</div>
+
+<div class='sbrow'>
+<h3>Import JSON..</h3>
 <textarea id='rawjson'></textarea>
-<button onclick='importItems(rawjson.value, jsonOut, myform, mytable);'>Import Items</button>
+<button onclick='importItems(rawjson.value, jsonOut, myform, mytable);'>Import</button>
+</div>
 
 </div>
 
+<div id='content'>
+<h3>Entries</h3>
 <table id='entries'>
 <thead>
-<tr><th colspan='100%'>Entries</td></tr>
 <tr id='tprops'></tr>
 </thead>
 </table>
-
-<button onclick='exportItems(jsonOut)'>Export Items</button>
+ <button onclick='exportItems(jsonOut)'>Export</button>
+</div>
 
 <script>
 'use strict';
