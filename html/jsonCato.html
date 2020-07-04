@@ -83,11 +83,15 @@ class DataTable {
 		}
 		const n = this.cols.size;
 		this.cols.set(name, n);
-		document.getElementById('tprops').insertCell(-1).appendChild(document.createTextNode(name));
+		this.table
+			.getElementsByTagName('thead')[0]
+			.getElementsByTagName('tr')[0]
+			.insertCell(-1)
+			.appendChild(document.createTextNode(name));
 		return n;
 	}
 	addRow(item){
-		const row = this.table.insertRow(-1);
+		const row = this.table.getElementsByTagName('tbody')[0].insertRow(-1);
 		this.cols.forEach(
 			(v,k) => row.insertCell(-1).appendChild(
 				document.createTextNode(
@@ -96,6 +100,21 @@ class DataTable {
 			)
 		);
 	}
+	toArray(){
+		const out = [];
+		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		for (const row of rows){
+			out.push(rowToObj(row, this.cols));
+		}
+		return out;
+	}
+}
+function rowToObj(row, colsMap){
+	const item = {};
+	for (const [k,v] of colsMap){
+		item[k] = row.children[v].textContent;
+	}
+	return item;
 }
 function exportItems(items){
 	const link = document.createElement('a');
@@ -190,6 +209,8 @@ function createPropTableEntry(proprow, label){
 <thead>
 <tr id='tprops'></tr>
 </thead>
+<tbody>
+</tbody>
 </table>
 <table id='inputsTable'>
 <tr id='eprops'></tr>
