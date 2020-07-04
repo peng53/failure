@@ -42,9 +42,7 @@ h3, body {
 	background: lime;
 }
 #entries, #inputsTable {
-	border-collapse: collapse;
 	width: 100%;
-
 }
 #entries tr:nth-child(even){
 	background: #eee;
@@ -111,7 +109,9 @@ class DataTable {
 }
 function rowToObj(row, colsMap){
 	const item = {};
+	const l = row.children.length;
 	for (const [k,v] of colsMap){
+		if (v>=l) break;
 		item[k] = row.children[v].textContent;
 	}
 	return item;
@@ -123,7 +123,7 @@ function exportItems(items){
 	link.download = 'out.json';
 	link.click();
 }
-function importItems(text, to, form, table){
+function importItems(text, form, table){
 	if (text.length < 1){
 		alert('0-len JSON data input');
 		return;
@@ -137,7 +137,6 @@ function importItems(text, to, form, table){
 			}
 		}
 		table.addRow(item);
-		to.push(item);
 	}
 }
 function addprop(name){
@@ -152,10 +151,9 @@ function addprop(name){
 	myform.addprop(name);
 	mytable.addCol(name);
 }
-function additem(form, table, to){
+function additem(form, table){
 	const item = form.getitem(table);
 	table.addRow(item);
-	to.push(item);
 }
 function deleteItems(data, table){
 	const msg = prompt("Delete which rows?");
@@ -198,7 +196,7 @@ function createPropTableEntry(proprow, label){
 <div class='sbrow'>
 <h3>Import JSON..</h3>
 <textarea id='rawjson'></textarea>
-<button onclick='importItems(rawjson.value, jsonOut, myform, mytable);'>Import</button>
+<button onclick='importItems(rawjson.value, myform, mytable);'>Import</button>
 </div>
 
 </div>
@@ -211,17 +209,20 @@ function createPropTableEntry(proprow, label){
 </thead>
 <tbody>
 </tbody>
-</table>
-<table id='inputsTable'>
+<tfoot>
 <tr id='eprops'></tr>
+</tfoot>
 </table>
-<button onclick='additem(myform,mytable,jsonOut)'>Add</button>
-<button onclick='exportItems(jsonOut)'>Export All</button>
+
+<!--<table id='inputsTable'>
+<tr id='eprops'></tr>
+</table>-->
+<button onclick='additem(myform,mytable)'>Add</button>
+<button onclick='exportItems(mytable.toArray())'>Export All</button>
 </div>
 
 <script>
 'use strict';
-const jsonOut = [];
 const mytable = new DataTable(entries);
 const myform = new DynaForm(eprops, createPropTableEntry);
 </script>
