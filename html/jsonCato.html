@@ -44,6 +44,7 @@ h3, body {
 #entries {
 	border-collapse: collapse;
 	width: 100%;
+
 }
 #entries tr:nth-child(even){
 	background: #eee;
@@ -116,7 +117,6 @@ function importItems(text, to, form, table){
 	}
 	const data = JSON.parse(text);
 	for (const item of data){
-		to.push(item);
 		for (const key in item){
 			if (table.prop(key) == -1){
 				form.addprop(key);
@@ -124,6 +124,7 @@ function importItems(text, to, form, table){
 			}
 		}
 		table.addRow(item);
+		to.push(item);
 	}
 }
 function addprop(name){
@@ -142,6 +143,21 @@ function additem(form, table, to){
 	const item = form.getitem();
 	table.addRow(item);
 	to.push(item);
+}
+function deleteItems(data, table){
+	const msg = prompt("Delete which rows?");
+	if (!msg || msg.length<1) return;
+	const rows = msg.split(',');
+	let i,j;
+	for (const index of rows){
+		if (index.search('-') !== -1){
+			[i,j] = index.split('-', 2);
+			if (i<j && j<data.length){
+				data.splice(i,j-i+1);
+			}
+			
+		}
+	}
 }
 
 </script>
@@ -176,7 +192,7 @@ function additem(form, table, to){
 <tr id='tprops'></tr>
 </thead>
 </table>
- <button onclick='exportItems(jsonOut)'>Export</button>
+<button onclick='exportItems(jsonOut)'>Export All</button>
 </div>
 
 <script>
