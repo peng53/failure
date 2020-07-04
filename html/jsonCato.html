@@ -74,11 +74,16 @@ class DataTable {
 	constructor(table){
 		this.table = table;
 		this.cols = new Map();
+		this.editing = null;
 	}
 	prop(name){
 		return (this.cols.has(name) ? this.cols.get(name) : -1);
 	}
 	addCol(name){
+		if (this.editing !== null){
+			alert('Table structure cannot be modified while editing!');
+			return -1;
+		}
 		if (this.cols.has(name)){
 			return -1;
 		}
@@ -109,6 +114,10 @@ class DataTable {
 		);
 	}
 	toArray(){
+		if (this.editing !== null){
+			alert('Please stop editing before exporting!');
+			return [];
+		}
 		const out = [];
 		const rows = this.table.getElementsByTagName('tbody')[0].children;
 		for (const row of rows){
@@ -117,20 +126,22 @@ class DataTable {
 		return out;
 	}
 	rowStartEdit(n){
+		if (this.editing !== null) this.rowEndEdit(this.editing);
 		const rows = this.table.getElementsByTagName('tbody')[0].children;
 		if (n>=rows.length) return;
-		let v,input;
+		this.editing = n;
+		let input;
 		for (const cell of rows[n].children){
-			v = cell.textContent;
-			cell.textContent = '';
 			input = document.createElement('input');
-			input.value = v;
+			input.value = cell.textContent;
+			cell.textContent = '';
 			cell.appendChild(input);
 		}
 	}
 	rowEndEdit(n){
 		const rows = this.table.getElementsByTagName('tbody')[0].children;
 		if (n>=rows.length) return;
+		this.editing = null;
 		for (const cell of rows[n].children){
 			cell.textContent = cell.firstChild.value;
 		}
@@ -148,6 +159,7 @@ function rowToObj(row, colsMap){
 	return item;
 }
 function exportItems(items){
+	if (items.length==0) return;
 	const link = document.createElement('a');
 	link.href = 'data:attachment/text,' + encodeURI(JSON.stringify(items, null, 2));
 	link.target = '_blank';
@@ -180,8 +192,9 @@ function addprop(name){
 		alert('Property already exists!');
 		return;
 	}
-	myform.addprop(name);
-	mytable.addCol(name);
+	if (mytable.addCol(name) !== -1){
+		myform.addprop(name);
+	}
 }
 function additem(form, table){
 	const item = form.getitem(table);
@@ -227,7 +240,7 @@ function createPropTableEntry(proprow, label){
 
 <div class='sbrow'>
 <h3>Import JSON..</h3>
-<textarea id='rawjson'></textarea>
+<textarea id='rawjson' rows=10 ></textarea>
 <button onclick='importItems(rawjson.value, myform, mytable);'>Import</button>
 </div>
 
