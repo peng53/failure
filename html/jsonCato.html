@@ -2,7 +2,7 @@
 <style>
 input, textarea {
 	width: 100%;
-	border: 1px gray outset;
+	border: 1px grey inset;
 }
 #rawjson {
 	resize: vertical;
@@ -21,7 +21,7 @@ thead td {
 	right: 0;
 	margin: 0 auto;
 	background: white;
-	border: 1px grey solid;
+	border: 1px black outset;
 	padding: 1em;
 }
 #entries {
@@ -33,7 +33,7 @@ thead td {
 #entries tr {
 	background: #fff;
 }
-#eprops input {
+tfoot input {
 	background: beige;
 }
 body {
@@ -68,6 +68,8 @@ class DataTable {
 		this.table = table;
 		this.cols = new Map();
 		this.editing = null;
+		this.rowHeader = table.getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
+		this.rowBody = table.getElementsByTagName('tbody')[0];
 	}
 	prop(name){
 		return (this.cols.has(name) ? this.cols.get(name) : -1);
@@ -82,22 +84,20 @@ class DataTable {
 		}
 		const n = this.cols.size;
 		this.cols.set(name, n);
-		this.table
-			.getElementsByTagName('thead')[0]
-			.getElementsByTagName('tr')[0]
+		this.rowHeader
 			.insertCell(-1)
 			.appendChild(document.createTextNode(name));
 		this.afterAddCol();
 		return n;
 	}
 	afterAddCol(){
-		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		const rows = this.rowBody.children;
 		for (const row of rows){
 			row.insertCell(-1).appendChild(document.createTextNode(''));
 		}
 	}
 	addRow(item){
-		const row = this.table.getElementsByTagName('tbody')[0].insertRow(-1);
+		const row = this.rowBody.insertRow(-1);
 		this.cols.forEach(
 			(v,k) => row.insertCell(-1).appendChild(
 				document.createTextNode(
@@ -112,7 +112,7 @@ class DataTable {
 			return [];
 		}
 		const out = [];
-		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		const rows = this.rowBody.children;
 		for (const row of rows){
 			out.push(rowToObj(row, this.cols));
 		}
@@ -120,7 +120,7 @@ class DataTable {
 	}
 	rowStartEdit(n){
 		if (this.editing !== null) this.rowEndEdit(this.editing);
-		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		const rows = this.rowBody.children;
 		if (n>=rows.length) return;
 		this.editing = n;
 		let input;
@@ -132,7 +132,7 @@ class DataTable {
 		}
 	}
 	rowEndEdit(n){
-		const rows = this.table.getElementsByTagName('tbody')[0].children;
+		const rows = this.rowBody.children;
 		if (n==null || n>=rows.length) return;
 		this.editing = null;
 		for (const cell of rows[n].children){
@@ -140,7 +140,7 @@ class DataTable {
 		}
 	}
 	sortByKey(key, remap){
-		const parent = this.table.getElementsByTagName('tbody')[0];
+		const parent = this.rowBody;
 		const rows = [];
 		const c = this.cols.get(key);
 		for (const row of parent.children){
@@ -247,8 +247,7 @@ function deDupItems(items, key){
 	}
 	return out;
 }
-function toggleDialog(which){
-	const dialog = document.getElementById(which);
+function toggleDialog(dialog){
 	dialog.classList.toggle('hidden');
 }
 </script>
@@ -257,18 +256,18 @@ function toggleDialog(which){
 <h3>Add a field..</h3>
 <input id='propname' /><br />
 <button onclick='addprop(propname.value)'>New</button>
-<button onclick='toggleDialog("dialogAddField")'>Hide</button>
+<button onclick='toggleDialog(this.parentNode)'>Hide</button>
 </div>
 
 <div id='dialogImportJson' class='hidden dialog'>
 <h3>Import JSON..</h3>
 <textarea id='rawjson' rows=10 ></textarea>
 <button onclick='importItems(rawjson.value, myform, mytable);'>Import</button>
-<button onclick='toggleDialog("dialogImportJson")'>Hide</button>
+<button onclick='toggleDialog(this.parentNode)'>Hide</button>
 </div>
 
 
-<div id='content'>
+<div>
 <h1>Entries</h1>
 <table id='entries'>
 <thead>
@@ -284,8 +283,8 @@ function toggleDialog(which){
 <button onclick='additem(myform,mytable)'>Add</button>
 <button onclick='exportItems(mytable.toArray())'>Export All</button>
 <button onclick='mytable.rowEndEdit(mytable.editing)'>End Edit</button>
-<button onclick='toggleDialog("dialogAddField")'>Add Field</button>
-<button onclick='toggleDialog("dialogImportJson")'>Import JSON</button>
+<button onclick='toggleDialog(dialogAddField)'>Add Field</button>
+<button onclick='toggleDialog(dialogImportJson)'>Import JSON</button>
 </div>
 
 <script>
@@ -293,7 +292,7 @@ function toggleDialog(which){
 const mytable = new DataTable(entries);
 const myform = new DynaForm(eprops, createPropTableEntry);
 // move to DataTable define..
-mytable.table.getElementsByTagName('tbody')[0].addEventListener('dblclick', e=>{
+mytable.rowBody.addEventListener('dblclick', e=>{
 	const row = e.target.parentElement;
 	const p = row.parentElement;
 	const rows = Array.prototype.slice.call(p.children);
@@ -306,9 +305,9 @@ function escapeEdit(event){
 		mytable.rowEndEdit(mytable.editing);
 	}
 }
-mytable.table.getElementsByTagName('tbody')[0].addEventListener('keydown', escapeEdit);
+mytable.rowBody.addEventListener('keydown', escapeEdit);
 
-mytable.table.getElementsByTagName('thead')[0].addEventListener('dblclick', e=>{
+mytable.rowHeader.addEventListener('dblclick', e=>{
 	const key = e.target.textContent;
 	const remap = (e.ctrlKey) ? (Number) : (false);
 	mytable.sortByKey(key,remap);
