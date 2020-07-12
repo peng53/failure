@@ -146,25 +146,25 @@ class DataTable {
 	}
 	rowEndEdit(n){
 		const rows = this.table.getElementsByTagName('tbody')[0].children;
-		if (n>=rows.length) return;
+		if (n==null || n>=rows.length) return;
 		this.editing = null;
 		for (const cell of rows[n].children){
 			cell.textContent = cell.firstChild.value;
 		}
 	}
-	sortByKey(key){
+	sortByKey(key, remap){
+		const parent = this.table.getElementsByTagName('tbody')[0];
 		const rows = [];
-		const coln = this.cols.get(key);
-		for (const row of this.table.getElementsByTagName('tbody')[0].children){
+		const c = this.cols.get(key);
+		for (const row of parent.children){
 			rows.push(row);
-			console.log('removing..', row);
 		}
-		rows.sort((rowa, rowb) => 
-				{
-					console.log(rowa.children[coln].textContent, rowb.children[coln].textContent);
-				rowa.children[coln].textContent < rowb.children[coln].textContent;
-			}
+		rows.sort((A, B) =>
+			(remap)
+			? remap(A.children[c].textContent) > remap(B.children[c].textContent)
+			: A.children[c].textContent > B.children[c].textContent
 		);
+		rows.forEach(row => parent.appendChild(row));
 	}
 }
 function rowToObj(row, colsMap){
@@ -300,19 +300,27 @@ function deDupItems(items, key){
 'use strict';
 const mytable = new DataTable(entries);
 const myform = new DynaForm(eprops, createPropTableEntry);
-entries.addEventListener('dblclick', e=>{
+// move to DataTable define..
+mytable.table.getElementsByTagName('tbody')[0].addEventListener('dblclick', e=>{
 	const row = e.target.parentElement;
 	const p = row.parentElement;
 	const rows = Array.prototype.slice.call(p.children);
 	mytable.rowStartEdit(rows.indexOf(row));
 });
+
 function escapeEdit(event){
 	if (event.key=='Escape' && mytable.editing){
 		event.preventDefault();
-		mytable.rowEndEdit(this.editing);
+		mytable.rowEndEdit(mytable.editing);
 	}
 }
-window.addEventListener('keydown', escapeEdit);
+mytable.table.getElementsByTagName('tbody')[0].addEventListener('keydown', escapeEdit);
+
+mytable.table.getElementsByTagName('thead')[0].addEventListener('dblclick', e=>{
+	const key = e.target.textContent;
+	const remap = (e.ctrlKey) ? (Number) : (false);
+	mytable.sortByKey(key,remap);
+});
 
 </script>
 </html>
