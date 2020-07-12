@@ -50,6 +50,9 @@ h3, body {
 td input {
 	width: 100%;
 }
+#eprops input {
+	background: yellow;
+}
 </style>
 <script>
 'use strict';
@@ -261,6 +264,7 @@ function createPropTableEntry(proprow, label){
 
 <button onclick='additem(myform,mytable)'>Add</button>
 <button onclick='exportItems(mytable.toArray())'>Export All</button>
+<button onclick='mytable.rowEndEdit(mytable.editing)'>End Edit</button>
 </div>
 
 <script>
