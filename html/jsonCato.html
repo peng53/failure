@@ -149,6 +149,20 @@ class DataTable {
 			cell.textContent = cell.firstChild.value;
 		}
 	}
+	sortByKey(key){
+		const rows = [];
+		const coln = this.cols.get(key);
+		for (const row of this.table.getElementsByTagName('tbody')[0].children){
+			rows.push(row);
+			console.log('removing..', row);
+		}
+		rows.sort((rowa, rowb) => 
+				{
+					console.log(rowa.children[coln].textContent, rowb.children[coln].textContent);
+				rowa.children[coln].textContent < rowb.children[coln].textContent;
+			}
+		);
+	}
 }
 function rowToObj(row, colsMap){
 	const item = {};
@@ -230,6 +244,18 @@ function createPropSidebarEntry(sidebar, label){
 function createPropTableEntry(proprow, label){
 	const cell = proprow.insertCell(-1);
 	cell.appendChild(document.createElement('input'));
+}
+
+function deDupItems(items, key){
+	const seen = new Set();
+	const out = [];
+	for (const item of items){
+		if (seen.has(item[key])==false){
+			seen.add(item[key]);
+			out.push(item);
+		}
+	}
+	return out;
 }
 </script>
 
