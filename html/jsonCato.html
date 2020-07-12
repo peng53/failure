@@ -1,60 +1,47 @@
 <html>
 <style>
-#formout, #formout input, #rawjson, #propname, #eprops input {
+input, textarea {
 	width: 100%;
-}
-input,textarea {
 	border: 1px gray outset;
 }
 #rawjson {
 	resize: vertical;
 }
-#tprops td, #eprops td {
+thead td {
 	font-weight: bold;
 	background: #ccc;
-	text-align: justify;
-	font-variant: small-caps;
 }
-h3, body {
-	margin: 0;
+.hidden {
+	display: none;
 }
-#sidebar {
+.dialog {
 	position: fixed;
-	float: left;
-	width: 200px;
-	margin: 0;
-	overflow: auto;
-	height: 100%;
+	width: 50%;
+	left: 0;
+	right: 0;
+	margin: 0 auto;
+	background: white;
+	border: 1px grey solid;
+	padding: 1em;
 }
-#content {
-	margin: 0;
-	margin-left: 200px;
-	text-align: center;
-}
-.sbrow {
-	margin-bottom: 1em;
-	text-align: center;
-}
-#content h3 {
-	background: beige;
-}
-#sidebar h3 {
-	background: lime;
-}
-#entries, #inputsTable {
+#entries {
 	width: 100%;
 }
 #entries tr:nth-child(even){
 	background: #eee;
 }
-#entries tr:nth-child(odd){
+#entries tr {
 	background: #fff;
 }
-td input {
-	width: 100%;
-}
 #eprops input {
-	background: yellow;
+	background: beige;
+}
+body {
+	background: white;
+	color: black;
+}
+button {
+	margin-top: 1em;
 }
 </style>
 <script>
@@ -260,29 +247,32 @@ function deDupItems(items, key){
 	}
 	return out;
 }
+function toggleDialog(which){
+	const dialog = document.getElementById(which);
+	dialog.classList.toggle('hidden');
+}
 </script>
 
-<div id='sidebar'>
-
-<div class='sbrow'>
+<div id='dialogAddField' class='hidden dialog'>
 <h3>Add a field..</h3>
 <input id='propname' /><br />
 <button onclick='addprop(propname.value)'>New</button>
+<button onclick='toggleDialog("dialogAddField")'>Hide</button>
 </div>
 
-<div class='sbrow'>
+<div id='dialogImportJson' class='hidden dialog'>
 <h3>Import JSON..</h3>
 <textarea id='rawjson' rows=10 ></textarea>
 <button onclick='importItems(rawjson.value, myform, mytable);'>Import</button>
+<button onclick='toggleDialog("dialogImportJson")'>Hide</button>
 </div>
 
-</div>
 
 <div id='content'>
-<h3>Entries</h3>
+<h1>Entries</h1>
 <table id='entries'>
 <thead>
-<tr id='tprops'></tr>
+<tr></tr>
 </thead>
 <tbody>
 </tbody>
@@ -294,6 +284,8 @@ function deDupItems(items, key){
 <button onclick='additem(myform,mytable)'>Add</button>
 <button onclick='exportItems(mytable.toArray())'>Export All</button>
 <button onclick='mytable.rowEndEdit(mytable.editing)'>End Edit</button>
+<button onclick='toggleDialog("dialogAddField")'>Add Field</button>
+<button onclick='toggleDialog("dialogImportJson")'>Import JSON</button>
 </div>
 
 <script>
