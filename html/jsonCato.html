@@ -70,6 +70,7 @@ class DataTable {
 		this.editing = null;
 		this.rowHeader = table.getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
 		this.rowBody = table.getElementsByTagName('tbody')[0];
+		this.mode = 'normal';
 	}
 	prop(name){
 		return (this.cols.has(name) ? this.cols.get(name) : -1);
@@ -152,6 +153,19 @@ class DataTable {
 			: A.children[c].textContent > B.children[c].textContent
 		);
 		rows.forEach(row => parent.appendChild(row));
+	}
+	rowclicked(n){
+		if (this.mode == 'edit'){
+			this.rowStartEdit(n);
+		} else if (this.mode == 'delete'){
+			this.deleteRow(n);
+		}
+	}
+	deleteRow(n){
+		const rows = this.rowBody.children;
+		if (n==null || n>=rows.length) return;
+		const row = this.rowBody.children[n];
+		row.remove();
 	}
 }
 function rowToObj(row, colsMap){
@@ -306,6 +320,12 @@ function toggleDialog(dialog){
 <button onclick='mytable.rowEndEdit(mytable.editing)'>End Edit</button>
 <button onclick='toggleDialog(dialogAddField)'>Add Field</button>
 <button onclick='toggleDialog(dialogImportJson)'>Import JSON</button>
+
+<div style='width: 0'>
+<label><input type='radio' name='mytableMode' value='none' onclick='mytable.mode = this.value' checked />None</label><br />
+<label><input type='radio' name='mytableMode' value='edit' onclick='mytable.mode = this.value' />Edit</label><br />
+<label><input type='radio' name='mytableMode' value='delete' onclick='mytable.mode = this.value' />Delete</label><br />
+</div>
 </div>
 
 <script>
@@ -313,13 +333,6 @@ function toggleDialog(dialog){
 const mytable = new DataTable(entries);
 const myform = new DynaForm(eprops, createPropTableEntry);
 // move to DataTable define..
-mytable.rowBody.addEventListener('dblclick', e=>{
-	const row = e.target.parentElement;
-	const p = row.parentElement;
-	const rows = Array.prototype.slice.call(p.children);
-	mytable.rowStartEdit(rows.indexOf(row));
-});
-
 function escapeEdit(event){
 	if (event.key=='Escape' && mytable.editing){
 		event.preventDefault();
@@ -332,6 +345,15 @@ mytable.rowHeader.addEventListener('dblclick', e=>{
 	const key = e.target.textContent;
 	const remap = (e.ctrlKey) ? (Number) : (false);
 	mytable.sortByKey(key,remap);
+});
+
+mytable.rowBody.addEventListener('click', e => {
+	if (e.ctrlKey){
+		e.preventDefault();
+		const p = row.parentElement;
+		const rows = Array.prototype.slice.call(p.children);
+		mytable.rowclicked(rows.indexOf(row));
+	}
 });
 
 </script>
