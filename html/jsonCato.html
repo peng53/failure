@@ -180,6 +180,13 @@ function importItems(text, form, table){
 		return;
 	}
 	const data = JSON.parse(text);
+	processKeyValues(
+		data,
+		(r) => table.addRow(r),
+		table.cols,
+		(key) => {form.addprop(key);table.addCol(key)}
+	);
+	/*
 	for (const item of data){
 		for (const key in item){
 			if (table.prop(key) == -1){
@@ -188,6 +195,17 @@ function importItems(text, form, table){
 			}
 		}
 		table.addRow(item);
+	}
+	*/
+}
+function processKeyValues(array, process, keys, keyfail){
+	for (const item of array){
+		for (const key in item){
+			if (keys.has(key)==false){
+				keyfail(key);
+			}
+		}
+		process(item);
 	}
 }
 function addprop(name){
