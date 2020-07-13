@@ -179,24 +179,27 @@ function importItems(text, form, table){
 		alert('0-len JSON data input');
 		return;
 	}
-	const data = JSON.parse(text);
-	processKeyValues(
+	const input = JSON.parse(text);
+	let data;
+	let processor;
+	let keyAdd = (key) => {form.addprop(key);table.addCol(key)};
+	if ('format' in input == false){
+		data = input;
+		processor = processKeyValues;
+	} else if (input['format'] == 'key-value'){
+		data = input['data'];
+		processor = processKeyValues;
+		for (const key of input['keys']){
+			keyAdd(key);
+		}
+	}
+	processor(
 		data,
 		(r) => table.addRow(r),
 		table.cols,
-		(key) => {form.addprop(key);table.addCol(key)}
+		keyAdd
 	);
-	/*
-	for (const item of data){
-		for (const key in item){
-			if (table.prop(key) == -1){
-				form.addprop(key);
-				table.addCol(key);
-			}
-		}
-		table.addRow(item);
-	}
-	*/
+
 }
 function processKeyValues(array, process, keys, keyfail){
 	for (const item of array){
