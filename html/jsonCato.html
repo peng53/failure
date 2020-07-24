@@ -348,10 +348,10 @@ mytable.rowHeader.addEventListener('dblclick', e=>{
 });
 
 mytable.rowBody.addEventListener('click', e => {
-	if (e.ctrlKey){
+	if (e.altKey && e.target.tagName == 'TD'){
 		e.preventDefault();
-		const p = row.parentElement;
-		const rows = Array.prototype.slice.call(p.children);
+		const row = e.target.parentElement;
+		const rows = Array.prototype.slice.call(row.parentElement.children);
 		mytable.rowclicked(rows.indexOf(row));
 	}
 });
