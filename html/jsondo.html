@@ -1,0 +1,70 @@
+<script>
+/*
+function usedata(data){
+	if (data){
+		const d = JSON.parse(data);
+	}
+}
+const url = '';
+const j = new XMLHttpRequest();
+j.onreadystatechange = function(){
+	if (this.readyState == 4){
+		if (this.status == 200){
+			usedata(this.responseText);
+		}
+	}
+};
+j.open('GET', url);
+j.send();
+*/
+</script>
+<table id='outdata'>
+<thead>
+<tr style='font-weight:bold'>
+	<th>Lanes</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<script>
+function rowCols(row, colcount, data){
+	for (let i=0;i<colcount;++i){
+		row.insertCell(-1).appendChild(document.createTextNode((data.length > i) ? data[i] : ''));
+	}
+}
+function randArray(cnt){
+	const r = [];
+	for (let i=0;i<cnt;++i){
+		r.push(Math.random());
+	}
+	return r;
+}
+
+
+const colnums = {};
+{
+	const colheader = document.querySelector('#outdata thead tr');
+	const colnames = ['RedCnt','BlueCnt','YellowCnt','GreenCnt'];
+	for (let i=0;i<colnames.length;++i){
+		colnums[colnames[i]] = i+1;
+		colheader.appendChild(document.createElement('th')).appendChild(document.createTextNode(colnames[i]));
+	}
+}
+
+const rownums = {};
+{
+	const t = document.querySelector('#outdata tbody');
+	const colcount = document.querySelectorAll('#outdata thead tr th').length;
+	{
+		const rownames = ['Q', 'R', 'X', 'T', 'P'];
+		let rowdata;
+		for (let i=0;i<rownames.length;++i){
+			rowdata = randArray(colcount);
+			rowdata[0] = rownames[i];
+			rowCols(t.insertRow(-1), colcount, rowdata);
+			rownums[rownames[i]] = i;
+		}
+	}
+}
+</script>
