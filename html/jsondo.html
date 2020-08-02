@@ -42,17 +42,17 @@ function randArray(cnt){
 }
 
 
-const colnums = {};
+const colnums = new Map();
 {
 	const colheader = document.querySelector('#outdata thead tr');
 	const colnames = ['RedCnt','BlueCnt','YellowCnt','GreenCnt'];
 	for (let i=0;i<colnames.length;++i){
-		colnums[colnames[i]] = i+1;
+		colnums.set(colnames[i], i+1);
 		colheader.appendChild(document.createElement('th')).appendChild(document.createTextNode(colnames[i]));
 	}
 }
 
-const rownums = {};
+const rownums = new Map();
 {
 	const t = document.querySelector('#outdata tbody');
 	const colcount = document.querySelectorAll('#outdata thead tr th').length;
@@ -63,8 +63,49 @@ const rownums = {};
 			rowdata = randArray(colcount);
 			rowdata[0] = rownames[i];
 			rowCols(t.insertRow(-1), colcount, rowdata);
-			rownums[rownames[i]] = i;
+			rownums.set(rownames[i], i);
 		}
 	}
+}
+
+function data2row(tablerow, colMap, data){
+	const cols = tablerow.querySelectorAll('td');
+	for (const key of colMap.keys()){
+		if (key in data){
+			cols[colMap.get(key)].textContent = data[key];
+		}
+	}
+}
+
+function gotData(data, outtable, rownums, colnums, rowdesc){
+	// where data is an array of rows with cols present in colnums
+	const rows = outtable.querySelectorAll('tbody tr');
+	for (let d=0;d<data.length;++d){
+		if (rownums.has(data[d][rowdesc])){
+			data2row(rows[rownums.get(data[d][rowdesc])], colnums, data[d]);
+		}
+	}
+}
+function genData(){
+	const data = [];
+
+	const rownames = ['Q', 'R', 'X', 'T', 'P'];
+	const colcount = document.querySelectorAll('#outdata thead tr th').length;
+	let row;
+	for (let i=0;i<rownames.length;++i){
+		row = {'Lane' : rownames[i]};
+		for (const key of colnums.keys()){
+			row[key] = Math.random();
+		}
+		data.push(row);
+	}
+
+	return data;
+}
+function rb(){
+	const data = genData();
+	gotData(
+		data, outdata, rownums, colnums, 'Lane'
+	);
 }
 </script>
