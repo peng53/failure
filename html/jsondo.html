@@ -19,14 +19,11 @@ j.send();
 */
 </script>
 <table id='outdata'>
-<thead>
-<tr style='font-weight:bold'>
-	<th>Lanes</th>
-</tr>
-</thead>
+
 <tbody>
 </tbody>
 </table>
+<script src='fixedtable.js'></script>
 <script>
 function rowCols(row, colcount, data){
 	for (let i=0;i<colcount;++i){
@@ -40,16 +37,15 @@ function randArray(cnt){
 	}
 	return r;
 }
+function indexMap(arr){
+	const m = new Map();
+	arr.forEach(x => m.set(x, m.size));
+	return m;
+}
 
-
-const colnums = new Map();
+const colnums = indexMap(['Lanes','RedCnt','BlueCnt','YellowCnt','GreenCnt']);
 {
-	const colheader = document.querySelector('#outdata thead tr');
-	const colnames = ['RedCnt','BlueCnt','YellowCnt','GreenCnt'];
-	for (let i=0;i<colnames.length;++i){
-		colnums.set(colnames[i], i+1);
-		colheader.appendChild(document.createElement('th')).appendChild(document.createTextNode(colnames[i]));
-	}
+	outdata.appendChild(tableHeadDom(Array.from(colnums.keys())));
 }
 
 const rownums = new Map();
@@ -70,9 +66,9 @@ const rownums = new Map();
 
 function data2row(tablerow, colMap, data){
 	const cols = tablerow.querySelectorAll('td');
-	for (const key of colMap.keys()){
-		if (key in data){
-			cols[colMap.get(key)].textContent = data[key];
+	for (const [key, ind] of colMap){
+		if (ind != 0 && key in data){
+			cols[ind].textContent = data[key];
 		}
 	}
 }
@@ -109,19 +105,8 @@ function rb(){
 	);
 }
 </script>
-<script src='fixedtable.js'></script>
-<table id='xtable'>
-<thead>
-<tr>
-	<th>rowkey</th>
-	<th>C0</th>
-	<th>C1</th>
-	<th>C2</th>
-	<th>C3</th>
-</tr>
-</thead>
 
-</table>
+<table id='xtable'></table>
 <script>
 	const rowenum = new Map([
 		['R0',0],
@@ -135,7 +120,7 @@ function rb(){
 		['C2',3],
 		['C3',4]
 	]);
-
+	xtable.appendChild(tableHeadDom(['rowKey','C0','C1','C2','C3']));
 	xtable.rb = new TableBodyManip(tableBodyDom(rowenum,colenum.size), rowenum, colenum, 'rowkey');
 	xtable.appendChild(xtable.rb.tbody);
 	xtable.rb.

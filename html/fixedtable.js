@@ -11,6 +11,16 @@ function tableBodyDom(rowenum, cols){
 	);
 	return ele;
 }
+function tableHeadDom(cols){
+	// Where cols is an ordered array of col headings
+	const ele = document.createElement('thead');
+	const row = ele.insertRow(-1);
+	for (const v of cols){
+		row.appendChild(document.createElement('th')).appendChild(document.createTextNode(v));
+	}
+	return ele;
+}
+
 
 class TableBodyManip {
 	constructor(tbody, rowenum, colenum, rowKey){
@@ -25,7 +35,7 @@ class TableBodyManip {
 		const cols = this.tbody.querySelectorAll('tr')[rn].querySelectorAll('td');
 		this.colenum.forEach(
 			(val, key) => {
-				if (key in rowdata) cols[val].textContent = rowdata[key];
+				if (val != 0 && key in rowdata) cols[val].textContent = rowdata[key];
 			}
 		);
 		return this;
