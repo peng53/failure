@@ -109,3 +109,37 @@ function rb(){
 	);
 }
 </script>
+<script src='fixedtable.js'></script>
+<table id='xtable'>
+<thead>
+<tr>
+	<th>rowkey</th>
+	<th>C0</th>
+	<th>C1</th>
+	<th>C2</th>
+	<th>C3</th>
+</tr>
+</thead>
+
+</table>
+<script>
+	const rowenum = new Map([
+		['R0',0],
+		['R1',1],
+		['R2',2]
+	]);
+
+	const colenum = new Map([
+		['C0',1],
+		['C1',2],
+		['C2',3],
+		['C3',4]
+	]);
+
+	xtable.rb = new TableBodyManip(tableBodyDom(rowenum,colenum.size), rowenum, colenum, 'rowkey');
+	xtable.appendChild(xtable.rb.tbody);
+	xtable.rb.
+		setRow({'rowkey': 'R1', 'C0': 11, 'C1': 31, 'C2': 51, 'C3': 101}).
+		setRow({'rowkey': 'R0', 'C0': 10, 'C1': 30, 'C2': 50, 'C3': 100}).
+		setRow({'rowkey': 'R2', 'C0': 0, 'C1': 3, 'C2': 5, 'C3': 10});
+</script>
