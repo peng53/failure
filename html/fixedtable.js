@@ -1,3 +1,4 @@
+'use strict';
 function tableBodyDom(rowenum, cols){
 	const ele = document.createElement('tbody');
 	rowenum.forEach(

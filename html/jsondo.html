@@ -18,50 +18,14 @@ j.open('GET', url);
 j.send();
 */
 </script>
-<table id='outdata'>
 
-<tbody>
-</tbody>
-</table>
 <script src='fixedtable.js'></script>
 <script>
-function rowCols(row, colcount, data){
-	for (let i=0;i<colcount;++i){
-		row.insertCell(-1).appendChild(document.createTextNode((data.length > i) ? data[i] : ''));
-	}
-}
-function randArray(cnt){
-	const r = [];
-	for (let i=0;i<cnt;++i){
-		r.push(Math.random());
-	}
-	return r;
-}
+'use strict';
 function indexMap(arr){
 	const m = new Map();
 	arr.forEach(x => m.set(x, m.size));
 	return m;
-}
-
-const colnums = indexMap(['Lanes','RedCnt','BlueCnt','YellowCnt','GreenCnt']);
-{
-	outdata.appendChild(tableHeadDom(Array.from(colnums.keys())));
-}
-
-const rownums = new Map();
-{
-	const t = document.querySelector('#outdata tbody');
-	const colcount = document.querySelectorAll('#outdata thead tr th').length;
-	{
-		const rownames = ['Q', 'R', 'X', 'T', 'P'];
-		let rowdata;
-		for (let i=0;i<rownames.length;++i){
-			rowdata = randArray(colcount);
-			rowdata[0] = rownames[i];
-			rowCols(t.insertRow(-1), colcount, rowdata);
-			rownums.set(rownames[i], i);
-		}
-	}
 }
 
 function data2row(tablerow, colMap, data){
@@ -73,58 +37,50 @@ function data2row(tablerow, colMap, data){
 	}
 }
 
-function gotData(data, outtable, rownums, colnums, rowdesc){
-	// where data is an array of rows with cols present in colnums
-	const rows = outtable.querySelectorAll('tbody tr');
-	for (let d=0;d<data.length;++d){
-		if (rownums.has(data[d][rowdesc])){
-			data2row(rows[rownums.get(data[d][rowdesc])], colnums, data[d]);
-		}
-	}
-}
-function genData(){
+function genData(rowkeys, colkeys, rand){
 	const data = [];
-
-	const rownames = ['Q', 'R', 'X', 'T', 'P'];
-	const colcount = document.querySelectorAll('#outdata thead tr th').length;
 	let row;
-	for (let i=0;i<rownames.length;++i){
-		row = {'Lane' : rownames[i]};
-		for (const key of colnums.keys()){
-			row[key] = Math.random();
+	for (const rk of rowkeys){
+		row = {};
+		for (const [key, ind] of colkeys){
+			row[key] = (ind == 0) ? rk : rand();
 		}
 		data.push(row);
 	}
-
 	return data;
 }
-function rb(){
-	const data = genData();
-	gotData(
-		data, outdata, rownums, colnums, 'Lane'
-	);
+
+function rbdata(outtable){
+	const data = genData(Array.from(outtable.rb.rowenum.keys()), outtable.rb.colenum, (()=> Math.random()));
+	for (const row of data){
+		outtable.rb.setRow(row);
+	}
 }
 </script>
 
+<table id='outdata'></table>
 <table id='xtable'></table>
-<script>
-	const rowenum = new Map([
-		['R0',0],
-		['R1',1],
-		['R2',2]
-	]);
 
-	const colenum = new Map([
-		['C0',1],
-		['C1',2],
-		['C2',3],
-		['C3',4]
-	]);
-	xtable.appendChild(tableHeadDom(['rowKey','C0','C1','C2','C3']));
-	xtable.rb = new TableBodyManip(tableBodyDom(rowenum,colenum.size), rowenum, colenum, 'rowkey');
+<script>
+{
+	const colnums = indexMap(['Lane','RedCnt','BlueCnt','YellowCnt','GreenCnt']);
+	const rownums = indexMap(['Q', 'R', 'X', 'T', 'P']);
+	outdata.appendChild(tableHeadDom(Array.from(colnums.keys())));
+	outdata.rb = new TableBodyManip(tableBodyDom(rownums,colnums.size), rownums, colnums, 'Lane');
+	outdata.appendChild(outdata.rb.tbody);
+}
+
+{
+	const colnums = indexMap(['rowKey','C0','C1','C2','C3']);
+	const rownums = indexMap(['R0','R1','R2']);
+	xtable.appendChild(tableHeadDom(Array.from(colnums.keys())));
+	xtable.rb = new TableBodyManip(tableBodyDom(rownums,colnums.size), rownums, colnums, 'rowKey');
 	xtable.appendChild(xtable.rb.tbody);
+	/*
 	xtable.rb.
 		setRow({'rowkey': 'R1', 'C0': 11, 'C1': 31, 'C2': 51, 'C3': 101}).
 		setRow({'rowkey': 'R0', 'C0': 10, 'C1': 30, 'C2': 50, 'C3': 100}).
 		setRow({'rowkey': 'R2', 'C0': 0, 'C1': 3, 'C2': 5, 'C3': 10});
+	*/
+}
 </script>
