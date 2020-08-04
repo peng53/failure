@@ -84,3 +84,37 @@ function rbdata(outtable){
 	*/
 }
 </script>
+<table id='testtable'></table>
+<script>
+{
+	const initTable = function(tid, data, prikey){
+		// do stuff;
+		const colnums = indexMap(Object.keys(data[0]));
+		const rownums = new Map();
+		for (const row of data){
+			rownums.set(row[prikey], rownums.size);
+		}
+		tid.appendChild(tableHeadDom(Array.from(colnums.keys())));
+		tid.rb = new TableBodyManip(tableBodyDom(rownums,colnums.size), rownums, colnums, prikey);
+		tid.appendChild(tid.rb.tbody);
+	};
+	const fillTable = function(tid, rows){
+		for (const row of rows){
+			tid.rb.setRow(row);
+		}
+	};
+	const dataUrl = 'https://jsonplaceholder.typicode.com/users';
+	const req = new XMLHttpRequest();
+	req.onreadystatechange = function(){
+		if (this.readyState == 4){
+			if (this.status == 200){
+				const data = JSON.parse(this.responseText);
+				initTable(testtable, data, 'id');
+				fillTable(testtable, data);
+			}
+		}
+	};
+	req.open('GET', dataUrl);
+	req.send();
+}
+</script>

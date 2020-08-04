@@ -32,14 +32,16 @@ class TableBodyManip {
 
 	}
 	setRow(rowdata){
-		const rn = this.rowenum.get(rowdata[this.rowKey]);
-		const cols = this.tbody.querySelectorAll('tr')[rn].querySelectorAll('td');
-		this.colenum.forEach(
-			(val, key) => {
-				if (val != 0 && key in rowdata) cols[val].textContent = rowdata[key];
-			}
-		);
-		return this;
+		if (this.rowKey in rowdata && this.rowenum.has(rowdata[this.rowKey])){
+			const rn = this.rowenum.get(rowdata[this.rowKey]);
+			const cols = this.tbody.querySelectorAll('tr')[rn].querySelectorAll('td');
+			this.colenum.forEach(
+				(val, key) => {
+					if (val != 0 && key in rowdata) cols[val].textContent = rowdata[key];
+				}
+			);
+			return this;
+		}
 	}
 }
 
