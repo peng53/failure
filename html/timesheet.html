@@ -1,9 +1,13 @@
 <html>
 <style>
 @media print {
-	body { margin: 0.2in; }
+	body {
+		margin: 0.2in;
+	}
 }
 body {
+	background: transparent;
+	color: black;
 	margin: 0;
 	font-size: 10pt;
 }
@@ -100,10 +104,12 @@ input {
 	font-weight: bold;
 	text-transform: capitalize;
 	font-variant: small-caps;
+	background: transparent;
 }
 textarea {
 	resize: none;
 	border: 0;
+	background: transparent;
 }
 </style>
 <div id='everything'>
@@ -162,12 +168,7 @@ textarea {
 			</tr>
 			</thead>
 			<tbody>
-			<tr>
-				<td>x</td>
-				<td>x</td>
-				<td>x</td>
-				<td>x</td>
-			</tr>
+			<!-- Stuff gets inserted here! -->
 			</tbody>
 			</table>
 		</div>
@@ -182,12 +183,7 @@ textarea {
 			</tr>
 			</thead>
 			<tbody>
-			<tr>
-				<td>y</td>
-				<td>y</td>
-				<td>y</td>
-				<td>y</td>
-			</tr>
+			<!-- Stuff gets inserted here! -->
 			</tbody>
 			</table>
 		</div>
@@ -208,4 +204,5 @@ textarea {
 	<textarea rows=10 style='width:100%'></textarea></div>
 	</div>
 </div>
+<script src='timesheet.js'></script>
 </html>
