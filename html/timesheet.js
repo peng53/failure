@@ -2,7 +2,7 @@
 function formatNotes(data){
 	const lines = data.split('\n');
 	const outv = [];
-	const codes = {'PROD' : 0};
+	const codes = {'Prod' : 0};
 	let ts, te, code, out, diff;
 	for (let i=0,m=lines.length;i<m;i+=4){
 		// lines[i+3] is ignored as an empty line
@@ -14,8 +14,8 @@ function formatNotes(data){
 		if (te){
 			diff = (ts - te)/60000;
 			if (diff > 0){
-				codes['PROD'] += diff;
-				outv.push({code: 'ATO', start: niceTime(te,':'), end: niceTime(ts,':'), total: (diff/60).toFixed(2)});
+				codes['Prod'] += diff;
+				outv.push({code: ' ', start: niceTime(te,':'), end: niceTime(ts,':'), total: (diff/60).toFixed(2)});
 			}
 		}
 		code = lines[i+1];
@@ -29,7 +29,7 @@ function formatNotes(data){
 			outv.push({code, start: niceTime(ts,':'), end: niceTime(te,':'), total: (diff/60).toFixed(2)});
 		}
 	}
-	return outv;
+	return [outv, codes];
 }
 function niceTime(td, sep){
 	let out = ''
@@ -62,6 +62,16 @@ function addDataToTables(tables, data, rowlimit, f){
 	}
 }
 
+function addCodes(table, codes){
+	const body = table.querySelector('tbody');
+	let row;
+	for (const [key,value] of Object.entries(codes)){
+		row = body.insertRow(-1);
+		row.insertCell(-1).textContent = key;
+		row.insertCell(-1).textContent = (value/60).toFixed(2);
+	}
+}
+
 function testingFunc(){
 	const testIn =`\
 2:00 PM 8/22/2020
@@ -88,8 +98,9 @@ function testingFunc(){
 178
 5:00 PM 8/22/2020
 `;
-	const parsedData = formatNotes(testIn);
+	const [parsedData, codes] = formatNotes(testIn);
 	addDataToTables(rows.querySelectorAll('table'), parsedData, 10, addTimeRow);
+	addCodes(totals.querySelector('table'), codes);
 	console.table(parsedData);
 }
 testingFunc();
