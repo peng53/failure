@@ -1,0 +1,84 @@
+<html>
+<style>
+body {
+	margin: 0;
+}
+#leftside {
+	width: 75%;
+	float: left;
+	height: 100vh;
+}
+#rightside {
+	position: fixed;
+	right: 0%;
+
+	width: 25%;
+	height: 100vh;
+}
+#linksout {
+	height: 90%;
+}
+.sect {
+	border: 1px solid black;
+	margin: 5px;
+}
+input, textarea {
+	width: 100%;
+	padding: 0.5em;
+	font-size: 2vh;
+	font-family: monospace;
+}
+textarea {
+	height: 50%;
+}
+h4 {
+	margin: 0;
+	background: grey;
+}
+</style>
+<div id='leftside'>
+<div class='sect'>
+<h4>Code Entry</h4>
+<textarea id='codefield'></textarea><br />
+<button onclick='codeconvert()'>Code In</button>
+</div>
+
+<div class='sect'>
+<h4>Bookmarklet Name</h4>
+<input id='bmname' />
+</div>
+
+<div class='sect'>
+<h4>Single Line Code</h4>
+<input id='singleline' onclick='this.select() '/>
+</div>
+</div>
+
+<div id='rightside'>
+<div id='linksout' class='sect'>
+<h4>Bookmarklets</h4>
+</div>
+</div>
+<script>
+function removeNLs(str){
+	let out='';
+	for (const line of str.split('\n')){
+		out+=line.trim();
+	}
+	return out;
+}
+function createLink(name, href){
+	const a=document.createElement('a');
+	a.href=href;
+	a.textContent=name;
+	return a;
+}
+function codeconvert(){
+	singleline.value=removeNLs(codefield.value);
+	if (bmname.value.length>0){
+		linksout.appendChild(createLink(bmname.value,'javascript:{'+singleline.value+'}'));
+		linksout.appendChild(document.createElement('br'));
+	}
+}
+</script>
+</html>
