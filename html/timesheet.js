@@ -47,10 +47,11 @@ function niceTime(td, sep){
 }
 function addTimeRow(table, data){
 	const row = table.querySelector('tbody').insertRow(-1);
-	row.insertCell(-1).textContent = data.code;
-	row.insertCell(-1).textContent = data.start;
-	row.insertCell(-1).textContent = data.end;
-	row.insertCell(-1).textContent = data.total;
+	row.insertCell(-1).appendChild(document.createTextNode(data.code));
+	row.insertCell(-1).appendChild(document.createTextNode(data.start));
+	row.insertCell(-1).appendChild(document.createTextNode(data.end));
+	row.insertCell(-1).appendChild(document.createTextNode(data.total));
+	return row;
 }
 
 function addDataToTables(tables, data, rowlimit, f){
@@ -136,14 +137,26 @@ function setUpInputBox(){
 		console.log(specialdiv.querySelector('textarea').value);
 		const addlCodes = [700, 705, 123];
 		addlCodes.map(x=>{if (x in codes==false) codes[x]=0;});
-		addDataToTables(rows.querySelectorAll('table'), parsedData, 10, addTimeRow);
+		addDataToTables(rows.querySelectorAll('table'), parsedData, 22, addTimeRow);
 		addCodes(totals.querySelector('table'), codes);
+		for (const t of rows.querySelectorAll('table')){
+			fillTable(t, 22);
+		}
 		div.remove();
 	};
 	let xbutton = div.appendChild(document.createElement('button'));
 	xbutton.textContent = 'X';
 	xbutton.onclick = ()=> div.remove();
+
 	document.body.appendChild(div);
 }
-
+function fillTable(table, limit){
+	const tbody = table.querySelector('tbody');
+	let n = tbody.children.length;
+	const blank = {code:'',start:'',end:'',total:''};
+	while (n<limit){
+		addTimeRow(table, blank);
+		++n;
+	}
+}
 setUpInputBox();
