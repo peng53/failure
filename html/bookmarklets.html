@@ -1,0 +1,43 @@
+<html>
+<title>Bookmarklets</title>
+<a href="javascript:location.href='https://old.'+location.href.substr(location.href.search('reddit.com'))">Use Old Reddit</a>
+<a href="javascript:(function(){
+const i=' '+prompt('Episode#');if (i.length==1) return;
+for (const n of document.querySelectorAll('span.series-title')){ if (n.textContent.trim().endsWith(i)){ prompt(i, n.parentElement.href);break;}}
+})()">Search Crunchyroll</a>
+<a href="javascript:{
+	if (!eps){
+		var eps={};
+		let r=new RegExp(/\d+\s+$/);
+		let i;
+		for (const n of document.querySelectorAll('.portrait-grid span.series-title')){
+			i=Number(n.textContent.match(r));
+			if (i) eps[i]=n.parentElement.href;
+		}
+	}
+	let e=prompt('Episodes #').split('-',2).map(Number);
+	if (e.length<2) e.push(e[0]);
+	for (let i=e[0];i<=e[1];++i){
+		if (!prompt(i,eps[i])) break;
+	}
+}">Search Crunchyroll-Range</a>
+<a href="javascript:{
+	let eps={};
+	let r=new RegExp(/\d+\s+$/);
+	let i;
+	for (const n of document.querySelectorAll('.portrait-grid span.series-title')){
+		i=Number(n.textContent.match(r));
+		if (i) eps[i]=n.parentElement.href;
+	}
+	let e=prompt('Episodes #').split('-',2).map(Number);
+	if (e.length<2) e.push(e[0]);
+	let outa=[];
+	for (let i=e[0];i<=e[1];++i){
+		outa.push(eps[i]+'\n');
+	}
+	let blob=new Blob(outa, {type:'text/plain'});
+	location=URL.createObjectURL(blob);
+}">CRoll EpsBlob</a>
+<script>
+</script>
+</html>
