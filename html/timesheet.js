@@ -1,8 +1,9 @@
 'use strict';
 function formatNotes(data){
-	const lines = data.split('\n');
+	const lines = data;
 	const outv = [];
 	const codes = {'Prod' : 0};
+
 	let ts, te, code, out, diff;
 	for (let i=0,m=lines.length;i<m;i+=4){
 		// lines[i+3] is ignored as an empty line
@@ -98,9 +99,51 @@ function testingFunc(){
 178
 5:00 PM 8/22/2020
 `;
-	const [parsedData, codes] = formatNotes(testIn);
+	const [parsedData, codes] = formatNotes(testIn.split('\n'));
+	const addlCodes = [700, 705, 123];
+	addlCodes.map(x=>{if (x in codes==false) codes[x]=0;});
 	addDataToTables(rows.querySelectorAll('table'), parsedData, 10, addTimeRow);
 	addCodes(totals.querySelector('table'), codes);
 	console.table(parsedData);
 }
-testingFunc();
+//testingFunc();
+
+function setUpInputBox(){
+	const div = document.createElement('div');
+	div.appendChild(document.createTextNode('DataLines'));
+	div.appendChild(document.createElement('br'));
+	div.style.position = 'absolute';
+	div.style.bottom = 0;
+	div.style.width = '100vw';
+	div.id = 'specialdiv';
+	div.classList.add('hidden');
+	div.style.background = 'beige';
+	let tb = div.appendChild(document.createElement('textarea'));
+	tb.style.width = tb.style.height = '100%';
+	div.appendChild(document.createElement('br'));
+	tb.value = `2:00 PM 8/22/2020
+123
+2:05 PM 8/22/2020
+
+2:07 PM 8/22/2020
+134
+2:10 PM 8/22/2020`;
+	div.onclick = div.remove();
+	let gobutton = div.appendChild(document.createElement('button'));
+	gobutton.textContent = 'Generate';
+	gobutton.onclick = function(){
+		const [parsedData, codes] = formatNotes(specialdiv.querySelector('textarea').value.split('\n'));
+		console.log(specialdiv.querySelector('textarea').value);
+		const addlCodes = [700, 705, 123];
+		addlCodes.map(x=>{if (x in codes==false) codes[x]=0;});
+		addDataToTables(rows.querySelectorAll('table'), parsedData, 10, addTimeRow);
+		addCodes(totals.querySelector('table'), codes);
+		div.remove();
+	};
+	let xbutton = div.appendChild(document.createElement('button'));
+	xbutton.textContent = 'X';
+	xbutton.onclick = ()=> div.remove();
+	document.body.appendChild(div);
+}
+
+setUpInputBox();
