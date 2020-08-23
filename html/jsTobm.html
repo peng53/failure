@@ -1,63 +1,31 @@
 <html>
 <style>
-body {
-	margin: 0;
-}
-#leftside {
-	width: 75%;
-	float: left;
-	height: 100vh;
-}
-#rightside {
-	position: fixed;
-	right: 0%;
-
-	width: 25%;
-	height: 100vh;
-}
-#linksout {
-	height: 90%;
-}
 .sect {
-	border: 1px solid black;
-	margin: 5px;
-}
-input, textarea {
-	width: 100%;
+	border: 1px grey outset;
 	padding: 0.5em;
-	font-size: 2vh;
-	font-family: monospace;
+	margin: 1em;
 }
 textarea {
-	height: 50%;
+	width: 95%;
+	height: 95%;
 }
-h4 {
-	margin: 0;
-	background: grey;
+#mycode {
+	height: 65vh;
+}
+#linksect a {
+	font-size: 3em;
 }
 </style>
-<div id='leftside'>
+<div id='linksect' class='sect'>
+Bookmarklet<br />
+<center><a href='#' id='outlink'>this</a><br /><button onclick='rename(outlink)'>rename</button></center>
+</div>
+<div id='mycode' class='sect'>
+Code<br /><center><textarea id='mycodeta' onclick='this.select()'></textarea></center>
+</div>
 <div class='sect'>
-<h4>Code Entry</h4>
-<textarea id='codefield'></textarea><br />
-<button onclick='codeconvert()'>Code In</button>
-</div>
-
-<div class='sect'>
-<h4>Bookmarklet Name</h4>
-<input id='bmname' />
-</div>
-
-<div class='sect'>
-<h4>Single Line Code</h4>
-<input id='singleline' onclick='this.select() '/>
-</div>
-</div>
-
-<div id='rightside'>
-<div id='linksout' class='sect'>
-<h4>Bookmarklets</h4>
-</div>
+<button onclick='mycodeta.value=removeNLs(mycodeta.value)'>RemoveWhitespace</button>
+<button onclick='codeToLink(mycodeta.value,outlink)'>Save</button>
 </div>
 <script>
 function removeNLs(str){
@@ -67,18 +35,12 @@ function removeNLs(str){
 	}
 	return out;
 }
-function createLink(name, href){
-	const a=document.createElement('a');
-	a.href=href;
-	a.textContent=name;
-	return a;
+function codeToLink(code, a_ele){
+	a_ele.href='javascript:{'+code+'}';
 }
-function codeconvert(){
-	singleline.value=removeNLs(codefield.value);
-	if (bmname.value.length>0){
-		linksout.appendChild(createLink(bmname.value,'javascript:{'+singleline.value+'}'));
-		linksout.appendChild(document.createElement('br'));
-	}
+function rename(ele){
+	const n=prompt('Rename to:');
+	if (n) ele.textContent=n;
 }
 </script>
 </html>
