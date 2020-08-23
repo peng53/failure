@@ -1,54 +1,26 @@
 <html>
 <head>
 	<style>
-	body {
-		margin: 0;
-		background: gray;
-	}
-	textarea {
-		border: 1px dashed beige;
-		
-	}
-	div#buttons {
-		height: 30px;
-	}
-	div#inputs {
-		height: 90%;
-	}
-	div#inputs textarea {
-		background: #ccc;
-		overflow: scroll;
-	}
-	textarea#notes {
-		box-sizing: border-box;
-		height: 100%;
-		width: 60%;
-		font-family: monospace;
-		font-size: 1.2em;
-		float:left;
-	}
-	textarea#out {
-		box-sizing: border-box;
-		height: 100%;
-		width: 40%;
-		font-family: monospace;
-		font-size: 1.2em;
-		float:left;
+	#notes, #out {
+		height: 94%;
+		width: 49%;
 	}
 	</style>
 </head>
+
 <body>
-<div id='buttons'>
-<button onclick='insertTime()'>Time</button>
-<button onclick='formatNotes()'>Out</button>
-<button onclick='quickInsert(100)'>Meeting</button>
-</div>
-<div id='inputs'>
-<textarea id='notes'>
-</textarea>
-<textarea id='out'>
-</textarea>
-</div>
+	<div id='buttons'>
+		<button onclick='insertTime()'>InsTime</button>
+		<button onclick='quickInsert(100)'>Ins100</button>
+		<button onclick='formatNotes()'>ProcessLines</button>
+	</div>
+
+	<div>
+		<center>
+		<textarea id='notes'></textarea>
+		<textarea id='out'></textarea>
+		</center>
+	</div>
 </body>
 <script>
 function formatNotes(){
@@ -68,7 +40,7 @@ function formatNotes(){
 			diff = (ts - te)/60000;
 			if (diff > 0){
 				codes['PROD'] += diff;
-				out = leftPadded("ATO",4,' ') + ' ' + niceTime(te,':') +'  '+ niceTime(ts,':') + ' ' + leftPadded((diff/60).toFixed(2),5,' ') +'\n'; 
+				out = leftPadded("ATO",4,' ') + ' ' + niceTime(te,':') +'  '+ niceTime(ts,':') + ' ' + leftPadded((diff/60).toFixed(2),5,' ') +'\n';
 				outv.value += out;
 			}
 		}
@@ -80,7 +52,7 @@ function formatNotes(){
 				codes[code] = 0;
 			}
 			codes[code] += diff;
-			out = leftPadded(code,4,' ') + ' ' + niceTime(ts,':') +'  '+ niceTime(te,':') + ' ' + leftPadded((diff/60).toFixed(2),5,' ') +'\n'; 
+			out = leftPadded(code,4,' ') + ' ' + niceTime(ts,':') +'  '+ niceTime(te,':') + ' ' + leftPadded((diff/60).toFixed(2),5,' ') +'\n';
 			outv.value += out;
 		}
 	}
