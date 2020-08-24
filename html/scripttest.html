@@ -1,0 +1,19 @@
+<html>
+	<head>
+		<script>
+			function loadJs(file){
+				if (!file) return;
+				let s=document.createElement('script');
+				s.src=file;
+				s.type='text/javascript';
+				document.head.appendChild(s);
+				console.log('Loaded '+file);
+			}
+		</script>
+	</head>
+	<body>
+		<label for='code'>Code</label><br />
+		<input id='code' /><br />
+		<button onclick='loadJs(code.value)'>Load</button>
+	</body>
+</html>
