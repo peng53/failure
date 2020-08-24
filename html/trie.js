@@ -13,22 +13,18 @@ class Trie {
 	get words(){
 		let words = [];
 		let q = new Queue();
-		for (let r=0;r<26;++r){
-			if (this.root.c[r]){
-				q.put([chari(r), this.root.c[r]]);
-			}
-		}
+		q.put(['', this.root]);
 		let chars,node;
 		while (q.len>0){
 			[chars,node] = q.get();
 			if (node.isWord==true){
 				words.push(chars);
 			}
-			for (let r=0;r<26;++r){
-				if (node.c[r]){
-					q.put([chars+chari(r), node.c[r]]);
+			node.c.forEach(
+				(p,i)=>{
+					if (p) q.put([chars+chari(i), p]);
 				}
-			}
+			);
 		}
 		return words;
 	}
