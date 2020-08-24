@@ -1,20 +1,8 @@
+
 class Trie {
 	constructor(){
 		this.root = new Node();
 	}
-	/*
-	addWord(word){
-		let p = this.root;
-		let i;
-		for (const l of word){
-			i = l.charCodeAt()-97;
-			if (p.c[i]==null){
-				p.c[i] = new Node();
-			}
-			p = p.c[i];
-		}
-		p.isWord = true;
-	}*/
 	hasWord(word){
 		const [p, r] = this.root.prefix(word);
 		return r==word.length-1 && p.isWord==true;
@@ -22,7 +10,28 @@ class Trie {
 	addWord(word){
 		this.root.addNodes(word).isWord = true;
 	}
-
+	get words(){
+		let words = [];
+		let q = new Queue();
+		for (let r=0;r<26;++r){
+			if (this.root.c[r]){
+				q.put([chari(r), this.root.c[r]]);
+			}
+		}
+		let chars,node;
+		while (q.len>0){
+			[chars,node] = q.get();
+			if (node.isWord==true){
+				words.push(chars);
+			}
+			for (let r=0;r<26;++r){
+				if (node.c[r]){
+					q.put([chars+chari(r), node.c[r]]);
+				}
+			}
+		}
+		return words;
+	}
 }
 class Node {
 	constructor(){
@@ -63,4 +72,7 @@ class Node {
 
 function charc(c){
 	return c.toLowerCase().charCodeAt()-97;
+}
+function chari(i){
+	return String.fromCharCode(i+97);
 }
