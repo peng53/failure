@@ -1,7 +1,47 @@
+function customNodes(toIndexF, fromIndexF, maxI){
+	const Ob = class {
+		constructor(){
+			this.c = new Array(maxI);
+			for (let i=0;i<maxI;++i){
+				this.c[i] = null;
+			}
+		}
+		hasPrefix(pfx){
+			let [p, r] = this.prefix(pfx);
+			return r==pfx.length-1;
+		}
+		prefix(pfx){
+			let p = this, i;
+			for (let r=0,R=pfx.length;r<R;++r){
+				i = charc(pfx[r]);
+				if (!p.c[i]){
+					return [p, r-1];
+				}
+				p = p.c[i];
+			}
+			return [p, pfx.length-1];
+		}
+		addNodes(pfx){
+			let [p, r] = this.prefix(pfx);
+			let i;
+			++r;
+			for (const R=pfx.length;r<R;++r){
+				i = charc(pfx[r]);
+				if (p){
+					p.c[i] = new Ob;
+					p = p.c[i];
+				}
+			}
+			return p;
+		}
+	};
+	return Ob;
+}
 
 class Trie {
 	constructor(){
-		this.root = new Node();
+		this.NODE = customNodes(charc, chari, 26);
+		this.root = new this.NODE();
 	}
 	hasWord(word){
 		const [p, r] = this.root.prefix(word);
@@ -29,42 +69,6 @@ class Trie {
 		return words;
 	}
 }
-class Node {
-	constructor(){
-		this.c = new Array(26);
-		for (let i=0;i<26;++i){
-			this.c[i] = null;
-		}
-	}
-	hasPrefix(pfx){
-		let [p, r] = this.prefix(pfx);
-		return r==pfx.length-1;
-	}
-	prefix(pfx){
-		let p = this, i;
-		for (let r=0,R=pfx.length;r<R;++r){
-			i = charc(pfx[r]);
-			if (!p.c[i]){
-				return [p, r-1];
-			}
-			p = p.c[i];
-		}
-		return [p, pfx.length-1];
-	}
-	addNodes(pfx){
-		let [p, r] = this.prefix(pfx);
-		let i;
-		++r;
-		for (const R=pfx.length;r<R;++r){
-			i = charc(pfx[r]);
-			if (p){
-				p.c[i] = new Node();
-				p = p.c[i];
-			}
-		}
-		return p;
-	}
-}
 
 function charc(c){
 	return c.toLowerCase().charCodeAt()-97;
@@ -72,3 +76,5 @@ function charc(c){
 function chari(i){
 	return String.fromCharCode(i+97);
 }
+
+
