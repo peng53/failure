@@ -1,8 +1,8 @@
-function customNodes(toIndexF, fromIndexF, maxI){
+function customNodes(hasher){
 	const Ob = class {
 		constructor(){
-			this.c = new Array(maxI);
-			for (let i=0;i<maxI;++i){
+			this.c = new Array(hasher.len);
+			for (let i=0;i<hasher.len;++i){
 				this.c[i] = null;
 			}
 		}
@@ -13,7 +13,7 @@ function customNodes(toIndexF, fromIndexF, maxI){
 		prefix(pfx){
 			let p = this, i;
 			for (let r=0,R=pfx.length;r<R;++r){
-				i = charc(pfx[r]);
+				i = hasher.toindex(pfx[r]);
 				if (!p.c[i]){
 					return [p, r-1];
 				}
@@ -26,7 +26,7 @@ function customNodes(toIndexF, fromIndexF, maxI){
 			let i;
 			++r;
 			for (const R=pfx.length;r<R;++r){
-				i = charc(pfx[r]);
+				i = hasher.toindex(pfx[r]);
 				if (p){
 					p.c[i] = new Ob;
 					p = p.c[i];
@@ -39,8 +39,9 @@ function customNodes(toIndexF, fromIndexF, maxI){
 }
 
 class Trie {
-	constructor(){
-		this.NODE = customNodes(charc, chari, 26);
+	constructor(hasher, hlen){
+		this.hasher = hasher;
+		this.NODE = customNodes(this.hasher);
 		this.root = new this.NODE();
 	}
 	hasWord(word){
@@ -62,7 +63,7 @@ class Trie {
 			}
 			node.c.forEach(
 				(p,i)=>{
-					if (p) q.put([chars+chari(i), p]);
+					if (p) q.put([chars+this.hasher.tochar(i), p]);
 				}
 			);
 		}
@@ -70,11 +71,13 @@ class Trie {
 	}
 }
 
-function charc(c){
-	return c.toLowerCase().charCodeAt()-97;
-}
-function chari(i){
-	return String.fromCharCode(i+97);
-}
-
-
+const LowerAlphaHash = {
+	toindex : (c) => c.toLowerCase().charCodeAt()-97,
+	tochar : (i) => String.fromCharCode(i+97),
+	len: 26
+};
+const PrintableHash = {
+	toindex : (c) => c.charCodeAt()-32,
+	tochar : (i) => String.fromCharCode(i+32),
+	len: 95
+};
