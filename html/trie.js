@@ -52,14 +52,17 @@ class Trie {
 		this.root.addNodes(word).isWord = true;
 	}
 	get words(){
-		let words = [];
-		let q = new Queue();
-		q.put(['', this.root]);
+		return this.affixesNode(this.root);
+	}
+	affixesNode(ofNode){
+		const afx = [];
+		const q = new Queue();
+		q.put(['', ofNode ? ofNode : this.root]);
 		let chars,node;
 		while (q.len>0){
 			[chars,node] = q.get();
 			if (node.isWord==true){
-				words.push(chars);
+				afx.push(chars);
 			}
 			node.c.forEach(
 				(p,i)=>{
@@ -67,7 +70,15 @@ class Trie {
 				}
 			);
 		}
-		return words;
+		return afx;
+	}
+	affixes(pfx){
+		const [p, r] = this.root.prefix(pfx);
+		if (p && r==pfx.length-1){
+			return this.affixesNode(p);
+		} else {
+			return [];
+		}
 	}
 }
 
