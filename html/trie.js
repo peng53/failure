@@ -55,22 +55,7 @@ class Trie {
 		return this.affixesNode(this.root);
 	}
 	affixesNode(ofNode){
-		const afx = [];
-		const q = new Queue();
-		q.put(['', ofNode ? ofNode : this.root]);
-		let chars,node;
-		while (q.len>0){
-			[chars,node] = q.get();
-			if (node.isWord==true){
-				afx.push(chars);
-			}
-			node.c.forEach(
-				(p,i)=>{
-					if (p) q.put([chars+this.hasher.tochar(i), p]);
-				}
-			);
-		}
-		return afx;
+		return Array.from(this.affixesG(ofNode));
 	}
 	affixes(pfx){
 		const [p, r] = this.root.prefix(pfx);
@@ -78,6 +63,22 @@ class Trie {
 			return this.affixesNode(p);
 		} else {
 			return [];
+		}
+	}
+	*affixesG(ofNode){
+		const q = new Queue();
+		q.put(['', ofNode]);
+		let chars,node;
+		while (q.len>0){
+			[chars,node] = q.get();
+			if (node.isWord==true){
+				yield(chars);
+			}
+			node.c.forEach(
+				(p,i)=>{
+					if (p) q.put([chars+this.hasher.tochar(i), p]);
+				}
+			);
 		}
 	}
 }
