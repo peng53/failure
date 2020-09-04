@@ -74,54 +74,23 @@ function addCodes(table, codes){
 	}
 }
 
-function testingFunc(){
-	const testIn =`\
-2:00 PM 8/22/2020
-123
-2:05 PM 8/22/2020
-
-2:07 PM 8/22/2020
-134
-2:10 PM 8/22/2020
-
-2:10 PM 8/22/2020
-145
-2:15 PM 8/22/2020
-
-2:20 PM 8/22/2020
-156
-2:40 PM 8/22/2020
-
-3:00 PM 8/22/2020
-167
-3:30 PM 8/22/2020
-
-4:00 PM 8/22/2020
-178
-5:00 PM 8/22/2020
-`;
-	const [parsedData, codes] = formatNotes(testIn.split('\n'));
-	const addlCodes = [700, 705, 123];
-	addlCodes.map(x=>{if (x in codes==false) codes[x]=0;});
-	addDataToTables(rows.querySelectorAll('table'), parsedData, 10, addTimeRow);
-	addCodes(totals.querySelector('table'), codes);
-	console.table(parsedData);
+function parseDataToBoxes(data, timerowTables, rowLimit, totalTable){
+	const [parsedData, codes] = formatNotes(data);
+	addDataToTables(timerowTables, parsedData, rowLimit, addTimeRow);
+	addCodes(totalTable, codes);
+	for (const t of timerowTables){
+		fillTable(t, rowLimit);
+	}
 }
-//testingFunc();
 
 function setUpInputBox(){
 	const div = document.createElement('div');
-	div.appendChild(document.createTextNode('DataLines'));
-	div.appendChild(document.createElement('br'));
-	div.style.position = 'absolute';
-	div.style.bottom = 0;
-	div.style.width = '100vw';
-	div.id = 'specialdiv';
+	div.style.cssText = 'position: absolute; bottom: 0; width: 100vw; background: beige;';
 	div.classList.add('hidden');
-	div.style.background = 'beige';
+
 	let tb = div.appendChild(document.createElement('textarea'));
-	tb.style.width = tb.style.height = '100%';
-	div.appendChild(document.createElement('br'));
+	tb.style.cssText = 'width: 100%; height: 100%;';
+
 	tb.value = `2:00 PM 8/22/2020
 123
 2:05 PM 8/22/2020
@@ -129,19 +98,16 @@ function setUpInputBox(){
 2:07 PM 8/22/2020
 134
 2:10 PM 8/22/2020`;
-	div.onclick = div.remove();
+	div.appendChild(document.createElement('br'));
 	let gobutton = div.appendChild(document.createElement('button'));
 	gobutton.textContent = 'Generate';
 	gobutton.onclick = function(){
-		const [parsedData, codes] = formatNotes(specialdiv.querySelector('textarea').value.split('\n'));
-		console.log(specialdiv.querySelector('textarea').value);
-		const addlCodes = [700, 705, 123];
-		addlCodes.map(x=>{if (x in codes==false) codes[x]=0;});
-		addDataToTables(rows.querySelectorAll('table'), parsedData, 22, addTimeRow);
-		addCodes(totals.querySelector('table'), codes);
-		for (const t of rows.querySelectorAll('table')){
-			fillTable(t, 22);
-		}
+		parseDataToBoxes(
+			div.querySelector('textarea').value.split('\n'),
+			rows.querySelectorAll('table'),
+			22,
+			totals.querySelector('table')
+		);
 		div.remove();
 	};
 	let xbutton = div.appendChild(document.createElement('button'));
@@ -150,6 +116,8 @@ function setUpInputBox(){
 
 	document.body.appendChild(div);
 }
+
+
 function fillTable(table, limit){
 	const tbody = table.querySelector('tbody');
 	let n = tbody.children.length;
