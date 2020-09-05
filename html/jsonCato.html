@@ -1,6 +1,6 @@
 <html>
 <style>
-input, textarea {
+#propname, textarea {
 	width: 100%;
 	border: 1px grey inset;
 }
@@ -35,6 +35,7 @@ thead td {
 }
 tfoot input {
 	background: beige;
+	width: 100%;
 }
 body {
 	background: white;
@@ -131,6 +132,7 @@ class DataTable {
 			cell.textContent = '';
 			cell.appendChild(input);
 		}
+		rows[n].querySelector('input').focus();
 	}
 	rowEndEdit(n){
 		const rows = this.rowBody.children;
@@ -321,10 +323,10 @@ function toggleDialog(dialog){
 <button onclick='toggleDialog(dialogAddField)'>Add Field</button>
 <button onclick='toggleDialog(dialogImportJson)'>Import JSON</button>
 
-<div style='width: 0'>
-<label><input type='radio' name='mytableMode' value='none' onclick='mytable.mode = this.value' checked />None</label><br />
-<label><input type='radio' name='mytableMode' value='edit' onclick='mytable.mode = this.value' />Edit</label><br />
-<label><input type='radio' name='mytableMode' value='delete' onclick='mytable.mode = this.value' />Delete</label><br />
+<div>
+<label><input type='radio' name='mytableMode' value='none' onclick='mytable.mode = this.value' checked />None</label>
+<label><input type='radio' name='mytableMode' value='edit' onclick='mytable.mode = this.value' />Edit</label>
+<label><input type='radio' name='mytableMode' value='delete' onclick='mytable.mode = this.value' />Delete</label>
 </div>
 </div>
 
