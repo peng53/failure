@@ -50,7 +50,7 @@ function startTime(){
 	ssbutton.onclick = stopTime;
 	setEndTime(0, 0, 0);
 }
-function setEndTime(hrs=0, mins=0, secs=0){
+function setEndTime(hrs, mins, secs){
 	let nowTime = new Date();
 	let diff = (hrs+Number(hleft.value))*3600000 + (mins+Number(mleft.value))*60000 + (secs+Number(sleft.value))*1000;
 	endTime = new Date(nowTime.getTime() + diff);
