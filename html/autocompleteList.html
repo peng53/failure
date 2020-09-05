@@ -1,0 +1,46 @@
+<html>
+<script src='trie.js'></script>
+<script src='queue.js'></script>
+<body>
+	<label for='letters'>Word to Complete</label><br />
+	<input id='letters' /><br />
+	<label for='outbox'>Possibilities</label><br />
+	<textarea id='outbox' rows=10></textarea><br />
+	<label for='wordlist'>Word Input List</label><br />
+	<textarea id='wordlist' rows=25></textarea><br />
+	<button onclick='addWords(wordlist.value.split("\n"))'>Add Words</button>
+</body>
+<script>
+class Dropbox {
+	constructor(entry, textbox){
+		this.entry = entry;
+		this.trie = new Trie(LowerAlphaHash);
+		this.trieNode = this.trie.root;
+		this.out = textbox;
+	}
+	update(){
+		const w = this.entry.value;
+		const [p, r] = this.trie.root.prefix(w);
+		let count = 0;
+		const limit = 10;
+		this.out.value = '';
+		for (const aw of this.trie.affixesG(p)){
+			this.out.value += w+aw + '\n';
+			if (count++ >= limit){
+				break;
+			}
+		}
+	}
+}
+const DB = new Dropbox(letters, outbox);
+function addWords(words){
+	words.forEach(w => DB.trie.addWord(w));
+}
+const lettersKeydown = function(e){
+	if (letters.value.length > 3){
+		DB.update();
+	}
+}
+letters.addEventListener('keydown', lettersKeydown);
+</script>
+</html>

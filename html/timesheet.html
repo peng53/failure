@@ -1,0 +1,212 @@
+<html>
+<style>
+@media print {
+	body {
+		margin: 0.2in;
+	}
+	.hidden {
+		display: none;
+	}
+}
+body {
+	background: transparent;
+	color: black;
+	margin: 0;
+	font-size: 10pt;
+}
+#everything {
+	height: 99%;
+	width: 100%;
+	display: grid;
+	grid-template:
+		'top top'
+		'rows totals'
+		'notes totals';
+	grid-template-rows: min-content 2fr 1fr;
+	grid-template-columns: 5fr 1fr;
+	gap: 1em 0.5em;
+}
+#tops {
+	grid-area: top;
+	display: grid;
+	grid-template:
+		'fname shift c'
+		'lname date c'
+		'pid hours c';
+	background: white;
+	grid-template-columns: 1fr 1fr 1fr;
+	gap: 1em 0.5em;
+}
+#fname-box {
+	grid-area: fname;
+}
+#shift-box {
+	grid-area: shift;
+}
+#topsc {
+	grid-area: c;
+}
+#lname-box {
+	grid-area: lname;
+}
+#date-box {
+	grid-area: date;
+}
+#pid-box {
+	grid-area: pid;
+}
+#hours-box {
+	grid-area: hours;
+}
+
+#rows {
+	grid-area: rows;
+}
+#leftAndRightRows {
+	display: grid;
+	grid-template:	'leftA rightA';
+	grid-template-columns: 1fr 1fr;
+}
+#leftRows {
+	grid-area: leftA;
+}
+#rightRows {
+	grid-area: rightA;
+	border-left: 1px grey solid;
+}
+.rowsContainer {
+
+}
+
+#totals {
+	grid-area: totals;
+}
+td,th {
+	font-size: 10pt;
+}
+td {
+	text-align: right;
+	border-top: 1px grey solid;
+	height: 22px;
+}
+tr:hover td {
+	background: yellow;
+}
+#notes {
+	grid-area: notes;
+}
+.sect {
+	border: 1px grey solid;
+	height: 100%;
+	text-align: center;
+}
+.sect:hover {
+	border: 1px gold solid;;
+}
+input {
+	border: 0;
+	font-weight: bold;
+	text-transform: capitalize;
+	font-variant: small-caps;
+	background: transparent;
+}
+textarea {
+	resize: none;
+	border: 0;
+	background: transparent;
+}
+</style>
+<div id='everything'>
+	<div id='tops'>
+		<div id='fname-box'>
+			<div class='sect'>
+				First Name<br />
+				<input />
+			</div>
+		</div>
+		<div id='shift-box'>
+			<div class='sect'>
+				Shift<br />
+				<input />
+			</div>
+		</div>
+		<div id='topsc'>
+			<div class='sect'>Empty</div>
+		</div>
+		<div id='lname-box'>
+			<div class='sect'>
+				Last Name<br />
+				<input />
+			</div>
+		</div>
+		<div id='date-box'>
+				<div class='sect'>
+				Date<br />
+				<input />
+			</div>
+		</div>
+		<div id='pid-box'>
+			<div class='sect'>
+				Id<br />
+				<input />
+			</div>
+		</div>
+		<div id='hours-box'>
+			<div class='sect'>
+				Hours<br />
+				<input />
+			</div>
+		</div>
+	</div>
+
+	<div id='rows'>
+	<div class='sect' id='leftAndRightRows'>
+		<div id='leftRows' class='rowsContainer'>
+			<table width=100%>
+			<thead>
+			<tr>
+				<th>Code</th>
+				<th>Start</th>
+				<th>End</th>
+				<th>Total</th>
+			</tr>
+			</thead>
+			<tbody>
+			<!-- Stuff gets inserted here! -->
+			</tbody>
+			</table>
+		</div>
+		<div id='rightRows' class='rowsContainer'>
+			<table width='100%'>
+			<thead>
+			<tr>
+				<th>Code</th>
+				<th>Start</th>
+				<th>End</th>
+				<th>Total</th>
+			</tr>
+			</thead>
+			<tbody>
+			<!-- Stuff gets inserted here! -->
+			</tbody>
+			</table>
+		</div>
+	</div>
+	</div>
+
+	<div id='totals'>
+	<div class='sect'>Totals
+	<table width='100%'>
+	<thead><tr><th>Code</th><th>Hours</th></tr></thead>
+	<tbody><!-- Stuff gets inserted here! -->	</tbody>
+	</table>
+	</div>
+	</div>
+
+	<div id='notes'>
+	<div class='sect'>Notes<br />
+	<textarea rows=10 style='width:100%'></textarea></div>
+	</div>
+</div>
+<script src='timesheet.js'></script>
+</html>

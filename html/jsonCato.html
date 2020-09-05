@@ -69,8 +69,8 @@ class DataTable {
 		this.table = table;
 		this.cols = new Map();
 		this.editing = null;
-		this.rowHeader = table.getElementsByTagName('thead')[0].getElementsByTagName('tr')[0];
-		this.rowBody = table.getElementsByTagName('tbody')[0];
+		this.rowHeader = table.querySelector('thead').querySelector('tr');
+		this.rowBody = table.querySelector('tbody');
 		this.mode = 'normal';
 	}
 	prop(name){

@@ -1,0 +1,46 @@
+<html>
+<style>
+.sect {
+	border: 1px grey outset;
+	padding: 0.5em;
+	margin: 1em;
+}
+textarea {
+	width: 95%;
+	height: 95%;
+}
+#mycode {
+	height: 65vh;
+}
+#linksect a {
+	font-size: 3em;
+}
+</style>
+<div id='linksect' class='sect'>
+Bookmarklet<br />
+<center><a href='#' id='outlink'>this</a><br /><button onclick='rename(outlink)'>rename</button></center>
+</div>
+<div id='mycode' class='sect'>
+Code<br /><center><textarea id='mycodeta' onclick='this.select()'></textarea></center>
+</div>
+<div class='sect'>
+<button onclick='mycodeta.value=removeNLs(mycodeta.value)'>RemoveWhitespace</button>
+<button onclick='codeToLink(mycodeta.value,outlink)'>Save</button>
+</div>
+<script>
+function removeNLs(str){
+	let out='';
+	for (const line of str.split('\n')){
+		out+=line.trim();
+	}
+	return out;
+}
+function codeToLink(code, a_ele){
+	a_ele.href='javascript:{'+code+'}';
+}
+function rename(ele){
+	const n=prompt('Rename to:');
+	if (n) ele.textContent=n;
+}
+</script>
+</html>
