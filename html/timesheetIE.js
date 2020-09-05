@@ -27,7 +27,7 @@ function formatNotes(data){
 				codes[code] = 0;
 			}
 			codes[code] += diff;
-			outv.push({code, start: niceTime(ts,':'), end: niceTime(te,':'), total: (diff/60).toFixed(2)});
+			outv.push({code:code, start: niceTime(ts,':'), end: niceTime(te,':'), total: (diff/60).toFixed(2)});
 		}
 	}
 	return [outv, codes];
@@ -79,8 +79,8 @@ function parseDataToBoxes(data, timerowTables, rowLimit, totalTable){
 	const parsedData = formattedNotes[0], codes = formattedNotes[1];
 	addDataToTables(timerowTables, parsedData, rowLimit, addTimeRow);
 	addCodes(totalTable, codes);
-	for (let i=0,l=timeRowTables.length;i<l;++i){
-		fillTable(timeRowTables[i], rowLimit);
+	for (let i=0,l=timerowTables.length;i<l;++i){
+		fillTable(timerowTables[i], rowLimit);
 	}
 }
 
@@ -92,14 +92,9 @@ function setUpInputBox(){
 	let tb = div.appendChild(document.createElement('textarea'));
 	tb.style.cssText = 'width: 100%; height: 100%;';
 
-	tb.value = `2:00 PM 8/22/2020
-123
-2:05 PM 8/22/2020
-
-2:07 PM 8/22/2020
-134
-2:10 PM 8/22/2020`;
+	tb.value = '2:00 PM 8/22/2020\n123\n2:05 PM 8/22/2020\n\n2:07 PM 8/22/2020\n134\n2:10 PM 8/22/2020';
 	div.appendChild(document.createElement('br'));
+
 	let gobutton = div.appendChild(document.createElement('button'));
 	gobutton.textContent = 'Generate';
 	gobutton.onclick = function(){
@@ -109,11 +104,11 @@ function setUpInputBox(){
 			22,
 			totals.querySelector('table')
 		);
-		div.remove();
+		div.parentNode.removeChild(div);
 	};
 	let xbutton = div.appendChild(document.createElement('button'));
 	xbutton.textContent = 'X';
-	xbutton.onclick = ()=> div.remove();
+	xbutton.onclick = function(){ div.remove();};
 
 	document.body.appendChild(div);
 }
