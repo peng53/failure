@@ -1,0 +1,60 @@
+<html>
+	<style>
+	table {
+		width: 100%;
+		height: 100%;
+		border-collapse: collapse;
+	}
+	td,th {
+		border: 1px #000 solid;
+	}
+	td {
+		text-align: center;
+	}
+	.titlecell {
+		background: #888;
+	}
+	th {
+		background: lightblue;
+	}
+	</style>
+	<body>
+		<table>
+			<thead>
+			</thead>
+			<tbody>
+			</tbody>
+		</table>
+		<a href="javascript:location += '?title=test&cols=col1:col2&col1=1:2:3:4&col2=5:6:7';">Example</a>
+	</body>
+	<script>
+		let params = (new URL(document.location)).searchParams;
+		let title = params.get('title');
+		let cols = params.get('cols').split(':');
+		let thead = document.querySelector('thead');
+		let row = thead.insertRow(-1);
+		let cell = row.appendChild(document.createElement('th'));
+		cell.colSpan = cols.length;
+		cell.classList.add('titlecell');
+		cell.textContent = title;
+		row = thead.insertRow(-1);
+		for (let i=0;i<cols.length;++i){
+			row.appendChild(document.createElement('th')).textContent = cols[i];
+		}
+		let tbody = document.querySelector('tbody');
+		let data = [];
+		// data separated by cols
+		let rowcnt = Number.POSITIVE_INFINITY;
+		for (let i=0;i<cols.length;++i){
+			console.log(cols[i]);
+			data[i] = params.get(cols[i]).split(':');
+			rowcnt = Math.min(rowcnt, data[i].length);
+		}
+		for (let r=0;r<rowcnt;++r){
+			row = tbody.insertRow(-1);
+			for (let c=0;c<cols.length;++c){
+				row.insertCell(-1).textContent = data[c][r];
+			}
+		}
+	</script>
+</html>
