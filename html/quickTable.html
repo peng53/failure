@@ -19,6 +19,9 @@
 	th {
 		background: lightblue;
 	}
+	table[contenteditable="true"] {
+		background: beige;
+	}
 	</style>
 	</head>
 	<body>
@@ -145,5 +148,12 @@
 		}
 		location = '?'+parts.join('&');
 	}
+	addEventListener('keydown', function(e){
+		if (e.ctrlKey && e.key=='e'){
+			e.preventDefault();
+			const t = document.querySelector('table');
+			t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+		}
+	});
 	</script>
 </html>

@@ -44,7 +44,7 @@ body {
 button {
 	margin-top: 1em;
 }
-.cellEditing {
+.rowEditing td {
 	background: skyblue;
 }
 </style>
@@ -128,20 +128,15 @@ class DataTable {
 		const rows = this.rowBody.children;
 		if (n>=rows.length) return;
 		this.editing = n;
-		for (const cell of rows[n].children){
-			cell.contentEditable = 'true';
-			cell.classList.add('cellEditing');
-		}
-		//rows[n].querySelector('td').focus();
+		rows[n].contentEditable = 'true';
+		rows[n].classList.add('rowEditing');
 	}
 	rowEndEdit(n){
 		const rows = this.rowBody.children;
 		if (n==null || n>=rows.length) return;
 		this.editing = null;
-		for (const cell of rows[n].children){
-			cell.contentEditable = 'false';
-			cell.classList.remove('cellEditing');
-		}
+		rows[n].contentEditable = 'false';
+		rows[n].classList.remove('rowEditing');
 	}
 	sortByKey(key, remap){
 		const parent = this.rowBody;
@@ -160,7 +155,7 @@ class DataTable {
 	rowclicked(n, cell){
 		if (this.mode == 'edit'){
 			this.rowStartEdit(n);
-			cell.focus();
+			setTimeout(function(){cell.focus();console.log(cell);}, 100);
 		} else if (this.mode == 'delete'){
 			this.deleteRow(n);
 		}
