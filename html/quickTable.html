@@ -148,11 +148,39 @@
 		}
 		location = '?'+parts.join('&');
 	}
+
+	function tableAddCol(){
+		document.querySelector('.titlecell').colSpan += 1;
+		document.querySelectorAll('thead tr')[1].appendChild(document.createElement('th'));
+		const rows = document.querySelectorAll('tbody tr');
+		for (let r=0,l=rows.length;r<l;++r){
+			rows[r].insertCell(-1);
+		}
+	}
+	function tableAddRow(){
+		const cols = document.querySelectorAll('th:not(.titlecell)').length;
+		const row = document.querySelector('tbody').insertRow(-1);
+		let t;
+		for (let i=0;i<cols;++i){
+			t = row.insertCell(-1);;
+		}
+		t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+		t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+	}
+
 	addEventListener('keydown', function(e){
-		if (e.ctrlKey && e.key=='e'){
-			e.preventDefault();
-			const t = document.querySelector('table');
-			t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+		if (e.ctrlKey){
+			if (e.key=='e'){
+				e.preventDefault();
+				const t = document.querySelector('table');
+				t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+			} else if (e.key=='\\'){
+				e.preventDefault();
+				tableAddCol();
+			} else if (e.key==';'){
+				e.preventDefault();
+				tableAddRow();
+			}
 		}
 	});
 	</script>
