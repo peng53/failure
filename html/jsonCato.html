@@ -44,6 +44,9 @@ body {
 button {
 	margin-top: 1em;
 }
+.cellEditing {
+	background: skyblue;
+}
 </style>
 <script>
 'use strict';
@@ -125,21 +128,19 @@ class DataTable {
 		const rows = this.rowBody.children;
 		if (n>=rows.length) return;
 		this.editing = n;
-		let input;
 		for (const cell of rows[n].children){
-			input = document.createElement('input');
-			input.value = cell.textContent;
-			cell.textContent = '';
-			cell.appendChild(input);
+			cell.contentEditable = 'true';
+			cell.classList.add('cellEditing');
 		}
-		rows[n].querySelector('input').focus();
+		//rows[n].querySelector('td').focus();
 	}
 	rowEndEdit(n){
 		const rows = this.rowBody.children;
 		if (n==null || n>=rows.length) return;
 		this.editing = null;
 		for (const cell of rows[n].children){
-			cell.textContent = cell.firstChild.value;
+			cell.contentEditable = 'false';
+			cell.classList.remove('cellEditing');
 		}
 	}
 	sortByKey(key, remap){
@@ -156,9 +157,10 @@ class DataTable {
 		);
 		rows.forEach(row => parent.appendChild(row));
 	}
-	rowclicked(n){
+	rowclicked(n, cell){
 		if (this.mode == 'edit'){
 			this.rowStartEdit(n);
+			cell.focus();
 		} else if (this.mode == 'delete'){
 			this.deleteRow(n);
 		}
@@ -357,11 +359,11 @@ mytable.rowHeader.addEventListener('dblclick', e=>{
 });
 
 mytable.rowBody.addEventListener('click', e => {
-	if (e.altKey && e.target.tagName == 'TD'){
+	if (e.target.tagName == 'TD'){
 		e.preventDefault();
 		const row = e.target.parentElement;
 		const rows = Array.prototype.slice.call(row.parentElement.children);
-		mytable.rowclicked(rows.indexOf(row));
+		mytable.rowclicked(rows.indexOf(row), e.target);
 	}
 });
 {
