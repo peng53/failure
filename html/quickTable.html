@@ -32,9 +32,33 @@
 		</div>
 	</body>
 	<script>
-		const params = (new URL(document.location)).searchParams;
-		const cols = params.get('cols').split(':');
+		let params;
+		try {
+			params = (new URL(document.location)).searchParams;
+		} catch(e) {
+			// IE support
+			params = {
+				data: {},
+				get:function(k){ return this.data[k];}
+			};
+			{
+				let q = location.href.split('?');
+				let kv;
+				if (q.length>1){
+					q = q[1].split('&');
+					for (let i=0,l=q.length;i<l;++i){
+						if (q[i].search('=')!=-1){
+							kv = q[i].split('=');
+							params.data[kv[0]] = kv[1];
+						} else {
+							params.data[q[i]]=true;
+							}
+					}
+				}
+			}
+		}
 
+		const cols = params.get('cols').split(':');
 		{
 			// Filling out thead portion
 			const thead = document.querySelector('thead');
