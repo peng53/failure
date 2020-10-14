@@ -76,40 +76,40 @@
 
 		let alldata = {};
 		const datasep = params.get('datasep');
-		let rowcnt = Number.POSITIVE_INFINITY;
+		let rows = [];
 
 		if (datasep == 'col'){
 			// Getting data from query
+			let coldata;
 			for (let col in cols){
-				alldata[cols[col]] = params.get(cols[col]).split(':');
-				rowcnt = Math.min(rowcnt, alldata[cols[col]].length);
+				coldata = params.get(cols[col]).split(':');
+				for (let r=0;r<coldata.length;++r){
+					if (r>=rows.length){
+						rows.push([]);
+					}
+					rows[r].push(coldata[r]);
+				}
 			}
 		} else if (datasep == 'row'){
-			let rows = params.get('rows').split(':');
-			rowcnt = rows.length;
-			for (let col in cols){
-				alldata[cols[col]] = [];
-			}
-			let rowdata;
-			for (let row in rows){
-				rowdata = rows[row].split('|');
-				for (let c=0;c<cols.length;++c){
-					alldata[cols[c]].push(rowdata[c]);
-				}
+			let rawRows = params.get('rows').split(':');
+			for (let row in rawRows){
+				rows.push(rawRows[row].split('|'));
 			}
 		}
 
-		{
+		function setTbody(rows){
 			// Setting data from alldata
 			const tbody = document.querySelector('tbody');
 			let row;
-			for (let r=0;r<rowcnt;++r){
+			for (let r=0,l=rows.length;r<l;++r){
 				row = tbody.insertRow(-1);
 				for (let c=0;c<cols.length;++c){
-					row.insertCell(-1).textContent = alldata[cols[c]][r];
+					row.insertCell(-1).textContent = rows[r][c];
 				}
 			}
 		}
+		setTbody(rows);
+
 	function exportAll(){
 		let cols = [];
 		{
