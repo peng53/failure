@@ -1,0 +1,187 @@
+<html>
+	<head>
+	<style>
+	table {
+		width: 100%;
+		height: 100%;
+		border-collapse: collapse;
+	}
+	td,th {
+		border: 1px #000 solid;
+		font-size: 5vmin;
+	}
+	td {
+		text-align: center;
+	}
+	.titlecell {
+		background: #888;
+	}
+	th {
+		background: lightblue;
+	}
+	table[contenteditable="true"] {
+		background: beige;
+	}
+	</style>
+	</head>
+	<body>
+		<table><thead></thead><tbody></tbody></table>
+		<div style='position:fixed;bottom:0;left:50%;background:#fff'>
+		<a href="javascript:location='?title=test&cols=x:2x plus 1&x=1:2:3:4&2x plus 1=3:5:7&datasep=col'">ColSep</a>
+		<a href="javascript:location='?title=rowSep&cols=letter:ascii&rows=a|97:b|98:c|99&datasep=row'">RowSep</a>
+		</div>
+	</body>
+	<script>
+		const params = (new URL(document.location)).searchParams;
+		const cols = params.get('cols').split(':');
+
+		{
+			// Filling out thead portion
+			const thead = document.querySelector('thead');
+			{
+				// Creating title head column
+				const title = params.get('title');
+				document.head.appendChild(document.createElement('title')).textContent = title;
+				const cell = thead.insertRow(-1).appendChild(document.createElement('th'));
+				cell.colSpan = cols.length;
+				cell.classList.add('titlecell');
+				cell.textContent = title;
+			}
+			{
+				// Creating column name row
+				const row = thead.insertRow(-1);
+				for (let col in cols){
+					row.appendChild(document.createElement('th')).textContent = cols[col];
+				}
+			}
+		}
+
+		let alldata = {};
+		const datasep = params.get('datasep');
+		let rowcnt = Number.POSITIVE_INFINITY;
+
+		if (datasep == 'col'){
+			// Getting data from query
+			for (let col in cols){
+				alldata[cols[col]] = params.get(cols[col]).split(':');
+				rowcnt = Math.min(rowcnt, alldata[cols[col]].length);
+			}
+		} else if (datasep == 'row'){
+			let rows = params.get('rows').split(':');
+			rowcnt = rows.length;
+			for (let col in cols){
+				alldata[cols[col]] = [];
+			}
+			let rowdata;
+			for (let row in rows){
+				rowdata = rows[row].split('|');
+				for (let c=0;c<cols.length;++c){
+					alldata[cols[c]].push(rowdata[c]);
+				}
+			}
+		}
+
+		{
+			// Setting data from alldata
+			const tbody = document.querySelector('tbody');
+			let row;
+			for (let r=0;r<rowcnt;++r){
+				row = tbody.insertRow(-1);
+				for (let c=0;c<cols.length;++c){
+					row.insertCell(-1).textContent = alldata[cols[c]][r];
+				}
+			}
+		}
+	function exportAll(){
+		let cols = [];
+		{
+			const th = document.querySelectorAll('th:not(.titlecell)');
+			for (let i=0,l=th.length;i<l;++i){
+				cols.push(th[i].textContent);
+			}
+		}
+		const out = {};
+		out.title = document.querySelector('.titlecell').textContent;
+		out.data = [];
+		{
+			const tr = document.querySelectorAll('tbody tr');
+			let row;
+			let cells;
+			for (let r=0,l=tr.length;r<l;++r){
+				row = {};
+				cells = tr[r].querySelectorAll('td');
+				for (let c=0;c<cols.length;++c){
+					row[cols[c]] = cells[c].textContent;
+				}
+				out.data.push(row);
+			}
+		}
+		console.log(JSON.stringify(out));
+		let blob=new Blob([JSON.stringify(out)], {type:'text/json'});
+		location=URL.createObjectURL(blob);
+	}
+	function page2qs(){
+		let parts = [];
+		parts.push('title='+document.querySelector('.titlecell').textContent);
+		parts.push('datasep=row');
+		{
+			let cols = [];
+			const th = document.querySelectorAll('th:not(.titlecell)');
+			for (let i=0,l=th.length;i<l;++i){
+				cols.push(th[i].textContent);
+			}
+			parts.push('cols='+cols.join(':'));
+		}
+		{
+			const tr = document.querySelectorAll('tbody tr');
+			let rows = [], cells;
+			let row;
+			for (let r=0,l=tr.length;r<l;++r){
+				row = [];
+				cells = tr[r].querySelectorAll('td');
+				for (let c=0;c<cols.length;++c){
+					row.push(cells[c].textContent);
+				}
+				rows.push(row.join('|'));
+			}
+			parts.push('rows='+rows.join(':'));
+		}
+		location = '?'+parts.join('&');
+	}
+
+	function tableAddCol(){
+		document.querySelector('.titlecell').colSpan += 1;
+		document.querySelectorAll('thead tr')[1].appendChild(document.createElement('th'));
+		const rows = document.querySelectorAll('tbody tr');
+		for (let r=0,l=rows.length;r<l;++r){
+			rows[r].insertCell(-1);
+		}
+	}
+	function tableAddRow(){
+		const cols = document.querySelectorAll('th:not(.titlecell)').length;
+		const row = document.querySelector('tbody').insertRow(-1);
+		let t;
+		for (let i=0;i<cols;++i){
+			t = row.insertCell(-1);;
+		}
+		t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+		t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+	}
+
+	addEventListener('keydown', function(e){
+		if (e.ctrlKey){
+			if (e.key=='e'){
+				e.preventDefault();
+				const t = document.querySelector('table');
+				t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+			} else if (e.key=='\\'){
+				e.preventDefault();
+				tableAddCol();
+			} else if (e.key==';'){
+				e.preventDefault();
+				tableAddRow();
+			}
+		}
+	});
+	</script>
+</html>

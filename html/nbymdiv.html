@@ -1,0 +1,137 @@
+<html>
+<style>
+@media print {
+	.card textarea:invalid, #adda, .unused {
+		display: none;
+	}
+}
+body {
+	margin: 0;
+}
+.row {
+	width: 100%;
+}
+.card {
+	float: left;
+}
+.card textarea {
+	width: 99%;
+	height: 99%;
+	border: 1px #999 solid;
+	background: transparent;
+	resize: none;
+}
+#adda {
+	top: 25vh;
+	right: 0;
+	position: fixed;
+	text-align: center;
+}
+.card tr td:first-child {
+	font-weight: bold;
+}
+.card table {
+	margin: 0.5em;
+	width: 90%;
+	border-collapse: collapse;
+}
+.card td {
+	border: 1px #999 solid;
+}
+</style>
+<body>
+<!--
+<div id='adda'>
+<textarea></textarea><br/>
+<button>Submit</button>
+</div>-->
+</body>
+<script>
+let params = (new URL(document.location)).searchParams;
+let rows = params.get('rows');
+let cols = params.get('cols');
+if (!rows) rows = 2;
+if (!cols) cols = 4;
+
+const createTa = function(){
+	const ta = document.createElement('textarea');
+	ta.required = true;
+	return ta;
+};
+
+const miniTable = function(r,c, cellF){
+	const table = document.createElement('table');
+	let row, col, cell;
+	for (let i=0; i<r; ++i){
+		row = table.insertRow(-1);
+		for (let j=0; j<c; ++j){
+			cell = row.insertCell(-1);
+			cell.textContent = cellF(i,j);
+		}
+	}
+	return table;
+};
+const miniTable5x5stuff = function(){
+	return miniTable(5,5,function(x,y){return x+y;});
+};
+
+function tablePropsVals(title, props){
+	const table = document.createElement('table');
+	let row = table.insertRow(-1);
+	let cell= row.insertCell(-1);
+	cell.textContent = title;
+	cell.colSpan = 2;
+	let prop;
+	for (prop in props){
+		row = table.insertRow(-1);
+		row.insertCell(-1).textContent = prop;
+		row.insertCell(-1).textContent = props[prop];
+	}
+	return table;
+}
+
+const propTable = function(){
+	const table = tablePropsVals('myTable',{'Val':0,'Val2':0, 'Val3':0, 'Val4':0});
+	table.classList.add('unused');
+	return table;
+};
+
+function createCards(rows,cols,innerF){
+	let d, drow;
+	for (let row=0;row<rows;++row){
+		drow = document.createElement('div');
+		drow.classList.add('row');
+		for (let col=0;col<cols;++col){
+			d = document.createElement('div');
+			d.appendChild(innerF());
+			d.classList.add('card');
+			drow.append(d);
+		}
+		document.body.append(drow);
+		document.body.append(document.createElement('br'));
+	}
+	let style = document.createElement('style');
+	style.textContent = '.card { float: left; width:' + Math.floor(100/cols).toFixed(2).toString() + '%; height:' + Math.floor(100/rows).toFixed(2).toString() + '%; }';
+	document.head.appendChild(style);
+}
+//createCards(rows,cols,createTa);
+//createCards(rows,cols,miniTable5x5stuff);
+createCards(rows,cols,propTable);
+
+function modifyUnusedTable(vals){
+	let table = document.querySelector('.unused')
+	let cells = table.querySelectorAll('tr td:nth-child(2)');
+	table.classList.remove('unused');
+	for (let i=0; i<cells.length && i<vals.length; ++i){
+		cells[i].textContent = vals[i];
+	}
+	let row = table.insertRow(-1);
+	let cell = row.insertCell(-1);
+	cell.colSpan = 2;
+	let ta = document.createElement('textarea');
+	ta.rows = 5;
+	cell.appendChild(ta);
+}
+
+</script>
+</html>

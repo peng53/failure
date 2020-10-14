@@ -44,6 +44,9 @@ body {
 button {
 	margin-top: 1em;
 }
+.rowEditing td {
+	background: skyblue;
+}
 </style>
 <script>
 'use strict';
@@ -125,22 +128,15 @@ class DataTable {
 		const rows = this.rowBody.children;
 		if (n>=rows.length) return;
 		this.editing = n;
-		let input;
-		for (const cell of rows[n].children){
-			input = document.createElement('input');
-			input.value = cell.textContent;
-			cell.textContent = '';
-			cell.appendChild(input);
-		}
-		rows[n].querySelector('input').focus();
+		rows[n].contentEditable = 'true';
+		rows[n].classList.add('rowEditing');
 	}
 	rowEndEdit(n){
 		const rows = this.rowBody.children;
 		if (n==null || n>=rows.length) return;
 		this.editing = null;
-		for (const cell of rows[n].children){
-			cell.textContent = cell.firstChild.value;
-		}
+		rows[n].contentEditable = 'false';
+		rows[n].classList.remove('rowEditing');
 	}
 	sortByKey(key, remap){
 		const parent = this.rowBody;
@@ -156,9 +152,10 @@ class DataTable {
 		);
 		rows.forEach(row => parent.appendChild(row));
 	}
-	rowclicked(n){
+	rowclicked(n, cell){
 		if (this.mode == 'edit'){
 			this.rowStartEdit(n);
+			setTimeout(function(){cell.focus();console.log(cell);}, 100);
 		} else if (this.mode == 'delete'){
 			this.deleteRow(n);
 		}
@@ -260,13 +257,15 @@ function deleteItems(data, table){
 	}
 }
 function createPropSidebarEntry(sidebar, label){
-	const div = document.createElement('div');
-	const lab = document.createElement('span');
-	lab.textContent = label;
-	div.appendChild(lab);
+	//const div = document.createElement('div');
+	const div = sidebar.appendChild(document.createElement('div'));
+	//const lab = document.createElement('span');
+	//lab.textContent = label;
+	//div.appendChild(lab);
+	div.appendChild(document.createElement('span')).textContent = label;
 	div.appendChild(document.createElement('br'));
 	div.appendChild(document.createElement('input'));
-	sidebar.appendChild(div);
+	//sidebar.appendChild(div);
 }
 function createPropTableEntry(proprow, label){
 	const cell = proprow.insertCell(-1);
@@ -298,9 +297,13 @@ function toggleDialog(dialog){
 
 <div id='dialogImportJson' class='hidden dialog'>
 <h3>Import JSON..</h3>
-<textarea id='rawjson' rows=10 ></textarea>
+<textarea id='rawjson' rows=10 ></textarea><br />
+<h4>From file..</h4>
+<input type='file' accept='.json' id='dialogImportJsonFileIn' /><br />
+<center>
 <button onclick='importItems(rawjson.value, myform, mytable);'>Import</button>
-<button onclick='toggleDialog(this.parentNode)'>Hide</button>
+<button onclick='toggleDialog(this.parentNode.parentNode)'>Hide</button>
+</center>
 </div>
 
 
@@ -334,6 +337,7 @@ function toggleDialog(dialog){
 'use strict';
 const mytable = new DataTable(entries);
 const myform = new DynaForm(eprops, createPropTableEntry);
+//const myform = new DynaForm(eprops, createPropSidebarEntry);
 // move to DataTable define..
 function escapeEdit(event){
 	if (event.key=='Escape' && mytable.editing){
@@ -350,13 +354,27 @@ mytable.rowHeader.addEventListener('dblclick', e=>{
 });
 
 mytable.rowBody.addEventListener('click', e => {
-	if (e.altKey && e.target.tagName == 'TD'){
+	if (e.target.tagName == 'TD'){
 		e.preventDefault();
 		const row = e.target.parentElement;
 		const rows = Array.prototype.slice.call(row.parentElement.children);
-		mytable.rowclicked(rows.indexOf(row));
+		mytable.rowclicked(rows.indexOf(row), e.target);
 	}
 });
-
+{
+	// binding the file in dialog
+	const fileSelected = function(e){
+		if (e.target.files.length>0){
+			const reader = new FileReader();
+			const gotLines = function(ev){
+				importItems([ev.target.result], myform, mytable);
+			};
+			reader.addEventListener('load', gotLines);
+			reader.readAsText(e.target.files[0]);
+			toggleDialog(dialogImportJson);
+		}
+	};
+	dialogImportJsonFileIn.addEventListener('change', fileSelected);
+}
 </script>
 </html>
