@@ -23,14 +23,6 @@
 		background: beige;
 	}
 	</style>
-	</head>
-	<body>
-		<table><thead></thead><tbody></tbody></table>
-		<div style='position:fixed;bottom:0;left:50%;background:#fff'>
-		<a href="javascript:location='?title=test&cols=x:2x plus 1&x=1:2:3:4&2x plus 1=3:5:7&datasep=col'">ColSep</a>
-		<a href="javascript:location='?title=rowSep&cols=letter:ascii&rows=a|97:b|98:c|99&datasep=row'">RowSep</a>
-		</div>
-	</body>
 	<script>
 		function fakeParams(){
 			let q = location.href.split('?');
@@ -60,7 +52,64 @@
 				colnameRow.appendChild(document.createElement('th')).textContent = cols[col];
 			}
 		}
+		function setTbody(rows){
+			// Setting data from alldata
+			const tbody = document.querySelector('tbody');
+			let row;
+			for (let r=0,l=rows.length;r<l;++r){
+				row = tbody.insertRow(-1);
+				for (let c=0;c<cols.length;++c){
+					row.insertCell(-1).textContent = rows[r][c];
+				}
+			}
+		}
+		function pageData(){
+			const colNames = Array.from(document.querySelectorAll('th:not(.titlecell)')).map(function(x){return x.textContent;});
+			const rowData = Array.from(document.querySelectorAll('tbody tr')).
+				map(function(r){
+					return Array.from(r.querySelectorAll('td')).
+						map(function(x){return x.textContent;});
+				});
+			return {cols:colNames, data:rowData, title:document.querySelector('.titlecell').textContent};
+		}
+		function exportBlob(){
+			const blob=new Blob([JSON.stringify(pageData())], {type:'text/json'});
+			window.open(URL.createObjectURL(blob));
+		}
+		function page2qs(){
+			const data = pageData();
+			const rows = data.data.map(function(r){return r.join('|');});
+			const parts = ['title='+data.title, 'datasep=row', 'cols='+data.cols.join(':'), 'rows='+rows.join(':')];
+			prompt('Query string is:', '?'+parts.join('&'));
+		}
 
+		function tableAddCol(){
+			document.querySelector('.titlecell').colSpan += 1;
+			document.querySelectorAll('thead tr')[1].appendChild(document.createElement('th'));
+			const rows = document.querySelectorAll('tbody tr');
+			for (let r=0,l=rows.length;r<l;++r){
+				rows[r].insertCell(-1);
+			}
+		}
+		function tableAddRow(){
+			const cols = document.querySelectorAll('th:not(.titlecell)').length;
+			const row = document.querySelector('tbody').insertRow(-1);
+			for (let i=0;i<cols;++i){
+				row.insertCell(-1);
+			}
+			row.contentEditable = 'true';
+			row.contentEditable = 'inherit';
+		}
+	</script>
+	</head>
+	<body>
+		<table><thead></thead><tbody></tbody></table>
+		<div style='position:fixed;bottom:0;left:50%;background:#fff'>
+		<a href="javascript:location='?title=test&cols=x:2x plus 1&x=1:2:3:4&2x plus 1=3:5:7&datasep=col'">ColSep</a>
+		<a href="javascript:location='?title=rowSep&cols=letter:ascii&rows=a|97:b|98:c|99&datasep=row'">RowSep</a>
+		</div>
+	</body>
+	<script>
 		let params;
 		try {
 			params = (new URL(document.location)).searchParams;
@@ -74,7 +123,6 @@
 		document.head.appendChild(document.createElement('title')).textContent = title;
 		reconfigThead(title,cols);
 
-		let alldata = {};
 		const datasep = params.get('datasep');
 		let rows = [];
 
@@ -96,110 +144,25 @@
 				rows.push(rawRows[row].split('|'));
 			}
 		}
-
-		function setTbody(rows){
-			// Setting data from alldata
-			const tbody = document.querySelector('tbody');
-			let row;
-			for (let r=0,l=rows.length;r<l;++r){
-				row = tbody.insertRow(-1);
-				for (let c=0;c<cols.length;++c){
-					row.insertCell(-1).textContent = rows[r][c];
-				}
-			}
-		}
 		setTbody(rows);
 
-	function exportAll(){
-		let cols = [];
-		{
-			const th = document.querySelectorAll('th:not(.titlecell)');
-			for (let i=0,l=th.length;i<l;++i){
-				cols.push(th[i].textContent);
-			}
-		}
-		const out = {};
-		out.title = document.querySelector('.titlecell').textContent;
-		out.data = [];
-		{
-			const tr = document.querySelectorAll('tbody tr');
-			let row;
-			let cells;
-			for (let r=0,l=tr.length;r<l;++r){
-				row = {};
-				cells = tr[r].querySelectorAll('td');
-				for (let c=0;c<cols.length;++c){
-					row[cols[c]] = cells[c].textContent;
+		addEventListener('keydown', function(e){
+			if (e.ctrlKey){
+				if (e.key=='e'){
+					e.preventDefault();
+					const t = document.querySelector('table');
+					t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+				} else if (e.key=='\\'){
+					e.preventDefault();
+					tableAddCol();
+				} else if (e.key==';'){
+					e.preventDefault();
+					tableAddRow();
+				} else if (e.key=='s'){
+					e.preventDefault();
+					exportBlob();
 				}
-				out.data.push(row);
 			}
-		}
-		console.log(JSON.stringify(out));
-		let blob=new Blob([JSON.stringify(out)], {type:'text/json'});
-		location=URL.createObjectURL(blob);
-	}
-	function page2qs(){
-		let parts = [];
-		parts.push('title='+document.querySelector('.titlecell').textContent);
-		parts.push('datasep=row');
-		{
-			let cols = [];
-			const th = document.querySelectorAll('th:not(.titlecell)');
-			for (let i=0,l=th.length;i<l;++i){
-				cols.push(th[i].textContent);
-			}
-			parts.push('cols='+cols.join(':'));
-		}
-		{
-			const tr = document.querySelectorAll('tbody tr');
-			let rows = [], cells;
-			let row;
-			for (let r=0,l=tr.length;r<l;++r){
-				row = [];
-				cells = tr[r].querySelectorAll('td');
-				for (let c=0;c<cols.length;++c){
-					row.push(cells[c].textContent);
-				}
-				rows.push(row.join('|'));
-			}
-			parts.push('rows='+rows.join(':'));
-		}
-		location = '?'+parts.join('&');
-	}
-
-	function tableAddCol(){
-		document.querySelector('.titlecell').colSpan += 1;
-		document.querySelectorAll('thead tr')[1].appendChild(document.createElement('th'));
-		const rows = document.querySelectorAll('tbody tr');
-		for (let r=0,l=rows.length;r<l;++r){
-			rows[r].insertCell(-1);
-		}
-	}
-	function tableAddRow(){
-		const cols = document.querySelectorAll('th:not(.titlecell)').length;
-		const row = document.querySelector('tbody').insertRow(-1);
-		let t;
-		for (let i=0;i<cols;++i){
-			t = row.insertCell(-1);;
-		}
-		t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
-		t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
-	}
-
-	addEventListener('keydown', function(e){
-		if (e.ctrlKey){
-			if (e.key=='e'){
-				e.preventDefault();
-				const t = document.querySelector('table');
-				t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
-			} else if (e.key=='\\'){
-				e.preventDefault();
-				tableAddCol();
-			} else if (e.key==';'){
-				e.preventDefault();
-				tableAddRow();
-			}
-		}
-	});
+		});
 	</script>
 </html>
