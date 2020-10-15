@@ -13,7 +13,7 @@
 	td {
 		text-align: center;
 	}
-	.titlecell {
+	#titlecell {
 		background: #888;
 	}
 	th {
@@ -24,53 +24,62 @@
 	}
 	</style>
 	<script>
+		'use strict';
 		function fakeParams(){
-			let q = location.href.split('?');
-			let kv, d = {};
+			const q = location.href.split('?'), d = {};
 			if (q.length>1){
-				q = q[1].split('&');
-				for (let i=0,l=q.length;i<l;++i){
-					if (q[i].search('=')!=-1){
-						kv = q[i].split('=');
-						d[kv[0]] = kv[1];
-					} else {
-						d[q[i]]=true;
-					}
-				}
+				q[1].split('&').forEach(function(a){
+					const kv = a.split('=');
+					d[kv[0]] = (kv.length == 1) ? true : kv[1];
+				});
 			}
 			return {data: d, get: function(k){ return this.data[k];}};
 		}
 
+		function addTh(text){
+			titlecell.colSpan += 1;
+			header.appendChild(document.createElement('th')).textContent = text;
+		}
+		function tableAddCol(text){
+			addTh(text);
+			Array.from(document.querySelectorAll('tbody tr')).forEach(function(r){r.insertCell(-1);});
+		}
 		function reconfigThead(title, cols){
-			const thead = document.querySelector('thead');
-			const tcell = thead.insertRow(-1).appendChild(document.createElement('th'));
-			tcell.colSpan = cols.length;
-			tcell.classList.add('titlecell');
-			tcell.textContent = title;
-			const colnameRow = thead.insertRow(-1);
-			for (let col in cols){
-				colnameRow.appendChild(document.createElement('th')).textContent = cols[col];
-			}
+			cols.forEach(function(c){addTh(c);});
+			titlecell.textContent = title;
+			titlecell.colSpan = cols.length;
+		}
+		function addTr(colVals){
+			const row = document.querySelector('tbody').insertRow(-1);
+			colVals.forEach(function(c){row.insertCell(-1).textContent = c;});
+		}
+		function nullStringArr(cnt){
+			const arr = [];
+			for (let i=0;i<cnt;++i) arr.push('');
+			return arr;
+		}
+		function tableAddRow(){
+			addTr(nullStringArr(document.querySelectorAll('#header th').length));
 		}
 		function setTbody(rows){
-			// Setting data from alldata
-			const tbody = document.querySelector('tbody');
-			let row;
-			for (let r=0,l=rows.length;r<l;++r){
-				row = tbody.insertRow(-1);
-				for (let c=0;c<cols.length;++c){
-					row.insertCell(-1).textContent = rows[r][c];
-				}
+			rows.forEach(function(r){addTr(r);});
+		}
+
+		function ArrayFrum(xs){
+			let r = [];
+			for (let i=0,l=xs.length;i<l;++i){
+				r.push(xs[i]);
 			}
+			return r;
 		}
 		function pageData(){
-			const colNames = Array.from(document.querySelectorAll('th:not(.titlecell)')).map(function(x){return x.textContent;});
+			const colNames = Array.from(document.querySelectorAll('#header th')).map(function(x){return x.textContent;});
 			const rowData = Array.from(document.querySelectorAll('tbody tr')).
 				map(function(r){
 					return Array.from(r.querySelectorAll('td')).
 						map(function(x){return x.textContent;});
 				});
-			return {cols:colNames, data:rowData, title:document.querySelector('.titlecell').textContent};
+			return {cols:colNames, data:rowData, title:titlecell.textContent};
 		}
 		function exportBlob(){
 			const blob=new Blob([JSON.stringify(pageData())], {type:'text/json'});
@@ -82,28 +91,22 @@
 			const parts = ['title='+data.title, 'datasep=row', 'cols='+data.cols.join(':'), 'rows='+rows.join(':')];
 			prompt('Query string is:', '?'+parts.join('&'));
 		}
-
-		function tableAddCol(){
-			document.querySelector('.titlecell').colSpan += 1;
-			document.querySelectorAll('thead tr')[1].appendChild(document.createElement('th'));
-			const rows = document.querySelectorAll('tbody tr');
-			for (let r=0,l=rows.length;r<l;++r){
-				rows[r].insertCell(-1);
+		function rowsSeparatedByCol(cols){
+			const rows = [];
+			for (let c=0,l=cols.length;c<l;++c){
+				for (let r=0;r<cols[c].length;++r){
+					if (r>=rows.length){
+						rows.push([]);
+					}
+					rows[r].push(cols[c][r]);
+				}
 			}
-		}
-		function tableAddRow(){
-			const cols = document.querySelectorAll('th:not(.titlecell)').length;
-			const row = document.querySelector('tbody').insertRow(-1);
-			for (let i=0;i<cols;++i){
-				row.insertCell(-1);
-			}
-			row.contentEditable = 'true';
-			row.contentEditable = 'inherit';
+			return rows;
 		}
 	</script>
 	</head>
 	<body>
-		<table><thead></thead><tbody></tbody></table>
+		<table><thead><tr><th id='titlecell'></th></tr><tr id='header'></tr></thead><tbody></tbody></table>
 		<div style='position:fixed;bottom:0;left:50%;background:#fff'>
 		<a href="javascript:location='?title=test&cols=x:2x plus 1&x=1:2:3:4&2x plus 1=3:5:7&datasep=col'">ColSep</a>
 		<a href="javascript:location='?title=rowSep&cols=letter:ascii&rows=a|97:b|98:c|99&datasep=row'">RowSep</a>
@@ -120,29 +123,16 @@
 
 		const cols = params.get('cols').split(':');
 		const title = params.get('title');
-		document.head.appendChild(document.createElement('title')).textContent = title;
+		document.querySelector
+		document.title = title;
 		reconfigThead(title,cols);
 
 		const datasep = params.get('datasep');
-		let rows = [];
-
+		let rows;
 		if (datasep == 'col'){
-			// Getting data from query
-			let coldata;
-			for (let col in cols){
-				coldata = params.get(cols[col]).split(':');
-				for (let r=0;r<coldata.length;++r){
-					if (r>=rows.length){
-						rows.push([]);
-					}
-					rows[r].push(coldata[r]);
-				}
-			}
+			rows = rowsSeparatedByCol(cols.map(function(p){return params.get(p).split(':');}));
 		} else if (datasep == 'row'){
-			let rawRows = params.get('rows').split(':');
-			for (let row in rawRows){
-				rows.push(rawRows[row].split('|'));
-			}
+			rows = params.get('rows').split(':').map(function(r){return r.split('|');});
 		}
 		setTbody(rows);
 
@@ -154,7 +144,8 @@
 					t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
 				} else if (e.key=='\\'){
 					e.preventDefault();
-					tableAddCol();
+					const text=prompt('Column name:');
+					if (text && text.length>0) tableAddCol(text);
 				} else if (e.key==';'){
 					e.preventDefault();
 					tableAddRow();
