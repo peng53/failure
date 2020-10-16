@@ -143,24 +143,22 @@
 		function controlPanel(){
 			let d = document.body.appendChild(document.createElement('div'));
 			d.classList.add('controlpanel');
-			let b = d.appendChild(document.createElement('button'));
-			b.textContent = 'Add Column';
-			b.onclick = function(){
-				const text=prompt('Column name:');
-				if (text && text.length>0) tableAddCol(text);
+			const addButton = function(p, t, f){
+				const b = p.appendChild(document.createElement('button'));
+				b.textContent = t;
+				b.onclick = f;
 			};
-			b = d.appendChild(document.createElement('button'));
-			b.textContent = 'Add Row';
-			b.onclick = function(){ tableAddRow(); };
-			b = d.appendChild(document.createElement('button'));
-			b.textContent = 'Save';
-			b.onclick = function(){ exportBlob(); };
-			b = d.appendChild(document.createElement('button'));
-			b.textContent = 'Edit';
-			b.onclick = function(){
+			addButton(d, 'Add Column', function(){
+				const text=prompt('Column name:');
+				if (text) tableAddCol(text);
+			});
+			addButton(d, 'Add Row', tableAddRow);
+			addButton(d, 'Save', exportBlob);
+			addButton(d, 'Edit', function(){
 				const t = document.querySelector('table');
 				t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
-			};
+			});
+			addButton(d, 'Edit Cell', editCellStart);
 			return d;
 		}
 		const cp = controlPanel();
@@ -169,6 +167,17 @@
 				cp.classList.toggle('hidden');
 			}
 		});
+		function editCell(e){
+			const cell = e.target;
+			if (cell.tagName=='TD' || cell.tagName=='TH'){
+				const text = prompt('New text:', cell.textContent);
+				if (text!==null) cell.textContent = text;
+				document.querySelector('table').onclick = undefined;
+			}
+		}
+		function editCellStart(){
+			document.querySelector('table').onclick = editCell;
+		}
 	</script>
 	<style>
 		.controlpanel {
