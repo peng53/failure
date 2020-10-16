@@ -22,6 +22,9 @@
 	table[contenteditable="true"] {
 		background: beige;
 	}
+	.hidden {
+		display: none;
+	}
 	</style>
 	<script>
 		'use strict';
@@ -136,24 +139,41 @@
 		}
 		setTbody(rows);
 
+
+		function controlPanel(){
+			let d = document.body.appendChild(document.createElement('div'));
+			d.classList.add('controlpanel');
+			let b = d.appendChild(document.createElement('button'));
+			b.textContent = 'Add Column';
+			b.onclick = function(){
+				const text=prompt('Column name:');
+				if (text && text.length>0) tableAddCol(text);
+			};
+			b = d.appendChild(document.createElement('button'));
+			b.textContent = 'Add Row';
+			b.onclick = function(){ tableAddRow(); };
+			b = d.appendChild(document.createElement('button'));
+			b.textContent = 'Save';
+			b.onclick = function(){ exportBlob(); };
+			b = d.appendChild(document.createElement('button'));
+			b.textContent = 'Edit';
+			b.onclick = function(){
+				const t = document.querySelector('table');
+				t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
+			};
+			return d;
+		}
+		const cp = controlPanel();
 		addEventListener('keydown', function(e){
-			if (e.ctrlKey){
-				if (e.key=='e'){
-					e.preventDefault();
-					const t = document.querySelector('table');
-					t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
-				} else if (e.key=='\\'){
-					e.preventDefault();
-					const text=prompt('Column name:');
-					if (text && text.length>0) tableAddCol(text);
-				} else if (e.key==';'){
-					e.preventDefault();
-					tableAddRow();
-				} else if (e.key=='s'){
-					e.preventDefault();
-					exportBlob();
-				}
+			if (e.key=='Control'){
+				cp.classList.toggle('hidden');
 			}
 		});
 	</script>
+	<style>
+		.controlpanel {
+			position: fixed;
+			top:0;
+		}
+	</style>
 </html>
