@@ -25,6 +25,10 @@
 	.hidden {
 		display: none;
 	}
+	.controlpanel {
+		position: fixed;
+		top:0;
+	}
 	</style>
 	<script>
 		'use strict';
@@ -43,10 +47,6 @@
 			titlecell.colSpan += 1;
 			header.appendChild(document.createElement('th')).textContent = text;
 		}
-		function tableAddCol(text){
-			addTh(text);
-			Array.from(document.querySelectorAll('tbody tr')).forEach(function(r){r.insertCell(-1);});
-		}
 		function reconfigThead(title, cols){
 			cols.forEach(function(c){addTh(c);});
 			titlecell.textContent = title;
@@ -56,43 +56,8 @@
 			const row = document.querySelector('tbody').insertRow(-1);
 			colVals.forEach(function(c){row.insertCell(-1).textContent = c;});
 		}
-		function nullStringArr(cnt){
-			const arr = [];
-			for (let i=0;i<cnt;++i) arr.push('');
-			return arr;
-		}
-		function tableAddRow(){
-			addTr(nullStringArr(document.querySelectorAll('#header th').length));
-		}
 		function setTbody(rows){
 			rows.forEach(function(r){addTr(r);});
-		}
-
-		function ArrayFrum(xs){
-			let r = [];
-			for (let i=0,l=xs.length;i<l;++i){
-				r.push(xs[i]);
-			}
-			return r;
-		}
-		function pageData(){
-			const colNames = Array.from(document.querySelectorAll('#header th')).map(function(x){return x.textContent;});
-			const rowData = Array.from(document.querySelectorAll('tbody tr')).
-				map(function(r){
-					return Array.from(r.querySelectorAll('td')).
-						map(function(x){return x.textContent;});
-				});
-			return {cols:colNames, data:rowData, title:titlecell.textContent};
-		}
-		function exportBlob(){
-			const blob=new Blob([JSON.stringify(pageData())], {type:'text/json'});
-			window.open(URL.createObjectURL(blob));
-		}
-		function page2qs(){
-			const data = pageData();
-			const rows = data.data.map(function(r){return r.join('|');});
-			const parts = ['title='+data.title, 'datasep=row', 'cols='+data.cols.join(':'), 'rows='+rows.join(':')];
-			prompt('Query string is:', '?'+parts.join('&'));
 		}
 		function rowsSeparatedByCol(cols){
 			const rows = [];
@@ -126,63 +91,18 @@
 
 		const cols = params.get('cols').split(':');
 		const title = params.get('title');
-		document.querySelector
-		document.title = title;
+		if (title) document.title = title;
 		reconfigThead(title,cols);
 
 		const datasep = params.get('datasep');
 		let rows;
 		if (datasep == 'col'){
 			rows = rowsSeparatedByCol(cols.map(function(p){return params.get(p).split(':');}));
+			rows.forEach(function(r){while (r.length<cols.length){r.push('')}});
 		} else if (datasep == 'row'){
 			rows = params.get('rows').split(':').map(function(r){return r.split('|');});
 		}
 		setTbody(rows);
-
-
-		function controlPanel(){
-			let d = document.body.appendChild(document.createElement('div'));
-			d.classList.add('controlpanel');
-			const addButton = function(p, t, f){
-				const b = p.appendChild(document.createElement('button'));
-				b.textContent = t;
-				b.onclick = f;
-			};
-			addButton(d, 'Add Column', function(){
-				const text=prompt('Column name:');
-				if (text) tableAddCol(text);
-			});
-			addButton(d, 'Add Row', tableAddRow);
-			addButton(d, 'Save', exportBlob);
-			addButton(d, 'Edit', function(){
-				const t = document.querySelector('table');
-				t.contentEditable = (t.contentEditable=='true') ? 'false' : 'true';
-			});
-			addButton(d, 'Edit Cell', editCellStart);
-			return d;
-		}
-		const cp = controlPanel();
-		addEventListener('keydown', function(e){
-			if (e.key=='Control'){
-				cp.classList.toggle('hidden');
-			}
-		});
-		function editCell(e){
-			const cell = e.target;
-			if (cell.tagName=='TD' || cell.tagName=='TH'){
-				const text = prompt('New text:', cell.textContent);
-				if (text!==null) cell.textContent = text;
-				document.querySelector('table').onclick = undefined;
-			}
-		}
-		function editCellStart(){
-			document.querySelector('table').onclick = editCell;
-		}
 	</script>
-	<style>
-		.controlpanel {
-			position: fixed;
-			top:0;
-		}
-	</style>
+	<script src='quickTableAdv.js'></script>
 </html>
