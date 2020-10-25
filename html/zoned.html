@@ -11,34 +11,32 @@
 	.opdrop {
 		background: #eee;
 	}
-	.zone2 {
-		float: left;
-		width: 48%;
-		text-align: center;
-		font-size: 1.5em;
-	}
-	.zone3 {
-		float: left;
-		width: 32%;
-		text-align: center;
-		font-size: 1.5em;
-	}
-	.zone2 select, .zone3 select, .zone4 select, #rzone select {
-		width: 95%;
+	select {
+		width: 100%;
 		background: transparent;
 		color: black;
-		margin: 0.5em;
 		border: 0;
 	}
-	.zone4 {
-		float: left;
-		width: 24%;
-		text-align: center;
-		font-size: 1.5em;
+	option {
+		font-size: 2em;
 	}
 	.row {
 		overflow:auto;
 		width: 75%;
+	}
+	.row div {
+		float: left;
+		text-align: center;
+		font-size: 1.5em;
+	}
+	.cols2 div {
+		width: calc(100% / 2);
+	}
+	.cols3 div {
+		width: calc(100% / 3);
+	}
+	.cols4 div {
+		width: 25%;
 	}
 	#rzone {
 		overflow:auto;
@@ -50,12 +48,6 @@
 		text-align: center;
 		font-size: 1.5em;
 	}
-	option {
-		font-size: 2em;
-	}
-	.row div {
-		border: 1px lime inset;
-	}
 </style>
 <div id='rzone'>
 	<div>
@@ -63,84 +55,84 @@
 	<select></select>
 	</div>
 </div>
-<div class='row'>
-	<div class='zone3'>
+<div class='row cols3'>
+	<div>
 	Group A<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group B<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group C<br />
-	<select size=0></select>
+	<select></select>
 	</div>
 </div>
-<div class='row'>
-	<div class='zone3'>
+<div class='row cols3'>
+	<div>
 	Group D<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group E<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group F<br />
-	<select size=0></select>
+	<select></select>
 	</div>
 </div>
-<div class='row'>
-	<div class='zone3'>
+<div class='row cols3'>
+	<div>
 	Group G<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group H<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group I<br />
-	<select size=0></select>
+	<select></select>
 	</div>
 </div>
-<div class='row'>
-	<div class='zone3'>
+<div class='row cols3'>
+	<div>
 	Group J<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group K<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group M<br />
-	<select size=0></select>
+	<select></select>
 	</div>
 </div>
-<div class='row'>
-	<div class='zone3'>
+<div class='row cols3'>
+	<div>
 	Group N<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group O<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone3'>
+	<div>
 	Group P<br />
-	<select size=0></select>
+	<select></select>
 	</div>
 </div>
-<div class='row'>
-	<div class='zone2'>
+<div class='row cols2'>
+	<div>
 	Group Q<br />
-	<select size=0></select>
+	<select></select>
 	</div>
-	<div class='zone2'>
+	<div>
 	Group R<br />
-	<select size=0></select>
+	<select></select>
 	</div>
 </div>
 
