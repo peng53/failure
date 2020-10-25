@@ -3,10 +3,8 @@
 	.zname {
 		font-weight: bold;
 		background: skyblue;
-		text-align: center;
-	}
-	.zname::selection {
-		background: red;
+		text-align: right;
+		font-family: monospace;
 	}
 	.opdrop {
 		background: #eee;
@@ -49,99 +47,84 @@
 		font-size: 1.5em;
 	}
 </style>
-<div id='rzone'>
-	<div>
-	RZONE<br />
-	<select></select>
-	</div>
+<div id='rzone'><div>
+	RZONE
+	<br /><select></select></div>
 </div>
 <div class='row cols3'>
 	<div>
-	Group A<br />
-	<select></select>
-	</div>
+	Group A
+	<br /><select></select></div>
 	<div>
-	Group B<br />
-	<select></select>
-	</div>
+	Group B
+	<br /><select></select></div>
 	<div>
-	Group C<br />
-	<select></select>
-	</div>
+	Group C
+	<br /><select></select></div>
 </div>
 <div class='row cols3'>
 	<div>
-	Group D<br />
-	<select></select>
-	</div>
+	Group D
+	<br /><select></select></div>
 	<div>
-	Group E<br />
-	<select></select>
-	</div>
+	Group E
+	<br /><select></select></div>
 	<div>
-	Group F<br />
-	<select></select>
-	</div>
+	Group F
+	<br /><select></select></div>
 </div>
 <div class='row cols3'>
 	<div>
-	Group G<br />
-	<select></select>
-	</div>
+	Group G
+	<br /><select></select></div>
 	<div>
-	Group H<br />
-	<select></select>
-	</div>
+	Group H
+	<br /><select></select></div>
 	<div>
-	Group I<br />
-	<select></select>
-	</div>
+	Group I
+	<br /><select></select></div>
 </div>
 <div class='row cols3'>
 	<div>
-	Group J<br />
-	<select></select>
-	</div>
+	Group J
+	<br /><select></select></div>
 	<div>
-	Group K<br />
-	<select></select>
-	</div>
+	Group K
+	<br /><select></select></div>
 	<div>
-	Group M<br />
-	<select></select>
-	</div>
+	Group M
+	<br /><select></select></div>
 </div>
 <div class='row cols3'>
 	<div>
-	Group N<br />
-	<select></select>
-	</div>
+	Group N
+	<br /><select></select></div>
 	<div>
-	Group O<br />
-	<select></select>
-	</div>
+	Group O
+	<br /><select></select></div>
 	<div>
-	Group P<br />
-	<select></select>
-	</div>
+	Group P
+	<br /><select></select></div>
 </div>
 <div class='row cols2'>
 	<div>
-	Group Q<br />
-	<select></select>
-	</div>
+	Group Q
+	<br /><select></select></div>
 	<div>
-	Group R<br />
-	<select></select>
-	</div>
+	Group R
+	<br /><select></select></div>
 </div>
 
 
 <script>
 function moveOption(toparent, ele){
-	--ele.parentElement.size;
+	//--ele.parentElement.size;
+	//--ele.parentElement.querySelector('.zname').textContent;
+	ele.parentElement.querySelector('.zname').textContent = --ele.parentElement.size-2;
 	toparent.appendChild(ele);
-	++toparent.size;
+	//++toparent.size;
+	//++toparent.querySelector('.zname').textContent;
+	toparent.querySelector('.zname').textContent = ++toparent.size-2;
 }
 var optionDropZone = undefined;
 function setOptionDropZone(event){
@@ -161,13 +144,14 @@ function clickHandler(event){
 {
 	let op;
 	const selects = document.querySelectorAll('select');
-	const names = ['usa','c','d','p','C','D','P','F','J','J','o','m','M','L','r','R','a','A'];
+	//const names = ['usa','c','d','p','C','D','P','F','J','J','o','m','M','L','r','R','a','A'];
 	for (let i=0;i<selects.length;++i){
 		op = selects[i].appendChild(document.createElement('option'))
-		op.textContent = names[i];
+		//op.textContent = names[i];
+		op.textContent = '0';
 		op.classList.add('zname');
 		op.addEventListener('click', setOptionDropZone);
-		selects[i].size += 2;
+		selects[i].size = 2;
 		selects[i].addEventListener('click', clickHandler);
 	}
 }
@@ -178,6 +162,7 @@ function clickHandler(event){
 		++s.size;
 		s.appendChild(document.createElement('option')).textContent = i;
 	}
+	s.querySelector('.zname').textContent = s.children.length-1;
 }
 </script>
 </html>
