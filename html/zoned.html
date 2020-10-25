@@ -1,0 +1,191 @@
+<html>
+<style>
+	.zname {
+		font-weight: bold;
+		background: skyblue;
+		text-align: center;
+	}
+	.zname::selection {
+		background: red;
+	}
+	.opdrop {
+		background: #eee;
+	}
+	.zone2 {
+		float: left;
+		width: 48%;
+		text-align: center;
+		font-size: 1.5em;
+	}
+	.zone3 {
+		float: left;
+		width: 32%;
+		text-align: center;
+		font-size: 1.5em;
+	}
+	.zone2 select, .zone3 select, .zone4 select, #rzone select {
+		width: 95%;
+		background: transparent;
+		color: black;
+		margin: 0.5em;
+		border: 0;
+	}
+	.zone4 {
+		float: left;
+		width: 24%;
+		text-align: center;
+		font-size: 1.5em;
+	}
+	.row {
+		overflow:auto;
+		width: 75%;
+	}
+	#rzone {
+		overflow:auto;
+		width: 24%;
+		right: 1em;
+		position: fixed;
+	}
+	#rzone div {
+		text-align: center;
+		font-size: 1.5em;
+	}
+	option {
+		font-size: 2em;
+	}
+	.row div {
+		border: 1px lime inset;
+	}
+</style>
+<div id='rzone'>
+	<div>
+	RZONE<br />
+	<select></select>
+	</div>
+</div>
+<div class='row'>
+	<div class='zone3'>
+	Group A<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group B<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group C<br />
+	<select size=0></select>
+	</div>
+</div>
+<div class='row'>
+	<div class='zone3'>
+	Group D<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group E<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group F<br />
+	<select size=0></select>
+	</div>
+</div>
+<div class='row'>
+	<div class='zone3'>
+	Group G<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group H<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group I<br />
+	<select size=0></select>
+	</div>
+</div>
+<div class='row'>
+	<div class='zone3'>
+	Group J<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group K<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group M<br />
+	<select size=0></select>
+	</div>
+</div>
+<div class='row'>
+	<div class='zone3'>
+	Group N<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group O<br />
+	<select size=0></select>
+	</div>
+	<div class='zone3'>
+	Group P<br />
+	<select size=0></select>
+	</div>
+</div>
+<div class='row'>
+	<div class='zone2'>
+	Group Q<br />
+	<select size=0></select>
+	</div>
+	<div class='zone2'>
+	Group R<br />
+	<select size=0></select>
+	</div>
+</div>
+
+
+<script>
+function moveOption(toparent, ele){
+	--ele.parentElement.size;
+	toparent.appendChild(ele);
+	++toparent.size;
+}
+var optionDropZone = undefined;
+function setOptionDropZone(event){
+	event.preventDefault();
+	if (optionDropZone) optionDropZone.parentElement.classList.toggle('opdrop');
+	optionDropZone = event.target.parentElement;
+	optionDropZone.parentElement.classList.toggle('opdrop');
+}
+
+function clickHandler(event){
+	if (optionDropZone && event.target.tagName=='OPTION' && event.target.parentElement!=optionDropZone && !event.target.classList.contains('zname')){
+		moveOption(optionDropZone, event.target);
+	}
+}
+
+
+{
+	let op;
+	const selects = document.querySelectorAll('select');
+	const names = ['usa','c','d','p','C','D','P','F','J','J','o','m','M','L','r','R','a','A'];
+	for (let i=0;i<selects.length;++i){
+		op = selects[i].appendChild(document.createElement('option'))
+		op.textContent = names[i];
+		op.classList.add('zname');
+		op.addEventListener('click', setOptionDropZone);
+		selects[i].size += 2;
+		selects[i].addEventListener('click', clickHandler);
+	}
+}
+{
+	const s = document.querySelector('select');
+	const names = [];
+	for (let i=0;i<26;++i){
+		++s.size;
+		s.appendChild(document.createElement('option')).textContent = i;
+	}
+}
+</script>
+</html>
