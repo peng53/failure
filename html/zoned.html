@@ -39,14 +39,17 @@
 	#rzone {
 		overflow:auto;
 		width: 24%;
-		right: 1em;
+		right: -1em;
 		position: fixed;
+		bottom: 1em;
+		top: 1em;
 	}
 	#rzone div {
 		text-align: center;
 		font-size: 1.5em;
 	}
 </style>
+<body>
 <div id='rzone'><div>
 	RZONE
 	<br /><select></select></div>
@@ -114,24 +117,28 @@
 	Group R
 	<br /><select></select></div>
 </div>
-
+</body>
 
 <script>
 function moveOption(toparent, ele){
-	//--ele.parentElement.size;
-	//--ele.parentElement.querySelector('.zname').textContent;
 	ele.parentElement.querySelector('.zname').textContent = --ele.parentElement.size-2;
 	toparent.appendChild(ele);
-	//++toparent.size;
-	//++toparent.querySelector('.zname').textContent;
 	toparent.querySelector('.zname').textContent = ++toparent.size-2;
 }
 var optionDropZone = undefined;
 function setOptionDropZone(event){
 	event.preventDefault();
-	if (optionDropZone) optionDropZone.parentElement.classList.toggle('opdrop');
-	optionDropZone = event.target.parentElement;
-	optionDropZone.parentElement.classList.toggle('opdrop');
+	if (event.ctrlKey){
+		const tomove = event.target.parentElement.querySelectorAll('option:not(.zname)');
+		const uns = document.querySelector('#rzone select');
+		for (let i=0;i<tomove.length;++i){
+			moveOption(uns,tomove[i]);
+		}
+	} else {
+		if (optionDropZone) optionDropZone.parentElement.classList.toggle('opdrop');
+		optionDropZone = event.target.parentElement;
+		optionDropZone.parentElement.classList.toggle('opdrop');
+	}
 }
 
 function clickHandler(event){
@@ -139,6 +146,7 @@ function clickHandler(event){
 		moveOption(optionDropZone, event.target);
 	}
 }
+
 
 
 {
