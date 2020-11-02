@@ -1,0 +1,55 @@
+<style>
+#buttons {
+	float: left;
+	width: 50%;
+	text-align: center;
+}
+#buttons button {
+	margin: 5px;
+	font-size: 2em;
+}
+#outbox {
+	width: 50%;
+	height: 80%;
+	font-size: 1.5em;
+}
+#container {
+	margin: 0 auto;
+}
+#controls {
+	position: fixed;
+	bottom: 0;
+	right: 0;
+}
+</style>
+<div id='container'>
+<div id='buttons'>
+</div>
+<textarea id='outbox' rows='10'>
+</textarea>
+</div>
+<div id='controls'>
+<button onclick='outbox.value=""'>Clear</button>
+<button onclick='outbox.select()'>Select All</button>
+<button onclick='del=",\n"'>Set Del CommaNL</button>
+<button onclick='del=", "'>Set Del Comma</button>
+
+</div>
+<script>
+const items = "a,aa,aaa,aah,aahed,aahing,aahs,aal,aalii,aaliis,aals,aam,aani,aardvark,aardvarks,aardwolf,aardwolves,aargh,aaron,aaronic,aaronical,aaronite,aaronitic,aarrgh,aarrghh,aaru,aas".split(',');
+
+//const items = "jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn,jack,moe,larry,tom,pahn".split(',');
+let button;
+let del = ',\n';
+const callback = function(caller){
+	if (outbox.value.length>0){
+		outbox.value+=del;
+	}
+	outbox.value += caller.target.textContent;
+};
+for (let i=0;i<items.length;++i){
+	button = buttons.appendChild(document.createElement('button'));
+	button.textContent = items[i];
+	button.onclick = callback;
+}
+</script>
