@@ -1,51 +1,63 @@
 <html>
 <style>
+.zone {
+	border: 1px solid black;
+	margin: 0.5em;
+	padding-bottom: 0.2em;
+}
 .zoneheader {
-	font-weight: bold;
+	margin: 0em;
+	text-align: center;
+	background: black;
+	color: white;
+	width: 100%;
+	font-family: monospace;
+	font-size: 1.5em;
+}
+.zoneheader:hover {
+	cursor: alias;
+	color: yellow;
+}
+.zoneheader:before {
+	content: '[ ]';
+}
+.selectedZone {
+	background: #ddd;
+}
+.selectedZone .zoneheader:before {
+	content: '[+]';
+	color: red;
+}
+.selectedZone .item:hover {
+	cursor: default;
+	color: black;
 }
 .buttons {
 	text-align: center;
+	padding: 0.5em;
+	width:100%;
 }
-.buttons button {
-	font-size: 1.2em;
+.item:hover {
+	cursor: cell;
+	color: blue;
 }
-.zone {
-	width: 33.33%;
-	float: left;
-	padding-bottom: 50px;
-}
-#Unassigned {
-	width: 100%;
-	background: grey;
-	float: none;
-}
-.selectedZone:not(#Unassigned) {
-	background: beige;
-	padding-bottom: 200px;
-}
-button {
-	margin: 3px;
-}
-.selectedZone button {
-	color: yellow;
+.item+.item:before {
+	content: ', ';
 }
 .hidden {
 	display: none;
 }
 .dialog {
 	position: fixed;
-	top: 20%;
-	bottom: 20%;
-	left: 20%;
-	right: 20%;
+	top: 80%;
+	bottom: 0%;
+	left: 0%;
+	right: 0%;
 	background: white;
 }
 #popup textarea {
 	height: 90%;
 	width: 100%;
-}
-.row {
-	overflow: auto;
 }
 </style>
 <div class='dialog hidden' id='popup'>
@@ -54,26 +66,18 @@ button {
 </div>
 <div id='zonesContainer'>
 <div class='zone' id='Unassigned'></div>
-<div class='row'>
 <div class='zone' id='Zone 1'></div>
 <div class='zone' id='Zone 2'></div>
 <div class='zone' id='Zone 3'></div>
-</div>
-<div class='row'>
 <div class='zone' id='Zone 4'></div>
 <div class='zone' id='Zone 5'></div>
 <div class='zone' id='Zone 6'></div>
-</div>
-<div class='row'>
 <div class='zone' id='Zone 7'></div>
 <div class='zone' id='Zone 8'></div>
 <div class='zone' id='Zone 9'></div>
-</div>
-<div class='row'>
 <div class='zone' id='Zone 10'></div>
 <div class='zone' id='Zone 11'></div>
 <div class='zone' id='Zone 12'></div>
-</div>
 </div>
 
 
@@ -87,30 +91,27 @@ const selectThis = function(event){
 	selectedZone.classList.add('selectedZone');
 };
 const toText = function(event){
-	let buttons = event.target.parentElement.querySelectorAll('.buttons button');
+	let buttons = event.target.parentElement.querySelectorAll('.buttons .item');
 	let ta = popup.querySelector('textarea');
 	ta.value = '';
 	for (let i=0;i<buttons.length;++i){
 		if (i!=0){
-			ta.value += ', ';
+			ta.value += ',';
 		}
 		ta.value += buttons[i].textContent;
 	}
-	popup.classList.toggle('hidden');
+	popup.classList.remove('hidden');
+	event.preventDefault();
 };
 
 const zones = zonesContainer.querySelectorAll('.zone');
 let header, bts, selectb;
 for (let i=0;i<zones.length;++i){
-	header = zones[i].appendChild(document.createElement('span'));
+	header = zones[i].appendChild(document.createElement('h4'));
 	header.textContent = zones[i].id;
 	header.classList.add('zoneheader');
-	selectb = zones[i].appendChild(document.createElement('button'));
-	selectb.textContent = 'select';
-	selectb.onclick = selectThis;
-	totextb = zones[i].appendChild(document.createElement('button'));
-	totextb.textContent = 'text';
-	totextb.onclick = toText;
+	header.onclick = selectThis;
+	zones[i].oncontextmenu = toText;
 	bts = zones[i].appendChild(document.createElement('div'));
 	bts.classList.add('buttons');
 }
@@ -125,12 +126,13 @@ const moveButton = function(event){
 	}
 };
 
-const items = 'bacon,cheese,sandwich'.split(',');
+const items = 'bacon,cheese,sandwich,cookie,jam,banana,phone,ounce,pound,cake'.split(',');
 let usn = Unassigned.querySelector('.buttons');
 let button;
 for (let i=0;i<items.length;++i){
-	button = usn.appendChild(document.createElement('button'));
-	button.textContent = items[i];
+	button = usn.appendChild(document.createElement('span'));
+	button.classList.add('item');
+	button.textContent = items[i]+' ';
 	button.onclick = moveButton;
 }
 </script>
