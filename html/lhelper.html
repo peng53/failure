@@ -11,38 +11,31 @@
 </div>
 </body>
 <script>
-let helper = document.body.appendChild(document.createElement('div'));
-helper.style.cssText = 'background:#fff;position:fixed;right:5%;top:5%;border:1px solid #000;padding:1%;';
-let ct = helper.appendChild(document.createElement('div'));
-let shelper = helper.appendChild(document.createElement('div'));
+let h=document.body.appendChild(document.createElement('div')),
+	t=h.appendChild(document.createElement('div')),
+	H=h.appendChild(document.createElement('div'));
+h.style.cssText='background:#fff;position:fixed;right:5%;top:5%;border:1px solid #000;padding:1%;';
 {
-	let m = ct.appendChild(document.createElement('button'));
-	m.textContent = '-/+';
-	m.onclick = function(){
-		let h = shelper.style.display;
-		shelper.style.display = (h=='none')?'':'none';
+	let b=t.appendChild(document.createElement('button'));
+	b.textContent='-/+';
+	b.onclick=()=>{
+		let s=H.style.display;
+		H.style.display=(s=='')?'none':'';
 	};
-	let x = ct.appendChild(document.createElement('button'));
-	x.textContent = 'x';
-	x.onclick = function(){
-		document.body.removeChild(helper);
-	};
+	b=t.appendChild(document.createElement('button'));
+	b.textContent='x';
+	b.onclick=()=>document.body.removeChild(h);
 }
-let labelClick = function(ev){
-	let i = ev.target.textContent;
-	nfil.value = i;
-	ev.preventDefault();
-};
+
 {
-	let div, cb, lab;
-	let xs = names.querySelectorAll('span');
-	for (let i=0,l=xs.length;i<l;++i){
-		div = shelper.appendChild(document.createElement('div'));
-		cb = div.appendChild(document.createElement('input'));
-		cb.type = 'checkbox';
-		lab = div.appendChild(document.createElement('a'));
-		lab.textContent = xs[i].textContent;
-		lab.onclick = labelClick;
+	let xs=names.querySelectorAll('span');
+	let A=e=>nfil.value=e.target.textContent,d,x;
+	for(let i=0,l=xs.length;i<l;++i){
+		d=H.appendChild(document.createElement('div'));
+		d.appendChild(document.createElement('input')).type='checkbox';
+		x=d.appendChild(document.createElement('a'));
+		x.textContent=xs[i].textContent;
+		x.onclick=A;
 	}
 }
 </script>
