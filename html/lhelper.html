@@ -1,0 +1,49 @@
+<html>
+<body>
+<div>
+<input id='nfil' />
+<div id='names'>
+<span>ted</span><br />
+<span>bob</span><br />
+<span>rob</span><br />
+<span>greg</span><br />
+<span>ray</span><br />
+</div>
+</body>
+<script>
+let helper = document.body.appendChild(document.createElement('div'));
+helper.style.cssText = 'background:#fff;position:fixed;right:5%;top:5%;border:1px solid #000;padding:1%;';
+let ct = helper.appendChild(document.createElement('div'));
+let shelper = helper.appendChild(document.createElement('div'));
+{
+	let m = ct.appendChild(document.createElement('button'));
+	m.textContent = '-/+';
+	m.onclick = function(){
+		let h = shelper.style.display;
+		shelper.style.display = (h=='none')?'':'none';
+	};
+	let x = ct.appendChild(document.createElement('button'));
+	x.textContent = 'x';
+	x.onclick = function(){
+		document.body.removeChild(helper);
+	};
+}
+let labelClick = function(ev){
+	let i = ev.target.textContent;
+	nfil.value = i;
+	ev.preventDefault();
+};
+{
+	let div, cb, lab;
+	let xs = names.querySelectorAll('span');
+	for (let i=0,l=xs.length;i<l;++i){
+		div = shelper.appendChild(document.createElement('div'));
+		cb = div.appendChild(document.createElement('input'));
+		cb.type = 'checkbox';
+		lab = div.appendChild(document.createElement('a'));
+		lab.textContent = xs[i].textContent;
+		lab.onclick = labelClick;
+	}
+}
+</script>
+</html>
