@@ -1,0 +1,41 @@
+<html>
+<body>
+<div>
+<input id='nfil' />
+<div id='names'>
+<span>ted</span><br />
+<span>bob</span><br />
+<span>rob</span><br />
+<span>greg</span><br />
+<span>ray</span><br />
+</div>
+</body>
+<script>
+{
+let h=document.body.appendChild(document.createElement('div')),
+	t=h.appendChild(document.createElement('div')),
+	H=h.appendChild(document.createElement('div')),
+	A=e=>nfil.value=e.target.textContent,
+	x,d;
+h.style.cssText='background:#fff;position:fixed;right:5%;top:5%;border:1px dotted #ccc;padding:1%;';
+H.style.cssText='overflow:auto;max-height:50vh;';
+x=t.appendChild(document.createElement('button'));
+x.textContent='-/+';
+x.onclick=()=>{
+	let s=H.style.display;
+	H.style.display=(s=='')?'none':'';
+};
+x=t.appendChild(document.createElement('button'));
+x.textContent='x';
+x.onclick=()=>document.body.removeChild(h);
+let xs=names.querySelectorAll('span'); //the variable code
+for(let i=0,l=xs.length;i<l;++i){
+	d=H.appendChild(document.createElement('div'));
+	d.appendChild(document.createElement('input')).type='checkbox';
+	x=d.appendChild(document.createElement('a'));
+	x.textContent=xs[i].textContent;
+	x.onclick=A;
+}
+}
+</script>
+</html>
