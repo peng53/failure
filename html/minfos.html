@@ -13,14 +13,15 @@ input {
 .pgrow {
 	display: flex;
 	flex-direction: row;
+	margin-bottom: 20px;
 }
-.pgrow table {
+.pgrow:nth-child(2n+1){
+	margin-top 20px;
+}
+table {
 	border-collapse: collapse;
 	border: 1px solid grey;
-	margin: 0 20px;
-}
-.pgrow:nth-child(2) table{
-	margin: 20px 20px;
+	margin: 0 10px;
 }
 td {
 	white-space: nowrap;
@@ -44,163 +45,51 @@ input:focus,textarea:focus {
 		font-size: 1em;
 		font-weight: bold;
 	}
-	table {
-
-	}
 }
 </style>
+
 <body>
-<div class='pgrow'>
-<table class='card'>
-<tr>
-	<td width>Item #</td>
-	<td colspan=3><input /></td>
-</tr>
-<tr>
-	<td>Serial #</td>
-	<td><input /></td>
-	<td>Rack #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<td>Box #</td>
-	<td><input /></td>
-	<td>Row #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<th colspan=4>Issue</th>
-</tr>
-<tr>
-	<td colspan=4><textarea rows=10></textarea></td>
-</tr>
-</table>
-<table class='card'>
-<tr>
-	<td>Item #</td>
-	<td colspan=3><input /></td>
-</tr>
-<tr>
-	<td>Serial #</td>
-	<td><input /></td>
-	<td>Rack #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<td>Box #</td>
-	<td><input /></td>
-	<td>Row #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<th colspan=4>Issue</th>
-</tr>
-<tr>
-	<td colspan=4><textarea rows=10></textarea></td>
-</tr>
-</table>
-</div>
-
-<div class='pgrow'>
-<table class='card'>
-<tr>
-	<td>Item #</td>
-	<td colspan=3><input /></td>
-</tr>
-<tr>
-	<td>Serial #</td>
-	<td><input /></td>
-	<td>Rack #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<td>Box #</td>
-	<td><input /></td>
-	<td>Row #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<th colspan=4>Issue</th>
-</tr>
-<tr>
-	<td colspan=4><textarea rows=10></textarea></td>
-</tr>
-</table>
-<table class='card'>
-<tr>
-	<td>Item #</td>
-	<td colspan=3><input /></td>
-</tr>
-<tr>
-	<td>Serial #</td>
-	<td><input /></td>
-	<td>Rack #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<td>Box #</td>
-	<td><input /></td>
-	<td>Row #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<th colspan=4>Issue</th>
-</tr>
-<tr>
-	<td colspan=4><textarea rows=10></textarea></td>
-</tr>
-</table>
-</div>
-
-<div class='pgrow'>
-<table class='card'>
-<tr>
-	<td>Item #</td>
-	<td colspan=3><input /></td>
-</tr>
-<tr>
-	<td>Serial #</td>
-	<td><input /></td>
-	<td>Rack #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<td>Box #</td>
-	<td><input /></td>
-	<td>Row #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<th colspan=4>Issue</th>
-</tr>
-<tr>
-	<td colspan=4><textarea rows=10></textarea></td>
-</tr>
-</table>
-<table class='card'>
-<tr>
-	<td>Item #</td>
-	<td colspan=3><input /></td>
-</tr>
-<tr>
-	<td>Serial #</td>
-	<td><input /></td>
-	<td>Rack #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<td>Box #</td>
-	<td><input /></td>
-	<td>Row #</td>
-	<td><input /></td>
-</tr>
-<tr>
-	<th colspan=4>Issue</th>
-</tr>
-<tr>
-	<td colspan=4><textarea rows=10></textarea></td>
-</tr>
-</table>
-</div>
 </body>
+
+<script>
+function addInputCell(row){
+	const c = row.insertCell(-1);
+	c.appendChild(document.createElement('input'));
+	return c;
+}
+function addLabelCell(row, label){
+	const c = row.insertCell(-1);
+	c.textContent = label;
+	return c;
+}
+function makeCard(){
+	const card = document.createElement('table');
+	let row = card.insertRow(-1);
+	addLabelCell(row,'Item #'); addInputCell(row).colSpan = 3;
+	row = card.insertRow(-1);
+	addLabelCell(row,'Serial #'); addInputCell(row); addLabelCell(row,'Rack #'); addInputCell(row);
+	row = card.insertRow(-1);
+	addLabelCell(row,'Box #'); addInputCell(row); addLabelCell(row,'Row #'); addInputCell(row);
+	row = card.insertRow(-1);
+	let ele = row.appendChild(document.createElement('th'));
+	ele.textContent = 'Issue';
+	ele.colSpan = 4;
+	row = card.insertRow(-1);
+	ele = row.insertCell(-1);
+	ele.colSpan = 4;
+	ele = ele.appendChild(document.createElement('textarea'));
+	ele.rows = 10;
+	return card;
+}
+function makeCardRow(){
+	const d = document.createElement('div');
+	d.classList.add('pgrow');
+	d.appendChild(makeCard());
+	d.appendChild(makeCard());
+	return d;
+}
+document.body.appendChild(makeCardRow());
+document.body.appendChild(makeCardRow());
+document.body.appendChild(makeCardRow());
+</script>
 </html>
