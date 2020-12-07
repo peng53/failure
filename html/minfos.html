@@ -16,7 +16,7 @@ input {
 	margin-bottom: 20px;
 }
 .pgrow:nth-child(2n+1){
-	margin-top 20px;
+	margin-top: 20px;
 }
 table {
 	border-collapse: collapse;
@@ -34,6 +34,26 @@ input,textarea {
 input:focus,textarea:focus {
 	border: 1px dotted red;
 }
+.pg {
+	display: none;
+}
+.currentPg {
+	display: block;
+}
+#pgbar {
+	position: fixed;
+	bottom: 0;
+	height: 24px;
+	width: 100%;
+	z-index: 100;
+	text-align: center;
+}
+#pgbar button {
+	margin: 0 5px;
+}
+.curPgBtn {
+	color: red;
+}
 @media print {
 	input,textarea {
 		border: 0;
@@ -45,10 +65,19 @@ input:focus,textarea:focus {
 		font-size: 1em;
 		font-weight: bold;
 	}
+	.pg {
+		page-break-before: auto;
+		display: block;
+	}
+	
+	#pgbar {
+		display: none;
+	}
 }
 </style>
 
 <body>
+<div id='pgbar'><button onclick='makePg();'>Add Page</button></div>
 </body>
 
 <script>
@@ -88,8 +117,35 @@ function makeCardRow(){
 	d.appendChild(makeCard());
 	return d;
 }
-document.body.appendChild(makeCardRow());
-document.body.appendChild(makeCardRow());
-document.body.appendChild(makeCardRow());
+let setCurPg = function(p){
+	let t = document.querySelector('.currentPg');
+	if (t) t.classList.remove('currentPg');
+	p.classList.add('currentPg');
+};
+
+pgbar.addPgb = function(p, n){
+	const b = this.appendChild(document.createElement('button'));
+	b.classList.add('pgbtn');
+	b.textContent = 'Page '+n;
+	b.onclick = function(e){
+		setCurPg(p);
+		let t = document.querySelector('.curPgBtn')
+		if (t) t.classList.remove('curPgBtn');
+		e.target.classList.add('curPgBtn');
+	};
+};
+
+function makePg(){
+	const p = document.body.appendChild(document.createElement('div'));
+	p.classList.add('pg');
+	p.appendChild(makeCardRow());
+	p.appendChild(makeCardRow());
+	p.appendChild(makeCardRow());
+	pgbar.addPgb(p,++pgct);
+	return p;
+}
+let pgct = 0;
+makePg();
+pgbar.querySelector('.pgbtn').click();
 </script>
 </html>
