@@ -6,15 +6,24 @@
 function createBW(target){
 	const d = document.body.appendChild(document.createElement('div'));
 	d.style.cssText = "position:fixed;z-index:99;bottom:0;right:0;"
-	const t = d.appendChild(document.createElement('table'));
 	const myBinds = {};
+	// table of binds
+	const t = d.appendChild(document.createElement('table'));
 	let r;
 	for (const c of 'asdf'){
 		r = t.insertRow(-1);
 		r.insertCell(-1).textContent = c;
 		myBinds[c] = r.insertCell(-1).appendChild(document.createElement('input'));
 	}
-	const macListen = function(e){
+	// free flow
+	/*
+	for (const c of 'asdf'){
+		d.appendChild(document.createTextNode(c));
+		myBinds[c] = d.appendChild(document.createElement('input'));
+		d.appendChild(document.createElement('br'));
+	}
+	*/
+	const macListen = (e) => {
 		if (e.target.tagName != 'INPUT' && e.key in myBinds){
 			e.preventDefault();
 			const v = myBinds[e.key].value;
@@ -31,6 +40,12 @@ function createBW(target){
 		}
 	};
 	addEventListener('keydown', macListen);
+	const c = d.appendChild(document.createElement('button'));
+	c.textContent = 'Quit';
+	c.ondblclick = (e) => {
+		removeEventListener('keydown', macListen);
+		document.body.removeChild(d);
+	};
 }
 createBW(mytarget)
 </script>
