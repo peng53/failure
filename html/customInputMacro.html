@@ -1,0 +1,37 @@
+<html>
+<body>
+<input id='mytarget' />
+</body>
+<script>
+function createBW(target){
+	const d = document.body.appendChild(document.createElement('div'));
+	d.style.cssText = "position:fixed;z-index:99;bottom:0;right:0;"
+	const t = d.appendChild(document.createElement('table'));
+	const myBinds = {};
+	let r;
+	for (const c of 'asdf'){
+		r = t.insertRow(-1);
+		r.insertCell(-1).textContent = c;
+		myBinds[c] = r.insertCell(-1).appendChild(document.createElement('input'));
+	}
+	const macListen = function(e){
+		if (e.target.tagName != 'INPUT' && e.key in myBinds){
+			e.preventDefault();
+			const v = myBinds[e.key].value;
+			if (v){
+				target.value = v;
+				const i = v.search('%');
+				if (i>=0){
+					target.setSelectionRange(i,i+1);
+				}
+				target.focus();
+			} else {
+				myBinds[e.key].focus();
+			}
+		}
+	};
+	addEventListener('keydown', macListen);
+}
+createBW(mytarget)
+</script>
+</html>
