@@ -1,0 +1,74 @@
+<html>
+<body>
+Open the results! <button onclick='main()'>Click here!</button>
+</body>
+<script>
+function infoiss(p){
+	p.appendChild(document.createElement('div')).classList.add('lb','empty');
+	p.appendChild(document.createElement('textarea')).classList.add('rb','empty');
+}
+function mkrow(p){
+	const r = p.appendChild(document.createElement('div'));
+	r.classList.add('row');
+	infoiss(r);
+	infoiss(r);
+}
+function mknp(p){
+	for (let i=0;i<7;++i){
+		mkrow(p);
+	}
+}
+function npstyle(p){
+	let s = p.appendChild(document.createElement('style'));
+	s.textContent = `
+.row {
+	height: 7em;
+	margin-bottom: 1em;
+	width: 100%;
+}
+.lb {
+	width: 150px;
+	height: 100%;
+	float: left;
+	background: #eee;
+}
+.rb {
+	width: calc(50% - 150px);
+	height: 100%;
+	float: left;
+	border: 0;
+	resize: none;
+}
+`;
+}
+function infoAdd(p,info,rinfo){
+	const l = p.document.querySelector('.lb.empty');
+	const r = p.document.querySelector('.rb.empty');
+	if (l && r){
+		l.classList.remove('empty');
+		r.classList.remove('empty');
+		for (const key in info){
+			l.appendChild(document.createElement('b')).textContent = key;
+			l.appendChild(document.createTextNode(': '+info[key]));
+			l.appendChild(document.createElement('br'));
+		}
+		r.value = rinfo;
+	}
+}
+
+function main(){
+	let f = window.open('', 'toPrint');
+	mknp(f.document.body);
+	npstyle(f.document.head);
+
+	infoAdd(f, {'test':'123','roma':'hi'},'hello');
+
+	for (const x of f.document.querySelectorAll('.lb.empty')){
+		x.textContent = 'left';
+	}
+	for (const x of f.document.querySelectorAll('.rb.empty')){
+		x.textContent = 'right';
+	}
+}
+</script>
+</html>
