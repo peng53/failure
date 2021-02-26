@@ -1,11 +1,18 @@
 <html>
 <center><canvas id='xyz' width="600" height="300" style='border:1px solid red;'></canvas></center><br/>
-<button onclick='addRect()'>Rect</button><br/>
+<button onclick='tool="rect"'>Rect</button>
+<button onclick='tool="circle"'>Circle</button><br/>
 <textarea id='logit' rows=15 style='width:100%;' placeholder='Logging textarea!'></textarea>
 <script>
 xyz.addRect = function(rect){
 	const ctx = this.getContext('2d');
 	ctx.rect(rect.x,rect.y,rect.width,rect.height);
+	ctx.stroke();
+};
+xyz.addCircle = function(circle){
+	const ctx = this.getContext('2d');
+	ctx.beginPath();
+	ctx.arc(circle.x, circle.y, circle.r, 0, 2 * Math.PI);
 	ctx.stroke();
 };
 logit.log = function(s){
@@ -30,6 +37,17 @@ class Rect {
 		return `Rectangle (x,y) = (${this.x},${this.y}) of (w,h) = (${this.width},${this.height})`;
 	}
 }
+class Circle {
+	constructor(x,y,r){
+		this.x = x;
+		this.y = y;
+		this.r = r;
+	}
+	toString(){
+		return `Circle (x,y,r) = (${this.x},${this.y},${this.r})`;
+	}
+}
+
 class XYc {
 	constructor(x,y){
 		this.x = x;
@@ -50,12 +68,6 @@ class TwoClicks {
 	}
 }
 
-function addRect(){
-	if (storedLastClicks.xy1 && storedLastClicks.xy2){
-		logit.log(`${storedLastClicks.xy1} , ${storedLastClicks.xy2}\n`);
-		xyz.addRect(storedLastClicks.xy1.x,storedLastClicks.xy1.y, storedLastClicks.xy2.x-storedLastClicks.xy1.x,storedLastClicks.xy2.y-storedLastClicks.xy1.y)
-	}
-}
 const storedLastClicks = new TwoClicks();
 logit.value = '';
 xyz.addEventListener('click', clickLog);
@@ -64,16 +76,33 @@ let addToStoredLastClicks = function(event){
 	storedLastClicks.addClick(new XYc(coords.x,coords.y));
 };
 
+function mkShape(xy1,xy2,tool){
+	let shape;
+	switch (tool){
+		case 'rect':
+			shape = new Rect(xy1.x
+				, xy1.y
+				, xy2.x - xy1.x
+				, xy2.y - xy1.y
+			);
+			xyz.addRect(shape);
+			break;
+		case 'circle':
+			shape = new Circle(xy2.x
+				, xy2.y
+				, Math.sqrt( Math.pow(xy2.x-xy1.x,2) + Math.pow(xy2.y-xy1.y,2))
+			);
+			xyz.addCircle(shape);
+			break;
+	}
+	return shape;
+}
+
 function activateTool(event){
 	const coords = getRelativeCoords(event);
-	let rect = new Rect(lastClick.x
-		, lastClick.y
-		, coords.x-lastClick.x
-		, coords.y-lastClick.y
-	);
-	xyz.addRect(rect);
-	myshapes.addShape(rect);
-	logit.log(rect);
+	let shape = mkShape(coords, lastClick, tool);
+	myshapes.addShape(shape);
+	logit.log(shape);
 }
 //xyz.addEventListener('click', clickLog);
 //xyz.addEventListener('click', addToStoredLastClicks);
@@ -94,7 +123,7 @@ class MyShapes {
 }
 
 const myshapes = new MyShapes();
-
+let tool = 'rect';
 xyz.addEventListener('mousedown',clickLog);
 xyz.addEventListener('mousedown', setLastClick);
 xyz.addEventListener('mouseup', activateTool);
