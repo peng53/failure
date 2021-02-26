@@ -57,7 +57,26 @@ let addToStoredLastClicks = function(event){
 	const coords = getRelativeCoords(event);
 	storedLastClicks.addClick(new XYc(coords.x,coords.y));
 };
-xyz.addEventListener('click', clickLog);
-xyz.addEventListener('click', addToStoredLastClicks);
+
+function activateTool(event){
+	const coords = getRelativeCoords(event);
+	xyz.addRect(lastClick.x
+		, lastClick.y
+		, coords.x-lastClick.x
+		, coords.y-lastClick.y
+	);
+}
+//xyz.addEventListener('click', clickLog);
+//xyz.addEventListener('click', addToStoredLastClicks);
+const lastClick = new XYc(null,null);
+let setLastClick = function(event){
+	const coords = getRelativeCoords(event);
+	lastClick.x = coords.x;
+	lastClick.y = coords.y;
+};
+xyz.addEventListener('mousedown',clickLog);
+xyz.addEventListener('mousedown', setLastClick);
+xyz.addEventListener('mouseup', activateTool);
+
 </script>
 </html>
