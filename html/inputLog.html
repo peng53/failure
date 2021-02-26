@@ -1,0 +1,30 @@
+<html>
+<body>
+<input id='targetInput' /><br />
+<select id='outputSel' size=10 max-width='200px'>
+</select>
+</body>
+<script>
+	const logInput = function(target,outputF){
+		target.onblur = function(){
+			outputF(target.value);
+		};
+	};
+	let addOption = function(v){
+		if (!this.allOps){
+			this.allOps = {};
+		}
+		if (v in this.allOps==false){
+			this.allOps[v] = this.appendChild(document.createElement('option'));
+			this.allOps[v].textContent = v;
+		}
+	};
+	logInput(targetInput, addOption.bind(outputSel));
+	targetInput.addEventListener('keydown', (e) => { if (e.key=='Enter'){ e.target.blur(); }});
+	outputSel.onclick = (e) => {
+		if (e.target.tagName =='OPTION'){
+			targetInput.value = e.target.textContent;
+		}
+	};
+</script>
+</html>
