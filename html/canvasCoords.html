@@ -1,0 +1,15 @@
+<html>
+<center><canvas id='xyz' width="600" height="300" style='border:1px solid red;'></canvas></center><br/>
+<textarea id='logit' rows=15 style='width:100%;' placeholder='Logging textarea!'></textarea>
+<script>
+function getRelativeCoords(event) {
+	return { x: event.offsetX, y: event.offsetY };
+}
+function clickLog(event){
+	const coords = getRelativeCoords(event);
+	logit.value += `(x, y) = (${coords.x}, ${coords.y})\n`;
+}
+logit.value = '';
+xyz.addEventListener('click', clickLog);
+</script>
+</html>
