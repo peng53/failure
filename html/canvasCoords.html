@@ -3,11 +3,14 @@
 <button onclick='addRect()'>Rect</button><br/>
 <textarea id='logit' rows=15 style='width:100%;' placeholder='Logging textarea!'></textarea>
 <script>
-xyz.addRect = function(x, y, width, height){
+xyz.addRect = function(rect){
 	const ctx = this.getContext('2d');
-	ctx.rect(x,y,width,height);
+	ctx.rect(rect.x,rect.y,rect.width,rect.height);
 	ctx.stroke();
 };
+logit.log = function(s){
+	this.value += s + '\n';
+}
 function getRelativeCoords(event) {
 	return { x: event.offsetX, y: event.offsetY };
 }
@@ -22,6 +25,9 @@ class Rect {
 		this.y = y;
 		this.width = width;
 		this.height = height;
+	}
+	toString(){
+		return `Rectangle (x,y) = (${this.x},${this.y}) of (w,h) = (${this.width},${this.height})`;
 	}
 }
 class XYc {
@@ -46,7 +52,7 @@ class TwoClicks {
 
 function addRect(){
 	if (storedLastClicks.xy1 && storedLastClicks.xy2){
-		logit.value += (storedLastClicks.xy1,storedLastClicks.xy2) + '\n';
+		logit.log(`${storedLastClicks.xy1} , ${storedLastClicks.xy2}\n`);
 		xyz.addRect(storedLastClicks.xy1.x,storedLastClicks.xy1.y, storedLastClicks.xy2.x-storedLastClicks.xy1.x,storedLastClicks.xy2.y-storedLastClicks.xy1.y)
 	}
 }
@@ -60,11 +66,14 @@ let addToStoredLastClicks = function(event){
 
 function activateTool(event){
 	const coords = getRelativeCoords(event);
-	xyz.addRect(lastClick.x
+	let rect = new Rect(lastClick.x
 		, lastClick.y
 		, coords.x-lastClick.x
 		, coords.y-lastClick.y
 	);
+	xyz.addRect(rect);
+	myshapes.addShape(rect);
+	logit.log(rect);
 }
 //xyz.addEventListener('click', clickLog);
 //xyz.addEventListener('click', addToStoredLastClicks);
@@ -74,6 +83,18 @@ let setLastClick = function(event){
 	lastClick.x = coords.x;
 	lastClick.y = coords.y;
 };
+
+class MyShapes {
+	constructor(){
+		this.data = [];
+	}
+	addShape(shape){
+		this.data.push(shape);
+	}
+}
+
+const myshapes = new MyShapes();
+
 xyz.addEventListener('mousedown',clickLog);
 xyz.addEventListener('mousedown', setLastClick);
 xyz.addEventListener('mouseup', activateTool);
