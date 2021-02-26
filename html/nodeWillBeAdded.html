@@ -1,0 +1,13 @@
+<html>
+<body>
+
+</body>
+<script>
+const callback = function(mute, ob){
+	console.log(mute);
+	console.log(ob);
+};
+const obs = new MutationObserver(callback);
+obs.observe(document.body,{attributes:false, childList:true,subtree:true});
+</script>
+</html>
