@@ -1,7 +1,13 @@
 <html>
 <center><canvas id='xyz' width="600" height="300" style='border:1px solid red;'></canvas></center><br/>
+<button onclick='addRect()'>Rect</button><br/>
 <textarea id='logit' rows=15 style='width:100%;' placeholder='Logging textarea!'></textarea>
 <script>
+xyz.addRect = function(x, y, width, height){
+	const ctx = this.getContext('2d');
+	ctx.rect(x,y,width,height);
+	ctx.stroke();
+};
 function getRelativeCoords(event) {
 	return { x: event.offsetX, y: event.offsetY };
 }
@@ -9,7 +15,49 @@ function clickLog(event){
 	const coords = getRelativeCoords(event);
 	logit.value += `(x, y) = (${coords.x}, ${coords.y})\n`;
 }
+
+class Rect {
+	constructor(x,y,width,height){
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+	}
+}
+class XYc {
+	constructor(x,y){
+		this.x = x;
+		this.y = y;
+	}
+	toString(){
+		return `${this.x}, ${this.y}`;
+	}
+}
+class TwoClicks {
+	constructor(){
+		this.xy1 = null;
+		this.xy2 = null;
+	}
+	addClick(xy){
+		this.xy1 = this.xy2;
+		this.xy2 = xy;
+	}
+}
+
+function addRect(){
+	if (storedLastClicks.xy1 && storedLastClicks.xy2){
+		logit.value += (storedLastClicks.xy1,storedLastClicks.xy2) + '\n';
+		xyz.addRect(storedLastClicks.xy1.x,storedLastClicks.xy1.y, storedLastClicks.xy2.x-storedLastClicks.xy1.x,storedLastClicks.xy2.y-storedLastClicks.xy1.y)
+	}
+}
+const storedLastClicks = new TwoClicks();
 logit.value = '';
 xyz.addEventListener('click', clickLog);
+let addToStoredLastClicks = function(event){
+	const coords = getRelativeCoords(event);
+	storedLastClicks.addClick(new XYc(coords.x,coords.y));
+};
+xyz.addEventListener('click', clickLog);
+xyz.addEventListener('click', addToStoredLastClicks);
 </script>
 </html>
