@@ -1,0 +1,87 @@
+<html>
+<body>
+<canvas id='ncan' width=600 height=600 style='border:1px solid red;'></canvas>
+</body>
+<script>
+ncan.drawBoard = function(board){
+	const ctx = this.getContext('2d');
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillStyle = 'black';
+	const twidth = this.width/(board.width+1);
+	const theight = this.height/(board.height+1);
+	for (let r=0;r<board.height;++r){
+		for (let c=0;c<board.width;++c){
+			if (board.A[r][c]==1){
+				ctx.fillRect((1+c)*twidth,(1+r)*theight,twidth,theight);
+			}
+		}
+	}
+	for (let r=0;r<board.height;++r){
+		ctx.strokeText(board.rowHints[r].toString().replace(',','--'), twidth/2, (r+1.5)*theight);
+	}
+	for (let c=0;c<board.width;++c){
+		ctx.strokeText(board.colHints[c].toString().replace(',','--'), (c+1.5)*twidth, theight/2);
+	}
+};
+
+function getRandomIntInclusive(min, max) {
+	min = Math.ceil(min);
+	max = Math.floor(max);
+	return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
+}
+class NCrossBoard {
+	constructor(width, height){
+		this.width = width;
+		this.height = height;
+		this.A = [];
+		this.rowHints = [];
+		this.colHints = [];
+		for (let r=0;r<height;++r){
+			this.A.push([]);
+			for (let c=0;c<width;++c){
+				this.A[r].push(0);
+			}
+			this.rowHints.push([]);
+		}
+		for (let c=0;c<width;++c){
+			this.colHints.push([]);
+		}
+	}
+	generate(){
+		this.rowHints = [];
+		this.colHints = [];
+		for (let r=0;r<this.height;++r){
+			this.rowHints.push([]);
+		}
+		for (let c=0;c<this.width;++c){
+			this.colHints.push([]);
+		}
+		for (let r=0;r<this.height;++r){
+			for (let c=0;c<this.width;++c){
+				this.A[r][c] = getRandomIntInclusive(0,1);
+				if (this.A[r][c]==1){
+					if (r>0 && this.A[r-1][c]==1){
+						this.colHints[c][this.colHints[c].length-1] += 1;
+					} else {
+						this.colHints[c].push(1);
+					}
+					if (c>0 && this.A[r][c-1]==1){
+						this.rowHints[r][this.rowHints[r].length-1] += 1;
+					} else {
+						this.rowHints[r].push(1);
+					}
+				}
+				
+			}
+		}
+	}
+}
+let x = new NCrossBoard(10,10);
+x.generate();
+console.table(x.A);
+console.log(x.colHints);
+console.log(x.rowHints);
+ncan.drawBoard(x);
+</script>
+</html>
