@@ -1,19 +1,41 @@
 <html>
+<style>
+canvas {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin: auto;
+}
+#xyz {
+	z-index: -2;
+}
+#xyzOver {
+	z-index: -1;
+}
+textarea {
+	position: fixed;
+	bottom: 0;
+	
+}
+</style>
 <center><canvas id='xyz' width="600" height="300" style='border:1px solid red;'></canvas></center><br/>
+<center><canvas id='xyzOver' width="600" height="300" style='border:1px solid red;'></canvas></center><br/>
 <button onclick='tool="rect"'>Rect</button>
 <button onclick='tool="circle"'>Circle</button><br/>
-<textarea id='logit' rows=15 style='width:100%;' placeholder='Logging textarea!'></textarea>
+<textarea id='logit' rows=15 placeholder='Logging textarea!'></textarea>
 <script>
-xyz.addRect = function(rect){
-	const ctx = this.getContext('2d');
-	ctx.rect(rect.x,rect.y,rect.width,rect.height);
-	ctx.stroke();
-};
-xyz.addCircle = function(circle){
-	const ctx = this.getContext('2d');
-	ctx.beginPath();
-	ctx.arc(circle.x, circle.y, circle.r, 0, 2 * Math.PI);
-	ctx.stroke();
+
+CanvasRenderingContext2D.prototype.rect = function(rect){
+	this.strokeRect(rect.x,rect.y,rect.width,rect.height);
+
+}
+
+CanvasRenderingContext2D.prototype.circle = function(circle){
+	this.beginPath();
+	this.arc(circle.x, circle.y, circle.r, 0, 2 * Math.PI);
+	this.stroke();
 };
 logit.log = function(s){
 	this.value += s + '\n';
@@ -78,6 +100,7 @@ let addToStoredLastClicks = function(event){
 
 function mkShape(xy1,xy2,tool){
 	let shape;
+	const ctx = xyz.getContext('2d');
 	switch (tool){
 		case 'rect':
 			shape = new Rect(xy1.x
@@ -85,18 +108,19 @@ function mkShape(xy1,xy2,tool){
 				, xy2.x - xy1.x
 				, xy2.y - xy1.y
 			);
-			xyz.addRect(shape);
+			ctx.rect(shape)
 			break;
 		case 'circle':
 			shape = new Circle(xy2.x
 				, xy2.y
 				, Math.sqrt( Math.pow(xy2.x-xy1.x,2) + Math.pow(xy2.y-xy1.y,2))
 			);
-			xyz.addCircle(shape);
+			ctx.circle(shape);
 			break;
 	}
 	return shape;
 }
+
 
 function activateTool(event){
 	const coords = getRelativeCoords(event);
@@ -113,6 +137,37 @@ let setLastClick = function(event){
 	lastClick.y = coords.y;
 };
 
+const toolClickDrag = function(event){
+	xyzOver.clickDown = true;
+	xyzOver.drawing = setInterval(
+		(e) => {
+			if (!xyzOver.clickDown){
+				clearInterval(xyzOver.drawing);
+				xyzOver.drawing = null;
+				ctx.clearRect(0, 0, xyzOver.width, xyzOver.height);
+			}
+			const ctx = xyzOver.getContext('2d');
+			ctx.clearRect(0, 0, xyzOver.width, xyzOver.height);
+			switch (tool){
+				case 'circle':
+					ctx.circle(new Circle(xy2.x
+						, xy2.y
+						, Math.sqrt( Math.pow(xy2.x-xy1.x,2) + Math.pow(xy2.y-xy1.y,2))
+					));
+					break;
+				case 'rect':
+					ctx.rect(new Rect(xy1.x
+						, xy1.y
+						, xy2.x - xy1.x
+						, xy2.y - xy1.y
+					));
+					break;
+			}
+		},
+		100
+	);
+};
+
 class MyShapes {
 	constructor(){
 		this.data = [];
@@ -124,9 +179,11 @@ class MyShapes {
 
 const myshapes = new MyShapes();
 let tool = 'rect';
-xyz.addEventListener('mousedown',clickLog);
-xyz.addEventListener('mousedown', setLastClick);
-xyz.addEventListener('mouseup', activateTool);
+xyzOver.addEventListener('mousedown',clickLog);
+xyzOver.addEventListener('mousedown', setLastClick);
+//xyzOver.addEventListener('mousedown', toolClickDrag);
+xyzOver.addEventListener('mouseup', activateTool);
+//xyzOver.addEventListener('mouseup', toolClickUp);
 
 </script>
 </html>
