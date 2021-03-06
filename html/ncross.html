@@ -160,6 +160,14 @@ function setNboardSize(p){
 	}
 }
 
+function ClickToToggleTileState(event){
+	let {c, r} = event.target.lastclickToRC(x);
+	x.A[r][c] = !x.A[r][c];
+	x.recalcCol(c);
+	x.recalcRow(r);
+	ncan.drawBoard(x);
+}
+
 let rows = parseInt(ncan.dataset['rows']);
 let cols = parseInt(ncan.dataset['cols']);
 let x = new NCrossBoard(cols,rows);
@@ -169,6 +177,6 @@ console.log(x.colHints);
 console.log(x.rowHints);
 ncan.drawBoard(x);
 ncan.addEventListener('click',SetLastClick);
-ncan.addEventListener('click',(e)=>e.target.lastclickToRC(x));
+ncan.addEventListener('click',ClickToToggleTileState);
 </script>
 </html>
