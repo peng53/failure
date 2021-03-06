@@ -73,7 +73,7 @@ ncan.drawCHint = function(board, c){
 };
 ncan.drawTile = function(board, r, c){
 	this.getContext('2d').fillRect(c*this.drawingMetrics.twidth+this.drawingMetrics.hintReserve,r*this.drawingMetrics.theight+this.drawingMetrics.hintReserve,this.drawingMetrics.twidth,this.drawingMetrics.theight);
-}
+};
 
 ncan.drawLines = function(rows,cols){
 	const ctx = this.getContext('2d');
@@ -90,7 +90,23 @@ ncan.drawLines = function(rows,cols){
 	ctx.stroke();
 	ctx.closePath();
 };
-
+ncan.clearTile = function(r, c){
+	this.getContext('2d').clearRect(c*this.drawingMetrics.twidth+this.drawingMetrics.hintReserve,r*this.drawingMetrics.theight+this.drawingMetrics.hintReserve,this.drawingMetrics.twidth,this.drawingMetrics.theight);
+};
+ncan.clearRHint= function(r){
+	this.getContext('2d').clearRect(0,
+		this.drawingMetrics.hintReserve+r*this.drawingMetrics.twidth,
+		this.drawingMetrics.hintReserve,
+		this.drawingMetrics.twidth
+	);
+};
+ncan.clearCHint= function(c){
+	this.getContext('2d').clearRect(this.drawingMetrics.hintReserve+c*this.drawingMetrics.twidth,
+		0,
+		this.drawingMetrics.theight,
+		this.drawingMetrics.hintReserve
+	);
+};
 
 function hintReserveResize(newr){
 	if (newr!=ncan.dataset['hintreserve']){
@@ -180,7 +196,17 @@ function ClickToToggleTileState(event){
 	x.A[r][c] = !x.A[r][c];
 	x.recalcCol(c);
 	x.recalcRow(r);
-	ncan.drawBoard(x);
+	ncan.clearCHint(c);
+	ncan.clearRHint(r);
+	console.log(r,c);
+	ncan.drawCHint(x,c);
+	ncan.drawRHint(x,r);
+	if (x.A[r][c]){
+		ncan.drawTile(x,r,c);
+	} else {
+		ncan.clearTile(r,c);
+	}
+	ncan.drawLines(x.height,x.width);
 }
 
 let rows = parseInt(ncan.dataset['rows']);
