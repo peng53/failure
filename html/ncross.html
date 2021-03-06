@@ -1,29 +1,52 @@
 <html>
 <body>
-<canvas id='ncan' width=600 height=600 style='border:1px solid red;'></canvas>
+<canvas id='ncan' width=600 height=600 style='border:1px solid red;' data-hintreserve=100 data-fontsize='16' ></canvas>
+<br /><input id='hintsSpace' value='100' onblur='hintReserveResize(event.target.value);' />
 </body>
 <script>
 ncan.drawBoard = function(board){
 	const ctx = this.getContext('2d');
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
 	ctx.fillStyle = 'black';
-	const twidth = this.width/(board.width+1);
-	const theight = this.height/(board.height+1);
+	ctx.clearRect(0,0,ncan.width,ncan.height);
+	ctx.font = `${this.dataset['fontsize']}px Arial`;
+	const hintReserve = parseInt(this.dataset['hintreserve']);
+	ctx.moveTo(hintReserve,this.height);
+	ctx.lineTo(hintReserve,hintReserve);
+	ctx.lineTo(this.width,hintReserve);
+	ctx.stroke();
+	const twidth = (this.width-hintReserve)/(board.width);
+	const theight = (this.height-hintReserve)/(board.height);
 	for (let r=0;r<board.height;++r){
 		for (let c=0;c<board.width;++c){
 			if (board.A[r][c]==1){
-				ctx.fillRect((1+c)*twidth,(1+r)*theight,twidth,theight);
+				ctx.fillRect(c*twidth+hintReserve,r*theight+hintReserve,twidth,theight);
 			}
 		}
 	}
+	const fontlb = parseInt(this.dataset['fontsize']);
+	ctx.textAlign = 'left';
+	ctx.textBaseline = 'middle';
 	for (let r=0;r<board.height;++r){
-		ctx.strokeText(board.rowHints[r].toString(), twidth/2, (r+1.5)*theight);
+		for (let i=0;i<board.rowHints[r].length;++i){
+			ctx.strokeText(board.rowHints[r][i], i*fontlb, r*theight+theight/2+hintReserve);
+		}
 	}
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'top';
 	for (let c=0;c<board.width;++c){
-		ctx.strokeText(board.colHints[c].toString(), (c+1.5)*twidth, theight/2);
+		//ctx.strokeText((board.colHints[c].length==0) ? '0' : board.colHints[c].toString(), c*twidth+hintReserve+twidth/2, hintReserve/2);
+		for (let i=0;i<board.colHints[c].length;++i){
+			ctx.strokeText(board.colHints[c][i], c*twidth+hintReserve+twidth/2, i*fontlb);
+		}
 	}
 };
+
+function hintReserveResize(newr){
+	if (newr!=ncan.dataset['hintreserve']){
+		ncan.dataset['hintreserve'] = newr;
+		ncan.drawBoard(x);
+	}
+}
 
 function getRandomIntInclusive(min, max) {
 	min = Math.ceil(min);
