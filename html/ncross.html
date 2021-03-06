@@ -1,9 +1,15 @@
 <html>
 <body>
-<canvas id='ncan' width=600 height=600 style='border:1px solid red;' data-hintreserve=100 data-fontsize='16' ></canvas>
+<canvas id='ncan' width=600 height=600 style='border:1px solid red;' data-hintreserve=100 data-fontsize=16 data-rows=10 data-cols=10 ></canvas>
 <br /><input id='hintsSpace' value='100' onblur='hintReserveResize(event.target.value);' />
+<div>
+<input class='c' />x<input class='r' />
+<br/><button onclick='setNboardSize(this.parentElement)'>Set Nboard</button>
+</div>
 </body>
 <script>
+
+
 ncan.drawBoard = function(board){
 	const ctx = this.getContext('2d');
 	ctx.fillStyle = 'red';
@@ -143,7 +149,21 @@ class NCrossBoard {
 		this.colHints[c] = hint;
 	}
 }
-let x = new NCrossBoard(10,10);
+function setNboardSize(p){
+	const c = p.querySelector('.c').value;
+	const r = p.querySelector('.r').value;
+	if (c!=ncan.dataset['cols'] || r!=ncan.dataset['rows']){
+		ncan.dataset['cols'] = c;
+		ncan.dataset['rows'] = r;
+		x = new NCrossBoard(c,r);
+		x.generate();
+		ncan.drawBoard(x);
+	}
+}
+
+let rows = parseInt(ncan.dataset['rows']);
+let cols = parseInt(ncan.dataset['cols']);
+let x = new NCrossBoard(cols,rows);
 x.generate();
 console.table(x.A);
 console.log(x.colHints);
