@@ -19,8 +19,15 @@ function SetLastClick(event){
 	event.target.lastclick = new MouseClick(event.offsetX,event.offsetY);
 }
 
-ncan.addEventListener('click',SetLastClick);
-ncan.addEventListener('click',(e)=>console.log(e.target.lastclick));
+ncan.lastclickToRC = function(board){
+	const hintReserve = parseInt(this.dataset['hintreserve']);
+	const twidth = (this.width-hintReserve)/(board.width);
+	const theight = (this.height-hintReserve)/(board.height);
+	const x = this.lastclick.x-hintReserve;
+	const y = this.lastclick.y-hintReserve;
+	if (x>=0 && y>=0) return {c : Math.floor(x/twidth), r : Math.floor(y/theight)};
+}
+
 ncan.drawBoard = function(board){
 	const ctx = this.getContext('2d');
 	ctx.fillStyle = 'red';
@@ -161,5 +168,7 @@ console.table(x.A);
 console.log(x.colHints);
 console.log(x.rowHints);
 ncan.drawBoard(x);
+ncan.addEventListener('click',SetLastClick);
+ncan.addEventListener('click',(e)=>e.target.lastclickToRC(x));
 </script>
 </html>
