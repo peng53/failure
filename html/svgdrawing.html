@@ -1,0 +1,50 @@
+<html>
+<body>
+<svg viewBox="0 0 100 100" height='100%' width='100%'>
+</svg>
+</body>
+<script>
+
+function getRandomIntInclusive(min, max) {
+	min = Math.ceil(min);
+	max = Math.floor(max);
+	return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
+}
+
+const s = document.querySelector('svg');
+let tiles = new Uint8Array(10);
+for (let i=0;i<tiles.length;++i){
+	tiles[i] = getRandomIntInclusive(0,5);
+}
+let colors = ['blue','green','yellow','orange','red','purple'];
+let twidth = 100/tiles.length;
+let shape, text;
+
+let changeColor = (e) => {
+	e.target.setAttribute('fill', colors[getRandomIntInclusive(0,5)]);
+	e.preventDefault();
+};
+
+for (let i=0;i<tiles.length;++i){
+	shape = s.appendChild(
+		document.createElementNS("http://www.w3.org/2000/svg", 'rect'));
+	shape.setAttributeNS(null, 'x', i*twidth);
+	shape.setAttributeNS(null, 'y', 0);
+	shape.setAttributeNS(null, 'width', twidth);
+	shape.setAttributeNS(null, 'height', 100);
+	shape.setAttributeNS(null, 'fill', colors[tiles[i]]);
+	shape.addEventListener('click', changeColor);
+}
+
+for (let i=0;i<tiles.length;++i){
+	text = s.appendChild(
+		document.createElementNS("http://www.w3.org/2000/svg", 'text'));
+	text.appendChild(document.createTextNode(i));
+	text.setAttribute('x', i*twidth);
+	text.setAttribute('y', 50);
+	text.setAttribute('font-size', 10);
+	text.setAttributeNS('null', 'text-length', 2);
+}
+
+</script>
+</html>
