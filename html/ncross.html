@@ -9,62 +9,18 @@
 </body>
 <script type="module">
 import {NCrossCanvas} from './ncrossCanvas.js';
-console.log(NCrossCanvas);
+
 const rows = parseInt(ncan.dataset['rows']);
 const cols = parseInt(ncan.dataset['cols']);
 let cboard = new NCrossCanvas(ncan,rows,cols);
 cboard.generate();
 
 /*
-class MouseClick {
-	constructor(x,y){
-		this.x = x;
-		this.y = y;
-	}
-}
-
-function SetLastClick(event){
-	event.target.lastclick = new MouseClick(event.offsetX,event.offsetY);
-}
-
-ncan.lastclickToRC = function(board){
-	const hintReserve = parseInt(this.dataset['hintreserve']);
-	const twidth = (this.width-hintReserve)/(board.width);
-	const theight = (this.height-hintReserve)/(board.height);
-	const x = this.lastclick.x-hintReserve;
-	const y = this.lastclick.y-hintReserve;
-	if (x>=0 && y>=0) return {c : Math.floor(x/twidth), r : Math.floor(y/theight)};
-};
-
-ncan.clearTile = function(r, c){
-	this.getContext('2d').clearRect(c*this.drawingMetrics.twidth+this.drawingMetrics.hintReserve,r*this.drawingMetrics.theight+this.drawingMetrics.hintReserve,this.drawingMetrics.twidth,this.drawingMetrics.theight);
-};
-ncan.clearRHint= function(r){
-	this.getContext('2d').clearRect(0,
-		this.drawingMetrics.hintReserve+r*this.drawingMetrics.twidth,
-		this.drawingMetrics.hintReserve,
-		this.drawingMetrics.twidth
-	);
-};
-ncan.clearCHint= function(c){
-	this.getContext('2d').clearRect(this.drawingMetrics.hintReserve+c*this.drawingMetrics.twidth,
-		0,
-		this.drawingMetrics.theight,
-		this.drawingMetrics.hintReserve
-	);
-};
-
 function hintReserveResize(newr){
 	if (newr!=ncan.dataset['hintreserve']){
 		ncan.dataset['hintreserve'] = newr;
 		ncan.drawBoard(x);
 	}
-}
-
-function getRandomIntInclusive(min, max) {
-	min = Math.ceil(min);
-	max = Math.floor(max);
-	return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
 function setNboardSize(p){
@@ -78,31 +34,6 @@ function setNboardSize(p){
 		ncan.drawBoard();
 	}
 }
-
-ncan.clicked = function(event){
-	const {c, r} = event.target.lastclickToRC(this.board);
-	this.board.A[r][c] = !this.board.A[r][c];
-	this.board.recalcCol(c);
-	this.board.recalcRow(r);
-	ncan.clearCHint(c);
-	ncan.clearRHint(r);
-	ncan.drawCHint(this.board,c);
-	ncan.drawRHint(this.board,r);
-	if (this.board.A[r][c]){
-		ncan.drawTile(this.board,r,c);
-	} else {
-		ncan.clearTile(r,c);
-	}
-	ncan.drawLines(this.board.height,this.board.width);
-};
-
-let rows = parseInt(ncan.dataset['rows']);
-let cols = parseInt(ncan.dataset['cols']);
-ncan.board = new NCrossBoard(cols,rows);
-ncan.board.generate();
-ncan.drawBoard();
-ncan.addEventListener('click',SetLastClick);
-ncan.addEventListener('click',ncan.clicked);
 */
 </script>
 </html>

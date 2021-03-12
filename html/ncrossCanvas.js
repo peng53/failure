@@ -10,6 +10,10 @@ export class NCrossCanvas {
 		,	theight : (canvas.height-100)/r
 		,	fontlb : 10
 		}
+		this.canvas.addEventListener('click',(e) => {
+			const {c,r} = this.xyToRC(event.offsetX,event.offsetY);
+			this.clickedRecalc(r,c);
+		});
 	}
 	generate(){
 		this.board.generate();
@@ -77,5 +81,50 @@ export class NCrossCanvas {
 		}
 		ctx.stroke();
 		ctx.closePath();
+	}
+	clickedRecalc(r,c){
+		// need to toggle state of tile.
+		this.board.A[r][c] = !this.board.A[r][c];
+		this.board.recalcCol(c);
+		this.board.recalcRow(r);
+		const ctx = this.canvas.getContext('2d');
+		this.clearRHint(ctx,r);
+		this.drawRHint(ctx,r);
+		this.clearCHint(ctx,c);
+		this.drawCHint(ctx,c);
+		if (this.board.A[r][c]){
+			this.drawTile(ctx,r,c);
+		} else {
+			this.clearTile(ctx,r,c);
+		}
+	}
+	clearTile(ctx, r,c){
+		ctx.clearRect(
+			c*this.metrics.twidth+this.metrics.hintReserve
+		,	r*this.metrics.theight+this.metrics.hintReserve
+		,	this.metrics.twidth
+		,	this.metrics.theight
+		);
+	}
+	clearRHint(ctx,r){
+		ctx.clearRect(
+			0
+		,	this.metrics.hintReserve+r*this.metrics.twidth
+		,	this.metrics.hintReserve
+		,	this.metrics.twidth
+		);
+	}
+	clearCHint(ctx,c){
+		ctx.clearRect(
+			this.metrics.hintReserve+c*this.metrics.twidth
+		,	0
+		,	this.metrics.theight
+		,	this.metrics.hintReserve
+		);
+	}
+	xyToRC(x,y){
+		x -= this.metrics.hintReserve;
+		y -= this.metrics.hintReserve;
+		if (x>=0 && y>=0) return {c : Math.floor(x/this.metrics.twidth), r : Math.floor(y/this.metrics.theight)};
 	}
 }
