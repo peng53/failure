@@ -32,6 +32,7 @@ export class NCrossCanvas {
 				}
 			}
 		}
+		ctx.font = `${this.metrics.fontlb}px Arial`;
 		for (let r=0;r<this.board.height;++r){
 			this.drawRHint(ctx,r);
 		}
@@ -90,6 +91,7 @@ export class NCrossCanvas {
 		this.board.recalcCol(c);
 		this.board.recalcRow(r);
 		const ctx = this.canvas.getContext('2d');
+		ctx.font = `${this.metrics.fontlb}px Arial`;
 		this.clearRHint(ctx,r);
 		this.drawRHint(ctx,r);
 		this.clearCHint(ctx,c);

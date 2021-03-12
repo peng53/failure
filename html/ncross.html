@@ -10,6 +10,7 @@ import {NCrossCanvas} from './ncrossCanvas.js';
 const rows = parseInt(ncan.dataset['rows']);
 const cols = parseInt(ncan.dataset['cols']);
 let cboard = new NCrossCanvas(ncan,rows,cols);
+cboard.metrics.fontlb = parseInt(ncan.dataset['fontsize']);
 cboard.generate();
 
 window.changeHintReserve = function(){
