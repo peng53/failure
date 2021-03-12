@@ -12,7 +12,9 @@ export class NCrossCanvas {
 		}
 		this.canvas.addEventListener('click',(e) => {
 			const {c,r} = this.xyToRC(event.offsetX,event.offsetY);
-			this.clickedRecalc(r,c);
+			if (c!=undefined){
+				this.clickedRecalc(r,c);
+			}
 		});
 	}
 	generate(){
@@ -126,5 +128,27 @@ export class NCrossCanvas {
 		x -= this.metrics.hintReserve;
 		y -= this.metrics.hintReserve;
 		if (x>=0 && y>=0) return {c : Math.floor(x/this.metrics.twidth), r : Math.floor(y/this.metrics.theight)};
+	}
+	recalMetrics(){
+		this.metrics.twidth = (this.canvas.width-this.metrics.hintReserve)/this.board.width;
+		this.metrics.theight = (this.canvas.height-this.metrics.hintReserve)/this.board.height;
+		console.log(this.metrics);
+		this.draw();
+	}
+	set hintReserve(p){
+		if (p!=this.metrics.hintReserve){
+			this.metrics.hintReserve = p;
+			this.recalMetrics();
+		}
+	}
+	resizeBoard(r,c){
+		if (r!=this.board.height || c!=this.board.width){
+			this.board.width = c;
+			this.board.height = r;
+			this.board.clear();
+			console.log(r,c);
+		}
+		this.board.generate();
+		this.recalMetrics();
 	}
 }

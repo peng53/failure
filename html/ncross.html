@@ -1,11 +1,8 @@
 <html>
 <body>
 <canvas id='ncan' width=600 height=600 style='border:1px solid red;' data-hintreserve=100 data-fontsize=16 data-rows=10 data-cols=10 ></canvas>
-<br /><input id='hintsSpace' value='100' onblur='hintReserveResize(event.target.value);' />
-<div>
-<input class='c' />x<input class='r' />
-<br/><button onclick='setNboardSize(this.parentElement)'>Set Nboard</button>
-</div>
+<br /><button onclick='changeHintReserve()'>Change Hint Reserved Space</button>
+<br /><button onclick='changeBoardSize()'>Change Board Size</button>
 </body>
 <script type="module">
 import {NCrossCanvas} from './ncrossCanvas.js';
@@ -15,25 +12,21 @@ const cols = parseInt(ncan.dataset['cols']);
 let cboard = new NCrossCanvas(ncan,rows,cols);
 cboard.generate();
 
-/*
-function hintReserveResize(newr){
-	if (newr!=ncan.dataset['hintreserve']){
-		ncan.dataset['hintreserve'] = newr;
-		ncan.drawBoard(x);
+window.changeHintReserve = function(){
+	const oldr = cboard.metrics.hintReserve;
+	const newr = parseInt(prompt(`New reserve size? (${oldr})`,oldr));
+	if (newr && newr!=oldr){ // checking twice but no difference
+		cboard.hintReserve = newr;
 	}
-}
-
-function setNboardSize(p){
-	const c = p.querySelector('.c').value;
-	const r = p.querySelector('.r').value;
-	if (c!=ncan.dataset['cols'] || r!=ncan.dataset['rows']){
-		ncan.dataset['cols'] = c;
-		ncan.dataset['rows'] = r;
-		ncan.board = new NCrossBoard(c,r);
-		ncan.board.generate();
-		ncan.drawBoard();
+};
+window.changeBoardSize = function(){
+	const r = cboard.board.height;
+	const c = cboard.board.width;
+	const [newr,newc] = prompt(`New board size? r,c (${r},${c})`,`${r},${c}`).split(',',2).map(Number);
+	if (newr && newc && (newr!=r || newc!=c)){
+		cboard.resizeBoard(newr,newc);
 	}
-}
-*/
+};
 </script>
+<script></script>
 </html>
