@@ -7,7 +7,15 @@
 <br/><button onclick='setNboardSize(this.parentElement)'>Set Nboard</button>
 </div>
 </body>
-<script>
+<script type="module">
+import {NCrossCanvas} from './ncrossCanvas.js';
+console.log(NCrossCanvas);
+const rows = parseInt(ncan.dataset['rows']);
+const cols = parseInt(ncan.dataset['cols']);
+let cboard = new NCrossCanvas(ncan,rows,cols);
+cboard.generate();
+
+/*
 class MouseClick {
 	constructor(x,y){
 		this.x = x;
@@ -28,68 +36,6 @@ ncan.lastclickToRC = function(board){
 	if (x>=0 && y>=0) return {c : Math.floor(x/twidth), r : Math.floor(y/theight)};
 };
 
-ncan.drawBoard = function(board){
-	const ctx = this.getContext('2d');
-	const hintReserve = parseInt(this.dataset['hintreserve']);
-	this.drawingMetrics = {
-		hintReserve: parseInt(this.dataset['hintreserve'])
-	,	twidth: (this.width-hintReserve)/(board.width)
-	,	theight: (this.height-hintReserve)/(board.height)
-	,	fontlb: parseInt(this.dataset['fontsize'])
-	}
-	ctx.clearRect(0,0,ncan.width,ncan.height);
-	ctx.fillStyle = 'red';
-	for (let r=0;r<board.height;++r){
-		for (let c=0;c<board.width;++c){
-			if (board.A[r][c]==1){
-				this.drawTile(board, r, c);
-			}
-		}
-	}
-	ctx.font = `${this.dataset['fontsize']}px Arial`;
-	for (let r=0;r<board.height;++r){
-		this.drawRHint(board,r);
-	}
-	for (let c=0;c<board.width;++c){
-		this.drawCHint(board, c);
-	}
-	this.drawLines(board.height, board.width);
-};
-ncan.drawRHint = function(board, r){
-	const ctx = this.getContext('2d');
-	ctx.textAlign = 'left';
-	ctx.textBaseline = 'middle';
-	for (let i=0;i<board.rowHints[r].length;++i){
-		ctx.strokeText(board.rowHints[r][i], i*this.drawingMetrics.fontlb, r*this.drawingMetrics.theight+this.drawingMetrics.theight/2+this.drawingMetrics.hintReserve);
-	}
-};
-ncan.drawCHint = function(board, c){
-	const ctx = this.getContext('2d');
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'top';
-	for (let i=0;i<board.colHints[c].length;++i){
-		ctx.strokeText(board.colHints[c][i], c*this.drawingMetrics.twidth+this.drawingMetrics.hintReserve+this.drawingMetrics.twidth/2, i*this.drawingMetrics.fontlb);
-	}
-};
-ncan.drawTile = function(board, r, c){
-	this.getContext('2d').fillRect(c*this.drawingMetrics.twidth+this.drawingMetrics.hintReserve,r*this.drawingMetrics.theight+this.drawingMetrics.hintReserve,this.drawingMetrics.twidth,this.drawingMetrics.theight);
-};
-
-ncan.drawLines = function(rows,cols){
-	const ctx = this.getContext('2d');
-	ctx.strokeStyle = 'black';
-	ctx.beginPath();
-	for (let r=0;r<rows;++r){
-		ctx.moveTo(0,this.drawingMetrics.hintReserve+r*this.drawingMetrics.theight);
-		ctx.lineTo(this.width,this.drawingMetrics.hintReserve+r*this.drawingMetrics.theight);
-	}
-	for (let c=0;c<cols;++c){
-		ctx.moveTo(this.drawingMetrics.hintReserve+c*this.drawingMetrics.twidth, 0);
-		ctx.lineTo(this.drawingMetrics.hintReserve+c*this.drawingMetrics.twidth, this.height);
-	}
-	ctx.stroke();
-	ctx.closePath();
-};
 ncan.clearTile = function(r, c){
 	this.getContext('2d').clearRect(c*this.drawingMetrics.twidth+this.drawingMetrics.hintReserve,r*this.drawingMetrics.theight+this.drawingMetrics.hintReserve,this.drawingMetrics.twidth,this.drawingMetrics.theight);
 };
@@ -120,104 +66,43 @@ function getRandomIntInclusive(min, max) {
 	max = Math.floor(max);
 	return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
-class NCrossBoard {
-	constructor(width, height){
-		this.width = width;
-		this.height = height;
-		this.clear();
-	}
-	clear(){
-		this.A = [];
-		this.rowHints = [];
-		for (let r=0;r<this.height;++r){
-			this.A[r] = new Uint8Array(this.width);
-			this.A[r].fill(0);
-			this.rowHints.push([]);
-		}
-		this.colHints = [];
-		for (let c=0;c<this.width;++c){
-			this.colHints.push([]);
-		}
-	}
-	recalcRow(r){
-		let hint = [];
-		for (let c=0;c<this.width;++c){
-			if (this.A[r][c]==1){ // if this tile is filled..
-				if (c>0 && this.A[r][c-1]==1){ // and the previous adjacent one was filled
-					// then use the most current 'hint bar'
-					hint[hint.length-1] += 1;
-				} else { // otherwise create a new one
-					hint.push(1);
-				}
-			}
-		}
-		this.rowHints[r] = hint;
-	}
-	recalcCol(c){
-		let hint = [];
-		for (let r=0;r<this.height;++r){
-			if (this.A[r][c]==1){ // if this tile is filled..
-				if (r>0 && this.A[r-1][c]==1){ // and the previous adjacent one was filled
-					// then use the most current 'hint bar'
-					hint[hint.length-1] += 1;
-				} else { // otherwise create a new one
-					hint.push(1);
-				}
-			}
-		}
-		this.colHints[c] = hint;
-	}
-	generate(){
-		for (let r=0;r<this.height;++r){
-			for (let c=0;c<this.width;++c){
-				this.A[r][c] = getRandomIntInclusive(0,1);
-			}
-			this.recalcRow(r);
-		}
-		for (let c=0;c<this.width;++c){
-			this.recalcCol(c);
-		}
-	}
-}
+
 function setNboardSize(p){
 	const c = p.querySelector('.c').value;
 	const r = p.querySelector('.r').value;
 	if (c!=ncan.dataset['cols'] || r!=ncan.dataset['rows']){
 		ncan.dataset['cols'] = c;
 		ncan.dataset['rows'] = r;
-		x = new NCrossBoard(c,r);
-		x.generate();
-		ncan.drawBoard(x);
+		ncan.board = new NCrossBoard(c,r);
+		ncan.board.generate();
+		ncan.drawBoard();
 	}
 }
 
-function ClickToToggleTileState(event){
-	let {c, r} = event.target.lastclickToRC(x);
-	x.A[r][c] = !x.A[r][c];
-	x.recalcCol(c);
-	x.recalcRow(r);
+ncan.clicked = function(event){
+	const {c, r} = event.target.lastclickToRC(this.board);
+	this.board.A[r][c] = !this.board.A[r][c];
+	this.board.recalcCol(c);
+	this.board.recalcRow(r);
 	ncan.clearCHint(c);
 	ncan.clearRHint(r);
-	console.log(r,c);
-	ncan.drawCHint(x,c);
-	ncan.drawRHint(x,r);
-	if (x.A[r][c]){
-		ncan.drawTile(x,r,c);
+	ncan.drawCHint(this.board,c);
+	ncan.drawRHint(this.board,r);
+	if (this.board.A[r][c]){
+		ncan.drawTile(this.board,r,c);
 	} else {
 		ncan.clearTile(r,c);
 	}
-	ncan.drawLines(x.height,x.width);
-}
+	ncan.drawLines(this.board.height,this.board.width);
+};
 
 let rows = parseInt(ncan.dataset['rows']);
 let cols = parseInt(ncan.dataset['cols']);
-let x = new NCrossBoard(cols,rows);
-x.generate();
-console.table(x.A);
-console.log(x.colHints);
-console.log(x.rowHints);
-ncan.drawBoard(x);
+ncan.board = new NCrossBoard(cols,rows);
+ncan.board.generate();
+ncan.drawBoard();
 ncan.addEventListener('click',SetLastClick);
-ncan.addEventListener('click',ClickToToggleTileState);
+ncan.addEventListener('click',ncan.clicked);
+*/
 </script>
 </html>
