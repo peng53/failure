@@ -4,10 +4,21 @@ function getRandomIntInclusive(min, max) {
 	return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
 
+class Hint {
+	constructor(state, cnt){
+		this.state = state;
+		this.cnt = cnt;
+	}
+	inc(){
+		++this.cnt;
+	}
+}
+
 export class NCrossBoard {
-	constructor(width, height){
+	constructor(width, height,states){
 		this.width = width;
 		this.height = height;
+		this.states = states;
 		this.clear();
 	}
 	clear(){
@@ -26,12 +37,12 @@ export class NCrossBoard {
 	recalcRow(r){
 		let hint = [];
 		for (let c=0;c<this.width;++c){
-			if (this.A[r][c]==1){ // if this tile is filled..
-				if (c>0 && this.A[r][c-1]==1){ // and the previous adjacent one was filled
+			if (this.A[r][c]!=0){ // if this tile is filled..
+				if (c>0 && this.A[r][c-1]==this.A[r][c]){ // and the previous adjacent one was filled
 					// then use the most current 'hint bar'
-					hint[hint.length-1] += 1;
+					hint[hint.length-1].inc();
 				} else { // otherwise create a new one
-					hint.push(1);
+					hint.push(new Hint(this.A[r][c],1));
 				}
 			}
 		}
@@ -40,12 +51,12 @@ export class NCrossBoard {
 	recalcCol(c){
 		let hint = [];
 		for (let r=0;r<this.height;++r){
-			if (this.A[r][c]==1){ // if this tile is filled..
-				if (r>0 && this.A[r-1][c]==1){ // and the previous adjacent one was filled
+			if (this.A[r][c]!=0){ // if this tile is filled..
+				if (r>0 && this.A[r-1][c]==this.A[r][c]){ // and the previous adjacent one was filled with same color
 					// then use the most current 'hint bar'
-					hint[hint.length-1] += 1;
+					hint[hint.length-1].inc();
 				} else { // otherwise create a new one
-					hint.push(1);
+					hint.push(new Hint(this.A[r][c],1));
 				}
 			}
 		}
@@ -54,7 +65,7 @@ export class NCrossBoard {
 	generate(){
 		for (let r=0;r<this.height;++r){
 			for (let c=0;c<this.width;++c){
-				this.A[r][c] = getRandomIntInclusive(0,1);
+				this.A[r][c] = getRandomIntInclusive(0,this.states-1);
 			}
 			this.recalcRow(r);
 		}

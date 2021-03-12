@@ -1,9 +1,9 @@
 import { NCrossBoard } from './ncross.js';
 
 export class NCrossCanvas {
-	constructor(canvas,r,c){
+	constructor(canvas,r,c,states){
 		this.canvas = canvas;
-		this.board = new NCrossBoard(r,c);
+		this.board = new NCrossBoard(r,c,states.length);
 		this.metrics = {
 			hintReserve : 100
 		,	twidth : (canvas.width-100)/c
@@ -11,11 +11,12 @@ export class NCrossCanvas {
 		,	fontlb : 10
 		}
 		this.canvas.addEventListener('click',(e) => {
-			const {c,r} = this.xyToRC(event.offsetX,event.offsetY);
+			const {c,r} = this.xyToRC(event.offsetX,event.offsetY) || 0;
 			if (c!=undefined){
 				this.clickedRecalc(r,c);
 			}
 		});
+		this.colorStates = states;
 	}
 	generate(){
 		this.board.generate();
@@ -24,10 +25,9 @@ export class NCrossCanvas {
 	draw(){
 		const ctx = this.canvas.getContext('2d');
 		ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-		ctx.fillStyle = 'red';
 		for (let r=0;r<this.board.height;++r){
 			for (let c=0;c<this.board.width;++c){
-				if (this.board.A[r][c]==1){
+				if (this.board.A[r][c]!=0){
 					this.drawTile(ctx, r, c);
 				}
 			}
@@ -42,6 +42,7 @@ export class NCrossCanvas {
 		this.drawLines(ctx);
 	}
 	drawTile(ctx,r,c){
+		ctx.fillStyle = this.colorStates[this.board.A[r][c]];
 		ctx.fillRect(
 			c*this.metrics.twidth+this.metrics.hintReserve
 		,	r*this.metrics.theight+this.metrics.hintReserve
@@ -53,8 +54,9 @@ export class NCrossCanvas {
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'middle';
 		for (let i=0;i<this.board.rowHints[r].length;++i){
+			ctx.strokeStyle = this.colorStates[this.board.rowHints[r][i].state];
 			ctx.strokeText(
-				this.board.rowHints[r][i]
+				this.board.rowHints[r][i].cnt
 			,	i*this.metrics.fontlb
 			,	r*this.metrics.theight+this.metrics.theight/2+this.metrics.hintReserve
 			);
@@ -64,8 +66,9 @@ export class NCrossCanvas {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'top';
 		for (let i=0;i<this.board.colHints[c].length;++i){
+			ctx.strokeStyle = this.colorStates[this.board.colHints[c][i].state];
 			ctx.strokeText(
-				this.board.colHints[c][i]
+				this.board.colHints[c][i].cnt
 			,	c*this.metrics.twidth+this.metrics.hintReserve+this.metrics.twidth/2
 			,	i*this.metrics.fontlb
 			);
@@ -87,7 +90,7 @@ export class NCrossCanvas {
 	}
 	clickedRecalc(r,c){
 		// need to toggle state of tile.
-		this.board.A[r][c] = !this.board.A[r][c];
+		this.board.A[r][c] = (this.board.A[r][c]+1)%this.board.states;
 		this.board.recalcCol(c);
 		this.board.recalcRow(r);
 		const ctx = this.canvas.getContext('2d');
@@ -96,7 +99,7 @@ export class NCrossCanvas {
 		this.drawRHint(ctx,r);
 		this.clearCHint(ctx,c);
 		this.drawCHint(ctx,c);
-		if (this.board.A[r][c]){
+		if (this.board.A[r][c]!=0){
 			this.drawTile(ctx,r,c);
 		} else {
 			this.clearTile(ctx,r,c);

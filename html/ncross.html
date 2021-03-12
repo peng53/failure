@@ -1,6 +1,6 @@
 <html>
 <body>
-<canvas id='ncan' width=600 height=600 style='border:1px solid red;' data-hintreserve=100 data-fontsize=16 data-rows=10 data-cols=10 ></canvas>
+<canvas id='ncan' width=600 height=600 style='border:1px solid red;' data-hintreserve=100 data-fontsize=16 data-rows=10 data-cols=10 data-states='null,red,blue,green' ></canvas>
 <br /><button onclick='changeHintReserve()'>Change Hint Reserved Space</button>
 <br /><button onclick='changeBoardSize()'>Change Board Size</button>
 </body>
@@ -9,7 +9,8 @@ import {NCrossCanvas} from './ncrossCanvas.js';
 
 const rows = parseInt(ncan.dataset['rows']);
 const cols = parseInt(ncan.dataset['cols']);
-let cboard = new NCrossCanvas(ncan,rows,cols);
+const states = ncan.dataset['states'].split(',');
+const cboard = new NCrossCanvas(ncan,rows,cols,states);
 cboard.metrics.fontlb = parseInt(ncan.dataset['fontsize']);
 cboard.generate();
 
