@@ -9,7 +9,7 @@ export class NCrossCanvas {
 		,	twidth : (canvas.width-100)/c
 		,	theight : (canvas.height-100)/r
 		,	fontlb : 10
-		}
+		};
 		this.canvas.addEventListener('click',(e) => {
 			const {c,r} = this.xyToRC(event.offsetX,event.offsetY) || 0;
 			if (c!=undefined){

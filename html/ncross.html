@@ -1,6 +1,8 @@
 <html>
 <body>
 <canvas id='ncan' width=600 height=600 style='border:1px solid red;' data-hintreserve=100 data-fontsize=16 data-rows=10 data-cols=10 data-states='null,red,blue,green' ></canvas>
+<svg viewBox="0 0 100 100" height='100%' width='100%'>
+</svg>
 <br /><button onclick='changeHintReserve()'>Change Hint Reserved Space</button>
 <br /><button onclick='changeBoardSize()'>Change Board Size</button>
 </body>
@@ -30,5 +32,12 @@ window.changeBoardSize = function(){
 	}
 };
 </script>
-<script></script>
+<script type="module">
+import {NCrossSvg} from './ncrossSvg.js';
+
+const states = 'white,red,blue,green'.split(',');
+const sboard = new NCrossSvg(document.querySelector('svg'),10,10,states);
+sboard.generate();
+
+</script>
 </html>
