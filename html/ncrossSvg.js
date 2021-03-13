@@ -6,7 +6,7 @@ function generateColorStyle(p,states,fontsize){
 		//s.sheet.addRule(`.state${i} { fill : ${states[i]};}`,0);
 		s.textContent += `.state${i} { fill: ${states[i]}; color: ${states[i]};}`;
 	}
-	s.textContent += `text { font-size: ${fontsize}%}`;
+	s.textContent += `text { font-size: ${fontsize}%; } rect { stroke: #eee; stroke-width: 1; }`;
 }
 
 export class NCrossSvg {
@@ -30,20 +30,22 @@ export class NCrossSvg {
 		const tileF = function(event){
 			tthis.clickedRecalc(event.target);
 		};
+		const s = new DocumentFragment();
 		for (let r=0;r<this.board.height;++r){
 			for (let c=0;c<this.board.width;++c){
-				this.createTile(r,c).addEventListener('click',tileF);
+				this.createTile(s,r,c).addEventListener('click',tileF);
 			}
 		}
 		for (let r=0;r<this.board.height;++r){
-			this.createRHint(r);
+			this.createRHint(s,r);
 		}
 		for (let c=0;c<this.board.width;++c){
-			this.createCHint(c);
+			this.createCHint(s,c);
 		}
+		this.svg.appendChild(s);
 	}
-	createTile(r,c){
-		let tile = this.svg.appendChild(
+	createTile(s,r,c){
+		let tile = s.appendChild(
 			document.createElementNS("http://www.w3.org/2000/svg", 'rect'));
 		tile.setAttributeNS(null, 'x', this.metrics.hintReserve+c*this.metrics.twidth);
 		tile.setAttributeNS(null, 'y', this.metrics.hintReserve+r*this.metrics.theight);
@@ -54,8 +56,8 @@ export class NCrossSvg {
 		tile.dataset['col']=c;
 		return tile;
 	}
-	createRHint(r){
-		let g = this.svg.appendChild(
+	createRHint(s,r){
+		let g = s.appendChild(
 			document.createElementNS("http://www.w3.org/2000/svg", 'g'));
 		g.classList.add(`hintr${r}`);
 		let text;
@@ -69,8 +71,8 @@ export class NCrossSvg {
 			text.classList.add(`state${this.board.rowHints[r][i].state}`);
 		}
 	}
-	createCHint(c){
-		let g = this.svg.appendChild(
+	createCHint(s,c){
+		let g = s.appendChild(
 			document.createElementNS("http://www.w3.org/2000/svg", 'g'));
 		g.classList.add(`hintc${c}`);
 		let text;
@@ -85,7 +87,7 @@ export class NCrossSvg {
 		}
 	}
 	clickedRecalc(tile){
-		const r = tile.dataset.row, c = tile.dataset.col;
+		const r = parseInt(tile.dataset.row), c = parseInt(tile.dataset.col);
 		const os = this.board.A[r][c], ns = this.board.cycleNext(r, c);
 		tile.classList.remove(`state${os}`);
 		tile.classList.add(`state${ns}`);
@@ -93,7 +95,28 @@ export class NCrossSvg {
 		this.board.recalcCol(c);
 		this.svg.removeChild(this.svg.querySelector(`.hintr${r}`));
 		this.svg.removeChild(this.svg.querySelector(`.hintc${c}`));
-		this.createRHint(r);
-		this.createCHint(c);
+		this.createRHint(this.svg,r);
+		this.createCHint(this.svg,c);
+	}
+	recalMetrics(){
+		this.metrics.twidth = (100-this.metrics.hintReserve)/this.board.width;
+		this.metrics.theight = (100-this.metrics.hintReserve)/this.board.height;
+		this.svg.textContent ='';
+		this.init();
+	}
+	set hintReserve(p){
+		if (p!=this.metrics.hintReserve){
+			this.metrics.hintReserve = p;
+			this.recalMetrics();
+		}
+	}
+	resizeBoard(r,c){
+		if (r!=this.board.height || c!=this.board.width){
+			this.board.width = c;
+			this.board.height = r;
+			this.board.clear();
+		}
+		this.board.generate();
+		this.recalMetrics();
 	}
 }

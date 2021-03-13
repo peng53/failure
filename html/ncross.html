@@ -4,7 +4,9 @@
 <svg viewBox="0 0 100 100" height='100%' width='100%'>
 </svg>
 <br /><button onclick='changeHintReserve()'>Change Hint Reserved Space</button>
+<br /><button onclick='changeHintReserveSvg()'>Change SvgHint Reserved Space</button>
 <br /><button onclick='changeBoardSize()'>Change Board Size</button>
+<br /><button onclick='changeBoardSizeSvg()'>Change SvgBoard Size</button>
 </body>
 <script type="module">
 import {NCrossCanvas} from './ncrossCanvas.js';
@@ -38,6 +40,22 @@ import {NCrossSvg} from './ncrossSvg.js';
 const states = 'white,red,blue,green'.split(',');
 const sboard = new NCrossSvg(document.querySelector('svg'),10,10,states);
 sboard.generate();
+
+window.changeHintReserveSvg = function(){
+	const oldr = sboard.metrics.hintReserve;
+	const newr = parseInt(prompt(`New reserve size? (${oldr})`,oldr));
+	if (newr && newr!=oldr){ // checking twice but no difference
+		sboard.hintReserve = newr;
+	}
+};
+window.changeBoardSizeSvg = function(){
+	const r = sboard.board.height;
+	const c = sboard.board.width;
+	const [newr,newc] = prompt(`New board size? r,c (${r},${c})`,`${r},${c}`).split(',',2).map(Number);
+	if (newr && newc && (newr!=r || newc!=c)){
+		sboard.resizeBoard(newr,newc);
+	}
+};
 
 </script>
 </html>
