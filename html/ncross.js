@@ -73,4 +73,8 @@ export class NCrossBoard {
 			this.recalcCol(c);
 		}
 	}
+	cycleNext(r,c){
+		this.A[r][c] = (this.A[r][c]+1)%this.states;
+		return this.A[r][c];
+	}
 }

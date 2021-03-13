@@ -90,7 +90,7 @@ export class NCrossCanvas {
 	}
 	clickedRecalc(r,c){
 		// need to toggle state of tile.
-		this.board.A[r][c] = (this.board.A[r][c]+1)%this.board.states;
+		this.board.cycleNext(r,c);
 		this.board.recalcCol(c);
 		this.board.recalcRow(r);
 		const ctx = this.canvas.getContext('2d');
