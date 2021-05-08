@@ -2,11 +2,14 @@
 <style>
 rect {
 	stroke: white;
-	stroke-width: 0.1;
+	stroke-width: 0.3;
 }
 text {
 	fill: white;
 	font-size: 25%;
+}
+.selected {
+	fill-opacity: 0.25;
 }
 </style>
 <script>
@@ -60,6 +63,32 @@ class ColorRGB {
 	}
 }
 
+function colorMorph(c,by){
+	const n = (getRandomInt(0,2)==1) ? -1 : 1;
+	switch (getRandomInt(0,3)){
+		case 0:
+			c.r += n*by;
+			c.r = roundBack(c.r);
+			break;
+		case 1:
+			c.g += n*by;
+			c.g = roundBack(c.g);
+			break;
+		case 2:
+			c.b += n*by;
+			c.b = roundBack(c.b);
+			break;
+	}
+}
+
+function roundBack(x){
+	if (x<0){
+		return 255+x;
+	} else {
+		return x%255;
+	}
+}
+
 function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
@@ -74,7 +103,7 @@ function randomRGB(){
 }
 
 class Colorboard {
-	constructor(p,width, height){
+	constructor(p,width, height,tileC){
 		this.element = p;
 		this.width = width;
 		this.height = height;
@@ -85,13 +114,13 @@ class Colorboard {
 		for (let r=0;r<height;++r){
 			this.tiles[r] = new Array(width);
 			for (let c=0;c<width;++c){
-				this.tiles[r][c] = new TileWithNumber(t,c*xd,r*yd,xd,yd);
+				this.tiles[r][c] = new tileC(t,c*xd,r*yd,xd,yd);
 			}
 		}
 		p.appendChild(t);
 	}
-
 }
+
 class RandomColorboard {
 	constructor(cb){
 		this.cb = cb;
@@ -110,12 +139,59 @@ class RandomColorboard {
 		this.interval = setInterval(this.tick.bind(this), v);
 	}
 }
+class EntityBoard {
+	constructor(cb){
+		this.cb = cb;
+		this.interval = null;
+		this.r = getRandomInt(0,this.cb.height);
+		this.c = getRandomInt(0,this.cb.width);
+		this.col = randomRGB();
+		this.cb.tiles[this.r][this.c].recolor(this.col);
+		this.cb.tiles[this.r][this.c].ele.classList.add('selected');
+	}
+	tick(){
+		this.cb.tiles[this.r][this.c].ele.classList.remove('selected');
+		switch (getRandomInt(0,4)){
+			case 0:
+				if (this.r==0){
+					this.r = this.cb.height-1;
+				} else {
+					--this.r;
+				}
+				break;
+			case 1:
+				this.c = (this.c+1)%this.cb.width;
+				break;
+			case 2:
+				this.r = (this.r+1)%this.cb.height;
+				break;
+			case 3:
+				if (this.c==0){
+					this.c = this.cb.width-1;
+				} else {
+					--this.c;
+				}
+				break;
+		}
+		colorMorph(this.col,15);
+		this.cb.tiles[this.r][this.c].ele.classList.add('selected');
+		this.cb.tiles[this.r][this.c].recolor(this.col);
+	}
+	setInterval(v){
+		if (this.interval){
+			clearTimeout(this.interval);
+			this.interval = null;
+		}
+		this.interval = setInterval(this.tick.bind(this), v);
+	}
+}
 </script>
 <svg id='nsvg' viewBox="0 0 100 100" height='calc(100% - 2em)' width='100%'>
 </svg>
 <center><input id='interval' type='number' /><button onclick='randomCb.setInterval(Math.max(250,interval.value))'>Set Interval</button></center>
 <script>
-let cb = new Colorboard(document.querySelector('#nsvg'),3,1);
-let randomCb = new RandomColorboard(cb);
+let cb = new Colorboard(document.querySelector('#nsvg'),10,10,Tile);
+//let randomCb = new RandomColorboard(cb);
+let randomCb = new EntityBoard(cb);
 </script>
 </html>
