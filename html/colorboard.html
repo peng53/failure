@@ -11,20 +11,38 @@ text {
 </style>
 <script>
 class Tile {
-	constructor(ele, num){
-		this.element = ele;
-		this.num = num;
+	constructor(p,x,y,w,h){
+		this.ele = p.appendChild(document.createElementNS("http://www.w3.org/2000/svg", 'rect'));
+		this.ele.setAttributeNS(null, 'x', x);
+		this.ele.setAttributeNS(null, 'y', y);
+		this.ele.setAttributeNS(null, 'width', w);
+		this.ele.setAttributeNS(null, 'height', h);
 	}
-	tick(){
-		let nc = randomRGB();
-		this.element.style.fill = nc;
-		this.num.textContent ++;
-		this.num.style.fill = nc.inv();
+	recolor(nc){
+		this.ele.style.fill = nc;
 	}
 	reset(){
-		this.element.style.fill = '';
-		this.num.style.fill = '';
-		this.num.textContent = '0';
+		this.ele.style.fill = '';
+	}
+}
+class TileWithNumber extends Tile{
+	constructor(p,x,y,w,h){
+		super(p,x,y,w,h);
+		this.numberEle = p.appendChild(document.createElementNS("http://www.w3.org/2000/svg", 'text'));
+		this.numberEle.appendChild(document.createTextNode('0'));
+		this.numberEle.setAttribute('y', y+h/2);
+		this.numberEle.setAttribute('x', x+w/2);
+	}
+	recolor(nc){
+		if (this.numberEle.textContent==='9'){
+			this.numberEle.textContent = '0';
+			this.numberEle.style.fill = '';
+			super.reset();
+		} else {
+			this.numberEle.textContent ++;
+			this.numberEle.style.fill = nc.inv();
+			super.recolor(nc);
+		}
 	}
 }
 
@@ -48,28 +66,11 @@ function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
 }
 
-
 function randomRGB(){
 	const r = getRandomInt(0,255);
 	const g = getRandomInt(0,255);
 	const b = getRandomInt(0,255);
 	return new ColorRGB(r,g,b);
-}
-
-function tileMake(p,x,y,w,h){
-	let tile = p.appendChild(document.createElementNS("http://www.w3.org/2000/svg", 'rect'));
-	tile.setAttributeNS(null, 'x', x);
-	tile.setAttributeNS(null, 'y', y);
-	tile.setAttributeNS(null, 'width', w);
-	tile.setAttributeNS(null, 'height', h);
-	return new Tile(tile, numberMake(p,x+w/2,y+h/2));
-}
-function numberMake(p,x,y){
-	let text = p.appendChild(document.createElementNS("http://www.w3.org/2000/svg", 'text'));
-	text.appendChild(document.createTextNode('0'));
-	text.setAttribute('y', y);
-	text.setAttribute('x', x);
-	return text;
 }
 
 class Colorboard {
@@ -84,35 +85,37 @@ class Colorboard {
 		for (let r=0;r<height;++r){
 			this.tiles[r] = new Array(width);
 			for (let c=0;c<width;++c){
-				this.tiles[r][c] = tileMake(t,c*xd,r*yd,xd,yd);
+				this.tiles[r][c] = new TileWithNumber(t,c*xd,r*yd,xd,yd);
 			}
 		}
 		p.appendChild(t);
+	}
+
+}
+class RandomColorboard {
+	constructor(cb){
+		this.cb = cb;
 		this.interval = null;
-		this.tickb = this.tick.bind(this);
 	}
 	tick(){
-		let r = getRandomInt(0,this.height);
-		let c = getRandomInt(0,this.width);
-		if (this.tiles[r][c].num.textContent == '9'){
-			this.tiles[r][c].reset();
-		} else {
-			this.tiles[r][c].tick();
-		}
+		let r = getRandomInt(0,this.cb.height);
+		let c = getRandomInt(0,this.cb.width);
+		this.cb.tiles[r][c].recolor(randomRGB());
 	}
 	setInterval(v){
 		if (this.interval){
 			clearTimeout(this.interval);
 			this.interval = null;
 		}
-		this.interval = setInterval(this.tickb, v);
+		this.interval = setInterval(this.tick.bind(this), v);
 	}
 }
 </script>
 <svg id='nsvg' viewBox="0 0 100 100" height='calc(100% - 2em)' width='100%'>
 </svg>
-<center><input id='interval' type='number' /><button onclick='cb.setInterval(Math.max(250,interval.value))'>Set Interval</button></center>
+<center><input id='interval' type='number' /><button onclick='randomCb.setInterval(Math.max(250,interval.value))'>Set Interval</button></center>
 <script>
 let cb = new Colorboard(document.querySelector('#nsvg'),3,1);
+let randomCb = new RandomColorboard(cb);
 </script>
 </html>
