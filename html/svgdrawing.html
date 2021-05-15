@@ -45,6 +45,26 @@ for (let i=0;i<tiles.length;++i){
 	text.setAttribute('font-size', 10);
 	text.setAttributeNS('null', 'text-length', 2);
 }
+function matToPoints(mat){
+	const pts = [];
+	for (let i=0,l=mat.length;i<l;i+=2){
+		pts.push(`${mat[i]},${mat[i+1]}`);
+	}
+	return pts.join(' ');
+}
+let p = s.appendChild(document.createElementNS("http://www.w3.org/2000/svg", 'polygon'));
+let price = [0,0
+	,2,0
+	,2,1
+	,3,1
+	,3,2
+	,1,2
+	,1,1
+	,0,1
+];
+p.setAttributeNS(null,'points',matToPoints(price.map(x=>10*x)));
+p.setAttributeNS(null, 'fill', 'red');
+p.setAttributeNS(null, 'stroke', 'black');
 
 </script>
 </html>
