@@ -2,7 +2,7 @@
 <style>
 rect {
 	stroke: white;
-	stroke-width: 0.3;
+	stroke-width: 0.1;
 }
 text {
 	fill: white;
@@ -10,6 +10,9 @@ text {
 }
 .selected {
 	fill-opacity: 0.25;
+	stroke: grey;
+	stroke-opacity: 0.9;
+	stroke-width: 0.4;
 }
 </style>
 <script>
@@ -185,6 +188,66 @@ class EntityBoard {
 		this.interval = setInterval(this.tick.bind(this), v);
 	}
 }
+
+function rcTile(ev,obj,meb){
+	ev.preventDefault();
+	const c = (ev.target.x.baseVal.value/ev.target.parentElement.width.baseVal.value)*obj.width;
+	const r = (ev.target.y.baseVal.value/ev.target.parentElement.height.baseVal.value)*obj.height;
+	meb.addEntity(r,c);
+}
+
+class MultiEntityBoard {
+	constructor(cb){
+		this.cb = cb;
+		this.cb.element.addEventListener('click',(e)=>{rcTile(e,this.cb,this);});
+		this.interval = null;
+		this.entities = [];
+	}
+	addEntity(r,c){
+		let e = {r: r, c: c, col: randomRGB()};
+		this.entities.push(e);
+		this.cb.tiles[e.r][e.c].recolor(e.col);
+		this.cb.tiles[e.r][e.c].ele.classList.add('selected');
+	}
+	tick(){
+		for (let i=0;i<this.entities.length;++i){
+			this.cb.tiles[this.entities[i].r][this.entities[i].c].ele.classList.remove('selected');
+			switch (getRandomInt(0,4)){
+				case 0:
+					if (this.entities[i].r==0){
+						this.entities[i].r = this.cb.height-1;
+					} else {
+						--this.entities[i].r;
+					}
+					break;
+				case 1:
+					this.entities[i].c = (this.entities[i].c+1)%this.cb.width;
+					break;
+				case 2:
+					this.entities[i].r = (this.entities[i].r+1)%this.cb.height;
+					break;
+				case 3:
+					if (this.entities[i].c==0){
+						this.entities[i].c = this.cb.width-1;
+					} else {
+						--this.entities[i].c;
+					}
+					break;
+			}
+			colorMorph(this.entities[i].col,15);
+			this.cb.tiles[this.entities[i].r][this.entities[i].c].ele.classList.add('selected');
+			this.cb.tiles[this.entities[i].r][this.entities[i].c].recolor(this.entities[i].col);
+		}
+	}
+	setInterval(v){
+		if (this.interval){
+			clearTimeout(this.interval);
+			this.interval = null;
+		}
+		this.interval = setInterval(this.tick.bind(this), v);
+	}
+}
+
 </script>
 <svg id='nsvg' viewBox="0 0 100 100" height='calc(100% - 2em)' width='100%'>
 </svg>
@@ -192,6 +255,7 @@ class EntityBoard {
 <script>
 let cb = new Colorboard(document.querySelector('#nsvg'),10,10,Tile);
 //let randomCb = new RandomColorboard(cb);
-let randomCb = new EntityBoard(cb);
+let randomCb = new MultiEntityBoard(cb);
+randomCb.addEntity(0,0);
 </script>
 </html>
