@@ -19,10 +19,10 @@ text {
 class Tile {
 	constructor(p,x,y,w,h){
 		this.ele = p.appendChild(document.createElementNS("http://www.w3.org/2000/svg", 'rect'));
-		this.ele.setAttributeNS(null, 'x', x);
-		this.ele.setAttributeNS(null, 'y', y);
-		this.ele.setAttributeNS(null, 'width', w);
-		this.ele.setAttributeNS(null, 'height', h);
+		this.ele.setAttributeNS(null, 'x', `${x}%`);
+		this.ele.setAttributeNS(null, 'y', `${y}%`);
+		this.ele.setAttributeNS(null, 'width', `${w}%`);
+		this.ele.setAttributeNS(null, 'height', `${h}%`);
 	}
 	recolor(nc){
 		this.ele.style.fill = nc;
@@ -249,7 +249,7 @@ class MultiEntityBoard {
 }
 
 </script>
-<svg id='nsvg' viewBox="0 0 100 100" height='calc(100% - 2em)' width='100%'>
+<svg id='nsvg' viewBox="0 0 200 200" height='calc(100% - 2em)' width='100%'>
 </svg>
 <center><input id='interval' type='number' /><button onclick='randomCb.setInterval(Math.max(250,interval.value))'>Set Interval</button></center>
 <script>
