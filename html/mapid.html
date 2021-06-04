@@ -1,7 +1,17 @@
 <html>
 <style>
 .selectedState {
-	fill: red !important;
+	stroke-width: 2px;
+	stroke: green !important;
+	fill: lime !important;
+}
+.lookupState {
+	stroke: blue !important;
+	fill: lightblue !important;
+}
+path:hover {
+	stroke: salmon !important;
+	fill: pink !important;
 }
 </style>
 <body>
@@ -16,7 +26,7 @@
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    enable_background="new 0 0 1000 589"
-   height="80%"
+   height="75%"
    pretty_print="False"
    style="stroke-linejoin: round; stroke:#000; fill: none;"
    version="1.1"
@@ -442,6 +452,7 @@
 </svg>
 </body>
 <center><a href='https://simplemaps.com/resources/svg-us'>US SVG Map</a></center>
+<center><h4 id='lookupName'></h4></center>
 <script>
 function getRandomInt(min, max) {
   min = Math.ceil(min);
@@ -460,5 +471,16 @@ function ranState(){
 }
 ranState();
 document.querySelector('svg').onclick = ranState;
+function lookup(path){
+	if (path.nodeName=='path'){
+		let looked = document.querySelector('.lookupState');
+		if (looked){
+			looked.classList.remove('lookupState');
+		}
+		lookupName.textContent = `${path.id} - ${path.dataset['name']}`;
+		path.classList.add('lookupState');
+	}
+}
+document.querySelector('svg').oncontextmenu = (e) => {e.preventDefault();lookup(e.target);};
 </script>
 </html>
