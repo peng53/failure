@@ -28,13 +28,19 @@ javascript:(function(){
 </body>
 <script>
 function getInfo(){
-	return {'Key':'val', 'Key2':'val2'};
+	return {
+		'shortKey':'shortVal'
+		, 'shortKey2':'notSoShortVal'
+		, 'shortKey3':'notSoLongVal'
+		, 'kindaLongKey':'shortVal'
+		, 'kindaLongKey2':'somewhatLongVal'
+	};
 }
 
 function beginNotate(exinfo){
 	const w = open('','empty!');
 	const style = w.document.head.appendChild(document.createElement('style'));
-	style.textContent = '#main,.sub {display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem; row-gap: 1rem;}';
+	style.textContent = '#main,.sub {display: grid;gap: 2rem 1rem;}#main{grid-template-columns: repeat(2, 1fr);}.sub{ grid-template-columns: max-content auto; } @media print {textarea{border:0;font:1em arial;}}';
 	const div = w.document.body.appendChild(document.createElement('div'));
 	div.id = 'main';
 	const b = document.body.appendChild(document.createElement('button'));
@@ -45,18 +51,19 @@ function beginNotate(exinfo){
 		let info = exinfo();
 		let sdiv = div.querySelector('.sub'+sc);
 		if (sdiv){
-			sdiv.querySelector('textarea').value = text;
+			sdiv.querySelector('textarea').value += '\n'+text;
 		} else {
 			sdiv = div.appendChild(document.createElement('div'));
 			sdiv.classList.add('sub'+sc,'sub');
 			let a = sdiv.appendChild(document.createElement('div'));
+			a.contentEditable = 'true';
 			for (const [key,val] of Object.entries(info)){
 				a.appendChild(document.createElement('b')).textContent = key;
 				a.appendChild(document.createTextNode(': '+val));
 				a.appendChild(document.createElement('br'));
 			}
 			let b = sdiv.appendChild(document.createElement('textarea'));
-			b.value = text;
+			b.value = sc+'\n'+text;
 		}
 	};
 	return w;
