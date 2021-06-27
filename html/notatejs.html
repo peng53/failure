@@ -1,0 +1,36 @@
+<html>
+<body>
+<button onclick='window2=beginNotate(getInfo,"xyz")'>Begin Notate</button>
+</body>
+<script>
+function getInfo(){
+	return {'Key':'val', 'Key2':'val2'};
+}
+
+function beginNotate(exinfo,label){
+	const w = open('','empty!');
+	const div = w.document.body.appendChild(document.createElement('div'));
+	div.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem; row-gap: 1rem;';
+	const b = document.body.appendChild(document.createElement('button'));
+	b.textContent = 'add to window2';
+	b.onclick = function(){
+		let text = prompt('what?!');
+		let info = exinfo();
+		let sdiv = div.appendChild(document.createElement('div'));
+		sdiv.style.cssText = 'display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem;';
+		let a = sdiv.appendChild(document.createElement('div'));
+		for (const [key,val] of Object.entries(info)){
+			a.appendChild(document.createElement('b')).textContent = key;
+			a.appendChild(document.createTextNode(': '+val));
+			a.appendChild(document.createElement('br'));
+		}
+		let b = sdiv.appendChild(document.createElement('textarea'));
+		b.value = text;
+		//sdiv.style.cssText = 'border: 1px solid red; background: white;'
+	};
+	return w;
+}
+var window2;
+
+</script>
+</html>
