@@ -40,7 +40,7 @@ function getInfo(){
 function beginNotate(exinfo){
 	const w = open('','empty!');
 	const style = w.document.head.appendChild(document.createElement('style'));
-	style.textContent = '#main,.sub {display: grid;gap: 2rem 1rem;}#main{grid-template-columns: repeat(2, 1fr);}.sub{ grid-template-columns: max-content auto; } @media print {textarea{border:0;font:1em arial;}}';
+	style.textContent = '#main,.sub {display: grid;gap: 1rem;}#main{grid-template-columns: repeat(2, 1fr);}.sub{ grid-template-columns: max-content auto; } table {font-family: courier new;border-collapse:collapse;} th {text-align: left; } @media print {textarea{border:0;font:1em arial;}}';
 	const div = w.document.body.appendChild(document.createElement('div'));
 	div.id = 'main';
 	const b = document.body.appendChild(document.createElement('button'));
@@ -55,12 +55,13 @@ function beginNotate(exinfo){
 		} else {
 			sdiv = div.appendChild(document.createElement('div'));
 			sdiv.classList.add('sub'+sc,'sub');
-			let a = sdiv.appendChild(document.createElement('div'));
+			let a = sdiv.appendChild(document.createElement('table'));
 			a.contentEditable = 'true';
+			let tr;
 			for (const [key,val] of Object.entries(info)){
-				a.appendChild(document.createElement('b')).textContent = key;
-				a.appendChild(document.createTextNode(': '+val));
-				a.appendChild(document.createElement('br'));
+				tr = a.appendChild(document.createElement('tr'));
+				tr.appendChild(document.createElement('th')).textContent = key;
+				tr.appendChild(document.createElement('td')).textContent = val;
 			}
 			let b = sdiv.appendChild(document.createElement('textarea'));
 			b.value = sc+'\n'+text;
