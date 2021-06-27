@@ -5,7 +5,7 @@
 javascript:(function(){
 	const w = open('','empty!');
 	const style = w.document.head.appendChild(document.createElement('style'));
-	style.textContent = '#main {display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem; row-gap: 1rem;} .sub {display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem;}';
+	style.textContent = '#main,.sub {display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem; row-gap: 1rem;};
 	const div = w.document.body.appendChild(document.createElement('div'));
 	div.id = 'main';
 	const b = document.body.appendChild(document.createElement('button'));
@@ -34,24 +34,30 @@ function getInfo(){
 function beginNotate(exinfo){
 	const w = open('','empty!');
 	const style = w.document.head.appendChild(document.createElement('style'));
-	style.textContent = '#main {display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem; row-gap: 1rem;} .sub {display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem;}';
+	style.textContent = '#main,.sub {display: grid; grid-template-columns: repeat(2, 1fr); column-gap: 2rem; row-gap: 1rem;}';
 	const div = w.document.body.appendChild(document.createElement('div'));
 	div.id = 'main';
 	const b = document.body.appendChild(document.createElement('button'));
 	b.textContent = 'add to window2';
 	b.onclick = function(){
-		let text = prompt('what?!');
+		let sc = prompt('subcode?');
+		let text = prompt('note?');
 		let info = exinfo();
-		let sdiv = div.appendChild(document.createElement('div'));
-		sdiv.classList.add('sub');
-		let a = sdiv.appendChild(document.createElement('div'));
-		for (const [key,val] of Object.entries(info)){
-			a.appendChild(document.createElement('b')).textContent = key;
-			a.appendChild(document.createTextNode(': '+val));
-			a.appendChild(document.createElement('br'));
+		let sdiv = div.querySelector('.sub'+sc);
+		if (sdiv){
+			sdiv.querySelector('textarea').value = text;
+		} else {
+			sdiv = div.appendChild(document.createElement('div'));
+			sdiv.classList.add('sub'+sc,'sub');
+			let a = sdiv.appendChild(document.createElement('div'));
+			for (const [key,val] of Object.entries(info)){
+				a.appendChild(document.createElement('b')).textContent = key;
+				a.appendChild(document.createTextNode(': '+val));
+				a.appendChild(document.createElement('br'));
+			}
+			let b = sdiv.appendChild(document.createElement('textarea'));
+			b.value = text;
 		}
-		let b = sdiv.appendChild(document.createElement('textarea'));
-		b.value = text;
 	};
 	return w;
 }
