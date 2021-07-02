@@ -39,8 +39,31 @@ function getInfo(){
 
 function beginNotate(exinfo){
 	const w = open('','empty!');
-	const style = w.document.head.appendChild(document.createElement('style'));
-	style.textContent = '#main,.sub {display: grid;gap: 1rem;}#main{grid-template-columns: repeat(2, 1fr);}.sub{ grid-template-columns: max-content auto; } table {font-family: courier new;border-collapse:collapse;} th {text-align: left; } @media print {textarea{border:0;font:1em arial;}}';
+	w.document.head.appendChild(document.createElement('style')).textContent = [
+		'#main,.sub {display: grid;gap: 1rem;}'
+	,	'#main{grid-template-columns: repeat(2, 1fr);font-family: monospace;}'
+	,	'.sub{ grid-template-columns: max-content auto; grid-template-rows: max-content 1.5em;}'
+	,	'textarea { width: 100%; ma}'
+	,	'textarea{resize:both;}'
+	,	'@media print {textarea{border:0;}.np,button{display:none;}textarea{width: auto;max-width:100%;}}'
+	].join('');
+	const removeSub = (e) => e.target.parentElement.parentElement.removeChild(e.target.parentElement);
+	const mkEmpty = () => {
+		let sdiv = div.appendChild(document.createElement('div'));
+		sdiv.classList.add('sub');
+		sdiv.appendChild(document.createElement('textarea')).contentEditable ='true';
+		sdiv.appendChild(document.createElement('textarea'));
+		let b = sdiv.appendChild(document.createElement('button'));
+		b.onclick = removeSub;
+		b.textContent = 'x';
+	};
+	
+	const con = w.document.body.appendChild(document.createElement('h1'));
+	con.classList.add('np');
+	con.textContent = 'notatejs.html list';
+	let empty2 = con.appendChild(document.createElement('button'));
+	empty2.textContent = 'Add Empty Box';
+	empty2.onclick = mkEmpty;
 	const div = w.document.body.appendChild(document.createElement('div'));
 	div.id = 'main';
 	const b = document.body.appendChild(document.createElement('button'));
@@ -55,16 +78,17 @@ function beginNotate(exinfo){
 		} else {
 			sdiv = div.appendChild(document.createElement('div'));
 			sdiv.classList.add('sub'+sc,'sub');
-			let a = sdiv.appendChild(document.createElement('table'));
-			a.contentEditable = 'true';
-			let tr;
+			let a = sdiv.appendChild(document.createElement('div'));
 			for (const [key,val] of Object.entries(info)){
-				tr = a.appendChild(document.createElement('tr'));
-				tr.appendChild(document.createElement('th')).textContent = key;
-				tr.appendChild(document.createElement('td')).textContent = val;
+				a.appendChild(document.createElement('b')).textContent = key;
+				a.appendChild(document.createTextNode(': '+val));
+				a.appendChild(document.createElement('br'));
 			}
 			let b = sdiv.appendChild(document.createElement('textarea'));
 			b.value = sc+'\n'+text;
+			b = sdiv.appendChild(document.createElement('button'));
+			b.onclick = removeSub;
+			b.textContent = 'x';
 		}
 	};
 	return w;
