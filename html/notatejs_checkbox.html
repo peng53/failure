@@ -1,0 +1,83 @@
+<html>
+<style>
+#main {
+	display: grid;
+	grid-template-columns: min-content 1fr min-content 1fr;
+	gap: 0.5em;
+}
+.sub {
+	display: grid;
+	grid-template-columns: min-content 1fr min-content;
+	gap: 1em;
+}
+.full {
+	display: grid;
+	grid-template-columns: 1fr min-content;
+	gap: 1em;
+}
+textarea {
+	border: 0;
+	background: none;
+	resize: none;
+}
+input[type=checkbox]:checked+div {
+	background: red;
+}
+button {
+	height: 1.5em;
+}
+@media print {
+	input[type=checkbox], input[type=checkbox]:checked+div, button {
+		display: none;
+	}
+	#main {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+</style>
+<body>
+<button style='position:fixed; bottom: 1%;' onclick='mkF()';>Add Full</button>
+<div id='main'>
+<!--
+	<input type='checkbox'>
+	<div class='sub'><div>abc</div><textarea></textarea><button>x</button></div>
+
+	<input type='checkbox'>
+	<div class='full'><textarea></textarea><button>x</button></div>
+-->
+</div>
+</body>
+<script>
+	const xbox = function(e){
+		main.removeChild(e.target.parentElement.previousElementSibling);
+		main.removeChild(e.target.parentElement);
+	};
+	const mkH = function(p){
+		p.appendChild(document.createElement('textarea'));
+		let b = p.appendChild(document.createElement('button'));
+		b.textContent = 'x';
+		b.onclick = xbox;
+	};
+	const ckb = function(){
+		main.appendChild(document.createElement('input')).type='checkbox';
+	};
+	const mkS = function(){
+		ckb();
+		let s = main.appendChild(document.createElement('div'));
+		s.classList.add('sub');
+		s.appendChild(document.createElement('div')).textContent = 'thisAsub';
+		mkH(s);
+	};
+	const mkF = function(){
+		ckb();
+		let s = main.appendChild(document.createElement('div'));
+		s.classList.add('full');
+		mkH(s);
+	};
+	mkS();
+	mkS();
+	mkS();
+	mkS();
+	mkF();
+</script>
+</html>
