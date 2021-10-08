@@ -1,0 +1,78 @@
+<html>
+<style>
+@media print {
+	.minigrid {
+		break-inside: avoid;
+	}
+}
+.minigrid {
+	width: 3.2in;
+	display: grid;
+	grid-template-columns: 3fr 2fr 1fr;
+	border: 1px solid black;
+	font-size: 8pt;
+	float: left;
+	margin: 3px;
+	padding: 12px 14px;
+	gap: 1px;
+}
+.minigrid div {
+	border: 1px solid black;
+	padding: 6px;
+}
+.ticket,.barNumber,.desc {
+	grid-column: 1 / span 3;
+}
+.name,.serialNumber {
+	grid-column: 1 / span 2;
+}
+.recordDate,.outDate,.seq {
+	grid-column: 3;
+}
+.type {
+	grid-column: 1;
+}
+.where {
+	grid-column: 2;
+}
+input,textarea {
+	width: 100%;
+	resize:none;
+	background:transparent;
+	border:0;
+}
+textarea {
+	height: 1.2in;
+}
+</style>
+<body>
+
+</body>
+<script>
+function gridgen(cells,mutate){
+	const d = document.createElement('div');
+	d.classList.add('minigrid');
+	let s;
+	for (const c of cells){
+		s = d.appendChild(document.createElement('div'));
+		if (mutate){
+			mutate(s,c);
+		}
+	}
+	return d;
+}
+function mutatef(div,cell){
+	div.classList.add(cell);
+	div.textContent = cell;
+	div.appendChild(document.createElement(cell=='desc' ? 'textarea':'input'));
+}
+let cells = [
+	'ticket','name','recordDate','barNumber','serialNumber','outDate','type','where','seq','desc'
+];
+document.body.appendChild(gridgen(cells,mutatef));
+document.body.appendChild(gridgen(cells,mutatef));
+document.body.appendChild(gridgen(cells,mutatef));
+document.body.appendChild(gridgen(cells,mutatef));
+document.body.appendChild(gridgen(cells,mutatef));
+</script>
+</html>
