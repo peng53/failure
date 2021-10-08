@@ -4,6 +4,7 @@
 	.minigrid { break-inside: avoid; }
 	@page {size: landscape}
 	button { display: none; }
+	.colx { break-after: auto; }
 }
 .minigrid {
 	display: grid;
@@ -40,15 +41,17 @@ input,textarea {
 	background:transparent;
 	border:0;
 }
-#colx {
+.colx {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
+	grid-template-rows: repeat(2, 1fr);
 	gap: 2em;
+	break-inside: avoid;
 }
 </style>
 <body>
-<div id='colx'></div>
-<button style='position:fixed;bottom:1em;' onclick='colx.appendChild(gridgen(cells,mutatef));'>Test</button>
+<button style='position:fixed;bottom:1em;z-index:100;' onclick='addnew()'>Test</button>
+<div class='main colx'></div>
 </body>
 <script>
 function gridgen(cells,mutate){
@@ -72,11 +75,16 @@ function mutatef(div,cell){
 		div.appendChild(document.createElement('input'));
 	}
 }
+function addnew(){
+	let m = document.querySelector('.main');
+	if (m.querySelectorAll('.minigrid').length==6){
+		m.classList.remove('main');
+		m = document.body.appendChild(document.createElement('div'));
+		m.classList.add('main','colx');
+	}
+	m.appendChild(gridgen(cells,mutatef));
+}
 let cells = ['ticket','name','recordDate','barNumber','serialNumber','outDate','type','where','seq','desc'];
-colx.appendChild(gridgen(cells,mutatef));
-colx.appendChild(gridgen(cells,mutatef));
-colx.appendChild(gridgen(cells,mutatef));
-colx.appendChild(gridgen(cells,mutatef));
-colx.appendChild(gridgen(cells,mutatef));
+
 </script>
 </html>
