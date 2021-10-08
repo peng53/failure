@@ -1,24 +1,24 @@
 <html>
 <style>
 @media print {
-	.minigrid {
-		break-inside: avoid;
-	}
+	.minigrid { break-inside: avoid; }
+	@page {size: landscape}
+	button { display: none; }
 }
 .minigrid {
-	width: 3.2in;
 	display: grid;
 	grid-template-columns: 3fr 2fr 1fr;
-	border: 1px solid black;
+	gap: 1px;
 	font-size: 8pt;
 	float: left;
 	margin: 3px;
 	padding: 12px 14px;
-	gap: 1px;
 }
 .minigrid div {
-	border: 1px solid black;
 	padding: 6px;
+}
+.minigrid, .minigrid div {
+	outline: 1px solid black;
 }
 .ticket,.barNumber,.desc {
 	grid-column: 1 / span 3;
@@ -26,14 +26,14 @@
 .name,.serialNumber {
 	grid-column: 1 / span 2;
 }
-.recordDate,.outDate,.seq {
-	grid-column: 3;
-}
 .type {
 	grid-column: 1;
 }
 .where {
 	grid-column: 2;
+}
+.recordDate,.outDate,.seq {
+	grid-column: 3;
 }
 input,textarea {
 	width: 100%;
@@ -41,12 +41,14 @@ input,textarea {
 	background:transparent;
 	border:0;
 }
-textarea {
-	height: 1.2in;
+#colx {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
 }
 </style>
 <body>
-
+<div id='colx'></div>
+<button style='position:fixed;bottom:1em;' onclick='colx.appendChild(gridgen(cells,mutatef));'>Test</button>
 </body>
 <script>
 function gridgen(cells,mutate){
@@ -64,15 +66,19 @@ function gridgen(cells,mutate){
 function mutatef(div,cell){
 	div.classList.add(cell);
 	div.textContent = cell;
-	div.appendChild(document.createElement(cell=='desc' ? 'textarea':'input'));
+	if (cell=='desc'){
+		div.appendChild(document.createElement('textarea')).rows=5;
+	} else {
+		div.appendChild(document.createElement('input'));
+	}
 }
 let cells = [
 	'ticket','name','recordDate','barNumber','serialNumber','outDate','type','where','seq','desc'
 ];
-document.body.appendChild(gridgen(cells,mutatef));
-document.body.appendChild(gridgen(cells,mutatef));
-document.body.appendChild(gridgen(cells,mutatef));
-document.body.appendChild(gridgen(cells,mutatef));
-document.body.appendChild(gridgen(cells,mutatef));
+colx.appendChild(gridgen(cells,mutatef));
+colx.appendChild(gridgen(cells,mutatef));
+colx.appendChild(gridgen(cells,mutatef));
+colx.appendChild(gridgen(cells,mutatef));
+colx.appendChild(gridgen(cells,mutatef));
 </script>
 </html>
