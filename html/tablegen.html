@@ -2,11 +2,29 @@
 <style>
 table, td {
 border: 1px solid black;
+padding: 5px;
+}
+table{
+border-collapse:collapse;
+}
+input{
+width:100%;
+text-align:center;
+border:0;
+}
+.type {
+width: 0.93in;
+}
+.where {
+width: 0.83in;
+}
+.seq{
+width: .70in;
 }
 </style>
 <body></body>
 <script>
-function tablegen(width, cells){
+function tablegen(width, cells, cm){
 	const t=document.createElement('table');
 	let tc=width,r,c;
 	for (const e of cells){
@@ -14,20 +32,26 @@ function tablegen(width, cells){
 			r = t.insertRow(-1); tc=0;
 		}
 		c=r.insertCell(-1);
-		c.classList.add(e[0]);
-		c.textContent=e[0];
 		c.colSpan=e[1];
 		tc+=e[1];
+		if (cm){ cm(c,e); }
 	}
 	return t;
+}
+function cellmutate(cell, props){
+	cell.classList.add(props[0]);
+	cell.textContent=props[0];
+	cell.appendChild(document.createElement('br'));
+	cell.appendChild(document.createElement('input'));
 }
 let cells = [
 	['ticket',3],
 	['name',2] ,['recordDate',1],
-	['barNumber',3],
-	['serialNumber',2] ,['outDate',1],
+	['barNumber#',3],
+	['serialNumber#',2] ,['outDate',1],
 	['type',1] ,['where',1] ,['seq',1]
 ];
-document.body.appendChild(tablegen(3,cells));
+
+document.body.appendChild(tablegen(3,cells,cellmutate));
 </script>
 </html>
