@@ -1,0 +1,33 @@
+<html>
+<style>
+table, td {
+border: 1px solid black;
+}
+</style>
+<body></body>
+<script>
+function tablegen(width, cells){
+	const t=document.createElement('table');
+	let tc=width,r,c;
+	for (const e of cells){
+		if (tc>=width){
+			r = t.insertRow(-1); tc=0;
+		}
+		c=r.insertCell(-1);
+		c.classList.add(e[0]);
+		c.textContent=e[0];
+		c.colSpan=e[1];
+		tc+=e[1];
+	}
+	return t;
+}
+let cells = [
+	['ticket',3],
+	['name',2] ,['recordDate',1],
+	['barNumber',3],
+	['serialNumber',2] ,['outDate',1],
+	['type',1] ,['where',1] ,['seq',1]
+];
+document.body.appendChild(tablegen(3,cells));
+</script>
+</html>
