@@ -10,14 +10,13 @@
 	grid-template-columns: 3fr 2fr 1fr;
 	gap: 1px;
 	font-size: 8pt;
-	float: left;
-	margin: 3px;
 	padding: 12px 14px;
+	outline: 3px double black;
 }
 .minigrid div {
 	padding: 6px;
 }
-.minigrid, .minigrid div {
+.minigrid div {
 	outline: 1px solid black;
 }
 .ticket,.barNumber,.desc {
@@ -44,6 +43,7 @@ input,textarea {
 #colx {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
+	gap: 2em;
 }
 </style>
 <body>
@@ -72,9 +72,7 @@ function mutatef(div,cell){
 		div.appendChild(document.createElement('input'));
 	}
 }
-let cells = [
-	'ticket','name','recordDate','barNumber','serialNumber','outDate','type','where','seq','desc'
-];
+let cells = ['ticket','name','recordDate','barNumber','serialNumber','outDate','type','where','seq','desc'];
 colx.appendChild(gridgen(cells,mutatef));
 colx.appendChild(gridgen(cells,mutatef));
 colx.appendChild(gridgen(cells,mutatef));
