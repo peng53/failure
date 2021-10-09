@@ -4,7 +4,7 @@
 	.minigrid { break-inside: avoid; }
 	@page {size: landscape}
 	button { display: none; }
-	.colx { break-after: auto; }
+	.colx { grid-auto-rows: calc(50vh - 0.2in);}
 }
 .minigrid {
 	display: grid;
@@ -14,10 +14,8 @@
 	padding: 12px 14px;
 	outline: 3px double black;
 }
-.minigrid div {
+.minigrid > div {
 	padding: 6px;
-}
-.minigrid div {
 	outline: 1px solid black;
 }
 .ticket,.barNumber,.desc {
@@ -40,13 +38,12 @@ input,textarea {
 	resize:none;
 	background:transparent;
 	border:0;
+	overflow: hidden;
 }
 .colx {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	grid-template-rows: repeat(2, 1fr);
-	gap: 2em;
-	break-inside: avoid;
+	gap: 0.2in;
 }
 </style>
 <body>
@@ -70,21 +67,21 @@ function mutatef(div,cell){
 	div.classList.add(cell);
 	div.textContent = cell;
 	if (cell=='desc'){
-		div.appendChild(document.createElement('textarea')).rows=5;
+		div.appendChild(document.createElement('textarea'));
 	} else {
 		div.appendChild(document.createElement('input'));
 	}
 }
 function addnew(){
 	let m = document.querySelector('.main');
-	if (m.querySelectorAll('.minigrid').length==6){
-		m.classList.remove('main');
-		m = document.body.appendChild(document.createElement('div'));
-		m.classList.add('main','colx');
-	}
+//	if (m.querySelectorAll('.minigrid').length==6){
+//		m.classList.remove('main');
+//		m = document.body.appendChild(document.createElement('div'));
+//		m.classList.add('main','colx');
+//	}
 	m.appendChild(gridgen(cells,mutatef));
 }
 let cells = ['ticket','name','recordDate','barNumber','serialNumber','outDate','type','where','seq','desc'];
-
+for (let i=0;i<10;++i) addnew();
 </script>
 </html>
