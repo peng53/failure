@@ -1,16 +1,11 @@
 <html>
 <style>
-@media print {
-	.minigrid { break-inside: avoid; }
-	@page {size: landscape}
-	button { display: none; }
-	.colx { grid-auto-rows: calc(50vh - 0.2in);}
-}
 .minigrid {
 	display: grid;
 	grid-template-columns: 3fr 2fr 1fr;
 	gap: 1px;
 	font-size: 8pt;
+	font-family: arial;
 	padding: 12px 14px;
 	outline: 3px double black;
 }
@@ -33,7 +28,7 @@
 .recordDate,.outDate,.seq {
 	grid-column: 3;
 }
-input,textarea {
+input:not([type=checkbox]),textarea {
 	width: 100%;
 	resize:none;
 	background:transparent;
@@ -44,6 +39,19 @@ input,textarea {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 0.2in;
+}
+.ticket button, .ticket input {
+	float: right;
+}
+.hidden {
+	outline: 3px double red;
+	filter: opacity(0.2);
+}
+@media print {
+	.minigrid { break-inside: avoid; }
+	@page {size: landscape}
+	input[type=checkbox], button, .hidden { display: none; }
+	.colx { grid-auto-rows: calc(50vh - 0.2in);}
 }
 </style>
 <body>
@@ -74,12 +82,25 @@ function mutatef(div,cell){
 }
 function addnew(){
 	let m = document.querySelector('.main');
-//	if (m.querySelectorAll('.minigrid').length==6){
-//		m.classList.remove('main');
-//		m = document.body.appendChild(document.createElement('div'));
-//		m.classList.add('main','colx');
-//	}
-	m.appendChild(gridgen(cells,mutatef));
+	let g = m.appendChild(gridgen(cells,mutatef));
+	let t = g.querySelector('.ticket');
+	let i = t.querySelector('input');
+	let b = t.insertBefore(document.createElement('button'),i);
+	i.type='checkbox';
+	i.onclick = toggleHide;
+	b.textContent = 'x';
+	b.onclick = removeMinigrid;
+	return g;
+}
+function removeMinigrid(e){
+	e.target.parentElement.parentElement.parentElement.removeChild(e.target.parentElement.parentElement);
+}
+function toggleHide(e){
+	if (e.target.checked){
+		e.target.parentElement.parentElement.classList.add('hidden');
+	} else {
+		e.target.parentElement.parentElement.classList.remove('hidden');
+	}
 }
 let cells = ['ticket','name','recordDate','barNumber','serialNumber','outDate','type','where','seq','desc'];
 for (let i=0;i<10;++i) addnew();
