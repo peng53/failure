@@ -4,18 +4,19 @@
 function(){
 	let P = open('','empty');
 	let toggleHidden = function(e){
-		let cl = e.target.parentElement.classList;
-		if (e.target.checked){
-			cl.add('hidden');
-		} else {
-			cl.remove('hidden');
-		}
+		e.target.parentElement.classList.toggle('hidden',(e.target.checked ? true : false));
+	};
+	let ltoggleHidden = function(e){
+		e.target.previousSibling.click();
 	};
 	let f = function(e){
 		let v = P.document.body.appendChild(document.createElement('div'));
 		let cb = v.appendChild(document.createElement('input'));
+		let l = v.appendChild(document.createElement('label'));
 		cb.type = 'checkbox';
 		cb.onclick = toggleHidden;
+		l.textContent = 'Hidden';
+		l.onclick = ltoggleHidden;
 	};
 	let b = P.document.querySelector('#loneButton');
 	if (!b){
@@ -25,6 +26,7 @@ function(){
 	}
 	b.onclick = f;
 	Array.from(P.document.body.querySelectorAll('input')).forEach(cb=>cb.onclick=toggleHidden);
+	Array.from(P.document.body.querySelectorAll('label')).forEach(cb=>cb.onclick=ltoggleHidden);
 }()
 )
 ">Start</a>
