@@ -3,18 +3,28 @@
 <a href="javascript:(
 function(){
 	let P = open('','empty');
+	let toggleHidden = function(e){
+		let cl = e.target.parentElement.classList;
+		if (e.target.checked){
+			cl.add('hidden');
+		} else {
+			cl.remove('hidden');
+		}
+	};
 	let f = function(e){
-		P.alert('hi');
+		let v = P.document.body.appendChild(document.createElement('div'));
+		let cb = v.appendChild(document.createElement('input'));
+		cb.type = 'checkbox';
+		cb.onclick = toggleHidden;
 	};
 	let b = P.document.querySelector('#loneButton');
-	if (b){
-		console.log('ok');
-	} else {
+	if (!b){
 		b = P.document.body.appendChild(document.createElement('button'));
 		b.id = 'loneButton';
 		b.textContent = 'button';
 	}
-	b.addEventListener('click',f);
+	b.onclick = f;
+	Array.from(P.document.body.querySelectorAll('input')).forEach(cb=>cb.onclick=toggleHidden);
 }()
 )
 ">Start</a>
