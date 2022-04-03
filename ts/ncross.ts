@@ -19,11 +19,11 @@ export class Hint {
 export class NCrossBoard {
 	width: number;
 	height: number;
-	states: string[];
+	states: number;
 	A: Uint8Array[];
 	rowHints: Hint[][];
 	colHints: Hint[][];
-	constructor(width: number, height:number ,states: string[]){
+	constructor(width: number, height:number ,states: number){
 		this.width = width;
 		this.height = height;
 		this.states = states;
