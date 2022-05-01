@@ -12,18 +12,26 @@ def savePngFn(outdir, filenamefmt):
 		pdb.file_png_save(image,image.active_drawable,os.path.join(outdir,name),name,0,0,0,0,0,0,0)
 	return fn
 
+def layerSave(image, layer, savefn, i):
+	"""
+	Save layer of image with savefn as number i
+	"""
+	pdb.gimp_image_set_active_layer(image, layer)
+	if pdb.gimp_edit_copy(image.active_drawable):
+		dup = pdb.gimp_edit_paste_as_new_image()
+		savefn(dup,i)
+		pdb.gimp_image_delete(dup)
+		return True
+	else:
+		return False
+
 def layers2sepImg(image, savefn):
 	"""
 	Saves individual layers of an image to single layer images
 	savefn is a function that saves the images.
 	"""
 	for i,lay in enumerate(reversed(image.layers)):
-		pdb.gimp_image_set_active_layer(image, lay)
-		if pdb.gimp_edit_copy(image.active_drawable):
-			dup = pdb.gimp_edit_paste_as_new_image()
-			savefn(dup,i)
-			pdb.gimp_image_delete(dup)
-		else:
+		if not layerSave(image,lay,savefn,i):
 			print 'Save failed %d' %(i)
 
 def example():
