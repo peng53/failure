@@ -1,0 +1,164 @@
+<html>
+<style>
+body {
+	font-family: monospace;
+}
+#instring, #outstring, #diffstring {
+	white-space: pre;
+	overflow-x: auto;
+	overflow-y: hidden;
+	width: 95%;
+	font-size: 24pt;
+	resize: none;
+	padding-top: 0.5em;
+	height: 2.5em;
+}
+#diffstring {
+	color: red;
+}
+#instring::selection, #outstring::selection, #diffstring::selection {
+	background: yellow;
+}
+#lowbar {
+	text-align: right;
+}
+#repInputs {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 0.2em;
+}
+#repInputs input {
+	width: 100%;
+}
+#repInputs span {
+	display: grid;
+	grid-template-columns: min-content 1fr;
+	gap: 0.2em;
+	align-items: center;
+}
+#curpos {
+	text-align: center;
+}
+
+</style>
+<h2>Replace Substring</h2>
+<div id='repInputs'>
+<span><label for='startp'>StartPos</label><input id='startp' type='number' min='1' value='1' /></span>
+<span><label for='len'>Length</label><input id='len' type='number' min='1' value='1' /></span>
+<span><label for='padc'>PadChar</label><input id='padc' maxlength='1' value='0' width=1 /></span>
+<span style='grid-column: 1 / span 3'><label for='val'>Value</label><input id='val' /></span>
+</div>
+<br>
+<center>
+<button onclick='goToBind()'>Go To</button>
+<button onclick='replaceBind()'>Replace</button>
+<button onclick='diff()'>Compare</button>
+</center>
+<h2>In-String</h2>
+<center><textarea id='instring'></textarea></center><br>
+<h2>Out-String</h2>
+<center><textarea id='outstring'></textarea></center><br>
+<div id='lowbar'><label for='curpos'>Cur</label><input id='curpos' /></div>
+<h2>Diff</h2>
+<center><textarea id='diffstring'></textarea></center><br>
+<script>
+const taI = instring, taO = outstring, icur = curpos;
+const horiScroll = function(e){
+	let v = e.target.scrollLeft;
+	if (e.wheelDeltaY < 0){
+		v += 100;
+	} else {
+		v -= 100;
+	}
+	diffstring.scrollLeft = taI.scrollLeft = taO.scrollLeft = v;
+	e.stopPropagation();
+};
+const updateCur = function(e){
+	const i = e.target.selectionStart+1, j = e.target.selectionEnd;
+	const v = (j<i) ? i : `${i}-${j}`;
+	icur.value = v;
+	diffstring.selectionStart = taI.selectionStart = taO.selectionStart = e.target.selectionStart;
+	diffstring.selectionEnd = taI.selectionEnd = taO.selectionEnd = e.target.selectionEnd;
+};
+const alternateFocus = function(e){
+	//console.log(e.key);
+	switch (e.key){
+		case 'ArrowDown':
+			if (e.ctrlKey){
+				diffstring.scrollLeft = e.target.scrollLeft;
+				diffstring.focus();
+			} else {
+				taO.scrollLeft = taI.scrollLeft;
+				taO.focus();
+			}
+			e.preventDefault();
+			break;
+		case 'ArrowUp':
+			taI.scrollLeft = taO.scrollLeft;
+			taI.focus();
+			e.preventDefault();
+			break;
+		case 'Enter':
+			startp.focus();
+			e.preventDefault();
+			break;
+	}
+};
+taI.addEventListener('wheel',horiScroll);
+taO.addEventListener('wheel',horiScroll);
+diffstring.addEventListener('wheel',horiScroll);
+//taI.addEventListener('mouseup',horiScroll);
+//taO.addEventListener('mouseup',horiScroll);
+taI.addEventListener('keyup',updateCur);
+taO.addEventListener('keyup',updateCur);
+diffstring.addEventListener('keyup',updateCur);
+//taI.addEventListener('mouseup',updateCur);
+//taO.addEventListener('mouseup',updateCur);
+//diffstring.addEventListener('mouseup',updateCur);
+taI.addEventListener('keydown',alternateFocus);
+taO.addEventListener('keydown',alternateFocus);
+diffstring.addEventListener('keydown',alternateFocus);
+
+function diff(){
+	const A = taI.value;
+	const B = taO.value;
+	const d = diffstring;
+	d.value = '';
+	let l = Math.max(A.length,B.length);
+	for (let i=0; i < l; i++){
+		if (A.length > i && B.length > i){
+			d.value += (A[i] == B[i]) ? '\u2219' : B[i];
+		} else {
+			d.value += '%';
+		}
+	}
+}
+
+function replaceBind(){
+	const start = parseInt(document.querySelector('#startp').value)-1;
+	const len = parseInt(document.querySelector('#len').value);
+	const padc = document.querySelector('#padc').value.padStart(1,' ');
+	const nval = document.querySelector('#val').value;
+	taO.value = replaceSubstring(start,len,padc, nval, taI.value);
+	taI.selectionStart = taO.selectionStart = start;
+	taI.selectionEnd = taO.selectionEnd = start+len;
+	taO.focus();
+}
+
+function replaceSubstring(start, len, padc, nval, initialStr){
+	const before =initialStr.slice(0,start);
+	const after =initialStr.slice(start+len);
+	const paddedVal = nval.substr(0,len).padStart(len,padc);
+	const newStr = before.concat(paddedVal,after);
+	return newStr;
+}
+function goToBind(){
+	const start = parseInt(document.querySelector('#startp').value)-1;
+	const len = parseInt(document.querySelector('#len').value);
+	taI.selectionStart = start;
+	taI.selectionEnd = start+len;
+	taI.focus();
+}
+</script>
+
+</html>
