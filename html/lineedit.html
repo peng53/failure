@@ -13,6 +13,9 @@ body {
 	padding-top: 0.5em;
 	height: 2.5em;
 }
+#instring, #outstring {
+	text-decoration: underline dotted red;
+}
 #diffstring {
 	color: red;
 }
@@ -26,18 +29,24 @@ body {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 0.2em;
+	width: 780px;
+	margin: 0 auto;
+	font-size: 18pt;
 }
 #repInputs input {
 	width: 100%;
+	font-size: 16pt;
 }
-#repInputs span {
+#repInputs > span {
 	display: grid;
 	grid-template-columns: min-content 1fr;
 	gap: 0.2em;
 	align-items: center;
 }
-#curpos {
+#curpos, #tpos {
 	text-align: center;
+	border: 0;
+	background: transparent;
 }
 
 </style>
@@ -46,19 +55,21 @@ body {
 <span><label for='startp'>StartPos</label><input id='startp' type='number' min='1' value='1' /></span>
 <span><label for='len'>Length</label><input id='len' type='number' min='1' value='1' /></span>
 <span><label for='padc'>PadChar</label><input id='padc' maxlength='1' value='0' width=1 /></span>
-<span style='grid-column: 1 / span 3'><label for='val'>Value</label><input id='val' /></span>
+<span style='grid-column: 1 / span 4'><label for='val'>Value</label><input id='val' /></span>
 </div>
 <br>
 <center>
+Pos<input id='tpos' readonly='readonly' tabindex='-1' />
 <button onclick='goToBind()'>Go To</button>
 <button onclick='replaceBind()'>Replace</button>
+<button onclick='replaceBindOutput()'>Output Replace</button>
 <button onclick='diff()'>Compare</button>
 </center>
 <h2>In-String</h2>
 <center><textarea id='instring'></textarea></center><br>
 <h2>Out-String</h2>
 <center><textarea id='outstring'></textarea></center><br>
-<div id='lowbar'><label for='curpos'>Cur</label><input id='curpos' /></div>
+<div id='lowbar'><label for='curpos'>Cur</label><input id='curpos' readonly='readonly' tabindex='-1' /></div>
 <h2>Diff</h2>
 <center><textarea id='diffstring'></textarea></center><br>
 <script>
@@ -145,6 +156,22 @@ function replaceBind(){
 	taO.focus();
 }
 
+function replaceBindOutput(){
+	const inital = taO.value;
+	if (inital.length<1){
+		alert('Output is empty!');
+		return;
+	}
+	const start = parseInt(document.querySelector('#startp').value)-1;
+	const len = parseInt(document.querySelector('#len').value);
+	const padc = document.querySelector('#padc').value.padStart(1,' ');
+	const nval = document.querySelector('#val').value;
+	taO.value = replaceSubstring(start,len,padc, nval, inital);
+	taI.selectionStart = taO.selectionStart = start;
+	taI.selectionEnd = taO.selectionEnd = start+len;
+	taO.focus();
+}
+
 function replaceSubstring(start, len, padc, nval, initialStr){
 	const before =initialStr.slice(0,start);
 	const after =initialStr.slice(start+len);
@@ -159,6 +186,15 @@ function goToBind(){
 	taI.selectionEnd = start+len;
 	taI.focus();
 }
+
+const updateTpos = function(e){
+	let s = parseInt(startp.value)-1;
+	let j = s+parseInt(len.value);
+	let v = `${startp.value}-${j}`;
+	tpos.value = v;
+};
+startp.addEventListener('blur',updateTpos);
+len.addEventListener('blur',updateTpos);
 </script>
 
 </html>
