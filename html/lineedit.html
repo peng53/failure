@@ -25,41 +25,48 @@ body {
 #lowbar {
 	text-align: right;
 }
+#curpos {
+	text-align: center;
+	border: 0;
+	background: transparent;
+}
 #repInputs {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 0.2em;
-	width: 780px;
-	margin: 0 auto;
-	font-size: 18pt;
-}
-#repInputs input {
-	width: 100%;
-	font-size: 16pt;
-}
-#repInputs > span {
 	display: grid;
 	grid-template-columns: min-content 1fr;
 	gap: 0.2em;
 	align-items: center;
 }
-#curpos, #tpos {
-	text-align: center;
-	border: 0;
-	background: transparent;
+@media screen and (min-width: 780px){
+	#repInputs {
+		grid-template-columns: min-content 1fr min-content 1fr min-content 1fr;
+		font-size: 16pt;
+		width: 800px;
+		margin: 0 auto;
+	}
+	#val,#valp {
+		grid-column: 2 / span 5;
+	}
+	.posf {
+		grid-row: 2;
+	}
+	input.posf {
+		grid-column: 2 / span 5;
+	}
 }
 
 </style>
 <h2>Replace Substring</h2>
 <div id='repInputs'>
-<span><label for='startp'>StartPos</label><input id='startp' type='number' min='1' value='1' /></span>
-<span><label for='len'>Length</label><input id='len' type='number' min='1' value='1' /></span>
-<span><label for='padc'>PadChar</label><input id='padc' maxlength='1' value='0' width=1 /></span>
-<span style='grid-column: 1 / span 4'><label for='val'>Value</label><input id='val' /></span>
+<label for='startp'>StartPos</label><input id='startp' type='number' min='1' value='1' />
+<label for='len'>Length</label><input id='len' type='number' min='1' value='1' />
+<label for='tpos' class='posf'>Positions</label><input id='tpos' class='posf' value='1-1' disabled />
+<label for='padc'>PadChar</label><input id='padc' maxlength='1' value='0' />
+<label for='val'>Value</label><input id='val' />
+<label for='valp'>Output</label><input id='valp' disabled />
 </div>
 <br>
+
 <center>
-Pos<input id='tpos' readonly='readonly' tabindex='-1' />
 <button onclick='goToBind()'>Go To</button>
 <button onclick='replaceBind()'>Replace</button>
 <button onclick='replaceBindOutput()'>Output Replace</button>
@@ -193,8 +200,16 @@ const updateTpos = function(e){
 	let v = `${startp.value}-${j}`;
 	tpos.value = v;
 };
-startp.addEventListener('blur',updateTpos);
-len.addEventListener('blur',updateTpos);
+startp.addEventListener('change',updateTpos);
+len.addEventListener('change',updateTpos);
+const updateValP = function(e){
+	const l = parseInt(len.value);
+	const s = val.value.substr(0,l);
+	const c = padc.value.padStart(1,' ');
+	const v = s.padStart(l,c);
+	valp.value = v;
+};
+val.addEventListener('blur',updateValP);
 </script>
 
 </html>
