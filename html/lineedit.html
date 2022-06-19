@@ -62,15 +62,15 @@ body {
 <label for='tpos' class='posf'>Positions</label><input id='tpos' class='posf' value='1-1' disabled />
 <label for='padc'>PadChar</label><input id='padc' maxlength='1' value='0' />
 <label for='val'>Value</label><input id='val' />
-<label for='valp'>Output</label><input id='valp' disabled />
+<label for='valp'>Preview</label><input id='valp' disabled />
 </div>
 <br>
 
 <center>
 <button onclick='goToBind()'>Go To</button>
 <button onclick='replaceBind()'>Replace</button>
-<button onclick='replaceBindOutput()'>Output Replace</button>
-<button onclick='diff()'>Compare</button>
+<button onclick='replaceBind(true)'>Output Replace</button>
+<button onclick='diffBind()'>Compare</button>
 </center>
 <h2>In-String</h2>
 <center><textarea id='instring'></textarea></center><br>
@@ -80,69 +80,99 @@ body {
 <h2>Diff</h2>
 <center><textarea id='diffstring'></textarea></center><br>
 <script>
-const taI = instring, taO = outstring, icur = curpos;
-const horiScroll = function(e){
-	let v = e.target.scrollLeft;
-	if (e.wheelDeltaY < 0){
-		v += 100;
-	} else {
-		v -= 100;
-	}
-	diffstring.scrollLeft = taI.scrollLeft = taO.scrollLeft = v;
-	e.stopPropagation();
+'usce strict';
+const taI = instring, taO = outstring;
+const setSelection = (t,i,j) => {
+	t.selectionStart = i;
+	t.selectionEnd = j;
 };
+{
+const horiScroll = function(e){
+	e.target.scrollLeft += ((e.wheelDeltaY<0) ? 100 : -100);
+	diffstring.scrollLeft = taI.scrollLeft = taO.scrollLeft = e.target.scrollLeft;
+	e.preventDefault();
+};
+[taI,taO,diffstring].forEach(t=>t.addEventListener('wheel',horiScroll));
+
 const updateCur = function(e){
 	const i = e.target.selectionStart+1, j = e.target.selectionEnd;
-	const v = (j<i) ? i : `${i}-${j}`;
-	icur.value = v;
-	diffstring.selectionStart = taI.selectionStart = taO.selectionStart = e.target.selectionStart;
-	diffstring.selectionEnd = taI.selectionEnd = taO.selectionEnd = e.target.selectionEnd;
+	curpos.value = (j<i) ? i : `${i}-${j}`;
 };
-const alternateFocus = function(e){
-	//console.log(e.key);
+[taI,taO,diffstring].forEach(t=>t.addEventListener('keyup',updateCur));
+//[taI,taO,diffstring].forEach(t=>t.addEventListener('mouseup',updateCur));
+
+const switchToTA = (n, pos, start,end) => {
+	const tas = [instring,outstring,diffstring];
+	tas[n].scrollLeft = pos;
+	setSelection(tas[n],start,end);
+	tas[n].focus();
+};
+let ta_focus = 0;
+const alternateFocus = (e)=>{
+	let ok = false;
 	switch (e.key){
 		case 'ArrowDown':
-			if (e.ctrlKey){
-				diffstring.scrollLeft = e.target.scrollLeft;
-				diffstring.focus();
-			} else {
-				taO.scrollLeft = taI.scrollLeft;
-				taO.focus();
-			}
-			e.preventDefault();
-			break;
+			ta_focus = (ta_focus+1)%3;
+			switchToTA(ta_focus, e.target.scrollLeft, e.target.selectionStart, e.target.selectionEnd);
+			ok=true; break;
 		case 'ArrowUp':
-			taI.scrollLeft = taO.scrollLeft;
-			taI.focus();
-			e.preventDefault();
-			break;
+			ta_focus = (ta_focus-1<0) ? 2 : ta_focus-1;
+			switchToTA(ta_focus,e.target.scrollLeft, e.target.selectionStart, e.target.selectionEnd);
+			ok=true; break;
 		case 'Enter':
 			startp.focus();
-			e.preventDefault();
-			break;
+			ok=true; break;
 	}
+	if (ok){ e.preventDefault(); }
 };
-taI.addEventListener('wheel',horiScroll);
-taO.addEventListener('wheel',horiScroll);
-diffstring.addEventListener('wheel',horiScroll);
-//taI.addEventListener('mouseup',horiScroll);
-//taO.addEventListener('mouseup',horiScroll);
-taI.addEventListener('keyup',updateCur);
-taO.addEventListener('keyup',updateCur);
-diffstring.addEventListener('keyup',updateCur);
-//taI.addEventListener('mouseup',updateCur);
-//taO.addEventListener('mouseup',updateCur);
-//diffstring.addEventListener('mouseup',updateCur);
-taI.addEventListener('keydown',alternateFocus);
-taO.addEventListener('keydown',alternateFocus);
-diffstring.addEventListener('keydown',alternateFocus);
+[taI,taO,diffstring].forEach(t=>t.addEventListener('keydown',alternateFocus));
 
-function diff(){
-	const A = taI.value;
-	const B = taO.value;
-	const d = diffstring;
+const updateTpos = function(e){
+	const {start, len} = fetchInputs();
+	tpos.value = `${start+1}-${start+len}`;
+};
+[startp,len].forEach(t=>t.addEventListener('change',updateTpos));
+
+const updateValP = function(e){
+	const {len,val,padc} = fetchInputs();
+	valp.value = val.substr(0,len).padStart(len,padc.padStart(1,' '));
+};
+val.addEventListener('blur',updateValP);
+}
+
+const fetchInputs = ()=>({
+	start: parseInt(document.querySelector('#startp').value)-1,
+	len: parseInt(document.querySelector('#len').value),
+	padc: document.querySelector('#padc').value.padStart(1,' '),
+	val: document.querySelector('#val').value,
+});
+
+const replaceSubstring = function(start, len, padc, nval, initialStr){
+	const before =initialStr.slice(0,start)
+		,after =initialStr.slice(start+len)
+		,paddedVal = nval.substr(0,len).padStart(len,padc);
+	return before+paddedVal+after;
+};
+
+function replaceBind(fromOutput=false){
+	if (fromOutput && taO.value.length<0){
+		alert('Output is empty!');
+		return;
+	}
+	const {start,len,padc,val} = fetchInputs();
+	taO.value = replaceSubstring(start,len,padc, val, (fromOutput) ? taO.value : taI.value);
+	setSelection(taI,start,start+len);
+	setSelection(taO,start,start+len);
+	taO.focus();
+}
+function goToBind(){
+	const {start,len} = fetchInputs();
+	setSelection(taI,start,start+len);
+	taI.focus();
+}
+function diffBind(){
+	const A = taI.value, B = taO.value, d = diffstring, l = Math.max(A.length,B.length);
 	d.value = '';
-	let l = Math.max(A.length,B.length);
 	for (let i=0; i < l; i++){
 		if (A.length > i && B.length > i){
 			d.value += (A[i] == B[i]) ? '\u2219' : B[i];
@@ -151,65 +181,6 @@ function diff(){
 		}
 	}
 }
-
-function replaceBind(){
-	const start = parseInt(document.querySelector('#startp').value)-1;
-	const len = parseInt(document.querySelector('#len').value);
-	const padc = document.querySelector('#padc').value.padStart(1,' ');
-	const nval = document.querySelector('#val').value;
-	taO.value = replaceSubstring(start,len,padc, nval, taI.value);
-	taI.selectionStart = taO.selectionStart = start;
-	taI.selectionEnd = taO.selectionEnd = start+len;
-	taO.focus();
-}
-
-function replaceBindOutput(){
-	const inital = taO.value;
-	if (inital.length<1){
-		alert('Output is empty!');
-		return;
-	}
-	const start = parseInt(document.querySelector('#startp').value)-1;
-	const len = parseInt(document.querySelector('#len').value);
-	const padc = document.querySelector('#padc').value.padStart(1,' ');
-	const nval = document.querySelector('#val').value;
-	taO.value = replaceSubstring(start,len,padc, nval, inital);
-	taI.selectionStart = taO.selectionStart = start;
-	taI.selectionEnd = taO.selectionEnd = start+len;
-	taO.focus();
-}
-
-function replaceSubstring(start, len, padc, nval, initialStr){
-	const before =initialStr.slice(0,start);
-	const after =initialStr.slice(start+len);
-	const paddedVal = nval.substr(0,len).padStart(len,padc);
-	const newStr = before.concat(paddedVal,after);
-	return newStr;
-}
-function goToBind(){
-	const start = parseInt(document.querySelector('#startp').value)-1;
-	const len = parseInt(document.querySelector('#len').value);
-	taI.selectionStart = start;
-	taI.selectionEnd = start+len;
-	taI.focus();
-}
-
-const updateTpos = function(e){
-	let s = parseInt(startp.value)-1;
-	let j = s+parseInt(len.value);
-	let v = `${startp.value}-${j}`;
-	tpos.value = v;
-};
-startp.addEventListener('change',updateTpos);
-len.addEventListener('change',updateTpos);
-const updateValP = function(e){
-	const l = parseInt(len.value);
-	const s = val.value.substr(0,l);
-	const c = padc.value.padStart(1,' ');
-	const v = s.padStart(l,c);
-	valp.value = v;
-};
-val.addEventListener('blur',updateValP);
 </script>
 
 </html>
