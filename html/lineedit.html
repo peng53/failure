@@ -13,8 +13,8 @@ body {
 	padding-top: 0.5em;
 	height: 2.5em;
 }
-#instring, #outstring {
-	text-decoration: underline dotted red;
+#instring, #outstring, #valp {
+	text-decoration: underline dotted green from-font;
 }
 #diffstring {
 	color: red;
@@ -36,32 +36,32 @@ body {
 	gap: 0.2em;
 	align-items: center;
 }
+#repInputs > input:invalid {
+	border-color: red;
+}
 @media screen and (min-width: 780px){
 	#repInputs {
-		grid-template-columns: min-content 1fr min-content 1fr min-content 1fr;
+		grid-template-columns:repeat(3, min-content 1fr);
 		font-size: 16pt;
 		width: 800px;
 		margin: 0 auto;
 	}
-	#val,#valp {
+	#val,#valp,input.posf {
 		grid-column: 2 / span 5;
 	}
 	.posf {
 		grid-row: 2;
-	}
-	input.posf {
-		grid-column: 2 / span 5;
 	}
 }
 
 </style>
 <h2>Replace Substring</h2>
 <div id='repInputs'>
-<label for='startp'>StartPos</label><input id='startp' type='number' min='1' value='1' />
-<label for='len'>Length</label><input id='len' type='number' min='1' value='1' />
+<label for='startp'>StartPos</label><input id='startp' type='number' min='1' value='1' placeholder='{starting at 1}' required />
+<label for='len'>Length</label><input id='len' type='number' min='1' value='1' placeholder='{min 1}' required />
 <label for='tpos' class='posf'>Positions</label><input id='tpos' class='posf' value='1-1' disabled />
-<label for='padc'>PadChar</label><input id='padc' maxlength='1' value='0' />
-<label for='val'>Value</label><input id='val' />
+<label for='padc'>PadChar</label><input id='padc' maxlength='1' placeholder='{pad character}'/>
+<label for='val'>Value</label><input id='val' placeholder='{replacement value here}' />
 <label for='valp'>Preview</label><input id='valp' disabled />
 </div>
 <br>
@@ -76,17 +76,16 @@ body {
 <center><textarea id='instring'></textarea></center><br>
 <h2>Out-String</h2>
 <center><textarea id='outstring'></textarea></center><br>
-<div id='lowbar'><label for='curpos'>Cur</label><input id='curpos' readonly='readonly' tabindex='-1' /></div>
+<div id='lowbar'><label for='curpos'>Selected</label><input id='curpos' readonly='readonly' tabindex='-1' /></div>
 <h2>Diff</h2>
 <center><textarea id='diffstring'></textarea></center><br>
 <script>
-'usce strict';
+'use strict';
 const taI = instring, taO = outstring;
 const setSelection = (t,i,j) => {
 	t.selectionStart = i;
 	t.selectionEnd = j;
 };
-{
 const horiScroll = function(e){
 	e.target.scrollLeft += ((e.wheelDeltaY<0) ? 100 : -100);
 	diffstring.scrollLeft = taI.scrollLeft = taO.scrollLeft = e.target.scrollLeft;
@@ -109,6 +108,9 @@ const switchToTA = (n, pos, start,end) => {
 };
 let ta_focus = 0;
 const alternateFocus = (e)=>{
+	if (e.shiftKey){
+		return;
+	}
 	let ok = false;
 	switch (e.key){
 		case 'ArrowDown':
@@ -116,7 +118,7 @@ const alternateFocus = (e)=>{
 			switchToTA(ta_focus, e.target.scrollLeft, e.target.selectionStart, e.target.selectionEnd);
 			ok=true; break;
 		case 'ArrowUp':
-			ta_focus = (ta_focus-1<0) ? 2 : ta_focus-1;
+			ta_focus = (ta_focus==0) ? 2 : ta_focus-1;
 			switchToTA(ta_focus,e.target.scrollLeft, e.target.selectionStart, e.target.selectionEnd);
 			ok=true; break;
 		case 'Enter':
@@ -129,7 +131,11 @@ const alternateFocus = (e)=>{
 
 const updateTpos = function(e){
 	const {start, len} = fetchInputs();
-	tpos.value = `${start+1}-${start+len}`;
+	if (isNaN(start) || isNaN(len) || len==0){
+		tpos.value = 'Invalid StartPos or Length';
+	} else {
+		tpos.value = `${start+1}-${start+len}`;
+	}
 };
 [startp,len].forEach(t=>t.addEventListener('change',updateTpos));
 
@@ -138,7 +144,7 @@ const updateValP = function(e){
 	valp.value = val.substr(0,len).padStart(len,padc.padStart(1,' '));
 };
 val.addEventListener('blur',updateValP);
-}
+
 
 const fetchInputs = ()=>({
 	start: parseInt(document.querySelector('#startp').value)-1,
@@ -155,12 +161,17 @@ const replaceSubstring = function(start, len, padc, nval, initialStr){
 };
 
 function replaceBind(fromOutput=false){
-	if (fromOutput && taO.value.length<0){
+	if (fromOutput && taO.value.length<1){
 		alert('Output is empty!');
 		return;
 	}
 	const {start,len,padc,val} = fetchInputs();
-	taO.value = replaceSubstring(start,len,padc, val, (fromOutput) ? taO.value : taI.value);
+	const istring = (fromOutput) ? taO.value : taI.value;
+	if (start+len > istring.length){
+		alert('Replacement parameters exceed input string!');
+		return;
+	}
+	taO.value = replaceSubstring(start,len,padc, val, istring);
 	setSelection(taI,start,start+len);
 	setSelection(taO,start,start+len);
 	taO.focus();
@@ -169,6 +180,7 @@ function goToBind(){
 	const {start,len} = fetchInputs();
 	setSelection(taI,start,start+len);
 	taI.focus();
+	curpos.value = tpos.value;
 }
 function diffBind(){
 	const A = taI.value, B = taO.value, d = diffstring, l = Math.max(A.length,B.length);
@@ -177,7 +189,7 @@ function diffBind(){
 		if (A.length > i && B.length > i){
 			d.value += (A[i] == B[i]) ? '\u2219' : B[i];
 		} else {
-			d.value += '%';
+			d.value += '&';
 		}
 	}
 }
