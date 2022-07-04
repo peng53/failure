@@ -31,6 +31,7 @@
             this.components = new System.ComponentModel.Container();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.loadImageButton = new System.Windows.Forms.ToolStripButton();
+            this.checkAllButton = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.listView1 = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -47,7 +48,8 @@
             // toolStrip1
             // 
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.loadImageButton});
+            this.loadImageButton,
+            this.checkAllButton});
             this.toolStrip1.Location = new System.Drawing.Point(0, 0);
             this.toolStrip1.Name = "toolStrip1";
             this.toolStrip1.Size = new System.Drawing.Size(800, 25);
@@ -62,6 +64,16 @@
             this.loadImageButton.Size = new System.Drawing.Size(34, 22);
             this.loadImageButton.Text = "Load";
             this.loadImageButton.Click += new System.EventHandler(this.loadImageButton_Click);
+            // 
+            // checkAllButton
+            // 
+            this.checkAllButton.CheckOnClick = true;
+            this.checkAllButton.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.checkAllButton.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.checkAllButton.Name = "checkAllButton";
+            this.checkAllButton.Size = new System.Drawing.Size(54, 22);
+            this.checkAllButton.Text = "Check All";
+            this.checkAllButton.Click += new System.EventHandler(this.checkAllButton_Click);
             // 
             // splitContainer1
             // 
@@ -142,6 +154,7 @@
         private System.Windows.Forms.ToolStripButton loadImageButton;
         private System.Windows.Forms.ColumnHeader columnHeader1;
         private System.Windows.Forms.ImageList imageList1;
+        private System.Windows.Forms.ToolStripButton checkAllButton;
     }
 }
 

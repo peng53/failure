@@ -21,13 +21,15 @@ namespace thumbview
 
         private void CleanUpImages()
         {
-            this.loadedImage.Dispose();
-            for (int c = imageList1.Images.Count-1; c>=0; --c)
-            {
-                imageList1.Images[c].Dispose();
+            if (this.loadedImage != null) { 
+                this.loadedImage.Dispose();
+                for (int c = imageList1.Images.Count-1; c>=0; --c)
+                {
+                    imageList1.Images[c].Dispose();
+                }
+                imageList1.Images.Clear();
+                listView1.Items.Clear();
             }
-            imageList1.Images.Clear();
-            listView1.Items.Clear();
         }
 
         private void loadImageButton_Click(object sender, EventArgs e)
@@ -68,6 +70,14 @@ namespace thumbview
                 this.pictureBox1.Image = this.loadedImage;
             }
             
+        }
+
+        private void checkAllButton_Click(object sender, EventArgs e)
+        {
+            bool checkAll = checkAllButton.Checked;
+            foreach (ListViewItem item in listView1.Items) {
+                item.Checked = checkAll;
+            }
         }
     }
 }
