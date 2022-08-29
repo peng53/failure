@@ -1,0 +1,126 @@
+<html>
+<style>
+textarea {
+	width: calc(100vw - 1em);
+}
+span {
+	font-family: monospace;
+	font-size: 2em;
+}
+#header {
+	border-bottom: 1px dotted black;
+	border-top: 3px double black;
+	background: #ded;
+}
+/*
+#header > span {
+	writing-mode: vertical-rl;
+	text-orientation: vertical;
+}
+*/
+.color1 { color: red; }
+.color2 { color: blue; }
+.color3 { color: green; }
+.color4 { background: yellow; }
+.color5 { color: pink; }
+
+</style>
+<textarea id='descriptors'></textarea><br>
+<textarea id='alltext'></textarea><br>
+<button onclick='parseText()'>Parse</button>
+<div id='output'></div>
+<script>
+const desc = document.querySelector('#descriptors');
+const itext = document.querySelector('#alltext');
+const outdiv = document.querySelector('#output');
+let glinedefs = null;
+function generateHeader(div){
+	let header = output.querySelector('#header');
+	if (header){
+		header.textContent = '';
+	} else {
+		header = document.createElement('div');
+		header.id = 'header';
+	}
+	const ltype = div.dataset.ltype;
+	const cols = glinedefs[ltype].cols;
+	let cell;
+	let i = 1;
+	for (let [col] of cols){
+		cell = header.appendChild(document.createElement('span'));
+		cell.textContent = col;
+		cell.classList.add('color'+i);
+		i++;
+	}
+	outdiv.insertBefore(header,div);
+}
+function outdivSelectLine(e){
+	let t = e.target;
+	if (t.classList.contains('line')){
+		generateHeader(t);
+	} else if (t.parentElement.classList.contains('line')){
+		t = t.parentElement;
+		generateHeader(t);
+	}
+}
+outdiv.addEventListener('click',outdivSelectLine);
+function splitParse(x){
+	const [k,v] = x.split('=');
+	return [k,parseInt(v)];
+}
+function parseDesc(){
+	let desclines = desc.value.split('\n');
+	let linedefs = {};
+	for (let line of desclines){
+		let linecols = line.split(',');
+		let [id,ind] = splitParse(linecols[0]);
+		let cols = new Map();
+		for (let i=1;i<linecols.length;i++){
+			let [colname,len] = splitParse(linecols[i]);
+			cols.set(colname,len);
+		}
+		linedefs[id] = {at:ind, cols:cols};
+	}
+	return linedefs;
+}
+function idLine(line, linedefs){
+	for (let def in linedefs){
+		if (line[linedefs[def].at] == def){
+			return def;
+		}
+	}
+	return null;
+}
+function parseText(){
+	let linedefs = parseDesc();
+	glinedefs = linedefs;
+	let lines = itext.value.split('\n');
+	outdiv.textContent ='';
+	for (let line of lines){
+		let def = idLine(line,linedefs);
+		let outline = outdiv.appendChild(document.createElement('div'));
+		if (def == null){
+			outline.appendChild(document.createElement('span')).textContent = line;
+		} else {
+			outline.dataset.ltype = def;
+			outline.classList.add('line');
+			let i=0;
+			let colorCode=1;
+			for (let [col,len] of linedefs[def].cols){
+				let cell = outline.appendChild(document.createElement('span'));
+				cell.textContent = line.substring(i,i+len);
+				cell.classList.add(col);
+				cell.classList.add('color'+colorCode);
+				cell.title = col;
+				i += len;
+				colorCode++;
+			}
+			if (i+1<line.length){
+				let cell = outline.appendChild(document.createElement('span'));
+				cell.textContent = line.substring(i);
+			}
+		}
+	}
+}
+</script>
+</html>
