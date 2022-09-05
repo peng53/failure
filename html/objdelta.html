@@ -1,0 +1,172 @@
+<html>
+<style>
+textarea, input[type='text'] {
+	width: 100%;
+}
+textarea {
+	resize: horizontal;
+}
+input:invalid {
+	border-color: red;
+}
+#panes {
+	display: grid;
+	grid-template-columns: min-content 1fr;
+	width: calc(100vw - 1em);
+	height: calc(100vh - 1em);
+}
+#leftpane {
+	padding: 0.5em;
+	resize: horizontal;
+	border-right: 2px dashed black;
+	min-width: 200px;
+	overflow: auto;
+	max-width: calc(90vw - 200px);
+}
+#interfacego {
+	padding: 0.5em;
+	max-height: 100%;
+	overflow: auto;
+}
+</style>
+<div id='panes'>
+<div id='leftpane'>
+<fieldset>
+<legend>Object Definition</legend>
+<textarea id='objdef'></textarea>
+</fieldset>
+<fieldset>
+<legend>Object as String</legend>
+<textarea id='objstr'></textarea><br>
+<button onclick='ConfirmCreateInterface()'>Create &gt;</button>
+</fieldset>
+<fieldset>
+<legend>Inputs as String</legend>
+<textarea id='outstr'></textarea><br>
+<button onclick='ConfirmFieldsToString()'>Inputs To String &lt;</button>
+</fieldset>
+<fieldset id='padOps'>
+<legend>Pad Options</legend>
+<label for='pleft'>Left</label><input type='radio' id='pleft' name='padOpsR' value='left' checked />
+<label for='pright'>Right</label><input type='radio' id='pright' name='padOpsR' value='right' /><br>
+<input type='text' id='pchar' maxlength=1 placeholder='Pad Character' value='0' />
+</fieldset>
+</div>
+
+<div id='interfacego'></div>
+</div>
+
+<script>
+var allfields = [];
+function GetObjDef(){
+	const def = objdef.value.split(/[,\n]/);
+	const klenmap = new Map();
+	const repeats = {};
+	let k,v,t;
+	for (let item of def){
+		if (item.length > 0){
+			[k,v] = item.split(':');
+			if (k.length > 0 && v && v.replace(/\D/g,'').length > 0){
+				v = parseInt(v);
+				if (klenmap.has(k)){
+					if (!(k in repeats)){
+						repeats[k] = 0;
+					}
+					repeats[k]++;
+					k = `${k}_${repeats[k]}`;
+				}
+				klenmap.set(k,v);
+				t += v;
+			} else {
+				window.alert(`problematic item: '${item}' ignored`);
+			}
+		}
+	}
+	return klenmap;
+}
+function calcIndices(m){
+	let i = 1;
+	const r = {};
+	for (let [k,l] of m){
+		r[k] = {start: i, end: i+l-1};
+		i+=l;
+	}
+	return r;
+}
+function ParseObj(m){
+	const st = objstr.value;
+	const klenmap = m;
+	const props = new Map();
+	let i = 0;
+	for (let [k,v] of klenmap){
+		props.set(k,st.substring(i,i+v));
+		i+=v;
+	}
+	return props;
+}
+function padAStr(e){
+	const t = e.target;
+	const ml = parseInt(t.maxLength);
+	if (t.value.length < ml){
+		const op = document.querySelector("#padOps input[type='radio']:checked").value;
+		const c = document.querySelector("#pchar").value;
+		if (c.length > 0){
+			t.value = (op=='left') ? t.value.padStart(ml,c) : t.value.padEnd(ml,c);
+		}
+		
+	}
+}
+function makeFieldsetInput(key,label,length,initalVal){
+	const fs = document.createElement('fieldset');
+	fs.classList.add('field',key);
+	fs.appendChild(document.createElement('legend')).textContent = label;
+	const inp = fs.appendChild(document.createElement('input'));
+	inp.maxLength = inp.minLength = length;
+	inp.value = initalVal;
+	inp.required = true;
+	inp.type = 'text';
+	inp.addEventListener('blur',padAStr);
+	return fs;
+}
+
+function CreateInterface(){
+	const m = GetObjDef();
+	const props = ParseObj(m);
+	const indices = calcIndices(m);
+	const out = interfacego;
+	let fs;
+	out.textContent = '';
+	allfields = [];
+	for (let [k,v] of m){
+		fs = makeFieldsetInput('key'+k,`${k} [${indices[k].start}:${indices[k].end}] / len(${v})`,v,props.get(k));
+		out.appendChild(fs);
+		allfields.push(fs);
+	}
+}
+function ConfirmCreateInterface(){
+	if (allfields.length > 0 && window.confirm('Re-create interface?') == false){
+		return;
+	}
+	CreateInterface();
+}
+function FieldsToString(){
+	const fields = [];
+	let inp;
+	for (let fs of allfields){
+		fields.push(fs.querySelector('input').value);
+	}
+	outstr.value = fields.join('');
+}
+function ConfirmFieldsToString(){
+	if (outstr.value.length > 0 && window.confirm('Re-generate?') == false){
+		return;
+	}
+	if (interfacego.querySelector('input:invalid')){
+		window.alert('There are invalid fields, please fix.');
+		return;
+	}
+	FieldsToString();
+}
+
+</script>
+</html>
