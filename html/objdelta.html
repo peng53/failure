@@ -3,8 +3,14 @@
 textarea, input[type='text'] {
 	width: 100%;
 }
-textarea {
-	resize: horizontal;
+#objstr, #outstr {
+	resize: none;
+	font-size: 4em;
+	overflow: horizontal;
+	white-space: pre;
+}
+#objdef {
+	resize: vertical;
 }
 input:invalid {
 	border-color: red;
@@ -37,12 +43,12 @@ input:invalid {
 </fieldset>
 <fieldset>
 <legend>Object as String</legend>
-<textarea id='objstr'></textarea><br>
+<textarea id='objstr' rows=1 ></textarea><br>
 <button onclick='ConfirmCreateInterface()'>Create &gt;</button>
 </fieldset>
 <fieldset>
 <legend>Inputs as String</legend>
-<textarea id='outstr'></textarea><br>
+<textarea id='outstr' rows=1 ></textarea><br>
 <button onclick='ConfirmFieldsToString()'>Inputs To String &lt;</button>
 </fieldset>
 <fieldset id='padOps'>
