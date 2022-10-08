@@ -1,5 +1,8 @@
 <html>
 <style>
+body {
+	background: black;
+}
 textarea, input[type='text'] {
 	width: 100%;
 }
@@ -16,12 +19,14 @@ input:invalid {
 	border-color: red;
 }
 #panes {
+	background: white;
 	display: grid;
 	grid-template-columns: min-content 1fr;
 	width: calc(100vw - 1em);
 	height: calc(100vh - 1em);
 }
 #leftpane {
+	background: #eee;
 	padding: 0.5em;
 	resize: horizontal;
 	border-right: 2px dashed black;
@@ -34,12 +39,15 @@ input:invalid {
 	max-height: 100%;
 	overflow: auto;
 }
+fieldset:nth-child(odd){
+	background: #eee;
+}
 </style>
 <div id='panes'>
 <div id='leftpane'>
 <fieldset>
 <legend>Object Definition</legend>
-<textarea id='objdef'></textarea>
+<textarea id='objdef' rows=5 ></textarea>
 </fieldset>
 <fieldset>
 <legend>Object as String</legend>
