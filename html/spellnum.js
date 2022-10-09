@@ -2,19 +2,13 @@
 // https://github.com/peng53/powers/blob/main/num2words.ps1
 
 function Num2Words(str_n){
-	const places = ['', '', ' Thousand', ' Million', ' Billion', ' Trillion'];
 	let [num,cents] = str_n.split('.',2).map(e=>parseInt(e));
 	cents = (!cents || isNaN(cents) || cents<1) ? 'No Cents' : `${cents}/100`;
 	if (!num || isNaN(num) || num<1){
 		return `No Dollars and ${cents}`;
 	}
-	num = String(num);
-	let l = num.length;
-	let count = 1;
-	let temp;
-	let dollar = '';
-	
-	let tens = function(t){
+	num = num.toString();
+	const tens = function(t){
 		const tensScale = ['', '', ' Twenty', ' Thirty', ' Forty', ' Fifty', ' Sixty', ' Seventy', ' Eighty', ' Ninety'];
 		const smallNum = ['', ' One', ' Two', ' Three', ' Four', ' Five', ' Six', ' Seven', ' Eight', ' Nine', ' Ten', ' Eleven', ' Twelve', ' Thirteen', ' Fourteen', ' Fifteen', ' Sixteen', ' Seventeen', ' Eighteen', ' Nineteen'];
 		if (t<20){
@@ -22,7 +16,7 @@ function Num2Words(str_n){
 		}
 		return tensScale[Math.floor(t/10)] + smallNum[t%10];
 	};
-	let hundreds = function(h){
+	const hundreds = function(h){
 		if (parseInt(h) == 0){
 			return '';
 		}
@@ -31,23 +25,23 @@ function Num2Words(str_n){
 		if (h[0] != '0'){
 			r = tens(Math.floor(parseInt(h)/100)) + ' Hundred';
 		}
-		r = r + tens(parseInt(h.substr(1,2)));
-		return r;
+		return r + tens(parseInt(h.substr(1,2)));
 	};
-	while (l > 2){
+	let count = 1;
+	let dollar = '';
+	let l,temp;
+	const places = ['', '', ' Thousand', ' Million', ' Billion', ' Trillion'];
+	for (l=num.length; l>2; l-=3){
 		temp = hundreds(num.substr(l-3,3));
 		if (temp.length > 0){
 			dollar = temp + places[count]+dollar;
-			//console.log(`places index is ${count} - ${places[count]}`);
 		}
-		l -= 3;
 		count++;
 	}
 	if (l > 0){
 		temp = hundreds(num.substr(0,l));
 		if (temp.length > 0){
 			dollar = temp + places[count]+dollar;
-			//console.log(`places index is ${count} - ${places[count]}`);
 		}
 	}
 	return (dollar + ' and ' + cents).trim();
