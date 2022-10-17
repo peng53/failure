@@ -1,7 +1,24 @@
 <html>
 <style>
-textarea {
+#container {
+	display: grid;
+	grid-template-rows: min-content 1fr;
 	width: calc(100vw - 1em);
+	height: calc(100vh - 1em);
+}
+#resizer {
+	resize: vertical;
+	border-bottom: 1px dotted grey;
+	min-height: 150px;
+	overflow: auto;
+	max-height: calc(90vh - 150px);
+}
+#output {
+	overflow: auto;
+}
+textarea {
+	width: 100%;
+	resize: vertical;
 }
 span {
 	font-family: monospace;
@@ -26,10 +43,19 @@ span {
 .color5 { color: pink; }
 
 </style>
-<textarea id='descriptors'></textarea><br>
-<textarea id='alltext'></textarea><br>
-<button onclick='parseText()'>Parse</button>
+<div id='container'>
+<div id='resizer'>
+<fieldset>
+<legend>Descriptors</legend>
+<textarea id='descriptors' rows=8 ></textarea>
+</fieldset>
+<fieldset>
+<legend>Text</legend>
+<textarea id='alltext' rows=4 ></textarea>
+</fieldset>
+<button onclick='parseText()'>Parse</button></div>
 <div id='output'></div>
+</div>
 <script>
 const desc = document.querySelector('#descriptors');
 const itext = document.querySelector('#alltext');
