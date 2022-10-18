@@ -1,18 +1,5 @@
 <html>
 <style>
-#container {
-	display: grid;
-	grid-template-rows: min-content 1fr;
-	width: calc(100vw - 1em);
-	height: calc(100vh - 1em);
-}
-#resizer {
-	resize: vertical;
-	border-bottom: 1px dotted grey;
-	min-height: 150px;
-	overflow: auto;
-	max-height: calc(90vh - 150px);
-}
 #output {
 	overflow: auto;
 }
@@ -23,19 +10,38 @@ textarea {
 span {
 	font-family: monospace;
 	font-size: 2em;
-	white-space: pre;
 }
 #header {
 	border-bottom: 1px dotted black;
 	border-top: 3px double black;
 	background: #ded;
 }
-/*
-#header > span {
-	writing-mode: vertical-rl;
-	text-orientation: vertical;
+.headerrow {
+	font-weight: bold;
+	text-align: center;
 }
-*/
+.headerrowtop {
+	font-weight: bold;
+	font-size: 1.5em;
+	background: cyan;
+}
+table, td {
+	border: 1px solid black;
+	border-collapse: collapse;
+	padding: 2px;
+}
+table {
+	margin: 2px;
+}
+td, span, li {
+	white-space: pre;
+	font-family: monospace;
+	font-size: 1em;
+}
+h3 {
+	font-family: monospace;
+	font-size: 1.5em;
+}
 .color1 { color: red; }
 .color2 { color: blue; }
 .color3 { color: green; }
@@ -43,8 +49,6 @@ span {
 .color5 { color: pink; }
 
 </style>
-<div id='container'>
-<div id='resizer'>
 <fieldset>
 <legend>Descriptors</legend>
 <textarea id='descriptors' rows=8 ></textarea>
@@ -53,9 +57,11 @@ span {
 <legend>Text</legend>
 <textarea id='alltext' rows=4 ></textarea>
 </fieldset>
-<button onclick='parseText()'>Parse</button></div>
+<button onclick='parseText("text")'>Text</button>
+<button onclick='parseText("bullets")'>Bullets</button>
+<button onclick='parseText("rtable")'>RowTables</button>
+<button onclick='parseText("ctable")'>ColTables</button>
 <div id='output'></div>
-</div>
 <script>
 const desc = document.querySelector('#descriptors');
 const itext = document.querySelector('#alltext');
@@ -118,11 +124,34 @@ function idLine(line, linedefs){
 	}
 	return null;
 }
-function parseText(){
+function parseText(outputType){
 	let linedefs = parseDesc();
 	glinedefs = linedefs;
 	let lines = itext.value.split('\n');
 	outdiv.textContent ='';
+	let f;
+	switch (outputType){
+		case 'text':
+			f = outputAsText;
+			break;
+		case 'bullets':
+			f = outputAsBullets;
+			break;
+		case 'rtable':
+			f = outputAsTablesRows;
+			break;
+		case 'ctable':
+			f = outputAsTablesCols;
+			break;
+		default:
+			break;
+	}
+	if (f){
+		f(linedefs,lines);
+	}
+}
+	
+function outputAsText(linedefs,lines){
 	for (let line of lines){
 		let def = idLine(line,linedefs);
 		let outline = outdiv.appendChild(document.createElement('div'));
@@ -143,8 +172,97 @@ function parseText(){
 				colorCode++;
 			}
 			if (i+1<line.length){
-				let cell = outline.appendChild(document.createElement('span'));
-				cell.textContent = line.substring(i);
+				outline.appendChild(document.createElement('span')).textContent = line.substring(i);
+			}
+		}
+	}
+}
+function outputAsBullets(linedefs,lines){
+	let linecnt = 1;
+	for (let line of lines){
+		let def = idLine(line,linedefs);
+		let outline = outdiv.appendChild(document.createElement('div'));
+		if (def == null){
+			outline.appendChild(document.createElement('h3')).textContent = `?NOMATCH, Line ${linecnt++}`;
+			outline.appendChild(document.createElement('span')).textContent = line;
+		} else {
+			let i=0;
+			outline.appendChild(document.createElement('h3')).textContent = `${def}, Line ${linecnt++}`;
+			let ul = outline.appendChild(document.createElement('ul'));
+			for (let [col,len] of linedefs[def].cols){
+				let cell = ul.appendChild(document.createElement('li'));
+				cell.appendChild(document.createElement('b')).textContent = col;
+				cell.appendChild(document.createTextNode(`: ${line.substring(i,i+len)}`));
+				i += len;
+			}
+			if (i+1<=line.length){
+				let cell = ul.appendChild(document.createElement('li'));
+				cell.appendChild(document.createElement('b')).textContent = '?UNDEFINED';
+				cell.appendChild(document.createTextNode(`: ${line.substring(i)}`));
+			}
+		}
+	}
+}
+function outputAsTablesRows(linedefs,lines){
+	let linecnt = 1;
+	for (let line of lines){
+		let def = idLine(line,linedefs);
+		let outline = outdiv.appendChild(document.createElement('div'));
+		if (def == null){
+			outline.appendChild(document.createElement('h3')).textContent = `?NOMATCH, Line ${linecnt++}`;
+			outline.appendChild(document.createElement('span')).textContent = line;
+		} else {
+			let i=0;
+			let t = outline.appendChild(document.createElement('table'));
+			let r = t.insertRow(-1);
+			let c = r.insertCell(-1);
+			c.textContent = `${def}, Line ${linecnt++}`;
+			c.colSpan = 2;
+			c.classList.add('headerrowtop');
+			r = t.insertRow(-1);
+			r.classList.add('headerrow');
+			r.insertCell(-1).textContent = 'Key';
+			r.insertCell(-1).textContent = 'Value';
+			for (let [col,len] of linedefs[def].cols){
+				r = t.insertRow(-1);
+				r.insertCell(-1).textContent = col;
+				r.insertCell(-1).textContent = line.substring(i,i+len);	
+				i += len;
+			}
+			if (i+1<=line.length){
+				r = t.insertRow(-1);
+				r.insertCell(-1).textContent = '?UNDEFINED';
+				r.insertCell(-1).textContent = line.substring(i);
+			}
+		}
+	}
+}
+function outputAsTablesCols(linedefs,lines){
+	let linecnt = 1;
+	for (let line of lines){
+		let def = idLine(line,linedefs);
+		let outline = outdiv.appendChild(document.createElement('div'));
+		if (def == null){
+			outline.appendChild(document.createElement('h3')).textContent = `?NOMATCH, Line ${linecnt++}`;
+			outline.appendChild(document.createElement('span')).textContent = line;
+		} else {
+			let i=0;
+			let t = outline.appendChild(document.createElement('table'));
+			let r = t.insertRow(-1);
+			let c = r.insertCell(-1);
+			c.textContent = `${def}, Line ${linecnt++}`;
+			c.classList.add('headerrowtop');
+			r.classList.add('headerrow');
+			r2 = t.insertRow(-1);
+			c.rowSpan = 2;
+			for (let [col,len] of linedefs[def].cols){
+				r.insertCell(-1).textContent = col;
+				r2.insertCell(-1).textContent = line.substring(i,i+len);	
+				i += len;
+			}
+			if (i+1<=line.length){
+				r.insertCell(-1).textContent = '?UNDEFINED';
+				r2.insertCell(-1).textContent = line.substring(i);
 			}
 		}
 	}
