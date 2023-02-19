@@ -3,22 +3,56 @@
 ListLines Off
 
 Gui, Test:New, +Resize,
-Gui, Test:Add, Button, Default w100 gFrmClip, From Clipboard
-Gui, Test:Add, ListView, r20 w500, #|Line
-Gui, Test:Show, , Test
+Gui, Test:Default
+Gui, Add, Button, Default w100 gFrmClip, From Clipboard
+Gui, Add, Button, Default w100 x+5 yM gFrmFile, From File
+Gui, Add, ListView, r20 w500 xM vMyListview, #|Line
+Gui, Show, , Test
+
+global MLINES := []
+global MLINES_I := 1
+global CSVMODE := 0
 
 FrmClip:
 	if (A_GuiEvent == "Normal"){
-	Gui, Test:Default
-	global MLINES := strsplit(trim(clipboard), "`n")
-	global MLINES_I := 1
-	Gui, Test:Default
-	LV_Delete()
-	Loop % MLINES.MaxIndex() {
-		LV_Add("",A_Index,MLINES[A_Index])
+		Gui, Test:Default
+		global MLINES := strsplit(trim(clipboard), "`n")
+		global MLINES_I := 1
+		GuiControl, -Redraw, MyListview
+		LV_Delete()
+		Loop % MLINES.MaxIndex() {
+			LV_Add("",A_Index,MLINES[A_Index])
+		}
+		GuiControl, +Redraw, MyListview
+		global CSVMODE := 0
+		MsgBox, % MLINES.MaxIndex() . " lines loaded."
 	}
-	MsgBox, % MLINES.MaxIndex() . " lines loaded."
+return
+
+FrmFile:
+	if (A_GuiEvent == "Normal"){
+		FileSelectFile, csvfile, , , Load a CSV, CSV File (*.csv)
+		if (csvfile != ""){
+			global MLINES :=[]
+			global MLINES_I := 1
+			Gui, Test:Default
+			GuiControl, -Redraw, MyListview
+			LV_Delete()
+			Loop, read, % csvfile
+			{
+				t := []
+				Loop, parse, A_Loopreadline, CSV
+				{
+					t.Push(A_Loopfield)
+				}
+				LV_Add("",A_Index,A_Loopreadline)
+				MLINES.Push(t)
+			}
+			GuiControl, +Redraw, MyListview
+			global CSVMODE := 1
+		}
 	}
+
 return
 
 #IfWinActive ahk_class AutoHotkeyGUI
@@ -30,11 +64,14 @@ return
 		return
 #If
 
-global MLINES := []
-global MLINES_I := 1
 \::
 	if (MLINES_I <= MLINES.MaxIndex()){
-		sendinput, % MLINES[MLINES_I]
+		if (CSVMODE == 1){
+			l := MLINES[MLINES_I][1]
+		} else {
+			l := MLINES[MLINES_I]
+		}
+		sendinput, % l
 		MLINES_I++
 	} else {
 		MsgBox, Queue is empty
@@ -50,7 +87,8 @@ F10::
 		MLINES_I++
 	}
 	return
-
 return
-GuiClose:
+
+guiclose:
+Testguiclose:
 	ExitApp
