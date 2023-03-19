@@ -42,7 +42,29 @@ input:invalid {
 fieldset:nth-child(odd){
 	background: #eee;
 }
+#interfacego fieldset.required {
+	border-color: red;
+}
+.hiddenField {
+	display: none;
+}
+#lineselectdiv {
+	display: none;
+	position: fixed;
+	top:1em;
+	right:1em;
+	padding: 1em;
+	background: white;
+	border: 1px solid grey;
+}
+#lineselect {
+	width: 300px;
+}
+button {
+	margin-top: 3px;
+}
 </style>
+<body>
 <div id='panes'>
 <div id='leftpane'>
 <fieldset>
@@ -51,10 +73,10 @@ fieldset:nth-child(odd){
 </fieldset>
 <fieldset>
 <legend>Object as String</legend>
-<textarea id='objstr' rows=1 ></textarea><br>
+<textarea id='objstr' rows=1></textarea><br>
 <button onclick='ConfirmCreateInterface()'>Create &gt;</button>
 </fieldset>
-<fieldset>
+<fieldset id='strdropzone'>
 <legend>Inputs as String</legend>
 <textarea id='outstr' rows=1 ></textarea><br>
 <button onclick='ConfirmFieldsToString()'>Inputs To String &lt;</button>
@@ -65,11 +87,25 @@ fieldset:nth-child(odd){
 <label for='pright'>Right</label><input type='radio' id='pright' name='padOpsR' value='right' /><br>
 <input type='text' id='pchar' maxlength=1 placeholder='Pad Character' value='0' />
 </fieldset>
+<fieldset>
+<legend>View Options</legend>
+<input type='checkbox' id='cbShowOnlyReq' onchange='toggleHideNonReq(this.checked);' /><label for='cbShowOnlyReq'>Show Only Required</label>
+</fieldset>
+
 </div>
 
 <div id='interfacego'></div>
+<div id='lineselectdiv'>
+<fieldset>
+<legend>Line Selection</legend>
+<select id='lineselect' size=10></select><br>
+<button onclick='lineselectCB(1)'>Select</button>
+<button onclick='lineselectCB(0)'>Cancel</button>
+</fieldset>
 </div>
 
+</div>
+</body>
 <script>
 var allfields = [];
 function GetObjDef(){
@@ -133,7 +169,7 @@ function padAStr(e){
 function makeFieldsetInput(key,label,length,initalVal){
 	const fs = document.createElement('fieldset');
 	fs.classList.add('field',key);
-	fs.appendChild(document.createElement('legend')).textContent = label;
+	fs.appendChild(document.createElement('legend')).textContent = (label.startsWith('*')) ? label.substring(1) : label;
 	const inp = fs.appendChild(document.createElement('input'));
 	inp.maxLength = inp.minLength = length;
 	inp.value = initalVal;
@@ -150,9 +186,13 @@ function CreateInterface(){
 	const out = interfacego;
 	let fs;
 	out.textContent = '';
+	cbShowOnlyReq.checked=false;
 	allfields = [];
 	for (let [k,v] of m){
 		fs = makeFieldsetInput('key'+k,`${k} [${indices[k].start}:${indices[k].end}] / len(${v})`,v,props.get(k));
+		if (k.startsWith('*')){
+			fs.classList.add('required')
+		}
 		out.appendChild(fs);
 		allfields.push(fs);
 	}
@@ -181,6 +221,56 @@ function ConfirmFieldsToString(){
 	}
 	FieldsToString();
 }
+
+function toggleHideNonReq(state){
+	Array.from(interfacego.querySelectorAll('fieldset:not(.required)')).forEach(
+		f=>f.classList.toggle('hiddenField',state)
+	);
+}
+
+function ignoreEvent(e){
+	e.preventDefault();
+	e.stopPropagation();
+}
+function loadAstr(f){
+	const reader = new FileReader();
+	reader.addEventListener('load',
+		()=>{
+			const lines = reader.result.split('\n');
+			for (let i=0,l=Math.min(10,lines.length); i<l; i++){
+				lineselect.appendChild(document.createElement('option')).textContent = lines[i];
+			}
+			lineselectdiv.style.display='block';
+		}
+	);
+	reader.readAsText(f);
+}
+function dropAStr(e){
+	e.preventDefault();
+	e.stopPropagation();
+	if (lineselectdiv.style.display==''){
+		const [file] = e.dataTransfer.files;
+		loadAstr(file);
+	} else {
+		alert('Cancel before attempting to load another file');
+	}
+}
+function lineselectCB(c){
+	if (c==1){
+		if (lineselect.selectedOptions.length!=1){
+			alert('Nothing was selected!');
+			return;
+		}
+		objstr.value = lineselect.selectedOptions[0].textContent;
+		objstr.scrollLeft = 0;
+	}
+	lineselectdiv.style=lineselect.textContent='';
+}
+
+document.addEventListener('dragover',ignoreEvent);
+document.addEventListener('drop',dropAStr);
+
+
 {
 	// sample input
 	objdef.value = 'Id:5,FName:10,LName:10';
