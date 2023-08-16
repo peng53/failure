@@ -187,6 +187,12 @@ function exportItems(items){
 	link.download = (!filename || filename.length==0) ? 'out.json' : filename;
 	link.click();
 }
+function exportItemsAsBlob(items){
+	if (items.length==0) return;
+	const blob=new Blob([JSON.stringify(items, null, 2)], {type:'application/json'});
+	const filename = prompt('Filename?');
+	window.open(URL.createObjectURL(blob));
+}
 function importItems(text, form, table){
 	if (text.length < 1){
 		alert('0-len JSON data input');
@@ -239,7 +245,9 @@ function addprop(name){
 }
 function additem(form, table){
 	const item = form.getitem(table);
-	table.addRow(item);
+	if (Object.values(item).some(v=>v.length>0) || confirm('Empty input, still create?')){
+		table.addRow(item);
+	}
 }
 function deleteItems(data, table){
 	const msg = prompt("Delete which rows?");
@@ -257,15 +265,10 @@ function deleteItems(data, table){
 	}
 }
 function createPropSidebarEntry(sidebar, label){
-	//const div = document.createElement('div');
 	const div = sidebar.appendChild(document.createElement('div'));
-	//const lab = document.createElement('span');
-	//lab.textContent = label;
-	//div.appendChild(lab);
 	div.appendChild(document.createElement('span')).textContent = label;
 	div.appendChild(document.createElement('br'));
 	div.appendChild(document.createElement('input'));
-	//sidebar.appendChild(div);
 }
 function createPropTableEntry(proprow, label){
 	const cell = proprow.insertCell(-1);
