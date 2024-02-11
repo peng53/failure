@@ -196,13 +196,35 @@ function importItems(text, form, table){
 		return;
 	}
 	const input = JSON.parse(text);
+	console.log(input);
+	/*for (const key of input*/
+	
 	let data;
 	let processor;
 	let keyAdd = (key) => {form.addprop(key);table.addCol(key)};
 	if ('format' in input == false){
+/* JSON Example, (all data, key columns created as needed):
+[
+	{"duration": 10, "name": "reply", "interval": 2},
+	{"duration": 15, "name": "forward", "interval": 20},
+	{"duration": 35, "name": "reply-all", "interval": 50},
+	{"duration": 35, "name": "reply-all", "instances": 501}
+]
+*/
 		data = input;
 		processor = processKeyValues;
 	} else if (input['format'] == 'key-value'){
+/* JSON Example ('key-value' variant, keys are described in keys array but can be added later):
+Other metadata can be added on the root
+{
+	"format" : "key-value",
+	"keys" : ["a","b","c"],
+	"data" : [
+		{"a":1,"b":2,"c":"x"},
+		{"a":"test","otherkey":52}
+	]
+}
+*/
 		data = input['data'];
 		processor = processKeyValues;
 		for (const key of input['keys']){
@@ -215,6 +237,7 @@ function importItems(text, form, table){
 		table.cols,
 		keyAdd
 	);
+	
 
 }
 function processKeyValues(array, process, keys, keyfail){
