@@ -11,10 +11,7 @@ thead td {
 	font-weight: bold;
 	background: #ccc;
 }
-.hidden {
-	display: none;
-}
-.dialog {
+dialog {
 	position: fixed;
 	width: 50%;
 	left: 0;
@@ -286,29 +283,25 @@ function deDupItems(items, key){
 	}
 	return out;
 }
-function toggleDialog(dialog){
-	dialog.classList.toggle('hidden');
-}
 </script>
 
-<div id='dialogAddField' class='hidden dialog'>
+<dialog id='dialogAddField'>
 <h3>Add a field..</h3>
 <input id='propname' /><br />
 <button onclick='addprop(propname.value)'>New</button>
-<button onclick='toggleDialog(this.parentNode)'>Hide</button>
-</div>
+<button onclick='this.parentNode.close()'>Hide</button>
+</dialog>
 
-<div id='dialogImportJson' class='hidden dialog'>
+<dialog id='dialogImportJson'>
 <h3>Import JSON..</h3>
 <textarea id='rawjson' rows=10 ></textarea><br />
 <h4>From file..</h4>
 <input type='file' accept='.json' id='dialogImportJsonFileIn' /><br />
 <center>
 <button onclick='importItems(rawjson.value, myform, mytable);'>Import</button>
-<button onclick='toggleDialog(this.parentNode.parentNode)'>Hide</button>
+<button onclick='this.parentNode.parentNode.close()'>Hide</button>
 </center>
-</div>
-
+</dialog>
 
 <div>
 <h1>Entries</h1>
@@ -326,8 +319,8 @@ function toggleDialog(dialog){
 <button onclick='additem(myform,mytable)'>Add</button>
 <button onclick='exportItems(mytable.toArray())'>Export All</button>
 <button onclick='mytable.rowEndEdit(mytable.editing)'>End Edit</button>
-<button onclick='toggleDialog(dialogAddField)'>Add Field</button>
-<button onclick='toggleDialog(dialogImportJson)'>Import JSON</button>
+<button onclick='dialogAddField.show()'>Add Field</button>
+<button onclick='dialogImportJson.show()'>Import JSON</button>
 
 <div>
 <label><input type='radio' name='mytableMode' value='none' onclick='mytable.mode = this.value' checked />None</label>
@@ -374,7 +367,7 @@ mytable.rowBody.addEventListener('click', e => {
 			};
 			reader.addEventListener('load', gotLines);
 			reader.readAsText(e.target.files[0]);
-			toggleDialog(dialogImportJson);
+			dialogImportJson.close();
 		}
 	};
 	dialogImportJsonFileIn.addEventListener('change', fileSelected);
