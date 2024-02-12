@@ -58,6 +58,63 @@
 <script>
 let input;
 let maintablevar;
+let dynfrm;
+function createEntrySet(props){
+	let form_ele;
+	switch (props.type){
+		case 'number':
+			form_ele = document.createElement('input');
+			form_ele.type = 'number';
+			if (props.hasOwnProperty('min')){
+				form_ele.min = props.min;
+			}
+			if (props.hasOwnProperty('max')){
+				form_ele.max = props.max;
+			}
+			break;
+		case 'date':
+			form_ele = document.createElement('input');
+			form_ele.type = 'date';
+			break;
+		case 'enum':
+			form_ele = document.createElement('select');
+			props.values.forEach(
+				e=>form_ele.appendChild(document.createElement('option')).textContent = e);
+			break;
+		case 'text':
+		case 'link':
+		case 'img':
+		default:
+			form_ele = document.createElement('input');
+			break;
+	}
+	return form_ele;
+}
+
+function createFormSet(myform, label, props){
+	const fs = myform.appendChild(document.createElement('fieldset'));
+	fs.appendChild(document.createElement('legend')).textContent=label;
+	const myentry = fs.appendChild(createEntrySet(props));
+	return myentry;
+}
+
+class DynaForm {
+	constructor(out, entryF){
+		this.out = out;
+		this.entryF = entryF;
+	}
+	addprop(name,props){
+		this.entryF(this.out,name,props);
+	}
+	getitem(table){
+		const item = {};
+		const inputs = this.out.getElementsByTagName('input');
+		table.cols.forEach(
+			(v,k) => item[k] = inputs[v].value
+		);
+		return item;
+	}
+}
 class DataTable {
 	constructor(table,keys){
 		this.table = table;
@@ -111,44 +168,10 @@ function gotJson(ev){
 	// main table should be clear before this action
 	input = JSON.parse([ev.target.result]);
 	maintablevar = new DataTable(maintable,input.keys);
-	let form_ele;
+	dynfrm = new DynaForm(newRowDialog,createFormSet);
 	for (const k in input.keys){
 		maintablevar.addCol(k,input.keys[k].hidden);
-
-		newRowDialog.appendChild(document.createTextNode(k));
-		newRowDialog.appendChild(document.createElement('br'));
-		switch (input.keys[k].type){
-			case 'text':
-			case 'link':
-			case 'img': 
-				form_ele = document.createElement('input');
-				break;
-
-			case 'number':
-				form_ele = document.createElement('input');
-				form_ele.type = 'number';
-				if (input.keys[k].hasOwnProperty('min')){
-					form_ele.min = input.keys[k].min;
-				}
-				if (input.keys[k].hasOwnProperty('max')){
-					form_ele.max = input.keys[k].max;
-				}
-				break;
-
-			case 'date':
-				form_ele = document.createElement('input');
-				form_ele.type = 'date';
-				break;
-
-			case 'enum':
-				form_ele = document.createElement('select');
-				input.keys[k].values.forEach(
-					e=>form_ele.appendChild(document.createElement('option')).textContent = e);
-				break;
-
-		}
-		newRowDialog.appendChild(form_ele);
-		newRowDialog.appendChild(document.createElement('br'));
+		dynfrm.addprop(k,input.keys[k]);
 	}
 
 	for (const r of input.data){
