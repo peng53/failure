@@ -4,7 +4,7 @@
 		"name" : {"type":"text"},
 		"age" : {"type":"number","max":100},
 		"birthdate" : {"type":"date","format":"yymmdd","hidden":true},
-		"profile" : {"type":"img", "src":"x.jpg"},
+		"profile" : {"type":"img", "src":"x.jpg", "width": "55", "height" : "55"},
 		"url" : {"type":"link","src":"blah"},
 		"sex" : {"type":"enum","values":["boy","girl"]}
 	},
@@ -16,6 +16,14 @@
 			"profile" : "test.jpg",
 			"url" : "",
 			"sex" : "boy"
+		},
+		{
+			"name" : "Jill",
+
+			"birthdate" : "020202",
+			"profile" : "https://www.w3schools.com/howto/img_avatar.png",
+			"url" : "http://google.com",
+			"sex" : "girl"
 		}
 	]
 	
