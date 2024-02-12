@@ -52,6 +52,7 @@
 </div>
 
 <div id='newRowDialog'>
+<button onclick='addFormToTable(dynfrm,maintablevar)'>Add</button>
 </div>
 
 </div>
@@ -59,6 +60,9 @@
 let input;
 let maintablevar;
 let dynfrm;
+function addFormToTable(myform,mytable){
+	mytable.addRow(myform.getitem());
+}
 function createEntrySet(props){
 	let form_ele;
 	switch (props.type){
@@ -99,19 +103,19 @@ function createFormSet(myform, label, props){
 }
 
 class DynaForm {
-	constructor(out, entryF){
+	constructor(out, entryF, keys){
 		this.out = out;
 		this.entryF = entryF;
+		this.keys = keys;
+		this.eles = new Map();
 	}
 	addprop(name,props){
-		this.entryF(this.out,name,props);
+		this.eles.set(name, this.entryF(this.out,name,props));
 	}
-	getitem(table){
+	getitem(){
 		const item = {};
-		const inputs = this.out.getElementsByTagName('input');
-		table.cols.forEach(
-			(v,k) => item[k] = inputs[v].value
-		);
+		this.eles.forEach(
+			(v,k) => item[k] = v.value);
 		return item;
 	}
 }
@@ -168,7 +172,7 @@ function gotJson(ev){
 	// main table should be clear before this action
 	input = JSON.parse([ev.target.result]);
 	maintablevar = new DataTable(maintable,input.keys);
-	dynfrm = new DynaForm(newRowDialog,createFormSet);
+	dynfrm = new DynaForm(newRowDialog,createFormSet, input.keys);
 	for (const k in input.keys){
 		maintablevar.addCol(k,input.keys[k].hidden);
 		dynfrm.addprop(k,input.keys[k]);
