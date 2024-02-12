@@ -1,0 +1,108 @@
+<style>
+.hiddencol {
+	display: none;
+}
+</style>
+<dialog id='dialogLoadFile'>
+<h3>Import JSON..</h3>
+<input type='file' accept='.json,.csv' id='dialogLoadFileInput' /><br /><br />
+<button onclick='this.parentElement.close()'>Cancel</button>
+</dialog>
+<button onclick='dialogLoadFile.show()'>Load Another File</button>
+<table id='maintable'>
+<thead><tr></tr></thead>
+<tbody></tbody>
+</table>
+<dialog id='newRowDialog'>
+<button onclick='this.parentElement.close()'>Cancel</button>
+</dialog>
+<script>
+let input;
+function gotJson(ev){
+	// main table should be clear before this action
+	console.log('got json');
+	input = JSON.parse([ev.target.result]);
+	let row = maintable.querySelector('thead tr');
+	let cell;
+	// need to store input.keys somewhere
+	for (const k in input.keys){
+		cell = row.insertCell(-1);
+		cell.appendChild(document.createTextNode(k));
+		if (input.keys[k].hidden){
+			cell.classList.add('hiddencol');
+		}
+	}
+	let tbod = maintable.querySelector('tbody');
+	let form_ele;
+	for (const r of input.data){
+		row = tbod.insertRow(-1);
+		for (const k in input.keys){
+			cell = row.insertCell(-1);
+			cell.appendChild(document.createTextNode(r[k]));
+			if (input.keys[k].hidden){
+				cell.classList.add('hiddencol');
+			}
+			newRowDialog.appendChild(document.createTextNode(k));
+			newRowDialog.appendChild(document.createElement('br'));
+			switch (input.keys[k].type){
+				case 'text':
+				case 'link':
+				case 'img': 
+				case 'date':
+				case 'enum':
+					form_ele = document.createElement('input');
+					break;
+
+				case 'number':
+					form_ele = document.createElement('input');
+					form_ele.type = 'number';
+					if (input.keys[k].hasOwnProperty('min')){
+						form_ele.min = input.keys[k].min;
+					}
+					if (input.keys[k].hasOwnProperty('max')){
+						form_ele.max = input.keys[k].max;
+					}
+					break;
+
+
+			}
+			newRowDialog.appendChild(form_ele);
+			newRowDialog.appendChild(document.createElement('br'));
+		}
+		//console.log(r);
+	}
+}
+function gotCsv(ev){
+	console.log('got csv');
+	for (const line of ev.target.result.split('\n')){
+		console.log(line);
+	}
+}
+
+{
+	// binding the file in dialog
+	const fileSelected = function(e){
+		if (e.target.files.length>0){
+			const reader = new FileReader();
+			const ext = e.target.files[0].name.split('.').pop();
+			switch (ext){
+				case 'csv':
+					reader.addEventListener('load', gotCsv);
+					break;
+				case 'json':
+					reader.addEventListener('load', gotJson);
+					break;
+				default:
+					return;
+					break;
+			}
+			
+			reader.readAsText(e.target.files[0]);
+			dialogLoadFile.close();
+		}
+	};
+	dialogLoadFileInput.addEventListener('change', fileSelected);
+}
+dialogLoadFile.show();
+newRowDialog.show();
+</script>

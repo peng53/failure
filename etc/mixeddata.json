@@ -1,0 +1,22 @@
+{
+	"format" : "key-value",
+	"keys" : {
+		"name" : {"type":"text"},
+		"age" : {"type":"number","max":100},
+		"birthdate" : {"type":"date","format":"yymmdd","hidden":true},
+		"profile" : {"type":"img", "src":"x.jpg"},
+		"url" : {"type":"link","src":"blah"},
+		"sex" : {"type":"enum","values":["boy","girl"]}
+	},
+	"data" : [
+		{
+			"name" : "Jack",
+			"age" : 24,
+			"birthdate" : "010101",
+			"profile" : "test.jpg",
+			"url" : "",
+			"sex" : "boy"
+		}
+	]
+	
+}
