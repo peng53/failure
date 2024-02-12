@@ -51,9 +51,7 @@
 </table>
 </div>
 
-<div id='newRowDialog'>
-<button onclick='addFormToTable(dynfrm,maintablevar)'>Add</button>
-</div>
+<div id='newRowDialog'></div>
 
 </div>
 <script>
@@ -119,6 +117,34 @@ class DynaForm {
 		return item;
 	}
 }
+
+function htmlElement(value, props){
+	const nv = value ?? '';
+	let e;
+	switch (props.type){
+		case 'link':
+			e = document.createElement('a');
+			e.href = nv;
+			e.textContent = value;
+			break;
+		case 'img':
+			e = document.createElement('img');
+			e.src = nv;
+			e.alt = nv;
+			e.height = props.height;
+			e.width = props.width;
+			break;
+		case 'number':
+		case 'enum':
+		case 'date':
+		case 'text':
+		default:
+			e = document.createTextNode(nv);
+			break;
+	}
+	return e;
+}
+
 class DataTable {
 	constructor(table,keys){
 		this.table = table;
@@ -160,7 +186,10 @@ class DataTable {
 		this.cols.forEach(
 			(v,k) => {
 				let c =row.insertCell(-1);
-				c.appendChild(document.createTextNode((k in item) ? item[k] : ''));
+				//
+				//c.appendChild(document.createTextNode((k in item) ? item[k] : ''));
+				//
+				c.appendChild(htmlElement(item[k],this.keys[k]));
 				if (this.keys[k].hidden){
 					c.classList.add('hiddencol');
 				}
@@ -177,7 +206,10 @@ function gotJson(ev){
 		maintablevar.addCol(k,input.keys[k].hidden);
 		dynfrm.addprop(k,input.keys[k]);
 	}
-
+	newRowDialog.appendChild(document.createElement('br'));
+	const addBtn = newRowDialog.appendChild(document.createElement('button'));
+	addBtn.textContent = 'Add';
+	addBtn.onclick = ()=>addFormToTable(dynfrm,maintablevar);
 	for (const r of input.data){
 		maintablevar.addRow(r);
 	}
