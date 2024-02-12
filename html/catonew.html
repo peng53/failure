@@ -57,68 +57,102 @@
 </div>
 <script>
 let input;
-function gotJson(ev){
-	// main table should be clear before this action
-	console.log('got json');
-	input = JSON.parse([ev.target.result]);
-	let row = maintable.querySelector('thead tr');
-	let cell;
-	// need to store input.keys somewhere
-	let form_ele;
-	for (const k in input.keys){
-		cell = row.appendChild(document.createElement('th'));
-		cell.appendChild(document.createTextNode(k));
-		if (input.keys[k].hidden){
-			cell.classList.add('hiddencol');
-		}
-			newRowDialog.appendChild(document.createTextNode(k));
-			newRowDialog.appendChild(document.createElement('br'));
-			switch (input.keys[k].type){
-				case 'text':
-				case 'link':
-				case 'img': 
-					form_ele = document.createElement('input');
-					break;
-
-				case 'number':
-					form_ele = document.createElement('input');
-					form_ele.type = 'number';
-					if (input.keys[k].hasOwnProperty('min')){
-						form_ele.min = input.keys[k].min;
-					}
-					if (input.keys[k].hasOwnProperty('max')){
-						form_ele.max = input.keys[k].max;
-					}
-					break;
-
-				case 'date':
-					form_ele = document.createElement('input');
-					form_ele.type = 'date';
-					break;
-
-				case 'enum':
-					form_ele = document.createElement('select');
-					input.keys[k].values.forEach(
-						e=>form_ele.appendChild(document.createElement('option')).textContent = e);
-					break;
-
-			}
-			newRowDialog.appendChild(form_ele);
-			newRowDialog.appendChild(document.createElement('br'));
+let maintablevar;
+class DataTable {
+	constructor(table,keys){
+		this.table = table;
+		this.cols = new Map();
+		this.rowHeader = table.querySelector('thead').querySelector('tr');
+		this.rowBody = table.querySelector('tbody');
+		this.keys = keys;
 	}
-	let tbod = maintable.querySelector('tbody');
-
-	for (const r of input.data){
-		row = tbod.insertRow(-1);
-		for (const k in input.keys){
-			cell = row.insertCell(-1);
-			cell.appendChild(document.createTextNode(r[k]));
-			if (input.keys[k].hidden){
+	prop(name){
+		return (this.cols.has(name) ? this.cols.get(name) : -1);
+	}
+	addCol(name,hidden=false){
+		if (this.cols.has(name)){
+			return -1;
+		}
+		const n = this.cols.size;
+		this.cols.set(name, n);
+		const myth = this.rowHeader.appendChild(document.createElement('th'));
+		myth.appendChild(document.createTextNode(name));
+		if (hidden){
+			myth.classList.add('hiddencol');
+		}
+		this.afterAddCol(hidden);
+		return n;
+	}
+	afterAddCol(hidden=false){
+		const rows = this.rowBody.children;
+		let cell;
+		for (const row of rows){
+			cell = row.insertCell(-1)
+			cell.appendChild(document.createTextNode(''));
+			if (hidden){
 				cell.classList.add('hiddencol');
 			}
+		}
+	}
+	addRow(item){
+		const row = this.rowBody.insertRow(-1);
+		this.cols.forEach(
+			(v,k) => {
+				let c =row.insertCell(-1);
+				c.appendChild(document.createTextNode((k in item) ? item[k] : ''));
+				if (this.keys[k].hidden){
+					c.classList.add('hiddencol');
+				}
+		});
+	}
+}
+
+function gotJson(ev){
+	// main table should be clear before this action
+	input = JSON.parse([ev.target.result]);
+	maintablevar = new DataTable(maintable,input.keys);
+	let form_ele;
+	for (const k in input.keys){
+		maintablevar.addCol(k,input.keys[k].hidden);
+
+		newRowDialog.appendChild(document.createTextNode(k));
+		newRowDialog.appendChild(document.createElement('br'));
+		switch (input.keys[k].type){
+			case 'text':
+			case 'link':
+			case 'img': 
+				form_ele = document.createElement('input');
+				break;
+
+			case 'number':
+				form_ele = document.createElement('input');
+				form_ele.type = 'number';
+				if (input.keys[k].hasOwnProperty('min')){
+					form_ele.min = input.keys[k].min;
+				}
+				if (input.keys[k].hasOwnProperty('max')){
+					form_ele.max = input.keys[k].max;
+				}
+				break;
+
+			case 'date':
+				form_ele = document.createElement('input');
+				form_ele.type = 'date';
+				break;
+
+			case 'enum':
+				form_ele = document.createElement('select');
+				input.keys[k].values.forEach(
+					e=>form_ele.appendChild(document.createElement('option')).textContent = e);
+				break;
 
 		}
-		//console.log(r);
+		newRowDialog.appendChild(form_ele);
+		newRowDialog.appendChild(document.createElement('br'));
+	}
+
+	for (const r of input.data){
+		maintablevar.addRow(r);
 	}
 }
 function gotCsv(ev){
@@ -153,5 +187,4 @@ function gotCsv(ev){
 	dialogLoadFileInput.addEventListener('change', fileSelected);
 }
 dialogLoadFile.show();
-newRowDialog.show();
 </script>
