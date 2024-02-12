@@ -2,20 +2,59 @@
 .hiddencol {
 	display: none;
 }
+#container {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	align-items: top;
+	gap: 1em;
+	height: calc(100vh - 2em);
+}
+#maintable {
+	border: 1px solid black;
+	border-collapse: collapse;
+	width: 100%;
+}
+#maintable th {
+	background: #ccc;
+	text-align: left;
+	font-family: monospace;
+	padding: 2px;
+}
+#maintable td {
+	padding: 2px;
+}
+#maintablediv {
+	height: 100%;
+	width: 100%;
+}
+#newRowDialog input, #newRowDialog select {
+	width: 100%;
+}
 </style>
+
+<!--
+<button onclick='dialogLoadFile.show()'>Load Another File</button>
+-->
+
 <dialog id='dialogLoadFile'>
 <h3>Import JSON..</h3>
 <input type='file' accept='.json,.csv' id='dialogLoadFileInput' /><br /><br />
 <button onclick='this.parentElement.close()'>Cancel</button>
 </dialog>
-<button onclick='dialogLoadFile.show()'>Load Another File</button>
+
+<div id='container'>
+
+<div id='maintablediv'>
 <table id='maintable'>
 <thead><tr></tr></thead>
 <tbody></tbody>
 </table>
-<dialog id='newRowDialog'>
-<button onclick='this.parentElement.close()'>Cancel</button>
-</dialog>
+</div>
+
+<div id='newRowDialog'>
+</div>
+
+</div>
 <script>
 let input;
 function gotJson(ev){
@@ -25,31 +64,19 @@ function gotJson(ev){
 	let row = maintable.querySelector('thead tr');
 	let cell;
 	// need to store input.keys somewhere
+	let form_ele;
 	for (const k in input.keys){
-		cell = row.insertCell(-1);
+		cell = row.appendChild(document.createElement('th'));
 		cell.appendChild(document.createTextNode(k));
 		if (input.keys[k].hidden){
 			cell.classList.add('hiddencol');
 		}
-	}
-	let tbod = maintable.querySelector('tbody');
-	let form_ele;
-	for (const r of input.data){
-		row = tbod.insertRow(-1);
-		for (const k in input.keys){
-			cell = row.insertCell(-1);
-			cell.appendChild(document.createTextNode(r[k]));
-			if (input.keys[k].hidden){
-				cell.classList.add('hiddencol');
-			}
 			newRowDialog.appendChild(document.createTextNode(k));
 			newRowDialog.appendChild(document.createElement('br'));
 			switch (input.keys[k].type){
 				case 'text':
 				case 'link':
 				case 'img': 
-				case 'date':
-				case 'enum':
 					form_ele = document.createElement('input');
 					break;
 
@@ -64,10 +91,32 @@ function gotJson(ev){
 					}
 					break;
 
+				case 'date':
+					form_ele = document.createElement('input');
+					form_ele.type = 'date';
+					break;
+
+				case 'enum':
+					form_ele = document.createElement('select');
+					input.keys[k].values.forEach(
+						e=>form_ele.appendChild(document.createElement('option')).textContent = e);
+					break;
 
 			}
 			newRowDialog.appendChild(form_ele);
 			newRowDialog.appendChild(document.createElement('br'));
+	}
+	let tbod = maintable.querySelector('tbody');
+
+	for (const r of input.data){
+		row = tbod.insertRow(-1);
+		for (const k in input.keys){
+			cell = row.insertCell(-1);
+			cell.appendChild(document.createTextNode(r[k]));
+			if (input.keys[k].hidden){
+				cell.classList.add('hiddencol');
+			}
+
 		}
 		//console.log(r);
 	}
