@@ -1,0 +1,46 @@
+<style>
+	select {
+		
+		
+	}
+</style>
+<label>Input Here<input id='myinput' /></label>
+<button onclick='intToSelect(myselect,parseInt(myinput.value))'>To Select</button><br><br>
+<select id='myselect' multiple size=8>
+</select>
+<button onclick='myoutput.value=optionToInt(myselect)'>Try</button>
+<br>
+<label>Output<output id='myoutput'></output></label>
+<script>
+{
+	let bits = 8
+	for (let i=0; i<=bits; ++i){
+		myselect.appendChild(document.createElement('option')).textContent = `${i} bit, ${1<<i} place`;
+	}
+	myselect.size = bits+1;
+}
+function optionToInt(sel){
+	let x = 0;
+	Array.from(sel.selectedOptions).forEach(i=>x = x | 2**(i.index));
+	return x;
+}
+function intToSelect(sel,x){
+	const bitcount = sel.children.length;
+	for (let i=0; i<bitcount; ++i){
+		/*
+		if ((x&(1<<i))==0){
+			sel.children[i].selected = false;
+		} else {
+			sel.children[i].selected = true;
+		}
+		*/
+		//console.log(1<<i, x, x & (1<<i));
+		if ((x & (1<<i))!=0){
+			sel.children[i].selected = true;
+			console.log('selected',i);
+		} else {
+			sel.children[i].selected = false;
+		}
+	}
+}
+</script>
