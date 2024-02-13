@@ -6,24 +6,27 @@
 		"birthdate" : {"type":"date","format":"yymmdd","hidden":true},
 		"profile" : {"type":"img", "src":"x.jpg", "width": "55", "height" : "55"},
 		"url" : {"type":"link","src":"blah"},
-		"sex" : {"type":"enum","values":["boy","girl"]}
+		"sex" : {"type":"enum","values":["boy","girl"]},
+		"member" : {"type":"checkbox"}
 	},
 	"data" : [
 		{
 			"name" : "Jack",
 			"age" : 24,
-			"birthdate" : "010101",
+			"birthdate" : "2001-01-01",
 			"profile" : "test.jpg",
 			"url" : "",
-			"sex" : "boy"
+			"sex" : "boy",
+			"member":true
 		},
 		{
 			"name" : "Jill",
 
-			"birthdate" : "020202",
+			"birthdate" : "2002-02-02",
 			"profile" : "https://www.w3schools.com/howto/img_avatar.png",
 			"url" : "http://google.com",
-			"sex" : "girl"
+			"sex" : "girl",
+			"member":false
 		}
 	]
 	

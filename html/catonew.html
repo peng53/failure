@@ -64,6 +64,10 @@ function addFormToTable(myform,mytable){
 function createEntrySet(props){
 	let form_ele;
 	switch (props.type){
+		case 'checkbox':
+			form_ele = document.createElement('input');
+			form_ele.type = 'checkbox';
+			break;
 		case 'number':
 			form_ele = document.createElement('input');
 			form_ele.type = 'number';
@@ -82,6 +86,9 @@ function createEntrySet(props){
 			form_ele = document.createElement('select');
 			props.values.forEach(
 				e=>form_ele.appendChild(document.createElement('option')).textContent = e);
+			if (props.values.length<5){
+				form_ele.size = props.values.length;
+			}
 			break;
 		case 'text':
 		case 'link':
@@ -113,7 +120,16 @@ class DynaForm {
 	getitem(){
 		const item = {};
 		this.eles.forEach(
-			(v,k) => item[k] = v.value);
+			(v,k) => {
+				switch (this.keys[k].type){
+					case 'checkbox':
+						item[k] = v.checked;
+						break;
+					default:
+						item[k] = v.value;
+						break;
+				}
+		});
 		return item;
 	}
 }
@@ -138,6 +154,7 @@ function htmlElement(value, props){
 		case 'enum':
 		case 'date':
 		case 'text':
+		case 'checkbutton':
 		default:
 			e = document.createTextNode(nv);
 			break;
@@ -146,12 +163,19 @@ function htmlElement(value, props){
 }
 
 class DataTable {
-	constructor(table,keys){
+	constructor(table,keys,myform){
 		this.table = table;
 		this.cols = new Map();
 		this.rowHeader = table.querySelector('thead').querySelector('tr');
 		this.rowBody = table.querySelector('tbody');
 		this.keys = keys;
+		this.rowBody.addEventListener('click', e => {
+			if (e.target.tagName == 'TD' && e.altKey){
+				e.preventDefault();
+				const row = e.target.parentElement;
+				this.rowToForm(myform,row);
+			}
+		});
 	}
 	prop(name){
 		return (this.cols.has(name) ? this.cols.get(name) : -1);
@@ -195,13 +219,44 @@ class DataTable {
 				}
 		});
 	}
+	getRow(row){
+		const cells = Array.from(row.querySelectorAll('td'));
+		const r = {};
+		for (const [k,n] of this.cols){
+			switch (this.keys[k].type){
+				case 'img':
+					r[k] = cells[n].children[0].src;
+					break;
+				default:
+					r[k] = cells[n].textContent;
+					break;
+			}
+		}
+		return r;
+	}
+	rowToForm(outform,row){
+		const d = this.getRow(row);
+		console.log(d);
+		for (const [k,v] of outform.eles){
+			switch (this.keys[k].type){
+				case 'checkbox':
+					v.checked = d[k];
+					break;
+				case 'date':
+				default:
+					v.value = d[k];
+					break;
+			}
+			
+		}
+	}
 }
 
 function gotJson(ev){
 	// main table should be clear before this action
 	input = JSON.parse([ev.target.result]);
-	maintablevar = new DataTable(maintable,input.keys);
 	dynfrm = new DynaForm(newRowDialog,createFormSet, input.keys);
+	maintablevar = new DataTable(maintable,input.keys,dynfrm);
 	for (const k in input.keys){
 		maintablevar.addCol(k,input.keys[k].hidden);
 		dynfrm.addprop(k,input.keys[k]);
@@ -245,5 +300,6 @@ function gotCsv(ev){
 	};
 	dialogLoadFileInput.addEventListener('change', fileSelected);
 }
+
 dialogLoadFile.show();
 </script>
