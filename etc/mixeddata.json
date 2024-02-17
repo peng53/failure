@@ -7,7 +7,8 @@
 		"profile" : {"type":"img", "src":"x.jpg", "width": "55", "height" : "55"},
 		"url" : {"type":"link","src":"blah"},
 		"sex" : {"type":"enum","values":["boy","girl"]},
-		"member" : {"type":"checkbox"}
+		"member" : {"type":"checkbox"},
+		"catos" : {"type":"tag","values":["Blue","Red","Yellow"]}
 	},
 	"data" : [
 		{
@@ -17,7 +18,8 @@
 			"profile" : "test.jpg",
 			"url" : "",
 			"sex" : "boy",
-			"member":true
+			"member":true,
+			"catos":1
 		},
 		{
 			"name" : "Jill",
@@ -26,7 +28,8 @@
 			"profile" : "https://www.w3schools.com/howto/img_avatar.png",
 			"url" : "http://google.com",
 			"sex" : "girl",
-			"member":false
+			"member":false,
+			"catos":3
 		}
 	]
 	

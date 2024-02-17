@@ -90,6 +90,13 @@ function createEntrySet(props){
 				form_ele.size = props.values.length;
 			}
 			break;
+		case 'tag':
+			form_ele = document.createElement('select');
+			props.values.forEach(
+				e=>form_ele.appendChild(document.createElement('option')).textContent = e);	
+			form_ele.size = props.values.length;
+			form_ele.multiple=true;
+			break;
 		case 'text':
 		case 'link':
 		case 'img':
@@ -125,6 +132,11 @@ class DynaForm {
 					case 'checkbox':
 						item[k] = v.checked;
 						break;
+					case 'tag':
+						let x = 0;
+						Array.from(v.selectedOptions).forEach(i=>x = x | 2**(i.index));
+						item[k] = x;
+						break;
 					default:
 						item[k] = v.value;
 						break;
@@ -155,6 +167,7 @@ function htmlElement(value, props){
 		case 'date':
 		case 'text':
 		case 'checkbutton':
+		case 'tag':
 		default:
 			e = document.createTextNode(nv);
 			break;
@@ -241,6 +254,20 @@ class DataTable {
 			switch (this.keys[k].type){
 				case 'checkbox':
 					v.checked = d[k];
+					break;
+				case 'tag':
+					const x = parseInt(d[k]);
+					let i = 0;
+					console.log(x);
+					Array.from(v.querySelectorAll('option')).forEach(o=>{
+						if ((x & (1<<i))!=0){
+							o.selected = true;
+						} else {
+							o.selected = false;
+						}
+						i++;
+					});
+					
 					break;
 				case 'date':
 				default:
