@@ -30,6 +30,9 @@
 #newRowDialog input, #newRowDialog select {
 	width: 100%;
 }
+.selectedRow td {
+	background: cyan;
+}
 </style>
 
 <!--
@@ -61,6 +64,10 @@ let dynfrm;
 function addFormToTable(myform,mytable){
 	mytable.addRow(myform.getitem());
 }
+function updateFormToTable(myform,mytable){
+	mytable.updateSelected(myform.getitem());
+}
+
 function createEntrySet(props){
 	let form_ele;
 	switch (props.type){
@@ -112,6 +119,25 @@ function createFormSet(myform, label, props){
 	fs.appendChild(document.createElement('legend')).textContent=label;
 	const myentry = fs.appendChild(createEntrySet(props));
 	return myentry;
+}
+
+function updateTableElement(td,val,type){
+	let c;
+	switch (type){
+		case 'img':
+			c = td.querySelector('img');
+			c.src = val;
+			c.alt = val;
+			break;
+		case 'link':
+			c = td.querySelector('a');
+			c.href = val;
+			c.textContent = val;
+			break;
+		default:
+			td.textContent = val;
+			break;
+	}
 }
 
 class DynaForm {
@@ -182,13 +208,7 @@ class DataTable {
 		this.rowHeader = table.querySelector('thead').querySelector('tr');
 		this.rowBody = table.querySelector('tbody');
 		this.keys = keys;
-		this.rowBody.addEventListener('click', e => {
-			if (e.target.tagName == 'TD' && e.altKey){
-				e.preventDefault();
-				const row = e.target.parentElement;
-				this.rowToForm(myform,row);
-			}
-		});
+		this.selectedRow = undefined;
 	}
 	prop(name){
 		return (this.cols.has(name) ? this.cols.get(name) : -1);
@@ -253,7 +273,7 @@ class DataTable {
 		for (const [k,v] of outform.eles){
 			switch (this.keys[k].type){
 				case 'checkbox':
-					v.checked = d[k];
+					v.checked = d[k]=='true';
 					break;
 				case 'tag':
 					const x = parseInt(d[k]);
@@ -277,6 +297,37 @@ class DataTable {
 			
 		}
 	}
+	selectRow(row){
+		if (this.selectedRow){
+			this.selectedRow.classList.remove('selectedRow');
+		}
+		row.classList.add('selectedRow');
+		this.selectedRow = row;
+	}
+	updateSelected(d){
+		if (!this.selectedRow){
+			alert('No Row is selected!');
+			return;
+		}
+		const cells = this.selectedRow.querySelectorAll('td');
+		let i = 0;
+		this.cols.forEach(
+			(v,k) => {
+				updateTableElement(cells[i],d[k],this.keys[k].type);
+				i++;
+		});/*
+			(v,k) => {
+				let c =row.insertCell(-1);
+				//
+				//c.appendChild(document.createTextNode((k in item) ? item[k] : ''));
+				//
+				c.appendChild(htmlElement(item[k],this.keys[k]));
+				if (this.keys[k].hidden){
+					c.classList.add('hiddencol');
+				}*/
+		
+
+	}
 }
 
 function gotJson(ev){
@@ -292,9 +343,21 @@ function gotJson(ev){
 	const addBtn = newRowDialog.appendChild(document.createElement('button'));
 	addBtn.textContent = 'Add';
 	addBtn.onclick = ()=>addFormToTable(dynfrm,maintablevar);
+	const updateBtn = newRowDialog.appendChild(document.createElement('button'));
+	updateBtn.textContent = 'Update';
+	updateBtn.onclick = ()=>updateFormToTable(dynfrm,maintablevar);
 	for (const r of input.data){
 		maintablevar.addRow(r);
 	}
+	maintablevar.rowBody.addEventListener('click', e => {
+		if (e.target.tagName == 'TD' && e.altKey){
+			e.preventDefault();
+			const row = e.target.parentElement;
+			maintablevar.rowToForm(dynfrm,row);
+			maintablevar.selectRow(row);
+		}
+	});
+
 }
 function gotCsv(ev){
 	console.log('got csv');
