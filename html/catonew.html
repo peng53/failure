@@ -44,11 +44,6 @@ details {
 	cursor: pointer;
 }
 </style>
-
-<!--
-<button onclick='dialogLoadFile.show()'>Load Another File</button>
--->
-
 <dialog id='dialogLoadFile'>
 <h3>Import JSON..</h3>
 <input type='file' accept='.json,.csv' id='dialogLoadFileInput' /><br /><br />
@@ -67,7 +62,8 @@ details {
 <summary style='background:beige;'>Instructions</summary>
 (<kbd>Alt+Click</kbd>) edit row<br>
 (<kbd>Alt+RightClick</kbd>) delete row<br>
-</details>
+</details><br>
+<button onclick='easyExportTableAsJson()'>Export Json</button>
 </div>
 
 <div id='newRowDialog'></div>
@@ -82,6 +78,31 @@ function addFormToTable(myform,mytable){
 }
 function updateFormToTable(myform,mytable){
 	mytable.updateSelected(myform.getitem());
+}
+function exportTableToJson(tbl){
+	const data = Array.from(tbl.rowBody.querySelectorAll('tr')).map(r=>tbl.getRow(r));
+	const keys = tbl.keys;
+	const ex = JSON.stringify({"format":"key-value","keys":keys,"data":data},null,'\t');
+	return ex;
+}
+function saveTextasFile(txt,filename){
+	const link = document.createElement('a');
+	link.href = 'data:attachment/text,' + encodeURI(txt);
+	link.target = '_blank';
+	link.download = filename;
+	link.click();
+}
+function easyExportTableAsJson(){
+	if (!maintablevar){
+		alert('No table loaded!');
+		return;
+	}
+	let filename = prompt('Filename to save as?');
+	if (filename){
+		saveTextasFile(exportTableToJson(maintablevar),filename);
+	} else {
+		alert('No filename was entered!');
+	}
 }
 
 function createEntrySet(props){
