@@ -10,18 +10,20 @@
 	height: calc(100vh - 2em);
 }
 #maintable {
-	border: 1px solid black;
+	border: 1px solid beige;
 	border-collapse: collapse;
 	width: 100%;
+	margin: 5px;
 }
 #maintable th {
-	background: #ccc;
+	background: beige;
 	text-align: left;
 	font-family: monospace;
 	padding: 2px;
 }
 #maintable td {
 	padding: 2px;
+	cursor: copy;
 }
 #maintablediv {
 	height: 100%;
@@ -32,6 +34,14 @@
 }
 .selectedRow td {
 	background: cyan;
+}
+#newRowDialog details {
+	padding: 6px;
+	margin: 5px;
+	background: beige;
+}
+details {
+	cursor: pointer;
 }
 </style>
 
@@ -52,6 +62,12 @@
 <thead><tr></tr></thead>
 <tbody></tbody>
 </table>
+<br>
+<details>
+<summary style='background:beige;'>Instructions</summary>
+(<kbd>Alt+Click</kbd>) edit row<br>
+(<kbd>Alt+RightClick</kbd>) delete row<br>
+</details>
 </div>
 
 <div id='newRowDialog'></div>
@@ -115,8 +131,9 @@ function createEntrySet(props){
 }
 
 function createFormSet(myform, label, props){
-	const fs = myform.appendChild(document.createElement('fieldset'));
-	fs.appendChild(document.createElement('legend')).textContent=label;
+	const fs = myform.appendChild(document.createElement('details'));
+	fs.open = true;
+	fs.appendChild(document.createElement('summary')).textContent=label;
 	const myentry = fs.appendChild(createEntrySet(props));
 	return myentry;
 }
@@ -357,6 +374,17 @@ function gotJson(ev){
 			maintablevar.selectRow(row);
 		}
 	});
+	maintablevar.rowBody.addEventListener('contextmenu', e=>{
+		if (e.target.tagName == 'TD' && e.altKey){
+			e.preventDefault();
+			const row = e.target.parentElement;
+			if (maintablevar.selectedRow == row){
+				maintablevar.selectedRow = undefined;
+			}
+			row.parentElement.removeChild(row);
+		}
+	});
+	
 
 }
 function gotCsv(ev){

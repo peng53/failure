@@ -3,7 +3,7 @@
 	"keys" : {
 		"name" : {"type":"text"},
 		"age" : {"type":"number","max":100},
-		"birthdate" : {"type":"date","format":"yymmdd","hidden":true},
+		"birthdate" : {"type":"date","format":"YYYY-MM-DD","hidden":true},
 		"profile" : {"type":"img", "src":"x.jpg", "width": "55", "height" : "55"},
 		"url" : {"type":"link","src":"blah"},
 		"sex" : {"type":"enum","values":["boy","girl"]},
