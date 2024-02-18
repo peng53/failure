@@ -43,11 +43,25 @@
 details {
 	cursor: pointer;
 }
+#csvAddTA, #csvAddDel {
+	width: 100%;
+}
 </style>
 <dialog id='dialogLoadFile'>
-<h3>Import JSON..</h3>
+<h3>Import JSON.. <button onclick='dialogLoadFile.close()'>close</button></h3>
 <input type='file' accept='.json,.csv' id='dialogLoadFileInput' /><br /><br />
-<button onclick='this.parentElement.close()'>Cancel</button>
+</dialog>
+<dialog id='csvAdd'>
+<h3>Add rows via CSV <button onclick='csvAdd.close()'>close</button></h3>
+<fieldset>
+<legend>Delimiter</legend>
+<input id='csvAddDel' onblur='csvAddTA_updateHeader(maintablevar?.keys)' value='|' maxlength='1' title='After de-selecting, first line of json data will update with columns'/>
+</fieldset>
+<fieldset>
+<legend>Csv Data</legend>
+<textarea id='csvAddTA' rows='25' cols='80'></textarea>
+</fieldset><br>
+<button onclick='csvAdd_rowAdd()'>Add Row(s)</button>
 </dialog>
 
 <div id='container'>
@@ -64,6 +78,7 @@ details {
 (<kbd>Alt+RightClick</kbd>) delete row<br>
 </details><br>
 <button onclick='easyExportTableAsJson()'>Export Json</button>
+<button onclick='csvAddShow(maintablevar?.keys)'>Rows from Csv</button>
 </div>
 
 <div id='newRowDialog'></div>
@@ -73,6 +88,47 @@ details {
 let input;
 let maintablevar;
 let dynfrm;
+function csvAddShow(keys){
+	if (!keys){
+		alert('Table must be defined before rows can be added!');
+		return;
+	}
+	csvAddTA_updateHeader(keys);
+	csvAdd.show();
+}
+function csvAddTA_updateHeader(keys){
+	if (!keys){
+		return;
+	}
+	const d = csvAddDel.value.length>0 ? csvAddDel.value : ',';
+	let b = csvAddTA.value.split('\n').slice(1);
+	const h = Object.keys(maintablevar.keys).join(d);
+	if (!b || b.length==0){
+		b = '';
+	}
+	csvAddTA.value = h+'\n'+b;
+}
+function csvAdd_rowAdd(){
+	const d = csvAddDel.value.length>0 ? csvAddDel.value : ',';
+	const A = csvAddTA.value.split('\n');
+	const H = (A.slice(0,1)).pop().split(d);
+	const B = A.slice(1);
+	//const items = [];
+	let vals,i,item;
+	for (const b of B){
+		item = {};
+		i = 0;
+		vals = b.split(d);
+		for (const h of H){
+			item[h] = vals[i];
+			++i;
+		}
+		//items.push(item);
+		maintablevar.addRow(item);
+	}
+	alert(`${B.length} Row(s) have been added!`);
+}
+
 function addFormToTable(myform,mytable){
 	mytable.addRow(myform.getitem());
 }
@@ -307,7 +363,6 @@ class DataTable {
 	}
 	rowToForm(outform,row){
 		const d = this.getRow(row);
-		console.log(d);
 		for (const [k,v] of outform.eles){
 			switch (this.keys[k].type){
 				case 'checkbox':
@@ -316,7 +371,6 @@ class DataTable {
 				case 'tag':
 					const x = parseInt(d[k]);
 					let i = 0;
-					console.log(x);
 					Array.from(v.querySelectorAll('option')).forEach(o=>{
 						if ((x & (1<<i))!=0){
 							o.selected = true;
@@ -353,18 +407,7 @@ class DataTable {
 			(v,k) => {
 				updateTableElement(cells[i],d[k],this.keys[k].type);
 				i++;
-		});/*
-			(v,k) => {
-				let c =row.insertCell(-1);
-				//
-				//c.appendChild(document.createTextNode((k in item) ? item[k] : ''));
-				//
-				c.appendChild(htmlElement(item[k],this.keys[k]));
-				if (this.keys[k].hidden){
-					c.classList.add('hiddencol');
-				}*/
-		
-
+		});
 	}
 }
 
