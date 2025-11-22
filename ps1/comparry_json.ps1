@@ -9,6 +9,12 @@ $left = [system.text.json.jsondocument]::parse((get-content ..\in_out\testjson-d
 $right = [system.text.json.jsondocument]::parse((get-content ..\in_out\testjson-diff-b.json))
 
 #>
+
+$out_path = join-path (resolve-path '../in_out') '/diff.csv'
+
+$out_file = [system.io.streamwriter]::new($out_path,$true)
+$out_file.writeline('error,key,left,right')
+
 $left = get-content ..\in_out\testjson-diff-a.json | convertfrom-json
 $right = get-content ..\in_out\testjson-diff-b.json | convertfrom-json
 
@@ -20,6 +26,7 @@ foreach ($k in $left.psobject.properties.name){
 		[void]$all_keys.add($k)
 	} else {
 		write-host ("Missing key on right: root.{0}" -f $k)
+		$out_file.writeline("Missing key,root.{0},present,missing",$k)
 	}
 }
 #alert on missing left
@@ -28,6 +35,7 @@ foreach ($k in $right.psobject.properties.name){
 		continue
 	} else {
 		write-host ("Missing key on left: root.{0}" -f $k)
+		$out_file.writeline("Missing key,root.{0},missing,present",$k)
 	}
 }
 
@@ -46,10 +54,20 @@ $all_keys.clear()
 
 while ($stk.count -gt 0){
 	$item = $stk.pop()
+	if ($item.l -eq $null -or $item.r -eq $null){
+		if ($item.l -ne $item.r){
+			write-host ('  '*$item.i) -nonewline
+			write-host ('Mismatched null key: {0}' -f $item.key)
+			$out_file.writeline('Mismatched null key,{0},{1},{2}',$item.key,$item.l -eq $null,$item.r -eq $null)
+		}
+		continue
+	}
 	$ltype = $item.l.gettype().basetype.name
 	$rtype = $item.r.gettype().basetype.name
 	if ($ltype -ne $rtype){
+		write-host ('  '*$item.i) -nonewline
 		write-host 'Mismatched key left and right:' $item.key
+		$out_file.writeline('Mismatched key content,{0},{1},{2}',$item.key,$ltype,$rtype)
 		continue
 	}
 	#write-host $item.l.gettype().name
@@ -61,6 +79,7 @@ while ($stk.count -gt 0){
 				} else {
 					write-host ('  '*$item.i) -nonewline
 					write-host ('Missing key on right: {0}.{1}' -f ($item.key,$sk))
+					$out_file.writeline("Missing key,{0},present,missing",$k)
 				}
 			}
 			foreach ($sk in $item.r.psobject.properties.name){
@@ -69,6 +88,7 @@ while ($stk.count -gt 0){
 				} else {
 					write-host ('  '*$item.i) -nonewline
 					write-host ('Missing key on left: {0}.{1}' -f ($item.key,$sk))
+					$out_file.writeline("Missing key,{0},missing,present",$k)
 				}
 			}
 			foreach ($k in $all_keys){
@@ -86,6 +106,7 @@ while ($stk.count -gt 0){
 			if ($item.l.count -ne $item.r.count){
 				write-host ('  '*$item.i) -nonewline
 				write-host ('Array size discrepency at key {0}; {1} and {2}' -f ($item.key,$item.l.count,$item.r.count))
+				$out_file.writeline("Array size disc,{0},{1},{2}",$k,$item.l.count,$item.r.count)
 				$m = [math]::min($item.l.count,$item.r.count)
 			}
 			for ($i=0; $i -lt $m; ++$i){
@@ -101,7 +122,10 @@ while ($stk.count -gt 0){
 			if ($item.l -ne $item.r){
 				write-host ('  '*$item.i) -nonewline
 				write-host ('Different value at key: {0}; {1} =!= {2}' -f ($item.key,$item.l,$item.r))
+				$out_file.writeline('Different Value,{0},{1},{2}',$item.key,$item.l,$item.r)
 			}
 		}
 	}
 }
+$out_file.write('-,-,-,-')
+$out_file.close()
