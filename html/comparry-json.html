@@ -25,15 +25,12 @@ function compareJsons(l, r, output){
 	const stk = [];
 	stk.push({key:'root', left:l, right:r});
 	let item;
-	let ltype;
-	let rtype;
-	let allkeys = new Set();
+	let ltype, rtype;
+	const allkeys = new Set();
 	let m;
 	let myrow;
-	let el;
-	let rl;
-	let sel;
-	let srl;
+	let el, rl;
+	let sel, srl;
 	while (stk.length>0){
 		item = stk.pop();
 		ltype = jtype(item.left);
@@ -111,18 +108,17 @@ function compareJsons(l, r, output){
 		};
 	}
 }
+function compareLRtext(leftTA,rightTA,outTable){
+	const l = JSON.parse(leftTA.value);
+	const r = JSON.parse(rightTA.value);
+	compareJsons(l,r,outTable);
+}
 
 </script>
 <textarea id='lefttext'>{	"a": 1,	"b": "two",	"c": [3],	"d": { 		"e": [4,53],		"j": 512	},	"k": null}</textarea>
 <textarea id='righttext'>{	"a": 2,	"b": "twu",	"c": [3],	"d": { 		"e": [4,56,57],		"j": 123,		"i": "eye"	},	"f": "hi",	"k": {"vacation": "beach" }}</textarea>
+<button onclick='compareLRtext(lefttext,righttext,output)'>Compare</button>
 <table id='output'>
 <tr><td>LEFT</td><td>RIGHT</td></tr>
 </table>
-
-<script>
-const l = JSON.parse(lefttext.value);
-const r = JSON.parse(righttext.value);
-compareJsons(l,r,output);
-</script>
-
 </html>
