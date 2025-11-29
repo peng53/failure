@@ -4,10 +4,6 @@
 	color: red;
 }
 </style>
-<table id='output'>
-<tr><td>LEFT</td><td>RIGHT</td></tr>
-</table>
-
 <script>
 'use strict';
 
@@ -25,103 +21,108 @@ function jtype(v){
 	return t;
 }
 
-const l = JSON.parse('{	"a": 1,	"b": "two",	"c": [3],	"d": { 		"e": [4,53],		"j": 512	},	"k": null}');
-const r = JSON.parse('{	"a": 2,	"b": "twu",	"c": [3],	"d": { 		"e": [4,56,57],		"j": 123,		"i": "eye"	},	"f": "hi",	"k": {"vacation": "beach" }}');
-
-const stk = [];
-stk.push({key:'root', left:l, right:r});
-
-let item;
-let ltype;
-let rtype;
-let allkeys = new Set();
-let m;
-let myrow;
-let el;
-let rl;
-let sel;
-let srl;
-while (stk.length>0){
-	item = stk.pop();
-	ltype = jtype(item.left);
-	rtype = jtype(item.right);
-	if (ltype != rtype){
-		console.log('Mismatched type left is a %s right is a %s', ltype, rtype);
-		continue;
-	}
-	switch (ltype){
-		case 'object':
-			myrow = output.insertRow(-1);
-			el = myrow.appendChild(document.createElement('td'));
-			rl = myrow.appendChild(document.createElement('td'));
-			el.textContent = rl.textContent = item.key+'{';
-			for (const lk of Object.keys(item.left)){
-				if (item.right.hasOwnProperty(lk)){
-					allkeys.add(lk);
-				} else {
-					console.log('right missing key %s',lk);
-					rl.classList.toggle('wrong', true);
-					myrow = output.insertRow(-1);
-					sel = myrow.appendChild(document.createElement('td'));
-					srl = myrow.appendChild(document.createElement('td'));
-					sel.textContent = `${item.key}.${lk}`;
-					sel.classList.toggle('wrong', true);
+function compareJsons(l, r, output){
+	const stk = [];
+	stk.push({key:'root', left:l, right:r});
+	let item;
+	let ltype;
+	let rtype;
+	let allkeys = new Set();
+	let m;
+	let myrow;
+	let el;
+	let rl;
+	let sel;
+	let srl;
+	while (stk.length>0){
+		item = stk.pop();
+		ltype = jtype(item.left);
+		rtype = jtype(item.right);
+		if (ltype != rtype){
+			console.log('Mismatched type left is a %s right is a %s', ltype, rtype);
+			continue;
+		}
+		switch (ltype){
+			case 'object':
+				myrow = output.insertRow(-1);
+				el = myrow.appendChild(document.createElement('td'));
+				rl = myrow.appendChild(document.createElement('td'));
+				el.textContent = rl.textContent = item.key+'{';
+				for (const lk of Object.keys(item.left)){
+					if (item.right.hasOwnProperty(lk)){
+						allkeys.add(lk);
+					} else {
+						console.log('right missing key %s',lk);
+						rl.classList.toggle('wrong', true);
+						myrow = output.insertRow(-1);
+						sel = myrow.appendChild(document.createElement('td'));
+						srl = myrow.appendChild(document.createElement('td'));
+						sel.textContent = `${item.key}.${lk}`;
+						sel.classList.toggle('wrong', true);
+					}
 				}
-			}
-			for (const rk of Object.keys(item.right)){
-				if (item.left.hasOwnProperty(rk)){
-				} else {
-					console.log('left missing key %s',rk);
+				for (const rk of Object.keys(item.right)){
+					if (item.left.hasOwnProperty(rk)){
+					} else {
+						console.log('left missing key %s',rk);
+						el.classList.toggle('wrong', true);
+						myrow = output.insertRow(-1);
+						sel = myrow.appendChild(document.createElement('td'));
+						srl = myrow.appendChild(document.createElement('td'));
+						srl.textContent = `${item.key}.${rk}`;
+						srl.classList.toggle('wrong', true);
+					}
+				}
+				stk.push({key:'}', left:'', right:''});
+				for (const k of allkeys){
+					stk.push({key:item.key+'.'+k, left:item.left[k], right:item.right[k]});
+				}
+				allkeys.clear();
+				break;
+			case 'array':
+				myrow = output.insertRow(-1);
+				el = myrow.appendChild(document.createElement('td'));
+				rl = myrow.appendChild(document.createElement('td'));
+				el.textContent = `${item.key}[]*${item.left.length} [`;
+				rl.textContent = `${item.key}[]*${item.right.length} [`;
+				if (item.left.length!=item.right.length){
+					console.log('array size mismatch left %d right %d',item.left.length,item.right.length);
 					el.classList.toggle('wrong', true);
-					myrow = output.insertRow(-1);
-					sel = myrow.appendChild(document.createElement('td'));
-					srl = myrow.appendChild(document.createElement('td'));
-					srl.textContent = `${item.key}.${rk}`;
-					srl.classList.toggle('wrong', true);
-
+					rl.classList.toggle('wrong', true);
 				}
-			}
-			stk.push({key:'}', left:'', right:''});
-			for (const k of allkeys){
-				stk.push({key:item.key+'.'+k, left:item.left[k], right:item.right[k]});
-			}
-			allkeys.clear();
-			break;
-		case 'array':
-			myrow = output.insertRow(-1);
-			el = myrow.appendChild(document.createElement('td'));
-			rl = myrow.appendChild(document.createElement('td'));
-			el.textContent = `${item.key}[]*${item.left.length} [`;
-			rl.textContent = `${item.key}[]*${item.right.length} [`;
-			if (item.left.length!=item.right.length){
-				console.log('array size mismatch left %d right %d',item.left.length,item.right.length);
-				el.classList.toggle('wrong', true);
-				rl.classList.toggle('wrong', true);
-			}
-			m = Math.min(item.left.length,item.right.length)-1;
-			stk.push({key:']', left:'', right:''});
-			for (;m>=0;m--){
-				stk.push({key:`${item.key}[${m}]`, left:item.left[m], right:item.right[m]});
-			}
-			break;
-		default:
-			myrow = output.insertRow(-1);
-			el = myrow.appendChild(document.createElement('td'));
-			rl = myrow.appendChild(document.createElement('td'));
-			el.textContent = `${item.key} = ${item.left}`;
-			rl.textContent = `${item.key} = ${item.right}`;
-			if (item.left != item.right){
-				console.log('Mismatched values left is %s right is %s', item.left, item.right);
-				el.classList.toggle('wrong', true);
-				rl.classList.toggle('wrong', true);
-			}
-			break;
-	};
+				m = Math.min(item.left.length,item.right.length)-1;
+				stk.push({key:']', left:'', right:''});
+				for (;m>=0;m--){
+					stk.push({key:`${item.key}[${m}]`, left:item.left[m], right:item.right[m]});
+				}
+				break;
+			default:
+				myrow = output.insertRow(-1);
+				el = myrow.appendChild(document.createElement('td'));
+				rl = myrow.appendChild(document.createElement('td'));
+				el.textContent = `${item.key} = ${item.left}`;
+				rl.textContent = `${item.key} = ${item.right}`;
+				if (item.left != item.right){
+					console.log('Mismatched values left is %s right is %s', item.left, item.right);
+					el.classList.toggle('wrong', true);
+					rl.classList.toggle('wrong', true);
+				}
+				break;
+		};
+	}
 }
 
-
-
 </script>
+<textarea id='lefttext'>{	"a": 1,	"b": "two",	"c": [3],	"d": { 		"e": [4,53],		"j": 512	},	"k": null}</textarea>
+<textarea id='righttext'>{	"a": 2,	"b": "twu",	"c": [3],	"d": { 		"e": [4,56,57],		"j": 123,		"i": "eye"	},	"f": "hi",	"k": {"vacation": "beach" }}</textarea>
+<table id='output'>
+<tr><td>LEFT</td><td>RIGHT</td></tr>
+</table>
 
+<script>
+const l = JSON.parse(lefttext.value);
+const r = JSON.parse(righttext.value);
+compareJsons(l,r,output);
+</script>
 
 </html>
