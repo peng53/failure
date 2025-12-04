@@ -1,7 +1,24 @@
 <html>
 <style>
-.wrong {
+.missing {
 	color: red;
+}
+.diffA {
+	color: blue;
+}
+.diffB {
+	color: orange;
+}
+table {
+	border-collapse: collapse;
+}
+
+th,td {
+	max-width: calc(33% - 1em);
+	border: 1px solid #ccc;
+	min-width: calc(33% - 2em);
+	font-family: monospace;
+	font-size: 1.5em;
 }
 </style>
 <script>
@@ -36,41 +53,61 @@ function compareJsons(l, r, output){
 		ltype = jtype(item.left);
 		rtype = jtype(item.right);
 		if (ltype != rtype){
+			myrow = output.insertRow(-1);
+			myrow.appendChild(document.createElement('td')).textContent = `${item.key}`;
+			el = myrow.appendChild(document.createElement('td'));
+			rl = myrow.appendChild(document.createElement('td'));
+			el.textContent = `${JSON.stringify(item.left)}`;
+			rl.textContent = `${JSON.stringify(item.right)}`;
+			el.classList.toggle('diffA', true);
+			rl.classList.toggle('diffB', true);
 			console.log('Mismatched type left is a %s right is a %s', ltype, rtype);
 			continue;
 		}
 		switch (ltype){
 			case 'object':
 				myrow = output.insertRow(-1);
+				myrow.appendChild(document.createElement('td')).textContent = `${item.key}{}`;
 				el = myrow.appendChild(document.createElement('td'));
 				rl = myrow.appendChild(document.createElement('td'));
-				el.textContent = rl.textContent = item.key+'{';
+				//el.textContent = rl.textContent = item.key+'{';
 				for (const lk of Object.keys(item.left)){
 					if (item.right.hasOwnProperty(lk)){
 						allkeys.add(lk);
 					} else {
 						console.log('right missing key %s',lk);
-						rl.classList.toggle('wrong', true);
+						rl.classList.toggle('missing', true);
+						rl.textContent = 'missing keys';
+						el.classList.toggle('missing', true);
 						myrow = output.insertRow(-1);
+						myrow.appendChild(document.createElement('td')).textContent = `${item.key}.${lk}`;
 						sel = myrow.appendChild(document.createElement('td'));
 						srl = myrow.appendChild(document.createElement('td'));
-						sel.textContent = `${item.key}.${lk}`;
-						sel.classList.toggle('wrong', true);
+						sel.textContent = JSON.stringify(item.left[lk]);
+						srl.textContent = 'undefined';
+						sel.classList.toggle('missing', true);
+						srl.classList.toggle('missing', true);
+
 					}
 				}
 				for (const rk of Object.keys(item.right)){
 					if (item.left.hasOwnProperty(rk)){
 					} else {
 						console.log('left missing key %s',rk);
-						el.classList.toggle('wrong', true);
+						el.classList.toggle('missing', true);
+						rl.classList.toggle('missing', true);
+						el.textContent = 'missing keys';
 						myrow = output.insertRow(-1);
+						myrow.appendChild(document.createElement('td')).textContent = `${item.key}.${rk}`;
 						sel = myrow.appendChild(document.createElement('td'));
 						srl = myrow.appendChild(document.createElement('td'));
-						srl.textContent = `${item.key}.${rk}`;
-						srl.classList.toggle('wrong', true);
+						srl.textContent = JSON.stringify(item.right[rk]);
+						srl.classList.toggle('missing', true);
+						sel.textContent = 'undefined';
+						sel.classList.toggle('missing', true);
 					}
 				}
-				stk.push({key:'}', left:'', right:''});
+				//stk.push({key:'}', left:'', right:''});
 				for (const k of allkeys){
 					stk.push({key:item.key+'.'+k, left:item.left[k], right:item.right[k]});
 				}
@@ -78,31 +115,43 @@ function compareJsons(l, r, output){
 				break;
 			case 'array':
 				myrow = output.insertRow(-1);
+				myrow.appendChild(document.createElement('td')).textContent = `${item.key}[]`;
 				el = myrow.appendChild(document.createElement('td'));
 				rl = myrow.appendChild(document.createElement('td'));
-				el.textContent = `${item.key}[]*${item.left.length} [`;
-				rl.textContent = `${item.key}[]*${item.right.length} [`;
+				el.textContent = `size [${item.left.length}]`;
+				rl.textContent = `size [${item.right.length}]`;
 				if (item.left.length!=item.right.length){
 					console.log('array size mismatch left %d right %d',item.left.length,item.right.length);
-					el.classList.toggle('wrong', true);
-					rl.classList.toggle('wrong', true);
+					el.classList.toggle('missing', true);
+					rl.classList.toggle('missing', true);
 				}
 				m = Math.min(item.left.length,item.right.length)-1;
-				stk.push({key:']', left:'', right:''});
+				//stk.push({key:']', left:'', right:''});
+				if (item.left.length>item.right.length){
+					for (let i=item.left.length-1;i>m;--i){
+						stk.push({key:`${item.key}[${i}]`, left:item.left[i], right:undefined});
+					}
+				} else if (item.left.length<item.right.length){
+					for (let i=item.right.length-1;i>m;--i){
+						stk.push({key:`${item.key}[${i}]`, left:undefined, right:item.right[i]});
+					}				
+				} else {
+				}
 				for (;m>=0;m--){
 					stk.push({key:`${item.key}[${m}]`, left:item.left[m], right:item.right[m]});
 				}
 				break;
 			default:
 				myrow = output.insertRow(-1);
+				myrow.appendChild(document.createElement('td')).textContent = item.key;
 				el = myrow.appendChild(document.createElement('td'));
 				rl = myrow.appendChild(document.createElement('td'));
-				el.textContent = `${item.key} = ${item.left}`;
-				rl.textContent = `${item.key} = ${item.right}`;
+				el.textContent = JSON.stringify(item.left);
+				rl.textContent = JSON.stringify(item.right);
 				if (item.left != item.right){
 					console.log('Mismatched values left is %s right is %s', item.left, item.right);
-					el.classList.toggle('wrong', true);
-					rl.classList.toggle('wrong', true);
+					el.classList.toggle('diffA', true);
+					rl.classList.toggle('diffB', true);
 				}
 				break;
 		};
@@ -115,10 +164,35 @@ function compareLRtext(leftTA,rightTA,outTable){
 }
 
 </script>
-<textarea id='lefttext'>{	"a": 1,	"b": "two",	"c": [3],	"d": { 		"e": [4,53],		"j": 512	},	"k": null}</textarea>
-<textarea id='righttext'>{	"a": 2,	"b": "twu",	"c": [3],	"d": { 		"e": [4,56,57],		"j": 123,		"i": "eye"	},	"f": "hi",	"k": {"vacation": "beach" }}</textarea>
+<textarea id='lefttext'>
+{
+"a": 1,
+"b": "two",
+"c": [3],
+"d": {
+	"e": [4,53],
+	"j": 512
+	},
+"k": null
+}
+</textarea>
+<textarea id='righttext'>{
+"a": 2,
+"b": "twu",
+"c": [3],
+"d": {
+	"e": [4,56,57],
+	"j": 123,
+	"i": "eye"
+	},
+"f": "hi",
+"k": {
+	"vacation": "beach"
+	}
+}
+</textarea>
 <button onclick='compareLRtext(lefttext,righttext,output)'>Compare</button>
 <table id='output'>
-<tr><td>LEFT</td><td>RIGHT</td></tr>
+<tr><th>KEY</th><th>LEFT</th><th>RIGHT</th></tr>
 </table>
 </html>
