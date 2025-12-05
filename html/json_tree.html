@@ -1,0 +1,84 @@
+<html>
+<style>
+details {
+	margin-left: 0em;
+}
+</style>
+<script>
+'use strict';
+// json tree
+
+function jtype(v){
+	let t = typeof v;
+	if (t=='object'){
+		if (v == null){
+			return 'null';
+		} else if (Array.isArray(v)){
+			return 'array';
+		} else {
+			return 'object';
+		}
+	}
+	return t;
+}
+
+function renderTree(jtext, output){
+	const j = JSON.parse(jtext.value);
+	const stk = [{key:'', node:output, json:j}];
+	let item,type,snode;
+	while (stk.length>0){
+		item = stk.pop();
+		snode = undefined;
+		type = jtype(item.json);
+		switch (type){
+			case 'object':
+			
+				snode = item.node.appendChild(document.createElement('li'));
+				snode.open = true;
+				snode.appendChild(document.createElement('summary')).textContent = item.key;
+				snode = snode.appendChild(document.createElement('ul'));
+				for (const k of Object.keys(item.json)){
+					stk.push({key:k, node:snode, json:item.json[k]});
+				}
+				break;
+			case 'array':
+				snode = item.node.appendChild(document.createElement('li'));
+				snode.open = true;
+				snode.appendChild(document.createElement('summary')).textContent = item.key;
+				snode = snode.appendChild(document.createElement('ol'));
+				snode.start = 0;
+				for (let m=item.json.length-1;m>=0;--m){
+					stk.push({key:'', node:snode, json:item.json[m]});
+				}
+				break;
+			default:
+				snode = item.node.appendChild(document.createElement('li'));
+				console.log(item.json);
+				if (item.key.length>0){
+					snode.textContent = `${item.key} : ${JSON.stringify(item.json)}`;
+				} else {
+					snode.textContent = JSON.stringify(item.json);
+				}
+				//item.node.appendChild(document.createElement('br'));
+				break;
+		}
+	}
+	
+}
+
+</script>
+<textarea id='lefttext'>
+{
+"a": 1,
+"b": "two",
+"c": [3],
+"d": {
+	"e": [4,53],
+	"j": 512
+	},
+"k": null
+}
+</textarea>
+<ul id='output'></ul>
+<button onclick='renderTree(lefttext,output)'>Render</button>
+</html>
