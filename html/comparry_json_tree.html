@@ -1,0 +1,168 @@
+<html>
+<style>
+body {
+	font-family: monospace;
+	font-size: 1.2em;
+}
+details {
+}
+.nobullet {
+}
+summary {
+		list-style: none;
+		font-weight: 600;
+}
+summary {
+	color: #3e0000;
+}
+summary:hover {
+	color: red;
+
+}
+.key {
+	font-weight: 600;
+}
+.left {
+	color: green;
+}
+.right {
+	color: fuchsia;
+}
+.diff::after {
+
+}
+.diff {
+}
+</style>
+<script>
+'use strict';
+// json tree
+
+function jtype(v){
+	let t = typeof v;
+	if (t=='object'){
+		if (v == null){
+			return 'null';
+		} else if (Array.isArray(v)){
+			return 'array';
+		} else {
+			return 'object';
+		}
+	}
+	return t;
+}
+
+function renderTree(jtext,rtext, output){
+	const j = JSON.parse(jtext.value);
+	const r = JSON.parse(rtext.value);
+	let item,ltype,rtype,snode,key,val;
+	const allkeys = new Set();
+	const onode = document.createElement('ul');
+	const stk = [{key:'Json', node:onode, json:j, rson: r}];
+	while (stk.length>0){
+		item = stk.pop();
+		snode = undefined;
+		ltype = jtype(item.json);
+		rtype = jtype(item.rson);
+		if (ltype!=rtype){ // deep rendering is stopped when types don't match
+			ltype = 'string';
+		}
+		switch (ltype){
+			case 'object':
+				snode = item.node.appendChild(document.createElement('li'));
+				snode.classList.add('nobullet');
+				snode = snode.appendChild(document.createElement('details'));
+				snode.open = true;
+				snode.appendChild(document.createElement('summary')).textContent = item.key+'{}';
+				snode = snode.appendChild(document.createElement('ul'));
+				for (const k of Object.keys(item.json)){
+					//stk.push({key:k, node:snode, json:item.json[k], rson: item.rson[k]});
+					//if (item.rson.hasOwnProperty(k)){
+						allkeys.add(k);
+					//}
+				}
+				for (const k of Object.keys(item.rson)){
+					//stk.push({key:k, node:snode, json:item.json[k], rson: item.rson[k]});
+					//if (item.json.hasOwnProperty(k)){
+						allkeys.add(k);
+					//}
+				}
+				for (const k of Array.from(allkeys).reverse()){
+					stk.push({key:k, node:snode, json:item.json[k], rson: item.rson[k]});
+				}
+				allkeys.clear();
+				break;
+			case 'array':
+				snode = item.node.appendChild(document.createElement('li'));
+				snode.classList.add('nobullet');
+				snode = snode.appendChild(document.createElement('details'));
+				snode.open = true;
+				snode.appendChild(document.createElement('summary')).textContent = `${item.key}[${(item.json.length==item.rson.length) ? item.json.length : item.json.length+' or '+item.rson.length}]`;
+				snode = snode.appendChild(document.createElement('ol'));
+				snode.start = 0;
+				for (let m=Math.max(item.json.length,item.rson.length)-1;m>=0;--m){
+					stk.push({key:'', node:snode, json:item.json[m], rson:item.rson[m]});
+				}
+				break;
+			default:
+				snode = item.node.appendChild(document.createElement('li'));
+				if (item.key.length>0){
+					//snode.textContent = `${item.key} : ${JSON.stringify(item.json)}`;
+					key = snode.appendChild(document.createElement('span'));
+					key.classList.add('key');
+					key.textContent = item.key;
+					snode.appendChild(document.createTextNode(': '));
+				} else {
+					//snode.textContent = JSON.stringify(item.json);
+				}
+				//combinedvalue = ?  : `${JSON.stringify(item.json)} | ${JSON.stringify(item.rson)}`;
+				if (item.json==item.rson){
+					snode.appendChild(document.createTextNode(JSON.stringify(item.json)));
+				} else {
+					snode.classList.add('diff');
+					val = snode.appendChild(document.createElement('span'));
+					val.classList.add('val','left');
+					val.textContent = (item.json!=undefined) ? JSON.stringify(item.json) : 'undefined';
+					snode.appendChild(document.createTextNode(' ≠ '));
+					val = snode.appendChild(document.createElement('span'));
+					val.classList.add('val','right');
+					val.textContent = (item.rson!=undefined) ? JSON.stringify(item.rson) : 'undefined';
+				}
+				//snode.appendChild(document.createTextNode(combinedvalue));
+				//item.node.appendChild(document.createElement('br'));
+				break;
+		}
+	}
+	output.appendChild(onode);
+}
+
+</script>
+<textarea id='lefttext'>
+{
+"a": 1,
+"b": "two",
+"c": [3],
+"d": {
+	"e": [4,53],
+	"j": 512
+	},
+"k": null
+}
+</textarea><textarea id='righttext'>{
+"a": 2,
+"b": "twu",
+"c": [3],
+"d": {
+	"e": [4,56,57],
+	"j": 123,
+	"i": "eye"
+	},
+"f": "hi",
+"k": {
+	"vacation": "beach"
+	}
+}
+</textarea>
+<div id='output'></div>
+<button onclick='renderTree(lefttext,righttext,output)'>Render</button>
+</html>
