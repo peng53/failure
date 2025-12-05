@@ -1,7 +1,26 @@
 <html>
 <style>
+body {
+	font-family: monospace;
+	font-size: 1.2em;
+}
 details {
-	margin-left: 0em;
+}
+.nobullet {
+}
+summary {
+		list-style: none;
+		font-weight: 600;
+}
+summary {
+	color: #3e0000;
+}
+summary:hover {
+	color: red;
+
+}
+.key {
+	font-weight: 600;
 }
 </style>
 <script>
@@ -24,27 +43,31 @@ function jtype(v){
 
 function renderTree(jtext, output){
 	const j = JSON.parse(jtext.value);
-	const stk = [{key:'', node:output, json:j}];
-	let item,type,snode;
+	let item,type,snode,key;
+	const onode = document.createElement('ul');
+	const stk = [{key:'Json', node:onode, json:j}];
 	while (stk.length>0){
 		item = stk.pop();
 		snode = undefined;
 		type = jtype(item.json);
 		switch (type){
 			case 'object':
-			
 				snode = item.node.appendChild(document.createElement('li'));
+				snode.classList.add('nobullet');
+				snode = snode.appendChild(document.createElement('details'));
 				snode.open = true;
-				snode.appendChild(document.createElement('summary')).textContent = item.key;
+				snode.appendChild(document.createElement('summary')).textContent = item.key+'{}';
 				snode = snode.appendChild(document.createElement('ul'));
-				for (const k of Object.keys(item.json)){
+				for (const k of Object.keys(item.json).reverse()){
 					stk.push({key:k, node:snode, json:item.json[k]});
 				}
 				break;
 			case 'array':
 				snode = item.node.appendChild(document.createElement('li'));
+				snode.classList.add('nobullet');
+				snode = snode.appendChild(document.createElement('details'));
 				snode.open = true;
-				snode.appendChild(document.createElement('summary')).textContent = item.key;
+				snode.appendChild(document.createElement('summary')).textContent = `${item.key}[${item.json.length}]`;
 				snode = snode.appendChild(document.createElement('ol'));
 				snode.start = 0;
 				for (let m=item.json.length-1;m>=0;--m){
@@ -55,15 +78,20 @@ function renderTree(jtext, output){
 				snode = item.node.appendChild(document.createElement('li'));
 				console.log(item.json);
 				if (item.key.length>0){
-					snode.textContent = `${item.key} : ${JSON.stringify(item.json)}`;
+					//snode.textContent = `${item.key} : ${JSON.stringify(item.json)}`;
+					key = snode.appendChild(document.createElement('span'));
+					key.classList.add('key');
+					key.textContent = item.key;
+					snode.appendChild(document.createTextNode(': '));
 				} else {
-					snode.textContent = JSON.stringify(item.json);
+					//snode.textContent = JSON.stringify(item.json);
 				}
+				snode.appendChild(document.createTextNode(JSON.stringify(item.json)));
 				//item.node.appendChild(document.createElement('br'));
 				break;
 		}
 	}
-	
+	output.appendChild(onode);
 }
 
 </script>
@@ -79,6 +107,6 @@ function renderTree(jtext, output){
 "k": null
 }
 </textarea>
-<ul id='output'></ul>
+<div id='output'></div>
 <button onclick='renderTree(lefttext,output)'>Render</button>
 </html>
