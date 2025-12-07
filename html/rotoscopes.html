@@ -1,4 +1,20 @@
 <html>
+<style>
+table {
+
+}
+td {
+	text-align: center;
+}
+button {
+	width: 30px;
+	height: 30px;
+
+}
+.centerpiece {
+	width: 100%;	
+}
+</style>
 <script>
 'use strict';
 
@@ -84,18 +100,34 @@ class Roto {
 }
 </script>
 <body>
-
+<table id='rototable'>
+</table>
 </body>
 <script>
-const x = new Roto(3,5);
-document.body.appendChild(x.center);
-document.body.appendChild(document.createElement('br'));
+const rings = 3;
+const slices = 5;
+const x = new Roto(rings,slices);
+
+let row = rototable.insertRow(-1);
+{
+	row.insertCell(-1).textContent = 'C';
+	let xcen = row.insertCell(-1);
+	x.center.classList.add('centerpiece');
+	xcen.appendChild(x.center);
+	xcen.colSpan = slices;
+	
+}
+//for (let s=0;s<x.slices;++s){
+//	row.appendChild(document.createElement('th')).textContent = 'XXXX';
+//}
 for (let r=0;r<x.rings;++r){
+	row = rototable.insertRow(-1);
+	row.insertCell(-1).textContent = r;
 	for (let s=0;s<x.slices;++s){
-		document.body.appendChild(x.ring[r][s]);
-		document.body.appendChild(document.createTextNode('  '));
+		row.insertCell(-1).appendChild(x.ring[r][s]);
+		//document.body.appendChild(document.createTextNode('  '));
 	}
-	document.body.appendChild(document.createElement('br'));
+	//document.body.appendChild(document.createElement('br'));
 }
 </script>
 </html>
