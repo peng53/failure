@@ -25,12 +25,13 @@ button[disabled] {
 'use strict';
 
 class Piece {
-	static Create(ele, value, ring, piece, callback){
+	static Create(ele, value, callback, data){
 		const h = document.createElement(ele);
 		h.onclick = callback;
 		h.textContent = value;
-		h.dataset.ring = ring;
-		h.dataset.piece = piece;
+		for (const [datum,dval] of Object.entries(data)){
+			h.dataset[datum] = dval;
+		}
 		return h;
 	}
 }
@@ -46,13 +47,13 @@ class Roto {
 		for (let r=0; r<rings; ++r){
 			this.ring[r] = new Array(slices_per_ring);
 			for (let s=0; s<slices_per_ring; ++s){
-				this.ring[r][s] = Piece.Create('button',(r*slices_per_ring)+s+1, r, s, callback);
+				this.ring[r][s] = Piece.Create('button',(r*slices_per_ring)+s+1, callback, {ring:r, piece:s});
 			}
 		}
 		//this.center = 0; // 0 means the void
-		this.center = Piece.Create('button',this.emptyPiece, -1, null, callback);
+		this.center = Piece.Create('button',this.emptyPiece, callback, {ring:-1, piece:null,});
 		this.center.disabled = true;
-		this.freeRing = null;
+		this.freeRing = -1;
 		this.freeSlice = null;
 	}
 	retext(list_rings){
@@ -72,42 +73,32 @@ class Roto {
 	}
 	move(ring,piece=null){
 		// where ring,piece describe the piece being moved
+		const movingPiece = (ring==-1) ? this.center : this.ring[ring][piece];
+		const freePiece = (this.freeRing==-1) ? this.center : this.ring[this.freeRing][this.freeSlice];
+		let moveOk = false;
 		if (ring==-1){ // the center was chosen
 			if (this.center!=this.emptyPiece && this.freeRing==0 && this.freeSlice!=null){
 				// the center can only be chosen if the free spot is on the adj ring
-				//[this.ring[this.freeRing][this.freeSlice], this.center] = [this.center, this.ring[this.freeRing][this.freeSlice]];
-				[this.ring[this.freeRing][this.freeSlice].textContent, this.center.textContent] = [this.center.textContent, this.ring[this.freeRing][this.freeSlice].textContent];
-				this.ring[this.freeRing][this.freeSlice].disabled = false;
-				this.center.disabled = true;
-				this.freeRing = null;
-				this.freeSlice = null;
+				moveOk = true;
 			}
 		} else { // a piece on a ring
 			if (this.center.textContent==this.emptyPiece && ring==0){ // the free spot on center is adj to selected ring
-				//[this.ring[ring][piece], this.center] = [this.center, this.ring[ring][piece]];
-				[this.ring[ring][piece].textContent, this.center.textContent] = [this.center.textContent, this.ring[ring][piece].textContent];
-				this.ring[ring][piece].disabled = true;
-				this.center.disabled = false;
-				this.freeRing = ring;
-				this.freeSlice = piece;
+				moveOk = true;
 			} else if (ring==this.freeRing && (Math.abs(piece-this.freeSlice)==(this.slices-1) || Math.abs(piece-this.freeSlice)==1)){
-				//[this.ring[this.freeRing][this.freeSlice], this.ring[ring][piece]] = [this.ring[ring][piece], this.ring[this.freeRing][this.freeSlice]];
-				[this.ring[this.freeRing][this.freeSlice].textContent, this.ring[ring][piece].textContent] = [this.ring[ring][piece].textContent, this.ring[this.freeRing][this.freeSlice].textContent];
-				this.ring[this.freeRing][this.freeSlice].disabled = false;
-				this.ring[ring][piece].disabled = true;
-				this.freeRing = ring;
-				this.freeSlice = piece;
+				moveOk = true;
 			} else if (piece==this.freeSlice &&Math.abs(ring-this.freeRing)==1){
 				// move to adj ring
-				//[this.ring[this.freeRing][this.freeSlice], this.ring[ring][piece]] = [this.ring[ring][piece], this.ring[this.freeRing][this.freeSlice]];
-				[this.ring[this.freeRing][this.freeSlice].textContent, this.ring[ring][piece].textContent] = [this.ring[ring][piece].textContent, this.ring[this.freeRing][this.freeSlice].textContent];
-				this.ring[this.freeRing][this.freeSlice].disabled = false;
-				this.ring[ring][piece].disabled = true;
-				this.freeRing = ring;
-				this.freeSlice = piece;
+				moveOk = true;
 			} else {
-				console.log('illegal move');
+				return new Error('Illegal Move');
 			}
+		}
+		if (moveOk){
+			[movingPiece.textContent,freePiece.textContent] = [freePiece.textContent, movingPiece.textContent]
+			movingPiece.disabled = true;
+			freePiece.disabled = false;
+			this.freeRing = ring;
+			this.freeSlice = piece;
 		}
 	}
 }
