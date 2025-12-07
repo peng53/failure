@@ -1,0 +1,101 @@
+<html>
+<script>
+'use strict';
+
+
+class Roto {
+	constructor(rings, slices_per_ring){
+		this.rings = rings;
+		this.slices = slices_per_ring;
+		this.ring = new Array(rings);
+		let callback = this.kbind.bind(this);
+		for (let r=0; r<rings; ++r){
+			//this.ring[r] = new Uint8Array(slices_per_ring);
+			this.ring[r] = [];
+			for (let s=0; s<slices_per_ring; ++s){
+				//this.ring[r][s] = (r*slices_per_ring)+s+1;
+				this.ring[r].push(document.createElement('button'));
+				//this.ring[r][s].onclick = this.kbind.bind(this);
+				this.ring[r][s].onclick = callback;
+				this.ring[r][s].dataset.ring = r;
+				this.ring[r][s].dataset.piece = s;
+				this.ring[r][s].textContent = (r*slices_per_ring)+s+1;
+			}
+		}
+		//this.center = 0; // 0 means the void
+		this.center = document.createElement('button');
+		this.center.textContent = 0;
+		this.center.disabled = true;
+		this.center.dataset.ring = -1;
+		this.center.onclick = callback;
+		this.center.dataset.piece = null;
+		this.freeRing = null;
+		this.freeSlice = null;
+	}
+	kbind(ev){
+		this.move(ev.target.dataset.ring,ev.target.dataset.piece);
+	}
+	move(ring,piece=null){
+		// where ring,piece describe the piece being moved
+		if (ring==-1){ // the center was chosen
+			if (this.center!=0 && this.freeRing==0 && this.freeSlice!=null){
+				// the center can only be chosen if the free spot is on the adj ring
+				//[this.ring[this.freeRing][this.freeSlice], this.center] = [this.center, this.ring[this.freeRing][this.freeSlice]];
+				[this.ring[this.freeRing][this.freeSlice].textContent, this.center.textContent] = [this.center.textContent, this.ring[this.freeRing][this.freeSlice].textContent];
+				this.ring[this.freeRing][this.freeSlice].disabled = false;
+				this.center.disabled = true;
+				this.freeRing = null;
+				this.freeSlice = null;
+			}
+		} else { // a piece on a ring
+			if (this.center.textContent==0 && ring==0){ // the free spot on center is adj to selected ring
+				//[this.ring[ring][piece], this.center] = [this.center, this.ring[ring][piece]];
+				[this.ring[ring][piece].textContent, this.center.textContent] = [this.center.textContent, this.ring[ring][piece].textContent];
+				this.ring[ring][piece].disabled = true;
+				this.center.disabled = false;
+				this.freeRing = ring;
+				this.freeSlice = piece;
+			} else if (ring==this.freeRing && (Math.abs(piece-this.freeSlice)==(this.slices-1) || Math.abs(piece-this.freeSlice)==1)){
+				//[this.ring[this.freeRing][this.freeSlice], this.ring[ring][piece]] = [this.ring[ring][piece], this.ring[this.freeRing][this.freeSlice]];
+				[this.ring[this.freeRing][this.freeSlice].textContent, this.ring[ring][piece].textContent] = [this.ring[ring][piece].textContent, this.ring[this.freeRing][this.freeSlice].textContent];
+				this.ring[this.freeRing][this.freeSlice].disabled = false;
+				this.ring[ring][piece].disabled = true;
+				this.freeRing = ring;
+				this.freeSlice = piece;
+			} else if (piece==this.freeSlice &&Math.abs(ring-this.freeRing)==1){
+				// move to adj ring
+				//[this.ring[this.freeRing][this.freeSlice], this.ring[ring][piece]] = [this.ring[ring][piece], this.ring[this.freeRing][this.freeSlice]];
+				[this.ring[this.freeRing][this.freeSlice].textContent, this.ring[ring][piece].textContent] = [this.ring[ring][piece].textContent, this.ring[this.freeRing][this.freeSlice].textContent];
+				this.ring[this.freeRing][this.freeSlice].disabled = false;
+				this.ring[ring][piece].disabled = true;
+				this.freeRing = ring;
+				this.freeSlice = piece;
+			} else {
+				console.log('illegal move');
+			}
+		}
+	}
+	toString(){
+		return `Center: ${this.center}\n`+this.ring.map(e=>`Ring `+e.join('-')).join('\n');
+	}
+	get p(){
+		return this.toString();
+	}
+}
+</script>
+<body>
+
+</body>
+<script>
+const x = new Roto(3,5);
+document.body.appendChild(x.center);
+document.body.appendChild(document.createElement('br'));
+for (let r=0;r<x.rings;++r){
+	for (let s=0;s<x.slices;++s){
+		document.body.appendChild(x.ring[r][s]);
+		document.body.appendChild(document.createTextNode('  '));
+	}
+	document.body.appendChild(document.createElement('br'));
+}
+</script>
+</html>
