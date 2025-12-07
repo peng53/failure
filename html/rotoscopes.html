@@ -14,39 +14,58 @@ button {
 .centerpiece {
 	width: 100%;	
 }
+button[disabled] {
+		color: #fff;
+		border: none;
+		background: none;
+		display: blank;
+}
 </style>
 <script>
 'use strict';
 
+class Piece {
+	static Create(ele, value, ring, piece, callback){
+		const h = document.createElement(ele);
+		h.onclick = callback;
+		h.textContent = value;
+		h.dataset.ring = ring;
+		h.dataset.piece = piece;
+		return h;
+	}
+}
+
 
 class Roto {
-	constructor(rings, slices_per_ring){
+	constructor(rings, slices_per_ring,empty_piece='O'){
 		this.rings = rings;
 		this.slices = slices_per_ring;
 		this.ring = new Array(rings);
+		this.emptyPiece = empty_piece;
 		let callback = this.kbind.bind(this);
 		for (let r=0; r<rings; ++r){
-			//this.ring[r] = new Uint8Array(slices_per_ring);
-			this.ring[r] = [];
+			this.ring[r] = new Array(slices_per_ring);
 			for (let s=0; s<slices_per_ring; ++s){
-				//this.ring[r][s] = (r*slices_per_ring)+s+1;
-				this.ring[r].push(document.createElement('button'));
-				//this.ring[r][s].onclick = this.kbind.bind(this);
-				this.ring[r][s].onclick = callback;
-				this.ring[r][s].dataset.ring = r;
-				this.ring[r][s].dataset.piece = s;
-				this.ring[r][s].textContent = (r*slices_per_ring)+s+1;
+				this.ring[r][s] = Piece.Create('button',(r*slices_per_ring)+s+1, r, s, callback);
 			}
 		}
 		//this.center = 0; // 0 means the void
-		this.center = document.createElement('button');
-		this.center.textContent = 0;
+		this.center = Piece.Create('button',this.emptyPiece, -1, null, callback);
 		this.center.disabled = true;
-		this.center.dataset.ring = -1;
-		this.center.onclick = callback;
-		this.center.dataset.piece = null;
 		this.freeRing = null;
 		this.freeSlice = null;
+	}
+	retext(list_rings){
+		if (list_rings.length!=this.rings*this.slices){
+			return new Error('Invalid Re-text values');
+		} else {
+			// should check whether center is clear before doing this
+			for (let r=0;r<this.rings;++r){
+				for (let s=0;s<this.slices;++s){
+					this.ring[r][s].textContent = list_rings[r*this.slices+s];
+				}
+			}
+		}
 	}
 	kbind(ev){
 		this.move(ev.target.dataset.ring,ev.target.dataset.piece);
@@ -54,7 +73,7 @@ class Roto {
 	move(ring,piece=null){
 		// where ring,piece describe the piece being moved
 		if (ring==-1){ // the center was chosen
-			if (this.center!=0 && this.freeRing==0 && this.freeSlice!=null){
+			if (this.center!=this.emptyPiece && this.freeRing==0 && this.freeSlice!=null){
 				// the center can only be chosen if the free spot is on the adj ring
 				//[this.ring[this.freeRing][this.freeSlice], this.center] = [this.center, this.ring[this.freeRing][this.freeSlice]];
 				[this.ring[this.freeRing][this.freeSlice].textContent, this.center.textContent] = [this.center.textContent, this.ring[this.freeRing][this.freeSlice].textContent];
@@ -64,7 +83,7 @@ class Roto {
 				this.freeSlice = null;
 			}
 		} else { // a piece on a ring
-			if (this.center.textContent==0 && ring==0){ // the free spot on center is adj to selected ring
+			if (this.center.textContent==this.emptyPiece && ring==0){ // the free spot on center is adj to selected ring
 				//[this.ring[ring][piece], this.center] = [this.center, this.ring[ring][piece]];
 				[this.ring[ring][piece].textContent, this.center.textContent] = [this.center.textContent, this.ring[ring][piece].textContent];
 				this.ring[ring][piece].disabled = true;
@@ -91,12 +110,6 @@ class Roto {
 			}
 		}
 	}
-	toString(){
-		return `Center: ${this.center}\n`+this.ring.map(e=>`Ring `+e.join('-')).join('\n');
-	}
-	get p(){
-		return this.toString();
-	}
 }
 </script>
 <body>
@@ -115,19 +128,14 @@ let row = rototable.insertRow(-1);
 	x.center.classList.add('centerpiece');
 	xcen.appendChild(x.center);
 	xcen.colSpan = slices;
-	
 }
-//for (let s=0;s<x.slices;++s){
-//	row.appendChild(document.createElement('th')).textContent = 'XXXX';
-//}
+
 for (let r=0;r<x.rings;++r){
 	row = rototable.insertRow(-1);
 	row.insertCell(-1).textContent = r;
 	for (let s=0;s<x.slices;++s){
 		row.insertCell(-1).appendChild(x.ring[r][s]);
-		//document.body.appendChild(document.createTextNode('  '));
 	}
-	//document.body.appendChild(document.createElement('br'));
 }
 </script>
 </html>
