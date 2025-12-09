@@ -23,15 +23,31 @@ summary:hover {
 	font-weight: 600;
 }
 .left {
-	color: green;
+	background-color: palegreen;
 }
 .right {
-	color: fuchsia;
+	background-color: plum;
 }
 .diff::after {
 
 }
 .diff {
+}
+.t_boolean {
+	color: indigo;
+}
+.t_null {
+	color: gray;
+}
+.t_string {
+	color: maroon;
+}
+.t_number {
+	color: navy;
+}
+#output {
+	max-width: 90vw;
+	overflow-wrap: break-word;
 }
 </style>
 <script>
@@ -117,16 +133,19 @@ function renderTree(jtext,rtext, output){
 				}
 				//combinedvalue = ?  : `${JSON.stringify(item.json)} | ${JSON.stringify(item.rson)}`;
 				if (item.json==item.rson){
-					snode.appendChild(document.createTextNode(JSON.stringify(item.json)));
+					val = snode.appendChild(document.createElement('span'));
+					val.textContent = JSON.stringify(item.json);
+					val.classList.add('val','t_'+ltype);
+					
 				} else {
 					snode.classList.add('diff');
 					val = snode.appendChild(document.createElement('span'));
-					val.classList.add('val','left');
-					val.textContent = (item.json!=undefined) ? JSON.stringify(item.json) : 'undefined';
+					val.classList.add('val','left','t_'+jtype(item.json));
+					val.textContent = (item.json!=undefined) ? JSON.stringify(item.json,null,'\t') : 'undefined';
 					snode.appendChild(document.createTextNode(' ≠ '));
 					val = snode.appendChild(document.createElement('span'));
-					val.classList.add('val','right');
-					val.textContent = (item.rson!=undefined) ? JSON.stringify(item.rson) : 'undefined';
+					val.classList.add('val','right','t_'+jtype(item.rson));
+					val.textContent = (item.rson!=undefined) ? JSON.stringify(item.rson,null,'\t') : 'undefined';
 				}
 				//snode.appendChild(document.createTextNode(combinedvalue));
 				//item.node.appendChild(document.createElement('br'));
@@ -163,6 +182,6 @@ function renderTree(jtext,rtext, output){
 	}
 }
 </textarea>
-<div id='output'></div>
 <button onclick='renderTree(lefttext,righttext,output)'>Render</button>
+<div id='output'></div>
 </html>

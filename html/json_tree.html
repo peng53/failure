@@ -22,6 +22,18 @@ summary:hover {
 .key {
 	font-weight: 600;
 }
+.t_boolean {
+	color: indigo;
+}
+.t_null {
+	color: gray;
+}
+.t_string {
+	color: maroon;
+}
+.t_number {
+	color: navy;
+}
 </style>
 <script>
 'use strict';
@@ -43,7 +55,7 @@ function jtype(v){
 
 function renderTree(jtext, output){
 	const j = JSON.parse(jtext.value);
-	let item,type,snode,key;
+	let item,type,snode,key,val;
 	const onode = document.createElement('ul');
 	const stk = [{key:'Json', node:onode, json:j}];
 	while (stk.length>0){
@@ -76,7 +88,6 @@ function renderTree(jtext, output){
 				break;
 			default:
 				snode = item.node.appendChild(document.createElement('li'));
-				console.log(item.json);
 				if (item.key.length>0){
 					//snode.textContent = `${item.key} : ${JSON.stringify(item.json)}`;
 					key = snode.appendChild(document.createElement('span'));
@@ -86,7 +97,9 @@ function renderTree(jtext, output){
 				} else {
 					//snode.textContent = JSON.stringify(item.json);
 				}
-				snode.appendChild(document.createTextNode(JSON.stringify(item.json)));
+				val = snode.appendChild(document.createElement('span'));
+				val.textContent = JSON.stringify(item.json);
+				val.classList.add('val','t_'+type);
 				//item.node.appendChild(document.createElement('br'));
 				break;
 		}
