@@ -49,10 +49,18 @@ summary:hover {
 	max-width: 90vw;
 	overflow-wrap: break-word;
 }
+.highlight {
+	border-right: 4px double red;
+	background: pink;
+}
+.highlight_sub {
+	border-left: 1.5px dotted teal;
+}
 </style>
 <script>
 'use strict';
 // json tree
+var diff_arr = [];
 
 function jtype(v){
 	let t = typeof v;
@@ -68,10 +76,35 @@ function jtype(v){
 	return t;
 }
 
-function renderTree(jtext,rtext, output){
+function openDetails(d){
+	switch (d.tagName){
+		case 'BODY':
+			return;
+			break;
+		case 'DETAILS':
+			d.open = true;
+			d.classList.add('highlight_sub');
+		default:
+			openDetails(d.parentElement);
+			break;
+	}
+}
+
+function diff_scroll(ele){
+	const n = parseInt(ele.target.name);
+	diff_arr[n].scrollIntoView();
+	Array.from(document.querySelectorAll('.highlight')).forEach(h=>h.classList.remove('highlight'));
+	Array.from(document.querySelectorAll('.highlight_sub')).forEach(h=>h.classList.remove('highlight_sub'));
+	diff_arr[n].classList.add('highlight');
+	ele.target.classList.add('highlight');
+	openDetails(diff_arr[n].parentElement);
+}
+
+function renderTree(jtext,rtext, output,diffs){
 	const j = JSON.parse(jtext.value);
 	const r = JSON.parse(rtext.value);
-	let item,ltype,rtype,snode,key,val;
+	let item,ltype,rtype,snode,key,val,dlink;
+	let diff_count = diff_arr.length;
 	const allkeys = new Set();
 	const onode = document.createElement('ul');
 	const stk = [{key:'Json', node:onode, json:j, rson: r}];
@@ -146,6 +179,13 @@ function renderTree(jtext,rtext, output){
 					val = snode.appendChild(document.createElement('span'));
 					val.classList.add('val','right','t_'+jtype(item.rson));
 					val.textContent = (item.rson!=undefined) ? JSON.stringify(item.rson,null,'\t') : 'undefined';
+					dlink = diffs.appendChild(document.createElement('a'));
+					dlink.onclick = diff_scroll;
+					dlink.name = diff_count;
+					dlink.textContent = `${++diff_count} `;
+					dlink.href = 'javascript:void(0);';
+					//diffs.appendChild(document.createElement('br'));
+					diff_arr.push(snode);
 				}
 				//snode.appendChild(document.createTextNode(combinedvalue));
 				//item.node.appendChild(document.createElement('br'));
@@ -182,6 +222,7 @@ function renderTree(jtext,rtext, output){
 	}
 }
 </textarea>
-<button onclick='renderTree(lefttext,righttext,output)'>Render</button>
+<button onclick='renderTree(lefttext,righttext,output,diffs)'>Render</button>
+<div id='diffs'></div>
 <div id='output'></div>
 </html>
