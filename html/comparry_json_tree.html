@@ -3,6 +3,9 @@
 body {
 	font-family: monospace;
 	font-size: 1.2em;
+	margin: 0;
+	background: #eee;
+	color: #000;
 }
 details {
 }
@@ -13,7 +16,7 @@ summary {
 		font-weight: 600;
 }
 summary {
-	color: #3e0000;
+	color: #000;
 }
 summary:hover {
 	color: red;
@@ -22,29 +25,61 @@ summary:hover {
 .key {
 	font-weight: 600;
 }
-.left {
-	background-color: palegreen;
+textarea {
+	outline: none;
 }
-.right {
-	background-color: plum;
+textarea.left {
+	color: #4b0018;
+	background-color: #ecd9df;
+}
+textarea.right {
+	color: #244c00;
+	background-color: #b1c89c;
 }
 .diff::after {
 
 }
 .diff {
 }
-.t_boolean {
-	color: indigo;
+.left.val {
+	background: #ecd9df;
 }
-.t_null {
-	color: gray;
+.right.val {
+	background: #b1c89c;
 }
-.t_string {
-	color: maroon;
+.left.t_undefined, .left.t_null {
+	color: #e297af;
 }
-.t_number {
-	color: navy;
+.left.t_boolean {
+	color: #bd5e7c;
 }
+.left.t_string {
+	color: #711331;
+}
+.left.t_number {
+	color: #4b0018;
+}
+.left.t_object, .left.t_array {
+	color: #973252;
+}
+/*right*/
+.right.t_undefined, .right.t_null {
+	color: #bce498;
+}
+.right.t_boolean {
+	color: #8cbe5f;
+}
+.right.t_string {
+	color: #407213;
+}
+.right.t_number {
+	color: #244c00;
+}
+.right.t_object, .right.t_array {
+	color: #639833;
+}
+
+
 #output {
 	max-width: 90vw;
 	overflow-wrap: break-word;
@@ -56,11 +91,61 @@ summary:hover {
 .highlight_sub {
 	border-left: 1.5px dotted teal;
 }
+#container {
+	display: grid;
+	grid-template:
+		"a a" max-content
+		"b c";
+
+	width: 100vw;
+	height: 100vh;
+	grid-template-columns: max-content 1fr;
+}
+#textareas {
+	grid-area: a;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	resize: vertical;
+	overflow: auto;
+	border-bottom: 2px solid #ccc;
+	min-height: 2em;
+	max-height: 90vh;
+}
+#textareas textarea {
+	width: 100%;
+	border: 0;
+	resize: none;
+}
+#output {
+	grid-area: c;
+	overflow: auto;
+	padding: 1em;
+}
+#diffs {
+	grid-area: b;
+	background: #ddd;
+	overflow: auto;
+	resize: horizontal;
+	border-right: 2px solid #ccc;
+	min-width: 50px;
+	max-width: calc(100vw - 2em);
+	padding: 1em;
+}
+.val {
+	text-decoration: none;
+}
+.val:hover {
+	text-decoration: underline;
+}
+#diffs a {
+	color: #462b2b;
+}
 </style>
 <script>
 'use strict';
 // json tree
 var diff_arr = [];
+var diff_link = [];
 
 function jtype(v){
 	let t = typeof v;
@@ -98,6 +183,19 @@ function diff_scroll(ele){
 	diff_arr[n].classList.add('highlight');
 	ele.target.classList.add('highlight');
 	openDetails(diff_arr[n].parentElement);
+}
+
+function diff_scroll_n(n){
+	diff_arr[n].scrollIntoView();
+	Array.from(document.querySelectorAll('.highlight')).forEach(h=>h.classList.remove('highlight'));
+	Array.from(document.querySelectorAll('.highlight_sub')).forEach(h=>h.classList.remove('highlight_sub'));
+	diff_arr[n].classList.add('highlight');
+	diff_link[n].classList.add('highlight');
+	//ele.target.classList.add('highlight');
+	openDetails(diff_arr[n].parentElement);
+}
+function chooseDiff(n,side){
+	// not implemented yet
 }
 
 function renderTree(jtext,rtext, output,diffs){
@@ -172,19 +270,23 @@ function renderTree(jtext,rtext, output,diffs){
 					
 				} else {
 					snode.classList.add('diff');
-					val = snode.appendChild(document.createElement('span'));
+					val = snode.appendChild(document.createElement('a'));
+					val.href= `javascript:(chooseDiff(${diff_count},'left'));`;
 					val.classList.add('val','left','t_'+jtype(item.json));
 					val.textContent = (item.json!=undefined) ? JSON.stringify(item.json,null,'\t') : 'undefined';
 					snode.appendChild(document.createTextNode(' ≠ '));
-					val = snode.appendChild(document.createElement('span'));
+					val = snode.appendChild(document.createElement('a'));
+					val.href= `javascript:(chooseDiff(${diff_count},'right'));`;
 					val.classList.add('val','right','t_'+jtype(item.rson));
 					val.textContent = (item.rson!=undefined) ? JSON.stringify(item.rson,null,'\t') : 'undefined';
-					dlink = diffs.appendChild(document.createElement('a'));
-					dlink.onclick = diff_scroll;
+					dlink = diffs.appendChild(document.createElement('li'));
+					dlink = dlink.appendChild(document.createElement('a'));
+					//dlink.onclick = diff_scroll;
 					dlink.name = diff_count;
+					dlink.href = `javascript:(diff_scroll_n(${diff_count}));`;
 					dlink.textContent = `${++diff_count} `;
-					dlink.href = 'javascript:void(0);';
 					//diffs.appendChild(document.createElement('br'));
+					diff_link.push(dlink);
 					diff_arr.push(snode);
 				}
 				//snode.appendChild(document.createTextNode(combinedvalue));
@@ -196,7 +298,9 @@ function renderTree(jtext,rtext, output,diffs){
 }
 
 </script>
-<textarea id='lefttext'>
+<div id='container'>
+<div id='textareas'>
+<textarea id='lefttext' class='left'>
 {
 "a": 1,
 "b": "two",
@@ -207,7 +311,7 @@ function renderTree(jtext,rtext, output,diffs){
 	},
 "k": null
 }
-</textarea><textarea id='righttext'>{
+</textarea><textarea id='righttext' class='right'>{
 "a": 2,
 "b": "twu",
 "c": [3],
@@ -222,7 +326,11 @@ function renderTree(jtext,rtext, output,diffs){
 	}
 }
 </textarea>
+</div>
+
+<div id='output'>
 <button onclick='renderTree(lefttext,righttext,output,diffs)'>Render</button>
+</div>
 <div id='diffs'></div>
-<div id='output'></div>
+</div>
 </html>
