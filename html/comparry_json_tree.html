@@ -332,6 +332,21 @@ function renderTree(jtext,rtext, output,diffs){
 	}
 	output.appendChild(onode);
 }
+function saveTextasFile(txt,filename){
+	const link = document.createElement('a');
+	link.href = 'data:attachment/text,' + encodeURI(txt);
+	link.target = '_blank';
+	link.download = filename;
+	link.click();
+}
+
+function getOutJson(){
+	if (outjson){
+		const mystr = JSON.stringify(outjson,null,'\t');
+		let fn = prompt('Filename?', 'my_json.json');
+		saveTextasFile(mystr,fn);
+	}
+}
 
 </script>
 <div id='container'>
@@ -366,7 +381,9 @@ function renderTree(jtext,rtext, output,diffs){
 
 <div id='output'>
 <button onclick='renderTree(lefttext,righttext,output,diffs)'>Render</button>
+<button onclick='getOutJson()'>Get Changes</button>
 </div>
 <div id='diffs'></div>
 </div>
+</dialog>
 </html>
