@@ -140,12 +140,23 @@ textarea.right {
 #diffs a {
 	color: #462b2b;
 }
+.chosen,.discard {
+	background: none !important;
+	cursor: text;
+}
+.discard, .discard:hover {
+	text-decoration: line-through;
+}
 </style>
 <script>
 'use strict';
 // json tree
 var diff_arr = [];
 var diff_link = [];
+var leftjson = undefined;
+var rightjson = undefined;
+var outjson = undefined;
+var diff_data  = [];
 
 function jtype(v){
 	let t = typeof v;
@@ -195,17 +206,39 @@ function diff_scroll_n(n){
 	openDetails(diff_arr[n].parentElement);
 }
 function chooseDiff(n,side){
-	// not implemented yet
+	const change = diff_data[n];
+	if (diff_arr[n].querySelector('chosen')){
+		return;
+	}
+	switch (side){
+		case 'left':
+			diff_arr[n].querySelector('.left').classList.add('chosen');
+			diff_arr[n].querySelector('.right').classList.add('discard');
+			change.par[change.key] = change.lv;
+			break;
+		case 'right':
+			diff_arr[n].querySelector('.left').classList.add('discard');
+			diff_arr[n].querySelector('.right').classList.add('chosen');
+			change.par[change.key] = change.rv;
+			break;
+		default:
+			// this should never happen!
+			break;
+	}
 }
 
 function renderTree(jtext,rtext, output,diffs){
-	const j = JSON.parse(jtext.value);
-	const r = JSON.parse(rtext.value);
+	leftjson = JSON.parse(jtext.value);
+	rightjson = JSON.parse(rtext.value);
+	outjson = JSON.parse(rtext.value);
+	const j = leftjson;
+	const r = rightjson;
 	let item,ltype,rtype,snode,key,val,dlink;
 	let diff_count = diff_arr.length;
 	const allkeys = new Set();
 	const onode = document.createElement('ul');
-	const stk = [{key:'Json', node:onode, json:j, rson: r}];
+	const stk = [{key:'Json', node:onode, json:j, rson: r, out: outjson, akey:null}];
+	let par;
 	while (stk.length>0){
 		item = stk.pop();
 		snode = undefined;
@@ -234,8 +267,9 @@ function renderTree(jtext,rtext, output,diffs){
 						allkeys.add(k);
 					//}
 				}
+				par = (item.akey) ? item.out[item.akey] : item.out;
 				for (const k of Array.from(allkeys).reverse()){
-					stk.push({key:k, node:snode, json:item.json[k], rson: item.rson[k]});
+					stk.push({key:k, node:snode, json:item.json[k], rson: item.rson[k], out: par, akey:k});
 				}
 				allkeys.clear();
 				break;
@@ -247,8 +281,9 @@ function renderTree(jtext,rtext, output,diffs){
 				snode.appendChild(document.createElement('summary')).textContent = `${item.key}[${(item.json.length==item.rson.length) ? item.json.length : item.json.length+' or '+item.rson.length}]`;
 				snode = snode.appendChild(document.createElement('ol'));
 				snode.start = 0;
+				par = (item.akey) ? item.out[item.akey] : item.out;
 				for (let m=Math.max(item.json.length,item.rson.length)-1;m>=0;--m){
-					stk.push({key:'', node:snode, json:item.json[m], rson:item.rson[m]});
+					stk.push({key:'', node:snode, json:item.json[m], rson:item.rson[m], out: par, akey:m});
 				}
 				break;
 			default:
@@ -288,6 +323,7 @@ function renderTree(jtext,rtext, output,diffs){
 					//diffs.appendChild(document.createElement('br'));
 					diff_link.push(dlink);
 					diff_arr.push(snode);
+					diff_data.push({par: item.out, key: item.akey, lv: item.json, rv: item.rson});
 				}
 				//snode.appendChild(document.createTextNode(combinedvalue));
 				//item.node.appendChild(document.createElement('br'));
