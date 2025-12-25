@@ -12,15 +12,12 @@ details {
 .nobullet {
 }
 summary {
-		list-style: none;
-		font-weight: 600;
-}
-summary {
+	list-style: none;
+	font-weight: 600;
 	color: #000;
 }
 summary:hover {
 	color: red;
-
 }
 .key {
 	font-weight: 600;
@@ -35,11 +32,6 @@ textarea.left {
 textarea.right {
 	color: #244c00;
 	background-color: #b1c89c;
-}
-.diff::after {
-
-}
-.diff {
 }
 .left.val {
 	background: #ecd9df;
@@ -78,11 +70,21 @@ textarea.right {
 .right.t_object, .right.t_array {
 	color: #639833;
 }
-
-
-#output {
-	max-width: 90vw;
-	overflow-wrap: break-word;
+/*same*/
+.t_undefined, .t_null {
+	color: grey;
+}
+.t_boolean {
+	color: indigo;
+}
+.t_string {
+	color: maroon;
+}
+.t_number {
+	color: navy;
+}
+.t_object, .t_array {
+	color: lime;
 }
 .highlight {
 	border-right: 4px double red;
@@ -96,7 +98,6 @@ textarea.right {
 	grid-template:
 		"a a" max-content
 		"b c";
-
 	width: 100vw;
 	height: 100vh;
 	grid-template-columns: max-content 1fr;
@@ -117,6 +118,7 @@ textarea.right {
 	resize: none;
 }
 #output {
+	overflow-wrap: break-word;
 	grid-area: c;
 	overflow: auto;
 	padding: 1em;
@@ -128,14 +130,8 @@ textarea.right {
 	resize: horizontal;
 	border-right: 2px solid #ccc;
 	min-width: 50px;
-	max-width: calc(100vw - 2em);
+	max-width: 80vw;
 	padding: 1em;
-}
-.val {
-	text-decoration: none;
-}
-.val:hover {
-	text-decoration: underline;
 }
 #diffs a {
 	color: #462b2b;
@@ -157,6 +153,7 @@ var leftjson = undefined;
 var rightjson = undefined;
 var outjson = undefined;
 var diff_data  = [];
+var curr_diff = undefined;
 
 function jtype(v){
 	let t = typeof v;
@@ -197,6 +194,7 @@ function diff_scroll(ele){
 }
 
 function diff_scroll_n(n){
+	curr_diff = n;
 	diff_arr[n].scrollIntoView();
 	Array.from(document.querySelectorAll('.highlight')).forEach(h=>h.classList.remove('highlight'));
 	Array.from(document.querySelectorAll('.highlight_sub')).forEach(h=>h.classList.remove('highlight_sub'));
@@ -205,9 +203,45 @@ function diff_scroll_n(n){
 	//ele.target.classList.add('highlight');
 	openDetails(diff_arr[n].parentElement);
 }
+
+function key_handle(ev){
+	switch (ev.key){
+		case 'ArrowDown':
+			if (curr_diff==undefined && diff_link.length){
+				diff_scroll_n(0);
+			} else if (curr_diff+1<diff_link.length){
+				diff_scroll_n(curr_diff+1);
+			}
+			ev.preventDefault();
+			break;
+		case 'ArrowUp':
+			if (curr_diff==undefined && diff_link.length){
+				diff_scroll_n(0);
+			} else if (curr_diff-1>=0){
+				diff_scroll_n(curr_diff-1);
+			}
+			ev.preventDefault();
+			break;
+		case 'ArrowLeft':
+			if (curr_diff!=undefined){
+				chooseDiff(curr_diff,'left');
+			}
+			ev.preventDefault();
+			break;
+		case 'ArrowRight':
+			if (curr_diff!=undefined){
+				chooseDiff(curr_diff,'right');
+			}
+			ev.preventDefault();
+			break;
+		default:
+			break;
+	}
+}
+
 function chooseDiff(n,side){
 	const change = diff_data[n];
-	if (diff_arr[n].querySelector('chosen')){
+	if (diff_arr[n].querySelector('.chosen')){
 		return;
 	}
 	switch (side){
@@ -267,7 +301,7 @@ function renderTree(jtext,rtext, output,diffs){
 						allkeys.add(k);
 					//}
 				}
-				par = (item.akey) ? item.out[item.akey] : item.out;
+				par = (item.akey!=null) ? item.out[item.akey] : item.out;
 				for (const k of Array.from(allkeys).reverse()){
 					stk.push({key:k, node:snode, json:item.json[k], rson: item.rson[k], out: par, akey:k});
 				}
@@ -281,7 +315,7 @@ function renderTree(jtext,rtext, output,diffs){
 				snode.appendChild(document.createElement('summary')).textContent = `${item.key}[${(item.json.length==item.rson.length) ? item.json.length : item.json.length+' or '+item.rson.length}]`;
 				snode = snode.appendChild(document.createElement('ol'));
 				snode.start = 0;
-				par = (item.akey) ? item.out[item.akey] : item.out;
+				par = (item.akey!=null) ? item.out[item.akey] : item.out;
 				for (let m=Math.max(item.json.length,item.rson.length)-1;m>=0;--m){
 					stk.push({key:'', node:snode, json:item.json[m], rson:item.rson[m], out: par, akey:m});
 				}
@@ -349,6 +383,7 @@ function getOutJson(){
 }
 
 </script>
+<body>
 <div id='container'>
 <div id='textareas'>
 <textarea id='lefttext' class='left'>
@@ -378,12 +413,14 @@ function getOutJson(){
 }
 </textarea>
 </div>
-
 <div id='output'>
 <button onclick='renderTree(lefttext,righttext,output,diffs)'>Render</button>
 <button onclick='getOutJson()'>Get Changes</button>
 </div>
 <div id='diffs'></div>
 </div>
-</dialog>
+</body>
+<script>
+	output.addEventListener('keydown',key_handle);
+</script>
 </html>
