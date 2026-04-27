@@ -1,0 +1,286 @@
+<html>
+<style>
+input:required:invalid {
+	outline: 1px red solid;
+}
+input.val {
+	width: 80%;
+}
+textarea.val {
+	width: 80%;
+	resize: vertical;
+	min-height: 1.5em;
+}
+</style>
+<script>
+'use strict';
+var myjson = undefined;
+var mydefs = undefined;
+var controlFields = undefined;
+
+function defParse(lines){
+	const r = {};
+	const defaultType = 'j';
+	let name, path, type, opts;
+	for (const line of lines){
+		[name,path,type,opts] = line.split(',');
+		console.log(name,path,type,opts);
+		if (!(name in r)){
+			r[name] = {path: path, type: type ? type: defaultType, opts: opts}
+		}
+	}
+	return r;
+}
+function traceJson(j,path){
+	const dpath = path.split('.');
+	let vnode = j;
+	for (const crumb of dpath){
+		if (crumb in vnode){
+			vnode = vnode[crumb];
+		} else {
+			console.log('lost');
+			return undefined;
+		}
+	}
+	return vnode;
+}
+function setJson(j,path,newValue){
+	const dpath = path.split('.');
+	let pvnode = undefined;
+	let vnode = j;
+	for (const crumb of dpath){
+		if (crumb in vnode){
+			pvnode = vnode;
+			vnode = vnode[crumb];
+		} else {
+			console.log('lost');
+			return undefined;
+		}
+	}
+	pvnode[dpath[dpath.length-1]] = newValue;
+}
+function createStringControl(name,hook,v){
+	const isEnum = (hook.opts && hook.opts.trim().length > 0);
+	let tmp = (isEnum) ? tEnumControl : tStringControl;
+	const clone = tmp.content.cloneNode(true);
+	const fs = clone.children[0];
+	fs.querySelector('.name').textContent = name;
+	if (isEnum){
+		const sel = fs.querySelector('select');
+		for (const e of hook.opts.trim().split('|')){
+			sel.appendChild(document.createElement('option')).textContent = e;
+		}
+	}
+	if (v==null){
+		fs.querySelector('.valIsNull').checked = true;
+	} else {
+		fs.querySelector('.val').value = v;
+	}
+	return fs;
+}
+function createBoolControl(name,hook,v){
+	const tmp = tBoolControl;
+	const clone = tmp.content.cloneNode(true);
+	const fs = clone.children[0];
+	fs.querySelector('.name').textContent = name;
+	Array.from(fs.querySelectorAll('input')).forEach(i=>i.name=name);
+	let rinput;
+	switch (v){
+		case true:
+			rinput = '.radioTrue';
+			break;
+		case false:
+			rinput = '.radioFalse';
+			break;
+		case null:
+			rinput = '.radioNull';
+			break;
+		default:
+			rinput = '.radioNull';
+			break;
+	}
+	fs.querySelector(rinput).checked = true;
+	return fs;
+}
+function createNumberControl(name,hook,v){
+	const tmp = tNumberControl;
+	const clone = tmp.content.cloneNode(true);
+	const fs = clone.children[0];
+	fs.querySelector('.name').textContent = name;
+	if (v==null){
+		fs.querySelector('.valIsNull').checked = true;
+	} else {
+		fs.querySelector('.val').value = v;
+	}
+	return fs;
+}
+function createJsonControl(name,hook,cv){
+	const tmp = tJsonControl;
+	const clone = tmp.content.cloneNode(true);
+	const fs = clone.children[0];
+	fs.querySelector('.name').textContent = name;
+	fs.querySelector('.val').value = JSON.stringify(cv);
+	return fs;
+}
+function tryFunc(callbutton){
+	callbutton.disabled = true;
+	inputJson.readOnly = true;
+	inputDefs.readOnly = true;
+	myjson = JSON.parse(inputJson.value);
+	console.log('**input json**');
+	console.log(myjson);
+	mydefs = defParse(inputDefs.value.trim().split('\n'));
+	console.log('**input defs**');
+	console.log(mydefs);
+	console.log('**sound out values in json**');
+	let cn = undefined;
+	let cv = null;
+	controlFields = new Map();
+	for (const [name,hook] of Object.entries(mydefs)){
+		console.log(traceJson(myjson,hook.path));
+		cv = traceJson(myjson,hook.path);
+		switch (hook.type){
+			case 's':
+				cn = createStringControl(name,hook,cv);
+				break;
+			case 'b':
+				cn = createBoolControl(name,hook,cv);
+				break;
+			case 'n':
+				cn = createNumberControl(name,hook,cv);
+				break;
+			case 'j':
+				cn = createJsonControl(name,hook,cv);
+				break;
+			default:
+				cn = createStringControl(name,hook,cv);
+				break;
+		}
+		if (cn){
+			controlFields.set(name,controls.appendChild(cn));
+			//cn.name = name;
+			//controls.appendChild(cn);
+		}
+	}
+	inputJsonDet.open = false;
+	inputDefsDet.open = false;
+	/*setJson(myjson,'name','jim');
+	console.log(myjson);*/
+	
+	
+}
+function tryUpdate(){
+	let v;
+	for (const [name,control] of controlFields){
+		console.log(name);
+		console.log(mydefs[name]);
+		switch (mydefs[name].type){
+			case 's':
+				v = (control.querySelector('.valIsNull').checked) ? null : control.querySelector('.val').value;
+				setJson(myjson,mydefs[name].path,v);
+				break;
+			case 'n':
+				v = (control.querySelector('.valIsNull').checked) ? null : Number(control.querySelector('.val').value);
+				setJson(myjson,mydefs[name].path,v);
+				break;
+			case 'b':
+				v = control.querySelector('input:checked').value;
+				setJson(myjson,mydefs[name].path,JSON.parse(v));
+				break;
+			case 'j':
+				v = control.querySelector('.val').value;
+				setJson(myjson,mydefs[name].path,JSON.parse((v.length>0) ? v : null));
+				break;
+			
+			default: break;
+		}
+	}
+	updateArea.value = JSON.stringify(myjson,null,4);
+	updateAreaDets.open = true;
+	updateAreaDets.scrollIntoView();
+	//return myjson;
+}
+
+function toggleNull(rele){
+	console.log(rele);
+}
+
+</script>
+
+<details id='inputJsonDet' open>
+<summary>Input Json</summary>
+<textarea id='inputJson' rows=15 cols=80>
+{
+	"name": "james",
+	"age": 24,
+	"pets": [],
+	"location": {
+		"x": 24,
+		"y": 59,
+		"z": 4823
+	},
+	"gender": null,
+	"donated": null
+}
+</textarea>
+</details>
+<details id='inputDefsDet' open>
+<summary>Input Defs</summary>
+<textarea id='inputDefs' rows=15 cols=80>
+name,name,s
+age,age,n
+pets,pets,j
+x,location.x,n
+y,location.y,n
+z,location.z,n
+gender,gender,s,male|female|other
+donated,donated,b
+</textarea>
+</details>
+<button onclick='tryFunc(this)'>Try</button>
+<template id='tStringControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<label><i>string</i> <input class='val' placeholder='{empty string}'/></label>
+		<label>null <input class='valIsNull' type='checkbox' /></label>
+	</fieldset>
+</template>
+<template id='tEnumControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<label><i>enum</i> <select class='val'> </select></label>
+		<label>null <input class='valIsNull' type='checkbox' /></label>
+	</fieldset>
+</template>
+<template id='tNumberControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required /></label>
+		<label>null <input class='valIsNull' type='checkbox' /></label>
+	</fieldset>
+</template>
+<template id='tBoolControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<i>bool</i>
+		<label><input class='radioTrue' type='radio' value='true'/> true</label>
+		<label><input class='radioFalse' type='radio' value='false' /> false</label>
+		<label><input class='radioNull' type='radio' value='null' /> null</label>
+	</fieldset>
+</template>
+<template id='tJsonControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<label><i>json</i> <textarea class='val' placeholder='null'></textarea></label>
+	</fieldset>
+</template>
+
+<div id='controls'>
+</div>
+
+<button onclick='tryUpdate()'>Update</button>
+<details id='updateAreaDets'>
+<summary>Updated</summary>
+<textarea id='updateArea' rows=15 cols=80></textarea>
+</details>
+</html>
