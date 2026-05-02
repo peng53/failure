@@ -16,7 +16,6 @@ textarea.val {
 'use strict';
 var myjson = undefined;
 var mydefs = undefined;
-//var controlFields = undefined;
 
 function defParse(lines){
 	const r = {};
@@ -96,23 +95,14 @@ function createEnumControl(name,hook,v){
 	return fs;
 }
 function createStringControl(name,hook,v){
-	//const isEnum = (hook.opts && hook.opts.trim().length > 0);
-	//let tmp = (isEnum) ? tEnumControl : tStringControl;
 	if (hook.opts && hook.opts.trim().length > 0){
+		// string is enumerated
 		return createEnumControl(name,hook,v);
 	}
 	const tmp = tStringControl;
 	const clone = tmp.content.cloneNode(true);
 	const fs = clone.firstElementChild;
 	fs.querySelector('.name').textContent = name;
-	/*
-	if (isEnum){
-		const sel = fs.querySelector('select');
-		for (const e of hook.opts.trim().split('|')){
-			sel.appendChild(document.createElement('option')).textContent = e;
-		}
-	}
-	*/
 	if (v==null){
 		fs.querySelector('.valIsNull').checked = true;
 	} else {
@@ -170,32 +160,6 @@ function createNumberControl(name,hook,v){
 		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
-
-	/*
-	// opts has value means enum
-	// plan is to allow range via other symbols
-	const controlType = (hook.opts && hook.opts.trim().length>0) ? 'enum' : 'num';
-	//const tmp = tNumberControl;
-	const tmp = (controlType=='num') ? tNumberControl : tEnumControl;
-	const clone = tmp.content.cloneNode(true);
-	const fs = clone.children[0];
-	fs.querySelector('.name').textContent = name;
-	if (controlType=='enum'){
-		const sel = fs.querySelector('select');
-		for (const e of hook.opts.trim().split('|')){
-			sel.appendChild(document.createElement('option')).textContent = e;
-		}
-	}
-	if (v==null){
-		fs.querySelector('.valIsNull').checked = true;
-	} else {
-		fs.querySelector('.val').value = v;
-	}
-	if (hook.notes && hook.notes.trim().length) {
-		fs.querySelector('.notes').textContent = hook.notes;
-	}
-	return fs;
-	*/
 }
 function createJsonControl(name,hook,cv){
 	const tmp = tJsonControl;
@@ -221,33 +185,8 @@ function createControl(name,hook,cv){
 		,'n':createNumberControl
 		,'j':createJsonControl
 	};
-	/*if (hook.type in hookMap){
-		return hookMap[hook.type](name,hook,cv);
-	} else {*/
 	// call function with arguments, default to type 's' if not available
 	return hookMap[(hook.type in hookMap) ? hook.type : 's'](name,hook,cv)
-	//}
-	/*
-	let f;
-	switch (hook.type){
-		case 's':
-			f = createStringControl;
-			break;
-		case 'b':
-			f = createBoolControl;
-			break;
-		case 'n':
-			f = createNumberControl;
-			break;
-		case 'j':
-			f = createJsonControl;
-			break;
-		default:
-			f = createStringControl;
-			break;
-	}
-	return f(name,hook,cv);
-	*/
 }
 function tryBuild(callbutton){
 	try {
@@ -266,86 +205,24 @@ function tryBuild(callbutton){
 	console.log(mydefs);
 	console.log('**sound out values in json**');
 	let cn = undefined;
-	//let cv = null;
-	//controlFields = new Map();
 	const afrag = new DocumentFragment();
 	for (const [name,hook] of Object.entries(mydefs)){
 		//console.log(traceJson(myjson,hook.path));
 		if (hook.type=='~'){
-			//controls.appendChild(createSep(name,hook));
 			afrag.appendChild(createSep(name,hook));
 		} else {
-			/*
-			cv = traceJson(myjson,hook.path);
-			switch (hook.type){
-				case 's':
-					cn = createStringControl(name,hook,cv);
-					break;
-				case 'b':
-					cn = createBoolControl(name,hook,cv);
-					break;
-				case 'n':
-					cn = createNumberControl(name,hook,cv);
-					break;
-				case 'j':
-					cn = createJsonControl(name,hook,cv);
-					break;
-				default:
-					cn = createStringControl(name,hook,cv);
-					break;
-			}
-			*/
 			cn = createControl(name,hook,traceJson(myjson,hook.path));
 			if (cn){
-				//controlFields.set(name,controls.appendChild(cn));
-				//hook.control = controls.appendChild(cn);
 				hook.control = afrag.appendChild(cn);
-				//cn.name = name;
-				//controls.appendChild(cn);
 			}
 		}
 	}
 	controls.appendChild(afrag);
 	inputJsonDet.open = false;
 	inputDefsDet.open = false;
-	/*setJson(myjson,'name','jim');
-	console.log(myjson);*/
-	
-	
 }
 function tryUpdate(){
 	let v;
-	/*
-	for (const [name,control] of controlFields){
-		console.log(name);
-		console.log(mydefs[name]);
-		switch (mydefs[name].type){
-			case 's':
-				v = (control.querySelector('.valIsNull').checked) ? null : control.querySelector('.val').value;
-				setJson(myjson,mydefs[name].path,v);
-				break;
-			case 'n':
-				v = (control.querySelector('.valIsNull').checked) ? null : Number(control.querySelector('.val').value);
-				setJson(myjson,mydefs[name].path,v);
-				break;
-			case 'b':
-				v = control.querySelector('input:checked').value;
-				setJson(myjson,mydefs[name].path,JSON.parse(v));
-				break;
-			case 'j':
-				v = control.querySelector('.val').value;
-				try {
-					setJson(myjson,mydefs[name].path,JSON.parse((v.length>0) ? v : null));
-				} catch (parseErr){
-					alert(`Validate '${name}' : '${parseErr.message}'`);
-					control.scrollIntoView();
-					return;
-				}
-				break;
-			default: break;
-		}
-	}
-	*/
 	for (const [name,hook] of Object.entries(mydefs)){
 		console.log(`updating ${name} at ${hook.path}`);
 		switch (hook.type){
