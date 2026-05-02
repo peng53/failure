@@ -3,8 +3,8 @@
 input:required:invalid {
 	outline: 1px red solid;
 }
-input.val {
-	width: 80%;
+input.val, select.val {
+	width: 75%;
 }
 textarea.val {
 	width: 80%;
@@ -16,17 +16,34 @@ textarea.val {
 'use strict';
 var myjson = undefined;
 var mydefs = undefined;
-var controlFields = undefined;
+//var controlFields = undefined;
 
 function defParse(lines){
 	const r = {};
 	const defaultType = 'j';
-	let name, path, type, opts;
+	let name, path, type, opts, notes;
+	let sepCount = 0;
+	//let sepName;
 	for (const line of lines){
-		[name,path,type,opts] = line.split(',');
-		console.log(name,path,type,opts);
-		if (!(name in r)){
-			r[name] = {path: path, type: type ? type: defaultType, opts: opts}
+		if (line.trim().length==0){
+			continue;
+		}
+		if (line.trim().startsWith('~')){
+			// separator
+			r[`~sep${sepCount++}`] = {path: line.trim(), type: '~'};
+			continue;
+		}
+		[name,path,type,opts,notes] = line.split(',');
+		//console.log(name,path,type,opts,notes);
+		if (!name || !path || name.trim().length==0 || path.trim().length==0){
+			console.log(`invalid name "${name}" or invalid path "${path}"`);
+			continue;
+		}
+		if (name in r){
+			console.log(`${name} already defined, ignoring`);
+			continue;
+		} else {
+			r[name] = {path: path, type: type ? type: defaultType, opts: opts, notes: notes}
 		}
 	}
 	return r;
@@ -38,7 +55,7 @@ function traceJson(j,path){
 		if (crumb in vnode){
 			vnode = vnode[crumb];
 		} else {
-			console.log('lost');
+			console.error(`lost.. json does not have ${path}`);
 			return undefined;
 		}
 	}
@@ -53,35 +70,63 @@ function setJson(j,path,newValue){
 			pvnode = vnode;
 			vnode = vnode[crumb];
 		} else {
-			console.log('lost');
-			return undefined;
+			console.error(`lost.. json does not have ${path}`);
+			return;
 		}
 	}
 	pvnode[dpath[dpath.length-1]] = newValue;
 }
-function createStringControl(name,hook,v){
-	const isEnum = (hook.opts && hook.opts.trim().length > 0);
-	let tmp = (isEnum) ? tEnumControl : tStringControl;
+function createEnumControl(name,hook,v){
+	const tmp = tEnumControl;
 	const clone = tmp.content.cloneNode(true);
-	const fs = clone.children[0];
+	const fs = clone.firstElementChild;
 	fs.querySelector('.name').textContent = name;
-	if (isEnum){
-		const sel = fs.querySelector('select');
-		for (const e of hook.opts.trim().split('|')){
-			sel.appendChild(document.createElement('option')).textContent = e;
-		}
+	const sel = fs.querySelector('select');
+	for (const e of hook.opts.trim().split('|')){
+		sel.appendChild(document.createElement('option')).textContent = e;
 	}
 	if (v==null){
 		fs.querySelector('.valIsNull').checked = true;
 	} else {
 		fs.querySelector('.val').value = v;
 	}
+	if (hook.notes && hook.notes.trim().length){
+		fs.querySelector('.notes').textContent = hook.notes;
+	}
+	return fs;
+}
+function createStringControl(name,hook,v){
+	//const isEnum = (hook.opts && hook.opts.trim().length > 0);
+	//let tmp = (isEnum) ? tEnumControl : tStringControl;
+	if (hook.opts && hook.opts.trim().length > 0){
+		return createEnumControl(name,hook,v);
+	}
+	const tmp = tStringControl;
+	const clone = tmp.content.cloneNode(true);
+	const fs = clone.firstElementChild;
+	fs.querySelector('.name').textContent = name;
+	/*
+	if (isEnum){
+		const sel = fs.querySelector('select');
+		for (const e of hook.opts.trim().split('|')){
+			sel.appendChild(document.createElement('option')).textContent = e;
+		}
+	}
+	*/
+	if (v==null){
+		fs.querySelector('.valIsNull').checked = true;
+	} else {
+		fs.querySelector('.val').value = v;
+	}
+	if (hook.notes && hook.notes.trim().length){
+		fs.querySelector('.notes').textContent = hook.notes;
+	}
 	return fs;
 }
 function createBoolControl(name,hook,v){
 	const tmp = tBoolControl;
 	const clone = tmp.content.cloneNode(true);
-	const fs = clone.children[0];
+	const fs = clone.firstElementChild;
 	fs.querySelector('.name').textContent = name;
 	Array.from(fs.querySelectorAll('input')).forEach(i=>i.name=name);
 	let rinput;
@@ -98,35 +143,122 @@ function createBoolControl(name,hook,v){
 		default:
 			rinput = '.radioNull';
 			break;
-	}
+	};
 	fs.querySelector(rinput).checked = true;
+	if (hook.notes && hook.notes.trim().length){
+		fs.querySelector('.notes').textContent = hook.notes;
+	}
 	return fs;
 }
 function createNumberControl(name,hook,v){
+	// opts has value means enum
+	// plan is to allow range via other symbols
+	const controlType = (hook.opts && hook.opts.trim().length>0) ? 'enum' : 'num';
+	if (controlType=='enum'){
+		return createEnumControl(name,hook,v);
+	}
 	const tmp = tNumberControl;
 	const clone = tmp.content.cloneNode(true);
-	const fs = clone.children[0];
+	const fs = clone.firstElementChild;
 	fs.querySelector('.name').textContent = name;
 	if (v==null){
 		fs.querySelector('.valIsNull').checked = true;
 	} else {
 		fs.querySelector('.val').value = v;
 	}
+	if (hook.notes && hook.notes.trim().length){
+		fs.querySelector('.notes').textContent = hook.notes;
+	}
 	return fs;
+
+	/*
+	// opts has value means enum
+	// plan is to allow range via other symbols
+	const controlType = (hook.opts && hook.opts.trim().length>0) ? 'enum' : 'num';
+	//const tmp = tNumberControl;
+	const tmp = (controlType=='num') ? tNumberControl : tEnumControl;
+	const clone = tmp.content.cloneNode(true);
+	const fs = clone.children[0];
+	fs.querySelector('.name').textContent = name;
+	if (controlType=='enum'){
+		const sel = fs.querySelector('select');
+		for (const e of hook.opts.trim().split('|')){
+			sel.appendChild(document.createElement('option')).textContent = e;
+		}
+	}
+	if (v==null){
+		fs.querySelector('.valIsNull').checked = true;
+	} else {
+		fs.querySelector('.val').value = v;
+	}
+	if (hook.notes && hook.notes.trim().length) {
+		fs.querySelector('.notes').textContent = hook.notes;
+	}
+	return fs;
+	*/
 }
 function createJsonControl(name,hook,cv){
 	const tmp = tJsonControl;
 	const clone = tmp.content.cloneNode(true);
-	const fs = clone.children[0];
+	const fs = clone.firstElementChild;
 	fs.querySelector('.name').textContent = name;
 	fs.querySelector('.val').value = JSON.stringify(cv);
+	if (hook.notes && hook.notes.trim().length){
+		fs.querySelector('.notes').textContent = hook.notes;
+	}
 	return fs;
 }
-function tryFunc(callbutton){
+function createSep(name,hook){
+	const ele = document.createElement('h3');
+	ele.textContent = hook.path.replaceAll('~','');
+	return ele;
+}
+function createControl(name,hook,cv){
+	// map out function call to type
+	const hookMap =
+		{'s':createStringControl
+		,'b':createBoolControl
+		,'n':createNumberControl
+		,'j':createJsonControl
+	};
+	/*if (hook.type in hookMap){
+		return hookMap[hook.type](name,hook,cv);
+	} else {*/
+	// call function with arguments, default to type 's' if not available
+	return hookMap[(hook.type in hookMap) ? hook.type : 's'](name,hook,cv)
+	//}
+	/*
+	let f;
+	switch (hook.type){
+		case 's':
+			f = createStringControl;
+			break;
+		case 'b':
+			f = createBoolControl;
+			break;
+		case 'n':
+			f = createNumberControl;
+			break;
+		case 'j':
+			f = createJsonControl;
+			break;
+		default:
+			f = createStringControl;
+			break;
+	}
+	return f(name,hook,cv);
+	*/
+}
+function tryBuild(callbutton){
+	try {
+		myjson = JSON.parse(inputJson.value);
+	} catch (parseErr){
+		alert(`Invalid input: ${parseErr.message}`);
+		return;
+	}
 	callbutton.disabled = true;
 	inputJson.readOnly = true;
 	inputDefs.readOnly = true;
-	myjson = JSON.parse(inputJson.value);
 	console.log('**input json**');
 	console.log(myjson);
 	mydefs = defParse(inputDefs.value.trim().split('\n'));
@@ -134,34 +266,46 @@ function tryFunc(callbutton){
 	console.log(mydefs);
 	console.log('**sound out values in json**');
 	let cn = undefined;
-	let cv = null;
-	controlFields = new Map();
+	//let cv = null;
+	//controlFields = new Map();
+	const afrag = new DocumentFragment();
 	for (const [name,hook] of Object.entries(mydefs)){
-		console.log(traceJson(myjson,hook.path));
-		cv = traceJson(myjson,hook.path);
-		switch (hook.type){
-			case 's':
-				cn = createStringControl(name,hook,cv);
-				break;
-			case 'b':
-				cn = createBoolControl(name,hook,cv);
-				break;
-			case 'n':
-				cn = createNumberControl(name,hook,cv);
-				break;
-			case 'j':
-				cn = createJsonControl(name,hook,cv);
-				break;
-			default:
-				cn = createStringControl(name,hook,cv);
-				break;
-		}
-		if (cn){
-			controlFields.set(name,controls.appendChild(cn));
-			//cn.name = name;
-			//controls.appendChild(cn);
+		//console.log(traceJson(myjson,hook.path));
+		if (hook.type=='~'){
+			//controls.appendChild(createSep(name,hook));
+			afrag.appendChild(createSep(name,hook));
+		} else {
+			/*
+			cv = traceJson(myjson,hook.path);
+			switch (hook.type){
+				case 's':
+					cn = createStringControl(name,hook,cv);
+					break;
+				case 'b':
+					cn = createBoolControl(name,hook,cv);
+					break;
+				case 'n':
+					cn = createNumberControl(name,hook,cv);
+					break;
+				case 'j':
+					cn = createJsonControl(name,hook,cv);
+					break;
+				default:
+					cn = createStringControl(name,hook,cv);
+					break;
+			}
+			*/
+			cn = createControl(name,hook,traceJson(myjson,hook.path));
+			if (cn){
+				//controlFields.set(name,controls.appendChild(cn));
+				//hook.control = controls.appendChild(cn);
+				hook.control = afrag.appendChild(cn);
+				//cn.name = name;
+				//controls.appendChild(cn);
+			}
 		}
 	}
+	controls.appendChild(afrag);
 	inputJsonDet.open = false;
 	inputDefsDet.open = false;
 	/*setJson(myjson,'name','jim');
@@ -171,6 +315,7 @@ function tryFunc(callbutton){
 }
 function tryUpdate(){
 	let v;
+	/*
 	for (const [name,control] of controlFields){
 		console.log(name);
 		console.log(mydefs[name]);
@@ -189,16 +334,51 @@ function tryUpdate(){
 				break;
 			case 'j':
 				v = control.querySelector('.val').value;
-				setJson(myjson,mydefs[name].path,JSON.parse((v.length>0) ? v : null));
+				try {
+					setJson(myjson,mydefs[name].path,JSON.parse((v.length>0) ? v : null));
+				} catch (parseErr){
+					alert(`Validate '${name}' : '${parseErr.message}'`);
+					control.scrollIntoView();
+					return;
+				}
 				break;
-			
 			default: break;
+		}
+	}
+	*/
+	for (const [name,hook] of Object.entries(mydefs)){
+		console.log(`updating ${name} at ${hook.path}`);
+		switch (hook.type){
+			case 's':
+				v = (hook.control.querySelector('.valIsNull').checked) ? null : hook.control.querySelector('.val').value;
+				setJson(myjson,hook.path,v);
+				break;
+			case 'n':
+				v = (hook.control.querySelector('.valIsNull').checked) ? null : Number(hook.control.querySelector('.val').value);
+				setJson(myjson,hook.path,v);
+				break;
+			case 'b':
+				v = hook.control.querySelector('input:checked').value;
+				setJson(myjson,hook.path,JSON.parse(v));
+				break;
+			case 'j':
+				v = hook.control.querySelector('.val').value;
+				try {
+					setJson(myjson,hook.path,JSON.parse((v.length>0) ? v : null));
+				} catch (parseErr){
+					alert(`Validate '${name}' : '${parseErr.message}'`);
+					hook.control.scrollIntoView();
+					return;
+				}
+				break;
+			default:
+				console.log(`skipping type ${hook.type}`);
+				break;
 		}
 	}
 	updateArea.value = JSON.stringify(myjson,null,4);
 	updateAreaDets.open = true;
 	updateAreaDets.scrollIntoView();
-	//return myjson;
 }
 
 function toggleNull(rele){
@@ -227,22 +407,26 @@ function toggleNull(rele){
 <details id='inputDefsDet' open>
 <summary>Input Defs</summary>
 <textarea id='inputDefs' rows=15 cols=80>
-name,name,s
-age,age,n
-pets,pets,j
+~~personal info
+name,name,s,,name goes here
+age,age,n,23|24|25,number field
+pets,pets,j,,any json here
+~~location info
 x,location.x,n
 y,location.y,n
 z,location.z,n
-gender,gender,s,male|female|other
-donated,donated,b
+~~metadata
+gender,gender,s,male|female|other,choose
+donated,donated,b,,boolean true false or null
 </textarea>
 </details>
-<button onclick='tryFunc(this)'>Try</button>
+<button onclick='tryBuild(this)'>Try</button>
 <template id='tStringControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
-		<label><i>string</i> <input class='val' placeholder='{empty string}'/></label>
+		<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'/></label>
 		<label>null <input class='valIsNull' type='checkbox' /></label>
+		<br><span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tEnumControl'>
@@ -250,6 +434,7 @@ donated,donated,b
 		<legend class='name'>Name</legend>
 		<label><i>enum</i> <select class='val'> </select></label>
 		<label>null <input class='valIsNull' type='checkbox' /></label>
+		<br><span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tNumberControl'>
@@ -257,6 +442,7 @@ donated,donated,b
 		<legend class='name'>Name</legend>
 		<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required /></label>
 		<label>null <input class='valIsNull' type='checkbox' /></label>
+		<br><span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tBoolControl'>
@@ -266,12 +452,14 @@ donated,donated,b
 		<label><input class='radioTrue' type='radio' value='true'/> true</label>
 		<label><input class='radioFalse' type='radio' value='false' /> false</label>
 		<label><input class='radioNull' type='radio' value='null' /> null</label>
+		<br><span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tJsonControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<label><i>json</i> <textarea class='val' placeholder='null'></textarea></label>
+		<br><span class='notes'></span>
 	</fieldset>
 </template>
 
