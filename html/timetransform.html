@@ -24,6 +24,7 @@
 		<button onclick='insertTime()'>InsTime</button>
 		<button onclick='quickInsert(100)'>Ins100</button>
 		<button onclick='formatNotes()'>ProcessLines</button>
+		<button onclick='formatNotesX()'>FormatX</button>
 	</div>
 
 	<div id='textareas'>
@@ -34,6 +35,62 @@
 	</div>
 </body>
 <script>
+
+let mline = /^(\d+:\d+ [AP]M \d+\/\d+\/\d+.\d+)\n(\d+)\n(\d+:\d+ [AP]M \d+\/\d+\/\d+.\d+)/gm;
+
+function tupleize(lines, keys, keyMapped){
+	const out = [];
+	const tSize = keys.length;
+	let tupOut;
+	for (let i=0,l=lines.length; i<l; i+=tSize+1){
+		tupOut = {};
+		for (let k=0;k<tSize;++k){
+			if (lines[i+k].length == 0){
+				console.log('missing key at line ,', i+k);
+				break;
+			} else {
+				tupOut[keys[k]] = (keyMapped[k]) ? keyMapped[k](lines[i+k]) : lines[i+k];
+			}
+		}
+		out.push(tupOut);
+	}
+	return out;
+}
+
+
+function processStamps(stamps, fmt){
+	let out = '';
+	let total;
+	for (let i=0,s=stamps.length; i<s; ++i){
+		if (i>0){
+			total = (stamps[i].start - stamps[i-1].end)/60000;
+			if (total>0){
+				out += fmt({start:stamps[i-1].end, end:stamps[i].start, code: ''}, total)+'\n';
+			}
+		}
+		total = (stamps[i].end - stamps[i].start)/60000;
+		if (total>0){
+			out += fmt(stamps[i], total)+'\n';
+		}
+	}
+	return out;
+}
+
+function timeLineX(t, total){
+	return leftPadded(t.code,4,' ')+' '+niceTime(t.start,':')+'  '+niceTime(t.end,':')+' '+leftPadded((total/60).toFixed(2),5,' ');
+}
+
+function formatNotesX(){
+	const lines = notes.value.split('\n');
+	const dp = (d) => new Date(Date.parse(d));
+	const eventStamps = tupleize(lines, ['start', 'code', 'end'], [dp, undefined, dp]);
+	out.value = 'Time Records\n';
+	out.value += processStamps(eventStamps, timeLineX);
+}
+
+
+
+
 function parseTimes(lines, nullcode){
 	const codes = {};
 	const times = [];

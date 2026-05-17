@@ -1,10 +1,7 @@
-function customNodes(hasher){
+function customNodes(charIt){
 	const Ob = class {
 		constructor(){
-			this.c = new Array(hasher.len);
-			for (let i=0;i<hasher.len;++i){
-				this.c[i] = null;
-			}
+			this.c = new Array();
 		}
 		hasPrefix(pfx){
 			let [p, r] = this.prefix(pfx);
@@ -13,11 +10,10 @@ function customNodes(hasher){
 		prefix(pfx){
 			let p = this, i;
 			for (let r=0,R=pfx.length;r<R;++r){
-				i = hasher.toindex(pfx[r]);
-				if (!p.c[i]){
+				if (!charIt.hasChar(pfx[r]) || !p.c[pfx[r]]){
 					return [p, r-1];
 				}
-				p = p.c[i];
+				p = p.c[pfx[r]];
 			}
 			return [p, pfx.length-1];
 		}
@@ -26,10 +22,9 @@ function customNodes(hasher){
 			let i;
 			++r;
 			for (const R=pfx.length;r<R;++r){
-				i = hasher.toindex(pfx[r]);
-				if (p){
-					p.c[i] = new Ob;
-					p = p.c[i];
+				if (p && charIt.hasChar(pfx[r])){
+					p.c[pfx[r]] = new Ob;
+					p = p.c[pfx[r]];
 				}
 			}
 			return p;
@@ -39,9 +34,9 @@ function customNodes(hasher){
 }
 
 class Trie {
-	constructor(hasher, hlen){
-		this.hasher = hasher;
-		this.NODE = customNodes(this.hasher);
+	constructor(charit){
+		this.charIt = charit
+		this.NODE = customNodes(this.charIt);
 		this.root = new this.NODE();
 	}
 	hasWord(word){
@@ -74,11 +69,18 @@ class Trie {
 			if (node.isWord==true){
 				yield(chars);
 			}
+			for (const c of this.charIt.chars()){
+				if (c in node.c){
+					q.put([chars+c, node.c[c]]);
+				}
+			}
+			/*
 			node.c.forEach(
 				(p,i)=>{
 					if (p) q.put([chars+this.hasher.tochar(i), p]);
 				}
 			);
+			*/
 		}
 	}
 }
@@ -93,3 +95,14 @@ const PrintableHash = {
 	tochar : (i) => String.fromCharCode(i+32),
 	len: 95
 };
+
+class LowerAlphaCharIt {
+	static *chars(){
+		for (let i=97;i<123;++i){
+			yield(String.fromCharCode(i));
+		}
+	}
+	static hasChar(c){
+		return (c>='a' && c<='z');
+	}
+}

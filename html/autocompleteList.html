@@ -14,7 +14,7 @@
 class Dropbox {
 	constructor(entry, textbox){
 		this.entry = entry;
-		this.trie = new Trie(LowerAlphaHash);
+		this.trie = new Trie(LowerAlphaCharIt);
 		this.trieNode = this.trie.root;
 		this.out = textbox;
 	}
@@ -37,7 +37,7 @@ function addWords(words){
 	words.forEach(w => DB.trie.addWord(w));
 }
 const lettersKeydown = function(e){
-	if (letters.value.length > 3){
+	if (letters.value.length >= 2){
 		DB.update();
 	}
 }

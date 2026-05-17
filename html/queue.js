@@ -20,7 +20,7 @@ Queue.prototype.put = function(val){
 		this.tail = this.tail.next;
 	}
 	++this.len;
-}
+};
 Queue.prototype.get = function(){
 	if (this.head == undefined) return undefined;
 	if (this.head == this.tail){
@@ -30,7 +30,7 @@ Queue.prototype.get = function(){
 	this.head = this.head.next;
 	--this.len;
 	return ret;
-}
+};
 
 
 function NaiveQueue(){

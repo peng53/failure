@@ -64,6 +64,10 @@ details {
 <button onclick='csvAdd_rowAdd()'>Add Row(s)</button>
 </dialog>
 
+<template id='itemtemplate'>
+<tr></tr>
+</template>
+
 <div id='container'>
 
 <div id='maintablediv'>
@@ -319,6 +323,9 @@ class DataTable {
 			myth.classList.add('hiddencol');
 		}
 		this.afterAddCol(hidden);
+		//
+		this.updateTemplate(name,hidden);
+		//
 		return n;
 	}
 	afterAddCol(hidden=false){
@@ -332,7 +339,36 @@ class DataTable {
 			}
 		}
 	}
+	updateTemplate(name,hidden=false){
+		const td = document.createElement('td');
+		if (hidden){
+			td.classList.add('hiddencol');
+		}
+		let e;
+		switch (this.keys[name].type){
+			case 'link':
+				e = document.createElement('a');
+				break;
+			case 'img':
+				e = document.createElement('img');
+				e.height = this.keys[name].height;
+				e.width = this.keys[name].width;
+				break;
+			case 'number':
+			case 'enum':
+			case 'date':
+			case 'text':
+			case 'checkbutton':
+			case 'tag':
+			default:
+				e = document.createTextNode('');
+				break;
+		}
+		td.appendChild(e);
+		itemtemplate.content.querySelector('tr').appendChild(td);
+	}
 	addRow(item){
+		/*
 		const row = this.rowBody.insertRow(-1);
 		this.cols.forEach(
 			(v,k) => {
@@ -345,6 +381,28 @@ class DataTable {
 					c.classList.add('hiddencol');
 				}
 		});
+		*/
+		const row = itemtemplate.content.cloneNode(true);
+		const cells = row.querySelectorAll('td');
+		this.cols.forEach(
+			(v,k) => {
+				let e = cells[v].firstChild;
+				let nv = item[k] ?? '';
+				switch (this.keys[k].type){
+					case 'link':
+						e.href = nv;
+						e.textContent = item[k];
+						break;
+					case 'img':
+						e.src = nv;
+						e.alt = nv;
+						break;
+					default:
+						cells[v].textContent = nv;
+						break;
+				}
+		});
+		this.rowBody.appendChild(row);
 	}
 	getRow(row){
 		const cells = Array.from(row.querySelectorAll('td'));

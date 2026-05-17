@@ -253,7 +253,7 @@ class MultiEntityBoard {
 </svg>
 <center><input id='interval' type='number' /><button onclick='randomCb.setInterval(Math.max(250,interval.value))'>Set Interval</button></center>
 <script>
-let cb = new Colorboard(document.querySelector('#nsvg'),10,10,Tile);
+let cb = new Colorboard(document.querySelector('#nsvg'),5,5,Tile);
 //let randomCb = new RandomColorboard(cb);
 let randomCb = new MultiEntityBoard(cb);
 randomCb.addEntity(0,0);

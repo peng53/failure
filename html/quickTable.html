@@ -61,6 +61,10 @@
 		}
 		function rowsSeparatedByCol(cols){
 			const rows = [];
+//			const rowCnt = rows.reduce(function(cnt, row){ return (cnt<row.length) ? row.length : cnt;},0);
+//			cols.forEach(function(c){
+
+//			});
 			for (let c=0,l=cols.length;c<l;++c){
 				for (let r=0;r<cols[c].length;++r){
 					if (r>=rows.length){
@@ -98,10 +102,10 @@
 		let rows;
 		if (datasep == 'col'){
 			rows = rowsSeparatedByCol(cols.map(function(p){return params.get(p).split(':');}));
-			rows.forEach(function(r){while (r.length<cols.length){r.push('')}});
 		} else if (datasep == 'row'){
 			rows = params.get('rows').split(':').map(function(r){return r.split('|');});
 		}
+		rows.forEach(function(r){while (r.length<cols.length){r.push('')}});
 		setTbody(rows);
 	</script>
 	<script src='quickTableAdv.js'></script>

@@ -3,7 +3,7 @@
 	.zname {
 		font-weight: bold;
 		background: skyblue;
-		text-align: right;
+		text-align: center;
 		font-family: monospace;
 	}
 	.opdrop {
@@ -16,16 +16,20 @@
 		border: 0;
 	}
 	option {
-		font-size: 2em;
+		font-size: 1em;
+	}
+	select option:nth-child(even){
+		background: #ddd;
 	}
 	.row {
 		overflow:auto;
 		width: 75%;
+		min-height: 75px;
 	}
 	.row div {
 		float: left;
 		text-align: center;
-		font-size: 1.5em;
+		font-size: 1em;
 	}
 	.cols2 div {
 		width: calc(100% / 2);
@@ -39,14 +43,14 @@
 	#rzone {
 		overflow:auto;
 		width: 24%;
-		right: -1em;
+		right: 0em;
 		position: fixed;
-		bottom: 1em;
-		top: 1em;
+		bottom: 0;
+		top: 0.5em;
 	}
 	#rzone div {
 		text-align: center;
-		font-size: 1.5em;
+		font-size: 1em;
 	}
 </style>
 <body>
