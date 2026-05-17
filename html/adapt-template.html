@@ -1,0 +1,53 @@
+<template id='mytmp'>
+<div class='ditem'><span class='itemName'></span></div>
+</template>
+
+
+<body>
+<button onclick='addNewItem(maincontainer)'>Add</button>
+<div id='maincontainer'></div>
+</body>
+<script>
+function addNewItem(p){
+	const item = mytmp.content.cloneNode(true);
+	item.querySelector('.itemName').textContent = 'test';
+	p.appendChild(item);
+}
+
+{
+	// adding stuff to base template
+	const ditem = mytmp.content.querySelector('.ditem');
+	const subtitle = document.createElement('span');
+	subtitle.classList.add('itemSubtitle');
+	subtitle.textContent = 'subtitle';
+	ditem.appendChild(subtitle);
+	const desc = document.createElement('textarea');
+	desc.classList.add('itemDesc');
+	ditem.appendChild(desc);
+	
+
+}
+
+</script>
+<style>
+#maincontainer {
+	display: grid;
+	grid-template-columns: repeat(5, 1fr);
+	gap: 5px;
+}
+.ditem {
+	border: 1px solid black;
+	gap: 3px;
+	display: grid;
+	grid-template-columns: 1fr;
+}
+.itemName {
+	font-weight: bold;
+	display: block;
+	background: yellow;
+	text-align: center;
+}
+.itemSubtitle, .itemDesc {
+	margin: 3px;
+}
+</style>

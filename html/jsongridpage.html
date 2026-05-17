@@ -1,0 +1,229 @@
+<html>
+<style>
+body {
+	margin: 0;
+}
+#main {
+	display: grid;
+	grid-template-columns: min-content 1fr;
+	width: 100vw;
+	height: calc(100vh - 2em);
+}
+#pane {
+	background: red;
+	overflow-y: auto;
+	padding: 5px;
+	font-size: 1.5em;
+}
+#items {
+	resize: horizontal;
+	/*border-right: 1px solid black;*/
+	overflow-y: auto;
+	overflow-x: hidden;
+	min-width: 180px;
+	max-width: calc(100vw - 50px);
+	width: calc(100vw - 120px);
+}
+</style>
+
+<style id='itemThumbnails'>
+#items {
+	display: flex;
+	flex-flow: wrap;
+}
+.item {
+	/*border: 1px inset #000;*/
+	width: 120px;
+	padding: 5px;
+	/*height: 200px;*/
+	margin: 10px;
+	display: grid;
+	grid-template-rows: min-content 1fr;
+	grid-gap: 4px;
+}
+.itemTN {
+	width: 120px;
+}
+.itemTitle {
+	font-weight: bold;
+	text-align: center;
+	color: black;
+	text-decoration: none;
+	font-size: 0.8em;
+	overflow-wrap: break-word;
+	width: 130px;
+}
+.itemTags {
+	display: none;
+}
+.itemhref {
+	color: black;
+	text-decoration: none;
+}
+.itemhref:hover {
+	text-decoration: underline;
+	color: purple;
+}
+</style>
+<style id='itemList'>
+
+#items {
+	display: grid;
+	grid-auto-rows: min-content;
+	grid-gap: 10px;
+	grid-template-columns: 1fr;
+	min-width: 360px;;
+}
+.item {
+	padding: 10px;
+	height: 160px;
+	width: 100%;
+	display: grid;
+	grid-template-areas: 
+		"a b"
+		"a c";
+	grid-template-columns: 120px 1fr;
+	grid-template-rows: min-content 1fr;
+	grid-gap: 10px;
+}
+.itemTN {
+	width: 120px;
+
+	grid-area: a;
+}
+.itemTitle {
+	display: block;
+	font-weight: bold;
+	font-size: 1.2em;
+	text-align: left;
+	color: black;
+	text-decoration: none;
+	grid-area: b;
+	overflow-wrap: break-word;
+}
+.itemTags {
+	display: flex;
+	flex-flow: wrap;
+	grid-area: c;
+	width: 100%;
+	height: 100%;
+}
+.tag:nth-child(n+2) {
+	background: red;
+}
+.tag:nth-child(n+3) {
+	background: lime;
+}
+.tag:nth-child(n+4) {
+	background: yellow;
+}
+.tag:nth-child(n+5) {
+	background: orange;
+}
+.tag {
+	height: 1em;
+	margin: 1px;
+	background: aqua;
+	padding: 3px;
+	border-radius: 5px;
+}
+.tag:hover {
+	filter: invert(100%);
+}
+.itemhref {
+	color: black;
+	text-decoration: none;
+}
+.itemhref:hover {
+	text-decoration: underline;
+	color: purple;
+}
+</style>
+
+<template id='item'>
+<div class='item'>
+<img class='itemTN' />
+<span class='itemTitle'></span>
+<div class='itemTags'></div>
+</div></template>
+<template id='tag'>
+<span class='tag'></span>
+</template>
+<body>
+<div id='main'>
+<div id='items'></div>
+<div id='pane'></div>
+</div>
+<button onclick='setItemsStyle("thumbnail")'>Thumbnails</button>
+<button onclick='setItemsStyle("list")'>List</button>
+<input type='file' id='jfile'/>
+</body>
+<script>
+function setItemsStyle(sty){
+	switch (sty){
+		case 'thumbnail':
+			document.querySelector('#itemThumbnails').disabled = false;
+			document.querySelector('#itemList').disabled = true;
+		break;
+		case 'list':
+			document.querySelector('#itemThumbnails').disabled = true;
+			document.querySelector('#itemList').disabled = false;
+		break;
+		default: break;
+	}
+}
+function createItem(tn, desc, tags){
+	const itemTemp = document.querySelector('#item').content;
+	const newItem = itemTemp.cloneNode(true);
+	if (tn){
+		newItem.querySelector('.itemTN').src = tn;
+	}
+	newItem.querySelector('.itemTitle').textContent = desc;
+	//newItem.querySelector('.itemhref').href='about:blank';
+	const allTags = newItem.querySelector('.itemTags');
+	const tagTemp = document.querySelector('#tag').content;
+	/*tags.split(',').forEach(t=>{
+		//allTags.appendChild(document.createTextNode(t));
+		const tagTag = tagTemp.cloneNode(true);
+		tagTag.querySelector('.tag').textContent = t;
+		allTags.appendChild(tagTag);
+	});*/
+	return newItem;
+}
+function createItemsCustom(js){
+	const p = document.querySelector('#items');
+	for (const f of js){
+		p.appendChild(createItem('/mnt/ramdisk/thumbs/'+f.thumb,f.name,f.tag));
+	}
+}
+function loadJson(ev){
+	const fi = ev.target.files;
+	const jf = fi[0];
+	const reader = new FileReader();
+	const toJson = (e)=>{
+		let js  = JSON.parse(e.target.result);
+		//console.log(js);
+		createItemsCustom(js);
+	};
+	const onLoad = (jf) =>{
+		return toJson;
+	}
+	reader.onload = onLoad(jf);
+	reader.readAsText(jf);
+}
+document.getElementById('jfile').addEventListener('change',loadJson, false);
+/*
+for (let i=0; i<10; i++){
+	document.querySelector('#items').appendChild(createItem('wc3_refcard01.jpg',i,'banana,icecream,tacos,cream,cookies'));
+}
+{
+	let p = document.querySelector('#pane');
+	for (let t=0; t<30; t++){
+	let e = document.createElement('p');
+	e.textContent = t;
+	pane.appendChild(e);
+	}
+}*/
+</script>
+
+</html>

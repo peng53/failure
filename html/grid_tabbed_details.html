@@ -1,0 +1,62 @@
+<html>
+<style>
+body {
+	margin: 0;
+}
+#container {
+	display: grid;
+	grid-template-rows: min-content 1fr;
+	grid-gap 1em;
+}
+#tabs {
+	background: grey;
+}
+details, summary {
+	display: none;
+}
+details[open] {
+	display: block;
+}
+.dualPanel {
+	display: grid;
+	grid-template-columns: 1fr 300px;
+}
+</style>
+<body>
+<div id='container'>
+<div id='tabs'>
+</div>
+<div class='content'>
+<details><summary>stuff 1</summary>
+<div class='dualPanel'>
+<div>maincontent</div>
+<div>sidebar</div>
+</div>
+</details>
+<details><summary>stuff 2</summary>stuff!</details>
+<details><summary>stuff 3</summary>more!</details>
+<details><summary>stuff 4</summary>less?</details>
+</div>
+</div>
+</body>
+<script>
+{
+	let invertOpen = (e) => {
+		let o = container.querySelector('details[open]');
+		if (o){
+			o.open = false;
+		}
+		e.target.detail.open=!e.target.detail.open
+	};
+	let panels = container.querySelectorAll('details');
+	for (const p of panels){
+		let s = p.querySelector('summary').textContent;
+		let b = document.createElement('button');
+		b.textContent = s;
+		b.detail = p;
+		b.onclick = invertOpen;
+		tabs.appendChild(b);
+	}
+}
+</script>
+</html>

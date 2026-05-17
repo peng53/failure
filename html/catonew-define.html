@@ -1,0 +1,84 @@
+<html>
+	<style>
+	</style>
+	<div id='fieldCreator'>
+		<h3>Field Creator</h3>
+		<div class='fieldCreatorMain'>
+			<fieldset>
+				<legend>Name</legend>
+				<input id='fieldLabel' />
+			</fieldset>
+			<fieldset>
+				<legend>Type</legend>
+				<select id='fieldType'>
+					<option>Text</option>
+					<option value='Number'>Number</option>
+					<option>Date</option>
+					<option value='Image'>Image</option>
+					<option>Link</option>
+					<option>True/False</option>
+					<option value='Choices/Tags'>Choices</option>
+					<option value='Choices/Tags'>Tags</option>
+				</select>
+			</fieldset>
+			<fieldset>
+				<legend>Hidden</legend>
+				<input type='checkbox' id='fieldHidden' />
+			</fieldset>
+		</div>
+		<div class='fieldCreatorMod'>
+			<fieldset>
+				<legend>Extra Params</legend>
+				<details title='Number'>
+				<summary>Number</summary>
+				<fieldset>
+					<legend>Minimum</legend>
+					<input name='min' />
+				</fieldset>
+				<fieldset>
+					<legend>Maximum</legend>
+					<input name='max' />
+				</fieldset>
+				<fieldset>
+					<legend>Increment/Step</legend>
+					<input name='step' />
+				</fieldset>
+			</details>
+			<details title='Choices/Tags'>
+				<summary>Choices/Tags</summary>
+				<fieldset>
+					<legend>Values</legend>
+					<input name='values' />
+				</fieldset>
+			</details>
+			<details title='Image'>
+				<summary>Image</summary>
+				<fieldset>
+					<legend>Width</legend>
+					<input name='width' />
+				</fieldset>
+				<fieldset>
+					<legend>Height</legend>
+					<input name='height' />
+				</fieldset>
+			</details>
+			</fieldset>
+		</div>
+		<button>Add</button>
+	</div>
+	<script>
+	const fcm = new Map();
+	{
+		Array.from(fieldCreator.querySelectorAll('.fieldCreatorMod details')).forEach(
+			d=>fcm.set(d.title,d)
+		);
+	}
+	function updateFieldCreatorMod(e){
+		const op = e.target.selectedOptions[0].value;
+		fcm.forEach((d,n)=>{
+			d.open = n==op;
+		});
+	}
+	fieldType.addEventListener('change',updateFieldCreatorMod);
+	</script>
+</html>
