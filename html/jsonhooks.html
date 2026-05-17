@@ -4,16 +4,26 @@ input:required:invalid {
 	outline: 1px red solid;
 }
 input.val, select.val {
-	width: 75%;
+	width: 100%;
+}
+textarea {
+	width: 100%;
+	resize: vertical;
 }
 textarea.val {
-	width: 75%;
+	width: 100%;
 	resize: vertical;
 	min-height: 1.5em;
+}
+.val{
+	background: white;
+	border: 2px solid #eee;
+	border-radius: 5px;
 }
 body {
 	background: #e3e3e3;
 	font-family: arial;
+	margin: 0;
 }
 fieldset {
 	background: #92cabd;
@@ -41,11 +51,6 @@ summary:hover, label:hover, button:hover {
 }
 input:disabled, select:disabled {
 	cursor: not-allowed;
-}
-.val{
-	background: white;
-	border: 2px solid #eee;
-	border-radius: 5px;
 }
 #inputJson, #inputDefs, #updateArea {
 	border: 2px solid #5e5252;
@@ -76,6 +81,51 @@ dialog textarea {
 	width: 70vw;
 	height: 50vh;
 }
+#container {
+	display: grid;
+	grid-template-columns: min-content 1fr;
+	grid-gap: 1em;
+	margin: 3px;
+	padding: 0;
+	width: calc(100vw - 6px);
+	height: calc(100vh - 6px);
+}
+#controls {
+	overflow: scroll;
+	height: calc(100vh - 1em);
+	padding: 5px;
+}
+#leftPane {
+	resize: horizontal;
+	overflow: scroll;
+	height: calc(100vh - 1em);
+	padding: 5px;
+	min-width: 250px;
+	max-width: calc(100vw - 1em);
+}
+.bigSmall {
+	display: grid;
+	grid-template-columns: 1fr min-content;
+	grid-gap: 3px;
+}
+@media (max-width: 800px){
+	#container {
+		display: block;
+		margin: 0;
+	}
+	#leftPane {
+		height: unset;
+		resize: unset;
+		min-width: unset;
+		position: fixed;
+		width: calc(100vw - 1em);
+		background: #ccc;
+	}
+	#controls {
+		height: unset;
+		padding-top: 3em;
+	}
+}
 </style>
 <script>
 'use strict';
@@ -83,7 +133,6 @@ var myjson = undefined;
 var mydefs = undefined;
 
 function defParse(lines){
-	//const r = {};
 	const r = new Map();
 	const defaultType = 'j';
 	let name, path, type, opts, notes;
@@ -104,13 +153,11 @@ function defParse(lines){
 			console.log(`invalid name "${name}" or invalid path "${path}"`);
 			continue;
 		}
-		//if (name in r){
 		if (r.has(name)){
 			console.log(`${name} already defined, ignoring`);
 			continue;
 		} else {
 			r.set(name,{path: path, type: type ? type: defaultType, opts: opts, notes: notes});
-			//r[name] = {path: path, type: type ? type: defaultType, opts: opts, notes: notes};
 		}
 	}
 	return r;
@@ -317,33 +364,6 @@ function tryUpdate(){
 	let v;
 	//for (const [name,hook] of Object.entries(mydefs)){
 	for (const [name,hook] of mydefs.entries()){
-		/*switch (hook.type){
-			case 's':
-				v = (hook.control.querySelector('.valIsNull').checked) ? null : hook.control.querySelector('.val').value;
-				setJson(myjson,hook.path,v);
-				break;
-			case 'n':
-				v = (hook.control.querySelector('.valIsNull').checked) ? null : Number(hook.control.querySelector('.val').value);
-				setJson(myjson,hook.path,v);
-				break;
-			case 'b':
-				v = hook.control.querySelector('input:checked').value;
-				setJson(myjson,hook.path,JSON.parse(v));
-				break;
-			case 'j':
-				v = hook.control.querySelector('.val').value;
-				try {
-					setJson(myjson,hook.path,JSON.parse((v.length>0) ? v : null));
-				} catch (parseErr){
-					alert(`Validate '${name}' : '${parseErr.message}'`);
-					hook.control.scrollIntoView();
-					return;
-				}
-				break;
-			default:
-				console.log(`skipping type ${hook.type}`);
-				break;
-		}*/
 		v = undefined;
 		switch (hook.type){
 			case 's':
@@ -379,8 +399,8 @@ function tryUpdate(){
 	}
 	updateArea.value = JSON.stringify(myjson,null,3);
 	Array.from(document.querySelectorAll('dialog:open')).forEach(d=>d.close());
-	updateAreaDets.show();
-	//updateAreaDets.scrollIntoView();
+	updateAreaDets.open = true;
+	updateAreaDets.scrollIntoView();
 }
 
 function toggleNull(rele){
@@ -406,11 +426,6 @@ function toggleNotesEditable(){
 		n.classList.toggle('notesEd');
 		n.contentEditable = mode;
 	});
-	/*if (controls.querySelector('.notesEd')){
-		// then we are turning off
-	} else {
-		// else turning on
-	}*/
 }
 function pullDefs(){
 	const r = [];
@@ -436,9 +451,11 @@ function exportDefsToDialog(){
 }
 </script>
 <body>
-<details id='inputJsonDet' open>
-<summary>Input Json</summary>
-<textarea id='inputJson' rows=15 cols=80>
+<div id='container'>
+	<div id='leftPane'>
+		<details id='inputJsonDet' open>
+			<summary>Input Json</summary>
+			<textarea id='inputJson' rows=15>
 {
 	"name": "james",
 	"age": 24,
@@ -452,11 +469,11 @@ function exportDefsToDialog(){
 	"donated": null,
 	"birthdate":"2019-10-01T01:01"
 }
-</textarea>
-</details>
-<details id='inputDefsDet' open>
-<summary>Input Defs</summary>
-<textarea id='inputDefs' rows=15 cols=80>
+			</textarea>
+		</details>
+		<details id='inputDefsDet' open>
+			<summary>Input Defs</summary>
+			<textarea id='inputDefs' rows=15>
 ~~personal info
 name,name,s,,name goes here
 age,age,n,23|24|25,number field
@@ -469,83 +486,88 @@ z,location.z,n
 ~~metadata
 gender,gender,s,male|female|other,choose
 donated,donated,b,,boolean true false or null
-</textarea>
-</details>
-<center>
-<button onclick='tryBuild(this)'>Build</button>
-</center>
-<div id='updateAreas' hidden>
-<div id='controls'>
-</div>
-<br>
-<center>
-<button onclick='tryUpdate()'>Update Json</button>
-<button onclick='toggleNotesEditable()'>Unlock Notes</button>
-<button onclick='exportDefsToDialog()'>Update Notes</button>
-</center>
+			</textarea>
+		</details>
+		<details id='updateAreaDets'>
+			<summary>Output Json</summary>
+			<textarea id='updateArea' rows=25></textarea>
+		</details>
+		<center><button onclick='tryBuild(this)'>Build</button></center>
+		<div id='updateAreas' hidden><center>
+		<button onclick='tryUpdate()'>Update Json</button>
+		<button onclick='toggleNotesEditable()'>Unlock Notes</button>
+		<button onclick='exportDefsToDialog()'>Pull Defs</button>
+		</center></div>
+	</div>
+
+	<div id='controls'></div>
 </div>
 </body>
-
-<dialog id='updateAreaDets'>
-<h2>Updated</h2>
-<textarea id='updateArea'></textarea>
-<center><button onclick='this.parentElement?.parentElement?.close()'>Close</button></center>
-</dialog>
 
 <dialog id='defExported'>
 <h2>Defs Export</h2>
 <textarea></textarea>
 <center><button onclick='this.parentElement?.parentElement?.close()'>Close</button></center>
+<center><button command='close' commandfor='defExported'>x</button></center>
 </dialog>
 
 <template id='tStringControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
-		<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'/></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'/></label>
-		<br><span class='notes'></span>
+		<div class='bigSmall'>
+		<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'></label>
+		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+		</div>
+		<span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tEnumControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
+		<div class='bigSmall'>
 		<label><i>enum</i> <select class='val'> </select></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'/></label>
-		<br><span class='notes'></span>
+		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+		</div>
+		<span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tNumberControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
-		<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required /></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)' /></label>
-		<br><span class='notes'></span>
+		<div class='bigSmall'>
+		<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required></label>
+		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+		</div><span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tBoolControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<i>bool</i>
-		<label><input class='radioTrue' type='radio' value='true'/> true</label>
-		<label><input class='radioFalse' type='radio' value='false' /> false</label>
-		<label><input class='radioNull' type='radio' value='null' /> null</label>
+		<label><input class='radioTrue' type='radio' value='true'> true</label>
+		<label><input class='radioFalse' type='radio' value='false'> false</label>
+		<label><input class='radioNull' type='radio' value='null'> null</label>
 		<br><span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tJsonControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
+		<div class='bigSmall'>
 		<label><i>json</i> <textarea class='val' placeholder='null'></textarea></label>
 		<button onclick='validateFormat(this)'>Validate<br>&amp;Format</button>
-		<br><span class='notes'></span>
+		</div>
+		<span class='notes'></span>
 	</fieldset>
 </template>
 <template id='tDateControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
-		<label><i>date</i> <input class='val' type='datetime-local' /></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'/></label>
-		<br><span class='notes'></span>
+		<div class='bigSmall'>
+		<label><i>date</i> <input class='val' type='datetime-local'></label>
+		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+		</div>
+		<span class='notes'></span>
 	</fieldset>
 </template>
 </html>
