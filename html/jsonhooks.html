@@ -9,6 +9,7 @@ input.val, select.val {
 textarea {
 	width: 100%;
 	resize: vertical;
+	white-space: pre;
 }
 textarea.val {
 	width: 100%;
@@ -24,6 +25,7 @@ body {
 	background: #e3e3e3;
 	font-family: arial;
 	margin: 0;
+	overflow: hidden;
 }
 fieldset {
 	background: #92cabd;
@@ -55,6 +57,10 @@ input:disabled, select:disabled {
 #inputJson, #inputDefs, #updateArea {
 	border: 2px solid #5e5252;
 	border-radius: 5px;	
+}
+#inputDefs, #defExported textarea {
+	line-height: 1.5em;
+	font-family: arial;
 }
 input[type=number], textarea {
 	font-family: monospace;
@@ -91,17 +97,17 @@ dialog textarea {
 	height: calc(100vh - 6px);
 }
 #controls {
-	overflow: scroll;
+	overflow: auto;
 	height: calc(100vh - 1em);
 	padding: 5px;
 }
 #leftPane {
 	resize: horizontal;
-	overflow: scroll;
+	overflow: auto;
 	height: calc(100vh - 1em);
-	padding: 5px;
+	padding-right: 15px;
 	min-width: 250px;
-	max-width: calc(100vw - 1em);
+	max-width: calc(100vw - 2em);
 }
 .bigSmall {
 	display: grid;
@@ -166,7 +172,9 @@ function traceJson(j,path){
 	const dpath = path.split('.');
 	let vnode = j;
 	for (const crumb of dpath){
-		if (crumb in vnode){
+		if (vnode && (typeof vnode == 'object') && crumb in vnode){
+			// vnode of the previous loop should always be an object
+			// because 'leaves' cannot be midpoints
 			vnode = vnode[crumb];
 		} else {
 			console.error(`lost.. json does not have ${path}`);
@@ -467,7 +475,18 @@ function exportDefsToDialog(){
 	},
 	"gender": null,
 	"donated": null,
-	"birthdate":"2019-10-01T01:01"
+	"birthdate":"2019-10-01T01:01",
+	"array": [
+		{ 
+			"key1": "my first key",
+			"key2": 2
+		},
+		{
+			"element": null
+		},
+		10,
+		true
+	]
 }
 			</textarea>
 		</details>
@@ -486,6 +505,9 @@ z,location.z,n
 ~~metadata
 gender,gender,s,male|female|other,choose
 donated,donated,b,,boolean true false or null
+~~array test
+key1,array.0.key1,s,
+array[2],array.2,j,
 			</textarea>
 		</details>
 		<details id='updateAreaDets'>
