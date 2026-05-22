@@ -1,25 +1,28 @@
 <html>
 <style>
+:root {
+	--border-col: #5e5252;
+	--roundness: 4px;
+	--def-border-width: 2px;
+	--def-border-sty: ridge;
+}
 input:required:invalid {
 	outline: 1px red solid;
 }
-input.val, select.val {
+input.val, select.val, textarea {
 	width: 100%;
 }
 textarea {
-	width: 100%;
 	resize: vertical;
 	white-space: pre;
+	tab-size: 3;
 }
 textarea.val {
-	width: 100%;
-	resize: vertical;
 	min-height: 1.5em;
 }
 .val{
 	background: white;
-	border: 2px solid #eee;
-	border-radius: 5px;
+	border: var(--def-border-width) var(--def-border-sty) #eee;
 }
 body {
 	background: #e3e3e3;
@@ -27,16 +30,18 @@ body {
 	margin: 0;
 	overflow: hidden;
 }
+fieldset, legend, #inputJson, #inputDefs, #updateArea {
+	border: var(--def-border-width) var(--def-border-sty) var(--border-col);
+}
+.val, fieldset, legend, #inputJson, #inputDefs, #updateArea {
+	border-radius: var(--roundness);
+}
 fieldset {
 	background: #92cabd;
-	border: 2px solid #5e5252;
-	border-radius: 5px;
 	margin-bottom: 5px;
 }
 legend {
-	border: 2px solid #5e5252;
-	border-radius: 5px;
-	background: #5e5252;
+	background: var(--border-col);
 	text-transform: capitalize;
 	font-weight: bold;
 	color: white;
@@ -48,16 +53,13 @@ details:open {
 	display: block;
 }
 
-summary:hover, label:hover, button:hover {
+summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio] {
 	cursor: pointer;
 }
 input:disabled, select:disabled {
 	cursor: not-allowed;
 }
-#inputJson, #inputDefs, #updateArea {
-	border: 2px solid #5e5252;
-	border-radius: 5px;	
-}
+
 #inputDefs, #defExported textarea {
 	line-height: 1.5em;
 	font-family: arial;
@@ -77,7 +79,7 @@ h2 {
 	display: inline-block;
 	background: white;
 	outline: 1px solid black;
-	padding: 0.5em;
+	padding: 3px;
 }
 dialog {
 	bottom: 5px;
@@ -96,14 +98,15 @@ dialog textarea {
 	width: calc(100vw - 6px);
 	height: calc(100vh - 6px);
 }
-#controls {
+#controls, #leftPane {
 	overflow: auto;
+}
+#controls {
 	height: calc(100vh - 1em);
 	padding: 5px;
 }
 #leftPane {
 	resize: horizontal;
-	overflow: auto;
 	height: calc(100vh - 1em);
 	padding-right: 15px;
 	min-width: 250px;
@@ -114,23 +117,40 @@ dialog textarea {
 	grid-template-columns: 1fr min-content;
 	grid-gap: 3px;
 }
+.areaTimestamp {
+	font-size: 0.8em;
+}
+summary button {
+	font-size: 0.75em;
+}
 @media (max-width: 800px){
+	body {
+		overflow: auto;
+	}
 	#container {
 		display: block;
 		margin: 0;
 	}
 	#leftPane {
 		height: unset;
-		resize: unset;
 		min-width: unset;
 		position: fixed;
 		width: calc(100vw - 1em);
+		margin-right: 1em;
 		background: #ccc;
+		resize: horizontal;
+		max-width: unset;
 	}
 	#controls {
 		height: unset;
 		padding-top: 3em;
 	}
+}
+.fieldError {
+	font-style: italic;
+	margin-bottom: 3px;
+	display: inline-block;
+	color: red;
 }
 </style>
 <script>
@@ -142,7 +162,7 @@ function defParse(lines){
 	const r = new Map();
 	const defaultType = 'j';
 	let name, path, type, opts, notes;
-	let sepCount = 0;
+	//let sepCount = 0;
 	for (const line of lines){
 		if (line.trim().length==0){
 			continue;
@@ -150,17 +170,20 @@ function defParse(lines){
 		if (line.trim().startsWith('~')){
 			// separator
 			//r[`~sep${sepCount++}`] = {path: line.trim(), type: '~'};
-			r.set(`~sep${sepCount++}`,{path: line.trim(), type: '~'});
+			//r.set(`~sep${sepCount++}`,{path: line.trim(), type: '~'});
+			r.set(line.trim(),{path: line.trim(), type: '~'});
 			continue;
 		}
 		[name,path,type,opts,notes] = line.split(',');
 		//console.log(name,path,type,opts,notes);
+		//if (!name || !path || name.trim().length==0 || path.trim().length==0){
 		if (!name || !path || name.trim().length==0 || path.trim().length==0){
-			console.log(`invalid name "${name}" or invalid path "${path}"`);
+			console.error(`invalid name "${name}" or invalid path "${path}"`);
+			r.set(line,{type: 'err'});
 			continue;
 		}
 		if (r.has(name)){
-			console.log(`${name} already defined, ignoring`);
+			console.error(`${name} already defined, ignoring`);
 			continue;
 		} else {
 			r.set(name,{path: path, type: type ? type: defaultType, opts: opts, notes: notes});
@@ -193,6 +216,7 @@ function setJson(j,path,newValue){
 			vnode = vnode[crumb];
 		} else {
 			console.error(`lost.. json does not have ${path}`);
+			alert(`lost.. json does not have ${path}`);
 			return;
 		}
 	}
@@ -212,13 +236,13 @@ function createEnumControl(name,hook,v){
 	} else {
 		fs.querySelector('.val').value = v;
 	}
-	if (hook.notes && hook.notes.trim().length){
+	if (hook.notes?.trim().length){
 		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
 }
 function createStringControl(name,hook,v){
-	if (hook.opts && hook.opts.trim().length > 0){
+	if (hook.opts?.trim().length > 0){
 		// string is enumerated
 		return createEnumControl(name,hook,v);
 	}
@@ -231,7 +255,7 @@ function createStringControl(name,hook,v){
 	} else {
 		fs.querySelector('.val').value = v;
 	}
-	if (hook.notes && hook.notes.trim().length){
+	if (hook.notes?.trim().length){
 		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
@@ -258,7 +282,7 @@ function createBoolControl(name,hook,v){
 			break;
 	};
 	fs.querySelector(rinput).checked = true;
-	if (hook.notes && hook.notes.trim().length){
+	if (hook.notes?.trim().length){
 		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
@@ -279,7 +303,7 @@ function createNumberControl(name,hook,v){
 	} else {
 		fs.querySelector('.val').value = v;
 	}
-	if (hook.notes && hook.notes.trim().length){
+	if (hook.notes?.trim().length){
 		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
@@ -291,7 +315,26 @@ function createJsonControl(name,hook,v){
 	fs.querySelector('.name').textContent = name;
 	fs.querySelector('.val').value = JSON.stringify(v,null,3);
 	fs.querySelector('.val').rows = Math.min(40, 2 + Array.from(fs.querySelector('.val').value.matchAll('\n')).length);
-	if (hook.notes && hook.notes.trim().length){
+	if (hook.notes?.trim().length){
+		fs.querySelector('.notes').textContent = hook.notes;
+	}
+	return fs;
+}
+function createListControl(name,hook,v){
+	const tmp = tFlatListControl;
+	const clone = tmp.content.cloneNode(true);
+	const fs = clone.firstElementChild;
+	fs.querySelector('.name').textContent = name;
+	if (v==null){
+		fs.querySelector('.valIsNull').checked = fs.querySelector('.val').disabled = true;
+	} else {
+		fs.querySelector('.val').value = v.join('\n');
+		fs.querySelector('.val').rows = Math.min(40, 1 + v.length);
+	}
+	if (hook.opts=='n'){
+		fs.querySelector('.labelType').textContent = 'numeric list';
+	}
+	if (hook.notes?.trim().length){
 		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
@@ -306,7 +349,7 @@ function createDateControl(name,hook,v){
 	} else {
 		fs.querySelector('.val').value = v;
 	}
-	if (hook.notes && hook.notes.trim().length){
+	if (hook.notes?.trim().length){
 		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
@@ -324,10 +367,12 @@ function createControl(name,hook,cv){
 		,'n':createNumberControl
 		,'j':createJsonControl
 		,'dt':createDateControl
+		,'l':createListControl
 	};
 	// call function with arguments, default to type 'j' if not available
 	return hookMap[(hook.type in hookMap) ? hook.type : 'j'](name,hook,cv)
 }
+
 function tryBuild(callbutton){
 	try {
 		myjson = JSON.parse(inputJson.value);
@@ -345,23 +390,32 @@ function tryBuild(callbutton){
 	let cn = undefined;
 	let cv = undefined;
 	const afrag = new DocumentFragment();
-	//for (const [name,hook] of Object.entries(mydefs)){
 	for (const [name,hook] of mydefs.entries()){
-		//console.log(traceJson(myjson,hook.path));
 		if (hook.type=='~'){
 			afrag.appendChild(createSep(name,hook));
+			gotoDef.appendChild(document.createElement('optgroup')).label = name;
+		} else if (hook.type=='err'){
+			cn = document.createElement('span');
+			cn.classList.add('fieldError');
+			cn.textContent = `Unable to create ${name}. Invalid DEF`;
+			afrag.appendChild(cn);
 		} else {
 			cv = undefined;
 			cv = traceJson(myjson,hook.path);
 			if (cv === undefined){
 				// don't create the control if path is not valid
 				// prevent trying to update this path
+				cn = document.createElement('span');
+				cn.classList.add('fieldError');
+				cn.textContent = `Unable to create ${name} at ${hook.path}. Please update JSON or DEFS to remove this error.`;
 				hook.type = '-';
+				afrag.appendChild(cn);
 				continue;
 			}
 			cn = createControl(name,hook,cv);
 			if (cn){
 				hook.control = afrag.appendChild(cn);
+				gotoDef.appendChild(document.createElement('option')).textContent = name;
 			}
 		}
 	}
@@ -370,7 +424,6 @@ function tryBuild(callbutton){
 }
 function tryUpdate(){
 	let v;
-	//for (const [name,hook] of Object.entries(mydefs)){
 	for (const [name,hook] of mydefs.entries()){
 		v = undefined;
 		switch (hook.type){
@@ -396,6 +449,21 @@ function tryUpdate(){
 			case 'dt':
 				v = (hook.control.querySelector('.valIsNull').checked) ? null : hook.control.querySelector('.val').value;
 				break;
+			case 'l':
+				if (hook.control.querySelector('.valIsNull').checked){
+					v = null;
+				} else {
+					v = hook.control.querySelector('.val').value;
+					if (v.length==0){
+						v = [];
+					} else {
+						v = v.split('\n');
+						if (hook.opts=='n'){
+							v = v.map(l=>Number(l));
+						}
+					}
+				}
+				break;
 			default:
 				console.log(`skipping type ${hook.type}`);
 				break;
@@ -407,8 +475,10 @@ function tryUpdate(){
 	}
 	updateArea.value = JSON.stringify(myjson,null,3);
 	Array.from(document.querySelectorAll('dialog:open')).forEach(d=>d.close());
+	updateAreaDets.querySelector('.areaTimestamp').textContent = new Date();
 	updateAreaDets.open = true;
 	updateAreaDets.scrollIntoView();
+	
 }
 
 function toggleNull(rele){
@@ -457,13 +527,32 @@ function exportDefsToDialog(){
 	Array.from(document.querySelectorAll('dialog:open')).forEach(d=>d.close());
 	defExported.show();
 }
+function gotoDefChange(key){
+	const ctrl = mydefs.get(key).control;
+	ctrl.scrollIntoView(false);
+	ctrl.querySelector('.val').focus();
+}
+function save(par,filename){
+	const ta = par.querySelector('textarea')?.value;
+	if (ta?.length>0){
+		const d = new Date();
+		const b = new Blob([ta]);
+		const a = document.createElement('a');
+		a.href = URL.createObjectURL(b);
+		a.download = `${d.getFullYear()}${d.getMonth()+1}${d.getDate()}${d.getHours()+1}${d.getMinutes()}_${filename}`;
+		a.click();
+		URL.revokeObjectURL(a.href);
+	} else {
+		alert('Textarea is empty!');
+	}
+}
 </script>
 <body>
 <div id='container'>
 	<div id='leftPane'>
 		<details id='inputJsonDet' open>
 			<summary>Input Json</summary>
-			<textarea id='inputJson' rows=15>
+			<textarea id='inputJson' rows=10 spellcheck='false'>
 {
 	"name": "james",
 	"age": 24,
@@ -477,22 +566,17 @@ function exportDefsToDialog(){
 	"donated": null,
 	"birthdate":"2019-10-01T01:01",
 	"array": [
-		{ 
-			"key1": "my first key",
-			"key2": 2
-		},
-		{
-			"element": null
-		},
-		10,
-		true
+		 { "key1": "my first key", "key2": 2 }
+		,{ "element": null }
+		,10
+		,[1,2,3]
 	]
 }
 			</textarea>
 		</details>
 		<details id='inputDefsDet' open>
 			<summary>Input Defs</summary>
-			<textarea id='inputDefs' rows=15>
+			<textarea id='inputDefs' rows=10 spellcheck='false'>
 ~~personal info
 name,name,s,,name goes here
 age,age,n,23|24|25,number field
@@ -508,17 +592,20 @@ donated,donated,b,,boolean true false or null
 ~~array test
 key1,array.0.key1,s,
 array[2],array.2,j,
+list,array.3,l,n
 			</textarea>
 		</details>
 		<details id='updateAreaDets'>
-			<summary>Output Json</summary>
-			<textarea id='updateArea' rows=25></textarea>
+			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,"output.json")' title='Save Json'>💾</button></summary>
+			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
+			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span>
+			
 		</details>
-		<center><button onclick='tryBuild(this)'>Build</button></center>
+		<center><button onclick='tryBuild(this)'>🔨 Build</button></center>
 		<div id='updateAreas' hidden><center>
-		<button onclick='tryUpdate()'>Update Json</button>
-		<button onclick='toggleNotesEditable()'>Unlock Notes</button>
-		<button onclick='exportDefsToDialog()'>Pull Defs</button>
+		<select id='gotoDef' onchange='gotoDefChange(this.value)'></select>
+		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
+		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
 		</center></div>
 	</div>
 
@@ -528,9 +615,9 @@ array[2],array.2,j,
 
 <dialog id='defExported'>
 <h2>Defs Export</h2>
-<textarea></textarea>
-<center><button onclick='this.parentElement?.parentElement?.close()'>Close</button></center>
-<center><button command='close' commandfor='defExported'>x</button></center>
+<textarea spellcheck='false'></textarea>
+<center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
+<!--<center><button command='close' commandfor='defExported'>x</button></center>-->
 </dialog>
 
 <template id='tStringControl'>
@@ -540,7 +627,7 @@ array[2],array.2,j,
 		<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'></label>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 		</div>
-		<span class='notes'></span>
+		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 <template id='tEnumControl'>
@@ -550,7 +637,7 @@ array[2],array.2,j,
 		<label><i>enum</i> <select class='val'> </select></label>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 		</div>
-		<span class='notes'></span>
+		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 <template id='tNumberControl'>
@@ -559,7 +646,7 @@ array[2],array.2,j,
 		<div class='bigSmall'>
 		<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required></label>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
-		</div><span class='notes'></span>
+		</div><span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 <template id='tBoolControl'>
@@ -569,17 +656,17 @@ array[2],array.2,j,
 		<label><input class='radioTrue' type='radio' value='true'> true</label>
 		<label><input class='radioFalse' type='radio' value='false'> false</label>
 		<label><input class='radioNull' type='radio' value='null'> null</label>
-		<br><span class='notes'></span>
+		<br><span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 <template id='tJsonControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='bigSmall'>
-		<label><i>json</i> <textarea class='val' placeholder='null'></textarea></label>
-		<button onclick='validateFormat(this)'>Validate<br>&amp;Format</button>
+		<label><i>json</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
+		<button onclick='validateFormat(this)' title='Validate and Format'>🧹</button>
 		</div>
-		<span class='notes'></span>
+		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 <template id='tDateControl'>
@@ -589,7 +676,17 @@ array[2],array.2,j,
 		<label><i>date</i> <input class='val' type='datetime-local'></label>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 		</div>
-		<span class='notes'></span>
+		<span class='notes' spellcheck='false'></span>
+	</fieldset>
+</template>
+<template id='tFlatListControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<div class='bigSmall'>
+		<label><i class='labelType'>list</i> <textarea class='val' placeholder='{empty}' spellcheck='false'></textarea></label>
+		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+		</div>
+		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 </html>
