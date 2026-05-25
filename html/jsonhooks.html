@@ -79,7 +79,8 @@ h2 {
 	display: inline-block;
 	background: white;
 	outline: 1px solid black;
-	padding: 3px;
+	/*padding: 3px;*/
+	padding: 0 3px;
 }
 dialog {
 	bottom: 5px;
@@ -116,6 +117,9 @@ dialog textarea {
 	display: grid;
 	grid-template-columns: 1fr min-content;
 	grid-gap: 3px;
+}
+.bigSmallJson {
+	align-items: center;
 }
 .areaTimestamp {
 	font-size: 0.8em;
@@ -162,21 +166,17 @@ function defParse(lines){
 	const r = new Map();
 	const defaultType = 'j';
 	let name, path, type, opts, notes;
-	//let sepCount = 0;
 	for (const line of lines){
 		if (line.trim().length==0){
 			continue;
 		}
 		if (line.trim().startsWith('~')){
 			// separator
-			//r[`~sep${sepCount++}`] = {path: line.trim(), type: '~'};
-			//r.set(`~sep${sepCount++}`,{path: line.trim(), type: '~'});
 			r.set(line.trim(),{path: line.trim(), type: '~'});
 			continue;
 		}
 		[name,path,type,opts,notes] = line.split(',');
 		//console.log(name,path,type,opts,notes);
-		//if (!name || !path || name.trim().length==0 || path.trim().length==0){
 		if (!name || !path || name.trim().length==0 || path.trim().length==0){
 			console.error(`invalid name "${name}" or invalid path "${path}"`);
 			r.set(line,{type: 'err'});
@@ -186,7 +186,8 @@ function defParse(lines){
 			console.error(`${name} already defined, ignoring`);
 			continue;
 		} else {
-			r.set(name,{path: path, type: type ? type: defaultType, opts: opts, notes: notes});
+			console.log(path);
+			r.set(name,{path: path.split('|'), type: type ? type: defaultType, opts: opts, notes: notes});
 		}
 	}
 	return r;
@@ -223,21 +224,14 @@ function setJson(j,path,newValue){
 	pvnode[dpath[dpath.length-1]] = newValue;
 }
 function createEnumControl(name,hook,v){
-	const tmp = tEnumControl;
-	const clone = tmp.content.cloneNode(true);
+	const clone = tEnumControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	fs.querySelector('.name').textContent = name;
 	const sel = fs.querySelector('select');
 	for (const e of hook.opts.trim().split('|')){
 		sel.appendChild(document.createElement('option')).textContent = e;
 	}
-	if (v==null){
-		fs.querySelector('.valIsNull').checked = fs.querySelector('.val').disabled = true;
-	} else {
+	if (v!=null){
 		fs.querySelector('.val').value = v;
-	}
-	if (hook.notes?.trim().length){
-		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
 }
@@ -246,25 +240,16 @@ function createStringControl(name,hook,v){
 		// string is enumerated
 		return createEnumControl(name,hook,v);
 	}
-	const tmp = tStringControl;
-	const clone = tmp.content.cloneNode(true);
+	const clone = tStringControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	fs.querySelector('.name').textContent = name;
-	if (v==null){
-		fs.querySelector('.valIsNull').checked = fs.querySelector('.val').disabled = true;
-	} else {
+	if (v!=null){
 		fs.querySelector('.val').value = v;
-	}
-	if (hook.notes?.trim().length){
-		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
 }
 function createBoolControl(name,hook,v){
-	const tmp = tBoolControl;
-	const clone = tmp.content.cloneNode(true);
+	const clone = tBoolControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	fs.querySelector('.name').textContent = name;
 	Array.from(fs.querySelectorAll('input')).forEach(i=>i.name=name);
 	let rinput;
 	switch (v){
@@ -282,75 +267,47 @@ function createBoolControl(name,hook,v){
 			break;
 	};
 	fs.querySelector(rinput).checked = true;
-	if (hook.notes?.trim().length){
-		fs.querySelector('.notes').textContent = hook.notes;
-	}
 	return fs;
 }
 function createNumberControl(name,hook,v){
 	// opts has value means enum
 	// plan is to allow range via other symbols
-	const controlType = (hook.opts && hook.opts.trim().length>0) ? 'enum' : 'num';
-	if (controlType=='enum'){
+//~ 	const controlType = (hook.opts?.trim().length>0) ? 'enum' : 'num';
+//~ 	if (controlType=='enum'){
+	if (hook.opts?.trim().length>0){
 		return createEnumControl(name,hook,v);
 	}
-	const tmp = tNumberControl;
-	const clone = tmp.content.cloneNode(true);
+	const clone = tNumberControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	fs.querySelector('.name').textContent = name;
-	if (v==null){
-		fs.querySelector('.valIsNull').checked = fs.querySelector('.val').disabled = true;
-	} else {
+	if (v!=null){
 		fs.querySelector('.val').value = v;
-	}
-	if (hook.notes?.trim().length){
-		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
 }
 function createJsonControl(name,hook,v){
-	const tmp = tJsonControl;
-	const clone = tmp.content.cloneNode(true);
+	const clone = tJsonControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	fs.querySelector('.name').textContent = name;
 	fs.querySelector('.val').value = JSON.stringify(v,null,3);
 	fs.querySelector('.val').rows = Math.min(40, 2 + Array.from(fs.querySelector('.val').value.matchAll('\n')).length);
-	if (hook.notes?.trim().length){
-		fs.querySelector('.notes').textContent = hook.notes;
-	}
 	return fs;
 }
 function createListControl(name,hook,v){
-	const tmp = tFlatListControl;
-	const clone = tmp.content.cloneNode(true);
+	const clone = tFlatListControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	fs.querySelector('.name').textContent = name;
-	if (v==null){
-		fs.querySelector('.valIsNull').checked = fs.querySelector('.val').disabled = true;
-	} else {
+	if (v!=null){
 		fs.querySelector('.val').value = v.join('\n');
 		fs.querySelector('.val').rows = Math.min(40, 1 + v.length);
 	}
 	if (hook.opts=='n'){
 		fs.querySelector('.labelType').textContent = 'numeric list';
 	}
-	if (hook.notes?.trim().length){
-		fs.querySelector('.notes').textContent = hook.notes;
-	}
 	return fs;
 }
 function createDateControl(name,hook,v){
-	const tmp = tDateControl;
-	const clone = tmp.content.cloneNode(true);
+	const clone = tDateControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	fs.querySelector('.name').textContent = name;
-	if (v==null){
-		fs.querySelector('.valIsNull').checked = fs.querySelector('.val').disabled = true;
-	} else {
+	if (v!=null){
 		fs.querySelector('.val').value = v;
-	}
-	if (hook.notes?.trim().length){
-		fs.querySelector('.notes').textContent = hook.notes;
 	}
 	return fs;
 }
@@ -359,18 +316,26 @@ function createSep(name,hook){
 	ele.textContent = hook.path.replaceAll('~','');
 	return ele;
 }
+const hookMap = 
+	{'s':createStringControl
+	,'b':createBoolControl
+	,'n':createNumberControl
+	,'j':createJsonControl
+	,'dt':createDateControl
+	,'l':createListControl
+};
 function createControl(name,hook,cv){
 	// map out function call to type
-	const hookMap =
-		{'s':createStringControl
-		,'b':createBoolControl
-		,'n':createNumberControl
-		,'j':createJsonControl
-		,'dt':createDateControl
-		,'l':createListControl
-	};
 	// call function with arguments, default to type 'j' if not available
-	return hookMap[(hook.type in hookMap) ? hook.type : 'j'](name,hook,cv)
+	const ctrl = hookMap[(hook.type in hookMap) ? hook.type : 'j'](name,hook,cv);
+	ctrl.querySelector('.name').textContent = name;
+	if (hook.notes?.trim().length){
+		ctrl.querySelector('.notes').textContent = hook.notes;
+	}
+	if (hook.type!='b' && hook.type!='j' && cv==null){
+		ctrl.querySelector('.valIsNull').checked = ctrl.querySelector('.val').disabled = true;
+	}
+	return ctrl;
 }
 
 function tryBuild(callbutton){
@@ -401,7 +366,7 @@ function tryBuild(callbutton){
 			afrag.appendChild(cn);
 		} else {
 			cv = undefined;
-			cv = traceJson(myjson,hook.path);
+			cv = traceJson(myjson,hook.path[0]);
 			if (cv === undefined){
 				// don't create the control if path is not valid
 				// prevent trying to update this path
@@ -415,6 +380,7 @@ function tryBuild(callbutton){
 			cn = createControl(name,hook,cv);
 			if (cn){
 				hook.control = afrag.appendChild(cn);
+				hook.control.title = hook.path;
 				gotoDef.appendChild(document.createElement('option')).textContent = name;
 			}
 		}
@@ -469,12 +435,13 @@ function tryUpdate(){
 				break;
 		}
 		if (v!==undefined){
-			console.log(`updating ${name} at ${hook.path} to ${v}`);
-			setJson(myjson,hook.path,v);
+			for (const mpath of hook.path){
+				console.log(`updating ${name} at ${mpath} to ${v}`);
+				setJson(myjson,mpath,v);
+			}
 		}
 	}
 	updateArea.value = JSON.stringify(myjson,null,3);
-	Array.from(document.querySelectorAll('dialog:open')).forEach(d=>d.close());
 	updateAreaDets.querySelector('.areaTimestamp').textContent = new Date();
 	updateAreaDets.open = true;
 	updateAreaDets.scrollIntoView();
@@ -507,15 +474,15 @@ function toggleNotesEditable(){
 }
 function pullDefs(){
 	const r = [];
-	const hookSet = new Set(['s','n','j','b','dt']);
 	let notes;
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~'){
 			r.push(hook.path);
-		} else if (hookSet.has(hook.type)){
+		} else if (hook.type in hookMap){
 			notes = hook.control.querySelector('.notes').textContent.replace(',',';');
-			r.push(`${name},${hook.path},${hook.type},${hook.opts? hook.opts: ''},${notes}`);
+			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${notes}`);
 		} else {
+			console.error(`Unrecognized type ${hook.type}; skipping`)
 			// ignored
 		}
 	}
@@ -524,7 +491,6 @@ function pullDefs(){
 function exportDefsToDialog(){
 	const r = pullDefs();
 	defExported.querySelector('textarea').value = r.join('\n');
-	Array.from(document.querySelectorAll('dialog:open')).forEach(d=>d.close());
 	defExported.show();
 }
 function gotoDefChange(key){
@@ -560,7 +526,8 @@ function save(par,filename){
 	"location": {
 		"x": 24,
 		"y": 59,
-		"z": 4823
+		"z": 4823,
+		"age" : 87
 	},
 	"gender": null,
 	"donated": null,
@@ -579,7 +546,7 @@ function save(par,filename){
 			<textarea id='inputDefs' rows=10 spellcheck='false'>
 ~~personal info
 name,name,s,,name goes here
-age,age,n,23|24|25,number field
+age,age|location.age,n,23|24|25,number field
 pets,pets,j,,any json here
 birthday,birthdate,dt,
 ~~location info
@@ -599,7 +566,6 @@ list,array.3,l,n
 			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,"output.json")' title='Save Json'>💾</button></summary>
 			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
 			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span>
-			
 		</details>
 		<center><button onclick='tryBuild(this)'>🔨 Build</button></center>
 		<div id='updateAreas' hidden><center>
@@ -617,7 +583,6 @@ list,array.3,l,n
 <h2>Defs Export</h2>
 <textarea spellcheck='false'></textarea>
 <center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
-<!--<center><button command='close' commandfor='defExported'>x</button></center>-->
 </dialog>
 
 <template id='tStringControl'>
@@ -662,7 +627,7 @@ list,array.3,l,n
 <template id='tJsonControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
-		<div class='bigSmall'>
+		<div class='bigSmall bigSmallJson'>
 		<label><i>json</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
 		<button onclick='validateFormat(this)' title='Validate and Format'>🧹</button>
 		</div>
