@@ -242,6 +242,17 @@ function createStringControl(name,hook,v){
 	}
 	const clone = tStringControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
+	if (hook.type=='n'){
+		const vi = fs.querySelector('.val');
+		fs.querySelector('.labelType').textContent = vi.type = 'number';
+		vi.placeholder = '0';
+		vi.step = '0.01';
+		vi.required = true;
+	} else if (hook.type=='dt'){
+		fs.querySelector('.labelType').textContent = 'date';
+		fs.querySelector('.val').type = 'datetime-local';
+	} else {
+	}
 	if (v!=null){
 		fs.querySelector('.val').value = v;
 	}
@@ -269,6 +280,7 @@ function createBoolControl(name,hook,v){
 	fs.querySelector(rinput).checked = true;
 	return fs;
 }
+/*
 function createNumberControl(name,hook,v){
 	// opts has value means enum
 	// plan is to allow range via other symbols
@@ -284,6 +296,7 @@ function createNumberControl(name,hook,v){
 	}
 	return fs;
 }
+*/
 function createJsonControl(name,hook,v){
 	const clone = tJsonControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
@@ -303,6 +316,7 @@ function createListControl(name,hook,v){
 	}
 	return fs;
 }
+/*
 function createDateControl(name,hook,v){
 	const clone = tDateControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
@@ -310,7 +324,7 @@ function createDateControl(name,hook,v){
 		fs.querySelector('.val').value = v;
 	}
 	return fs;
-}
+}*/
 function createSep(name,hook){
 	const ele = document.createElement('h2');
 	ele.textContent = hook.path.replaceAll('~','');
@@ -319,11 +333,12 @@ function createSep(name,hook){
 const hookMap = 
 	{'s':createStringControl
 	,'b':createBoolControl
-	,'n':createNumberControl
+	,'n':createStringControl
 	,'j':createJsonControl
-	,'dt':createDateControl
+	,'dt':createStringControl
 	,'l':createListControl
 };
+
 function createControl(name,hook,cv){
 	// map out function call to type
 	// call function with arguments, default to type 'j' if not available
@@ -589,7 +604,7 @@ list,array.3,l,n
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='bigSmall'>
-		<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'></label>
+		<label class='valLabel'><i class='labelType'>string</i> <input class='val' placeholder='{empty string}'></label>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 		</div>
 		<span class='notes' spellcheck='false'></span>
@@ -605,6 +620,7 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
+<!--
 <template id='tNumberControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -614,6 +630,7 @@ list,array.3,l,n
 		</div><span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
+-->
 <template id='tBoolControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -634,6 +651,7 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
+<!--
 <template id='tDateControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -644,6 +662,7 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
+-->
 <template id='tFlatListControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -654,4 +673,44 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
+<script>
+/* ignore this */
+'use strict';
+class FSControls {
+	static types = 
+		{'s':tStringControl
+		,'b':tBoolControl
+		,'n':tStringControl
+		,'j':tJsonControl
+		,'dt':tStringControl
+		,'l':tFlatListControl
+	};
+	static createControl(name,hook,cv){
+		
+	}
+	constructor(type,name,notes){
+		this.type = type;
+		this.ctrl = (FSControls.types)[type].content.cloneNode(true);
+		this.ctrl.querySelector('.name').textContent = name;
+		if (notes?.trim().length){
+			this.ctrl.querySelector('.notes').textContent = notes;
+		}
+	}
+}
+class StringControl extends FSControls {
+	constructor(name,notes,v){
+		super('s',name,notes);
+		if (v==null){
+			this.ctrl.querySelector('.valIsNull').checked = this.ctrl.querySelector('.val').disabled = true;
+		} else {
+			this.ctrl.querySelector('.val').value = v;
+		}
+	}
+}
+class NumberControl extends StringControl {
+	constructor(name,notes,v){
+		super(name,notes,v);
+	}
+}
+</script>
 </html>
