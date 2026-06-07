@@ -541,6 +541,197 @@ function createControl(name,hook,cv){
 	return ctrl;
 }
 
+class FieldSetControl {
+	constructor(name,opts,type){
+		this.name = name;
+		this.opts = opts;
+		this.control = undefined;
+		this.type = type;
+	}
+	get val(){
+		return this.control.querySelector('.val').value;
+	}
+	get isNull(){
+		return this.control.querySelector('.valIsNull')?.checked;
+	}
+	get nullOrVal(){
+		return (this.isNull) ? null : this.val;
+	}
+	get def(){
+		return `${this.name},${this.paths.join('|')},${this.type?? ''},${this.opts?? ''},${this.notes?? ''}`;
+	}
+}
+
+function enumSubType(opts){
+	// helper function to create enumcontrols
+	const fs = tEnumControl.content.cloneNode(true).firstElementChild;
+	const sel = fs.querySelector('select');
+	for (const e of opts.trim().split('|')){
+		sel.appendChild(document.createElement('option')).textContent = e;
+	}
+	return fs
+}
+
+class NumberFieldSet extends FieldSetControl {
+	constructor(name,opts,v){
+		super(name,opts,'n');
+		this.control = (this.opts) ? enumSubType(opts) : tNumberControl.content.cloneNode(true).firstElementChild;
+		if (v!=null){
+			this.control.querySelector('.val').value = v;
+		} else {
+			this.control.querySelector('.valIsNull').checked = this.control.querySelector('.val').disabled = true;
+		}
+	}
+	get val(){
+		return Number(this.control.querySelector('.val').value);
+	}
+}
+class StringFieldSet extends FieldSetControl {
+	constructor(name,opts,v){
+		super(name,opts,'s');
+		this.control = (this.opts) ? enumSubType(opts) : tStringControl.content.cloneNode(true).firstElementChild;
+		if (v!=null){
+			this.control.querySelector('.val').value = v;
+		} else {
+			this.control.querySelector('.valIsNull').checked = this.control.querySelector('.val').disabled = true;
+		}
+	}
+}
+class BoolFieldSet extends FieldSetControl {
+	constructor(name,opts,v){
+		super(name,opts,'b');
+		this.control = tBoolControl.content.cloneNode(true).firstElementChild;
+		for (const i of this.control.querySelectorAll('input')){
+			i.name = name;
+		}
+		let rinput;
+		switch (v){
+			case true:
+				rinput = '.radioTrue'; break;
+			case false:
+				rinput = '.radioFalse'; break;
+			case null:
+			default:			
+				rinput = '.radioNull'; break;
+		};
+		this.control.querySelector(rinput).checked = true;
+	}
+	get val(){
+		return JSON.parse(this.control.querySelector('input:checked').value);
+	}
+	get nullOrVal(){
+		return JSON.parse(this.control.querySelector('input:checked').value);
+	}
+}
+class JsonFieldSet extends FieldSetControl {
+	constructor(name,opts,v){
+		super(name,opts,'j');
+		this.control = tJsonControl.content.cloneNode(true).firstElementChild;
+		const val = this.control.querySelector('.val');
+		val.value = JSON.stringify(v,null,3);
+		val.rows = Math.min(40, 2 + Array.from(val.value.matchAll('\n')).length);
+	}
+	get val(){
+		try {
+			return JSON.parse(this.control.querySelector('.val').value);
+		} catch (parseErr){
+			alert(`Validate '${name}' : '${parseErr.message}'`);
+			this.control.scrollIntoView();
+			return undefined;
+		}
+	}
+	get isNull(){
+		const v = this.control.querySelector('.val').value.trim();
+		return v.length==0 || v=='null';
+	}
+}
+class DateFieldSet extends FieldSetControl {
+	constructor(name,opts,notes,v){
+		super(name,opts,'dt');
+		this.control = tDateControl.content.cloneNode(true).firstElementChild;
+		if (v!=null){
+			this.control.querySelector('.val').value = v;
+		} else {
+			this.control.querySelector('.valIsNull').checked = this.control.querySelector('.val').disabled = true;
+		}
+	}
+}
+class ListFieldSet extends FieldSetControl {
+	constructor(name,opts,v){
+		super(name,opts,'l');
+		this.control = tFlatListControl.content.cloneNode(true).firstElementChild;
+		if (v!=null){
+			this.control.querySelector('.val').value = v.join('\n');
+			this.control.querySelector('.val').rows = Math.min(40, 1 + v.length);
+		} else {
+			this.control.querySelector('.valIsNull').checked = this.control.querySelector('.val').disabled = true;
+		}
+		if (opts=='n'){
+			this.control.querySelector('.labelType').textContent = 'numeric list';
+		}
+	}
+	get val(){
+		const v = this.control.querySelector('.val').value.split('\n');
+		return this.opts=='n' ? v.map(x=>Number(x)) : v;
+	}
+}
+class MultiSelFieldSet extends FieldSetControl {
+	constructor(name,opts,v){
+		super(name,opts,'m');
+		this.control = tMultiControl.content.cloneNode(true).firstElementChild;
+		const sel = this.control.querySelector('select');
+		const mopts = new Map();
+		for (const [i,e] of opts.trim().split('&').entries()){
+			sel.appendChild(document.createElement('option')).textContent = e;
+			// tbd check if already in map
+			mopts.set(e,i);
+		}
+		if (v!=null){
+			for (const ar of v){
+				sel.options[mopts.get(ar)].selected = true;
+			}
+		} else {
+			this.control.querySelector('.valIsNull').checked = this.control.querySelector('.val').disabled = true;
+		}
+	}
+	get val(){
+		return Array.from(this.control.querySelector('.val').selectedOptions).map(o=>o.text);
+	}
+}
+
+
+const classHookMap = 
+	{'s':{'f':StringFieldSet, 't': String}
+	,'b':{'f':BoolFieldSet, 't': Boolean}
+	,'n':{'f':NumberFieldSet, 't': Number}
+	,'j':{'f':JsonFieldSet, 't': Object}
+	,'dt':{'f':DateFieldSet, 't': String}
+	,'l':{'f':ListFieldSet, 't':Array}
+	,'m':{'f':MultiSelFieldSet, 't':Array}
+};
+
+function createControlClass(name,hook,cv){
+	let htype = 'j';
+	if (hook.type!=htype && hook.type in classHookMap){
+		// j is compatible with all values
+		if (cv===null || cv.constructor == classHookMap[hook.type].t){
+			// null is always compatible
+			// validate hook.type is compatible with cv's type
+			htype = hook.type;
+		}
+	}
+	const ctrl = new classHookMap[htype].f(name,hook.opts,cv);
+	ctrl.control.querySelector('.name').textContent = name;
+	if (hook.notes?.trim().length){
+		ctrl.control.querySelector('.notes').textContent = hook.notes;
+	}
+	if (hook.type != htype){
+		ctrl.control.classList.add('typeMismatch');
+		hook.type = htype;
+	}
+	return ctrl;
+}
+
 function tryBuild(){
 	try {
 		myjson = JSON.parse(inputJson.value);
@@ -587,9 +778,11 @@ function tryBuild(){
 					afrag.appendChild(cn);
 					continue;
 				}
-				cn = createControl(name,hook,cv);
+				//cn = createControl(name,hook,cv);
+				cn = createControlClass(name,hook,cv);
 				if (cn){
-					hook.control = afrag.appendChild(cn);
+					hook.var = cn;
+					hook.control = afrag.appendChild(cn.control);
 					hook.control.title = hook.path;
 					gotoDef.appendChild(document.createElement('option')).textContent = name;
 				}
@@ -608,11 +801,25 @@ function tryBuild(){
 		alert('Warning: one or more of the defs do not match input JSON.');
 	}
 }
+
 function tryUpdate(){
 	let v;
 	for (const [name,hook] of mydefs.entries()){
 		v = undefined;
 		switch (hook.type){
+			case 's':
+			case 'n':
+			case 'b':
+			case 'j':
+			case 'dt':
+			case 'l':
+			case 'm':
+				v = hook.var.nullOrVal;
+				if (v===undefined){
+					return;
+				}
+				break;
+			/*
 			case 's':
 				v = (hook.control.querySelector('.valIsNull')?.checked) ? null : hook.control.querySelector('.val').value;
 				break;
@@ -657,6 +864,7 @@ function tryUpdate(){
 					v = Array.from(hook.control.querySelector('.val').selectedOptions).map(o=>o.text);
 				}
 				break;
+				*/
 			case '~':
 				break;
 			default:
@@ -900,7 +1108,7 @@ Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 		<i>bool</i>
 		<label><input class='radioTrue' type='radio' value='true'> true</label>
 		<label><input class='radioFalse' type='radio' value='false'> false</label>
-		<label><input class='radioNull' type='radio' value='null'> null</label>
+		<label><input class='radioNull valIsNull' type='radio' value='null'> null</label>
 		<br><span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
