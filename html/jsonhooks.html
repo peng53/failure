@@ -536,6 +536,7 @@ function createControl(name,hook,cv){
 	}
 	if (hook.type != htype){
 		ctrl.classList.add('typeMismatch');
+		//hook.type = htype;
 	}
 	return ctrl;
 }
@@ -603,6 +604,9 @@ function tryBuild(){
 	}
 	controls.appendChild(afrag);
 	inputJsonDet.open = inputDefsDet.open = updateAreas.hidden = false;
+	if (controls.querySelector('.typeMismatch')){
+		alert('Warning: one or more of the defs do not match input JSON.');
+	}
 }
 function tryUpdate(){
 	let v;
@@ -610,10 +614,10 @@ function tryUpdate(){
 		v = undefined;
 		switch (hook.type){
 			case 's':
-				v = (hook.control.querySelector('.valIsNull').checked) ? null : hook.control.querySelector('.val').value;
+				v = (hook.control.querySelector('.valIsNull')?.checked) ? null : hook.control.querySelector('.val').value;
 				break;
 			case 'n':
-				v = (hook.control.querySelector('.valIsNull').checked) ? null : Number(hook.control.querySelector('.val').value);
+				v = (hook.control.querySelector('.valIsNull')?.checked) ? null : Number(hook.control.querySelector('.val').value);
 				break;
 			case 'b':
 				v = JSON.parse(hook.control.querySelector('input:checked').value);
@@ -629,10 +633,10 @@ function tryUpdate(){
 				}
 				break;
 			case 'dt':
-				v = (hook.control.querySelector('.valIsNull').checked) ? null : hook.control.querySelector('.val').value;
+				v = (hook.control.querySelector('.valIsNull')?.checked) ? null : hook.control.querySelector('.val').value;
 				break;
 			case 'l':
-				if (hook.control.querySelector('.valIsNull').checked){
+				if (hook.control.querySelector('.valIsNull')?.checked){
 					v = null;
 				} else {
 					v = hook.control.querySelector('.val').value;
@@ -647,7 +651,7 @@ function tryUpdate(){
 				}
 				break;
 			case 'm':
-				if (hook.control.querySelector('.valIsNull').checked){
+				if (hook.control.querySelector('.valIsNull')?.checked){
 					v = null;
 				} else {
 					v = Array.from(hook.control.querySelector('.val').selectedOptions).map(o=>o.text);
@@ -709,20 +713,20 @@ function toggleNotesEditable(){
 	});
 }
 function pullDefs(){
-	//const r = [];
-	/*
-	let notes;
+	const r = [];
+	
+	//let notes;
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~'){
 			r.push(hook.path);
 		} else if (hook.type in hookMap){
-			notes = hook.control.querySelector('.notes').textContent.replace(',',';');
-			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${notes}`);
+			//notes = hook.control.querySelector('.notes').textContent.replace(',',';');
+			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 			// ignored
 		}
-	}*/
+	}
 	/*mydefs.entries().forEach(([name,hook])=>{
 		if (hook.type=='~'){
 			r.push(hook.path);
@@ -732,8 +736,8 @@ function pullDefs(){
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 		}
 	});*/
-	return Array.from(mydefs.entries().map(([name,hook])=>hook.type=='~' ? hook.path : hook.type in hookMap ? `${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}` : '-skipped def'));
-	//return r;
+	//return Array.from(mydefs.entries().map(([name,hook])=>hook.type=='~' ? hook.path : hook.type in hookMap ? `${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}` : '-skipped def'));
+	return r;
 }
 function exportDefsToDialog(){
 	defExported.querySelector('textarea').value = pullDefs().join('\n');
