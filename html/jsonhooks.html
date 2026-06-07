@@ -143,7 +143,7 @@ summary button {
 .typeMismatch {
 	border-color: red;
 }
-@media (max-width: 800px){
+@media (max-width: 600px){
 	body {
 		overflow: auto;
 	}
@@ -377,6 +377,67 @@ function createDateControl(opts,v){
 	const fs = clone.firstElementChild;
 	if (v!=null){
 		fs.querySelector('.val').value = v;
+	}
+	return fs;
+}
+function objectsControlAdd(par){
+	const cont = par.querySelector('.vals');
+	const subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
+	cont.appendChild(subCtrl);
+}
+function objectsControlSplDiv(par){
+	const cont = par.querySelector('.vals');
+	const isCombined = par.querySelector('.val');
+	if (isCombined){
+		try {
+			let j = JSON.parse(isCombined.value);
+			let cj;
+			let t;
+			for (const e of j){
+				cj = tInnerObject.content.cloneNode(true).firstElementChild;
+				t = JSON.stringify(e,null,3);
+				cj.querySelector('.cval').value = t;
+				cj.querySelector('.cval').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
+				cont.appendChild(cj);
+			}
+			cont.removeChild(cont.querySelector('.innerVal'));
+		} catch(err){
+			alert(`Failed to split, JSON invalid. ${err.message}`);
+		}
+	} else {
+		let vs = [];
+		for (const cj of cont.querySelectorAll('.cval')){
+			if (cj.value.length){
+				vs.push(cj.value);
+			}
+		}
+		try {
+			let j = JSON.parse('['+vs.join(',')+']');
+			let cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild;
+			let t = JSON.stringify(j,null,3);
+			cmb.querySelector('.val').value = t;
+			cmb.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
+			cont.appendChild(cmb);
+			
+		} catch(err){
+			alert(`Failed to combine, JSON invalid. ${err.message}`);
+		}
+		for (const cj of cont.querySelectorAll('.innerCval')){
+			cont.removeChild(cj);
+		}
+	}
+	const but = par.querySelector('.splDivButton');
+	but.textContent = (but.textContent=='Split') ? 'Combine' : 'Split';
+}
+function createObjectsControl(opts,v){
+	const clone = tObjectsControl.content.cloneNode(true);
+	const fs = clone.firstElementChild;
+	let cj;
+	let cont = fs.querySelector('.vals');
+	for (const e of v){
+		cj = tInnerObject.content.cloneNode(true).firstElementChild;
+		cj.querySelector('.cval').value = JSON.stringify(e,null,3);
+		cont.appendChild(cj);
 	}
 	return fs;
 }
@@ -616,6 +677,17 @@ function toggleNull(rele){
 	const v = rele.parentElement?.parentElement?.querySelector('.val');
 	if (v){
 		v.disabled = rele.checked;
+	}
+}
+function validateCFormat(rele){
+	const v = rele.parentElement?.querySelector('.cval');
+	try {
+		//let j = JSON.parse(v.value);
+		v.value = JSON.stringify(JSON.parse(v.value),null,3);
+		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
+		alert('Valid!');
+	} catch(err){
+		alert(`JSON is not valid: ${err.message}`);
 	}
 }
 function validateFormat(rele){
@@ -867,5 +939,26 @@ Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 		</div>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
+</template>
+<template id='tObjectsControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<div class='vals'></div>
+		<button onclick='objectsControlSplDiv(this.parentElement)' class='splDivButton'>Combine</button>
+		<button onclick='objectsControlAdd(this.parentElement)'>Add</button>
+		<span class='notes' spellcheck='false'></span>
+	</fieldset>
+</template>
+<template id='tInnerObject'>
+	<div class='bigSmall bigSmallJson innerCval'>
+		<label><i>object</i> <textarea class='cval' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
+		<button onclick='validateCFormat(this)' title='Validate and Format'>🧹</button>
+	</div>
+</template>
+<template id='tInnerCmbObject'>
+	<div class='bigSmall bigSmallJson innerVal'>
+		<label><i>objects</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
+		<button onclick='validateFormat(this)' title='Validate and Format'>🧹</button>
+	</div>
 </template>
 </html>
