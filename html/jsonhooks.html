@@ -212,7 +212,6 @@ class HeatNode {
 	}
 };
 
-
 function defParse(lines){
 	const r = new Map();
 	const defaultType = 'j';
@@ -236,8 +235,7 @@ function defParse(lines){
 			console.error(`${name} already defined, ignoring`);
 			continue;
 		} else {
-			console.log(path);
-			r.set(name,{path: path.split('|'), type: type ? type: defaultType, opts: opts, notes: notes});
+			r.set(name,{path: path.split('|'), type: type ?? defaultType, opts: opts, notes: notes});
 		}
 	}
 	return r;
@@ -273,6 +271,7 @@ function setJson(j,path,newValue){
 	}
 	pvnode[dpath[dpath.length-1]] = newValue;
 }
+/*
 function createEnumControl(opts,v){
 	const clone = tEnumControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
@@ -380,6 +379,7 @@ function createDateControl(opts,v){
 	}
 	return fs;
 }
+*/
 function objectsControlAdd(par){
 	const cont = par.querySelector('.vals');
 	const subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
@@ -446,6 +446,7 @@ function createSep(name,hook){
 	ele.textContent = hook.path.replaceAll('~','');
 	return ele;
 }
+/*
 const hookMap = 
 	{'s':{'f':createStringControl, 't': String}
 	,'b':{'f':createBoolControl, 't': Boolean}
@@ -455,7 +456,7 @@ const hookMap =
 	,'l':{'f':createListControl, 't':Array}
 	,'m':{'f':createMultiControl, 't':Array}
 };
-
+*/
 function check_paths(paths){
 	// check whether all paths are unique and not subsets of each other
 	// example call
@@ -509,13 +510,13 @@ function helper_check_mydefs(){
 	// gather all paths from mydefs
 	const paths = [];
 	for (const [name,def] of mydefs.entries()){
-		if (def.type in hookMap){
+		if (def.type in classHookMap){
 			paths.push(...def.path);
 		}
 	}
 	return check_paths(paths);
 }
-
+/*
 function createControl(name,hook,cv){
 	let htype = 'j';
 	if (hook.type!=htype && hook.type in hookMap){
@@ -540,7 +541,7 @@ function createControl(name,hook,cv){
 	}
 	return ctrl;
 }
-
+*/
 class FieldSetControl {
 	constructor(name,opts,type){
 		this.name = name;
@@ -557,9 +558,9 @@ class FieldSetControl {
 	get nullOrVal(){
 		return (this.isNull) ? null : this.val;
 	}
-	get def(){
+	/*get def(){
 		return `${this.name},${this.paths.join('|')},${this.type?? ''},${this.opts?? ''},${this.notes?? ''}`;
-	}
+	}*/
 }
 
 function enumSubType(opts){
@@ -699,7 +700,6 @@ class MultiSelFieldSet extends FieldSetControl {
 	}
 }
 
-
 const classHookMap = 
 	{'s':{'f':StringFieldSet, 't': String}
 	,'b':{'f':BoolFieldSet, 't': Boolean}
@@ -743,7 +743,6 @@ function tryBuild(){
 		outputFileName.value = jsonfileinput.files[0].name;
 	}
 	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
-	//callbutton.hidden = 
 	inputJson.readOnly = inputDefs.readOnly = true;
 	console.log('**input json**');
 	console.log(myjson);
@@ -778,7 +777,6 @@ function tryBuild(){
 					afrag.appendChild(cn);
 					continue;
 				}
-				//cn = createControl(name,hook,cv);
 				cn = createControlClass(name,hook,cv);
 				if (cn){
 					hook.var = cn;
@@ -787,7 +785,6 @@ function tryBuild(){
 					gotoDef.appendChild(document.createElement('option')).textContent = name;
 				}
 			} catch(err) {
-				//alert(`Exception creating control. See name = ${name}; path = ${hook.path}`);
 				cn = document.createElement('span');
 				cn.classList.add('fieldError');
 				cn.textContent = `Exception creating ${name}. Check ${hook.path}. ${err.message}`;
@@ -806,75 +803,23 @@ function tryUpdate(){
 	let v;
 	for (const [name,hook] of mydefs.entries()){
 		v = undefined;
-		switch (hook.type){
-			case 's':
-			case 'n':
-			case 'b':
-			case 'j':
-			case 'dt':
-			case 'l':
-			case 'm':
-				v = hook.var.nullOrVal;
-				if (v===undefined){
-					return;
+		if (hook.type in classHookMap){
+			v = hook.var.nullOrVal;
+			if (v===undefined){
+				return;
+			} else {
+				for (const mpath of hook.path){
+					console.log(`updating ${name} at ${mpath} to ${v}`);
+					setJson(myjson,mpath,v);
 				}
-				break;
-			/*
-			case 's':
-				v = (hook.control.querySelector('.valIsNull')?.checked) ? null : hook.control.querySelector('.val').value;
-				break;
-			case 'n':
-				v = (hook.control.querySelector('.valIsNull')?.checked) ? null : Number(hook.control.querySelector('.val').value);
-				break;
-			case 'b':
-				v = JSON.parse(hook.control.querySelector('input:checked').value);
-				break;
-			case 'j':
-				v = hook.control.querySelector('.val').value;
-				try {
-					v = JSON.parse((v.length>0) ? v : null);
-				} catch (parseErr){
-					alert(`Validate '${name}' : '${parseErr.message}'`);
-					hook.control.scrollIntoView();
-					return;
-				}
-				break;
-			case 'dt':
-				v = (hook.control.querySelector('.valIsNull')?.checked) ? null : hook.control.querySelector('.val').value;
-				break;
-			case 'l':
-				if (hook.control.querySelector('.valIsNull')?.checked){
-					v = null;
-				} else {
-					v = hook.control.querySelector('.val').value;
-					if (v.length==0){
-						v = [];
-					} else {
-						v = v.split('\n');
-						if (hook.opts=='n'){
-							v = v.map(l=>Number(l));
-						}
-					}
-				}
-				break;
-			case 'm':
-				if (hook.control.querySelector('.valIsNull')?.checked){
-					v = null;
-				} else {
-					v = Array.from(hook.control.querySelector('.val').selectedOptions).map(o=>o.text);
-				}
-				break;
-				*/
-			case '~':
-				break;
-			default:
-				console.log(`skipping type ${hook.type}`);
-				break;
-		}
-		if (v!==undefined){
-			for (const mpath of hook.path){
-				console.log(`updating ${name} at ${mpath} to ${v}`);
-				setJson(myjson,mpath,v);
+			}
+		} else {
+			switch (hook.type){
+				case '~':
+					break;
+				default:
+					console.log(`skipping type ${hook.type}`);
+					break;
 			}
 		}
 	}
@@ -882,7 +827,6 @@ function tryUpdate(){
 	updateAreaDets.querySelector('.areaTimestamp').textContent = new Date();
 	updateAreaDets.open = true;
 	updateAreaDets.scrollIntoView();
-	
 }
 
 function toggleNull(rele){
@@ -890,11 +834,10 @@ function toggleNull(rele){
 	if (v){
 		v.disabled = rele.checked;
 	}
-}
+}/*
 function validateCFormat(rele){
 	const v = rele.parentElement?.querySelector('.cval');
 	try {
-		//let j = JSON.parse(v.value);
 		v.value = JSON.stringify(JSON.parse(v.value),null,3);
 		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
 		alert('Valid!');
@@ -902,10 +845,10 @@ function validateCFormat(rele){
 		alert(`JSON is not valid: ${err.message}`);
 	}
 }
-function validateFormat(rele){
-	const v = rele.parentElement?.querySelector('.val');
+*/
+function validateFormat(rele,cls){
+	const v = rele.parentElement?.querySelector(cls);
 	try {
-		//let j = JSON.parse(v.value);
 		v.value = JSON.stringify(JSON.parse(v.value),null,3);
 		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
 		alert('Valid!');
@@ -915,36 +858,22 @@ function validateFormat(rele){
 }
 function toggleNotesEditable(){
 	const mode = controls.querySelector('.notesEd') ? 'false' : 'plaintext-only';
-	Array.from(controls.querySelectorAll('.notes')).forEach(n=>{
+	for (const n of Array.from(controls.querySelectorAll('.notes'))){
 		n.classList.toggle('notesEd');
 		n.contentEditable = mode;
-	});
+	}
 }
 function pullDefs(){
 	const r = [];
-	
-	//let notes;
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~'){
 			r.push(hook.path);
 		} else if (hook.type in hookMap){
-			//notes = hook.control.querySelector('.notes').textContent.replace(',',';');
-			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
+			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts?? ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
-			// ignored
 		}
 	}
-	/*mydefs.entries().forEach(([name,hook])=>{
-		if (hook.type=='~'){
-			r.push(hook.path);
-		} else if (hook.type in hookMap){
-			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
-		} else {
-			console.error(`Unrecognized type ${hook.type}; skipping`);
-		}
-	});*/
-	//return Array.from(mydefs.entries().map(([name,hook])=>hook.type=='~' ? hook.path : hook.type in hookMap ? `${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}` : '-skipped def'));
 	return r;
 }
 function exportDefsToDialog(){
@@ -960,8 +889,6 @@ function save(par,filename){
 	const ta = par.querySelector('textarea')?.value;
 	if (ta?.length>0){
 		const d = new Date(), b = new Blob([ta]), a = document.createElement('a');
-		//const b = new Blob([ta]);
-		//const a = document.createElement('a');
 		a.href = URL.createObjectURL(b);
 		a.download = `${d.getFullYear()}${d.getMonth()+1}${d.getDate()}${d.getHours()+1}${d.getMinutes()}_${filename}`;
 		a.click();
@@ -970,9 +897,6 @@ function save(par,filename){
 		alert('Textarea is empty!');
 	}
 }
-/*function colorChange(e){
-	document.documentElement.style.setProperty('--fscolor',e.value);
-}*/
 
 function loadFileOnTextarea(i){
 	const t = i.parentElement.parentElement.querySelector('textarea');
@@ -1070,7 +994,6 @@ Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 <h2>Defs Export</h2>
 <textarea spellcheck='false'></textarea>
 <center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
-<!--<center><button command='close' commandfor='defExported'>x</button></center>-->
 </dialog>
 
 <template id='tStringControl'>
@@ -1117,7 +1040,7 @@ Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 		<legend class='name'>Name</legend>
 		<div class='bigSmall bigSmallJson'>
 		<label><i>json</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat(this)' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat(this,".val")' title='Validate and Format'>🧹</button>
 		</div>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
@@ -1164,13 +1087,13 @@ Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
 		<label><i>object</i> <textarea class='cval' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
-		<button onclick='validateCFormat(this)' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat(this,".cval")' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
 		<label><i>objects</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat(this)' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat(this,".cval")' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 </html>
