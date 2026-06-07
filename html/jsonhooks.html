@@ -5,6 +5,7 @@
 	--roundness: 4px;
 	--def-border-width: 2px;
 	--def-border-sty: ridge;
+	--fscolor: #92cabd;
 }
 input:required:invalid {
 	outline: 1px red solid;
@@ -37,7 +38,7 @@ fieldset, legend, #inputJson, #inputDefs, #updateArea {
 	border-radius: var(--roundness);
 }
 fieldset {
-	background: #92cabd;
+	background: var(--fscolor);
 	margin-bottom: 5px;
 }
 legend {
@@ -56,10 +57,22 @@ details:open {
 summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio] {
 	cursor: pointer;
 }
-input:disabled, select:disabled {
+select:hover {
+	cursor: pointer;
+}
+select[multiple]:hover {
+	cursor: cell;
+}
+input:disabled, select:disabled, select[multiple]:disabled:hover {
 	cursor: not-allowed;
 }
-
+option:checked {
+	background: #ffff5b;	
+}
+option:checked::after {
+	content: "  ✔";
+	
+}
 #inputDefs, #defExported textarea {
 	line-height: 1.5em;
 	font-family: arial;
@@ -127,6 +140,9 @@ dialog textarea {
 summary button {
 	font-size: 0.75em;
 }
+.typeMismatch {
+	border-color: red;
+}
 @media (max-width: 800px){
 	body {
 		overflow: auto;
@@ -144,6 +160,8 @@ summary button {
 		background: #ccc;
 		resize: horizontal;
 		max-width: unset;
+		max-height: 100vh;
+		overflow: auto;
 	}
 	#controls {
 		height: unset;
@@ -156,11 +174,44 @@ summary button {
 	display: inline-block;
 	color: red;
 }
+/*
+.loadFile {
+	display: inline-block;
+	margin: 0 auto;
+	border: 1px solid #ccc;
+	border-radius: 2px;
+	padding: 2px;
+}
+.loadFile input{
+	display: none;
+}*/
 </style>
 <script>
 'use strict';
 var myjson = undefined;
 var mydefs = undefined;
+
+class HeatNode {
+	constructor(partialPath){
+		this.children = {};
+		this.isLeaf = false;
+		this.fullPath = partialPath;
+	}
+	getChild(name){
+		if (this.isLeaf){
+			// leaves can't have children
+			return null;
+		} else {
+			if (name in this.children){
+				return this.children[name];
+			} else {
+				this.children[name] = new HeatNode(this.fullPath+'.'+name);
+				return this.children[name];
+			}
+		}
+	}
+};
+
 
 function defParse(lines){
 	const r = new Map();
@@ -176,7 +227,6 @@ function defParse(lines){
 			continue;
 		}
 		[name,path,type,opts,notes] = line.split(',');
-		//console.log(name,path,type,opts,notes);
 		if (!name || !path || name.trim().length==0 || path.trim().length==0){
 			console.error(`invalid name "${name}" or invalid path "${path}"`);
 			r.set(line,{type: 'err'});
@@ -223,11 +273,11 @@ function setJson(j,path,newValue){
 	}
 	pvnode[dpath[dpath.length-1]] = newValue;
 }
-function createEnumControl(name,hook,v){
+function createEnumControl(opts,v){
 	const clone = tEnumControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
 	const sel = fs.querySelector('select');
-	for (const e of hook.opts.trim().split('|')){
+	for (const e of opts.trim().split('|')){
 		sel.appendChild(document.createElement('option')).textContent = e;
 	}
 	if (v!=null){
@@ -235,30 +285,38 @@ function createEnumControl(name,hook,v){
 	}
 	return fs;
 }
-function createStringControl(name,hook,v){
-	if (hook.opts?.trim().length > 0){
+function createMultiControl(opts,v){
+	const clone = tMultiControl.content.cloneNode(true);
+	const fs = clone.firstElementChild;
+	const sel = fs.querySelector('select');
+	const mopts = new Map();
+	let optN = 0;
+	for (const e of opts.trim().split('&')){
+		sel.appendChild(document.createElement('option')).textContent = e;
+		// tbd check if already in map
+		mopts.set(e,optN++);
+	}
+	if (v!=null){
+		for (const ar of v){
+			sel.options[mopts.get(ar)].selected = true;
+		}
+		//fs.querySelector('.val').value = v;
+	}
+	return fs;
+}
+function createStringControl(opts,v){
+	if (opts?.trim().length > 0){
 		// string is enumerated
-		return createEnumControl(name,hook,v);
+		return createEnumControl(opts,v);
 	}
 	const clone = tStringControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
-	if (hook.type=='n'){
-		const vi = fs.querySelector('.val');
-		fs.querySelector('.labelType').textContent = vi.type = 'number';
-		vi.placeholder = '0';
-		vi.step = '0.01';
-		vi.required = true;
-	} else if (hook.type=='dt'){
-		fs.querySelector('.labelType').textContent = 'date';
-		fs.querySelector('.val').type = 'datetime-local';
-	} else {
-	}
 	if (v!=null){
 		fs.querySelector('.val').value = v;
 	}
 	return fs;
 }
-function createBoolControl(name,hook,v){
+function createBoolControl(opts,v){
 	const clone = tBoolControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
 	Array.from(fs.querySelectorAll('input')).forEach(i=>i.name=name);
@@ -280,14 +338,13 @@ function createBoolControl(name,hook,v){
 	fs.querySelector(rinput).checked = true;
 	return fs;
 }
-/*
-function createNumberControl(name,hook,v){
+function createNumberControl(opts,v){
 	// opts has value means enum
 	// plan is to allow range via other symbols
 //~ 	const controlType = (hook.opts?.trim().length>0) ? 'enum' : 'num';
 //~ 	if (controlType=='enum'){
-	if (hook.opts?.trim().length>0){
-		return createEnumControl(name,hook,v);
+	if (opts?.trim().length>0){
+		return createEnumControl(opts,v);
 	}
 	const clone = tNumberControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
@@ -296,71 +353,145 @@ function createNumberControl(name,hook,v){
 	}
 	return fs;
 }
-*/
-function createJsonControl(name,hook,v){
+function createJsonControl(opts,v){
 	const clone = tJsonControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
 	fs.querySelector('.val').value = JSON.stringify(v,null,3);
 	fs.querySelector('.val').rows = Math.min(40, 2 + Array.from(fs.querySelector('.val').value.matchAll('\n')).length);
 	return fs;
 }
-function createListControl(name,hook,v){
+function createListControl(opts,v){
 	const clone = tFlatListControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
 	if (v!=null){
 		fs.querySelector('.val').value = v.join('\n');
 		fs.querySelector('.val').rows = Math.min(40, 1 + v.length);
 	}
-	if (hook.opts=='n'){
+	if (opts=='n'){
 		fs.querySelector('.labelType').textContent = 'numeric list';
 	}
 	return fs;
 }
-/*
-function createDateControl(name,hook,v){
+function createDateControl(opts,v){
 	const clone = tDateControl.content.cloneNode(true);
 	const fs = clone.firstElementChild;
 	if (v!=null){
 		fs.querySelector('.val').value = v;
 	}
 	return fs;
-}*/
+}
 function createSep(name,hook){
 	const ele = document.createElement('h2');
 	ele.textContent = hook.path.replaceAll('~','');
 	return ele;
 }
 const hookMap = 
-	{'s':createStringControl
-	,'b':createBoolControl
-	,'n':createStringControl
-	,'j':createJsonControl
-	,'dt':createStringControl
-	,'l':createListControl
+	{'s':{'f':createStringControl, 't': String}
+	,'b':{'f':createBoolControl, 't': Boolean}
+	,'n':{'f':createNumberControl, 't': Number}
+	,'j':{'f':createJsonControl, 't': Object}
+	,'dt':{'f':createDateControl, 't': String}
+	,'l':{'f':createListControl, 't':Array}
+	,'m':{'f':createMultiControl, 't':Array}
 };
 
+function check_paths(paths){
+	// check whether all paths are unique and not subsets of each other
+	// example call
+	// check_paths(['hello','helloworld','hello.world','hello.fresh.ton'])
+	//  'hello' won't appear in list
+	const badPaths = [];
+	const hm = new HeatNode('');
+	let pathParts, current, badPath;
+	for (const path of paths){
+		pathParts = path.split('.');
+		current = hm;
+		badPath = false;
+		for (const part of pathParts){
+			if (current.isLeaf){
+				console.error(`leaf mid branch at ${path}`);
+				badPaths.push(current.fullPath);
+				badPath = true;
+				break;
+			}
+			current = current.getChild(part);
+			if (current==null){
+				console.error(`leaf mid branch at ${path}. (trying to get child of a leaf)`);
+				badPath = true;
+				break;
+			}
+		}
+		if (badPath){
+			badPaths.push('.'+path);
+			continue;
+		}
+		// at this point, we should be at the end of path
+		if (current && Object.keys(current.children).length>0){
+			console.error(`${path} has children but is leaf`);
+			badPath = true;
+		}
+		if (current.isLeaf){
+			console.error(`${path} is already marked a leaf, path not unique`);
+			badPath = true;
+		} else {
+			current.isLeaf = true;
+			// this is the best outcome for path
+		}
+		if (badPath){
+			badPaths.push('.'+path);
+		}
+	}
+	return badPaths;
+}
+
+function helper_check_mydefs(){
+	// gather all paths from mydefs
+	const paths = [];
+	for (const [name,def] of mydefs.entries()){
+		if (def.type in hookMap){
+			paths.push(...def.path);
+		}
+	}
+	return check_paths(paths);
+}
+
 function createControl(name,hook,cv){
-	// map out function call to type
-	// call function with arguments, default to type 'j' if not available
-	const ctrl = hookMap[(hook.type in hookMap) ? hook.type : 'j'](name,hook,cv);
+	let htype = 'j';
+	if (hook.type!=htype && hook.type in hookMap){
+		// j is compatible with all values
+		if (cv===null || cv.constructor == hookMap[hook.type].t){
+			// null is always compatible
+			// validate hook.type is compatible with cv's type
+			htype = hook.type;
+		}
+	}
+	const ctrl = hookMap[htype].f(hook.opts,cv);
 	ctrl.querySelector('.name').textContent = name;
 	if (hook.notes?.trim().length){
 		ctrl.querySelector('.notes').textContent = hook.notes;
 	}
-	if (hook.type!='b' && hook.type!='j' && cv==null){
+	if (cv==null && htype!='b' && htype!='j'){
 		ctrl.querySelector('.valIsNull').checked = ctrl.querySelector('.val').disabled = true;
+	}
+	if (hook.type != htype){
+		ctrl.classList.add('typeMismatch');
 	}
 	return ctrl;
 }
 
-function tryBuild(callbutton){
+function tryBuild(){
 	try {
 		myjson = JSON.parse(inputJson.value);
 	} catch (parseErr){
 		alert(`Invalid input: ${parseErr.message}`);
 		return;
 	}
-	callbutton.hidden = inputJson.readOnly = inputDefs.readOnly = true;
+	if (jsonfileinput.files.length==1){
+		outputFileName.value = jsonfileinput.files[0].name;
+	}
+	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
+	//callbutton.hidden = 
+	inputJson.readOnly = inputDefs.readOnly = true;
 	console.log('**input json**');
 	console.log(myjson);
 	mydefs = defParse(inputDefs.value.trim().split('\n'));
@@ -381,22 +512,31 @@ function tryBuild(callbutton){
 			afrag.appendChild(cn);
 		} else {
 			cv = undefined;
-			cv = traceJson(myjson,hook.path[0]);
-			if (cv === undefined){
-				// don't create the control if path is not valid
-				// prevent trying to update this path
+			try {
+				cv = traceJson(myjson,hook.path[0]);
+				console.log(cv);
+				if (cv === undefined){
+					// don't create the control if path is not valid
+					// prevent trying to update this path
+					cn = document.createElement('span');
+					cn.classList.add('fieldError');
+					cn.textContent = `Unable to create ${name} at ${hook.path}. Please update JSON or DEFS to remove this error.`;
+					hook.type = '-';
+					afrag.appendChild(cn);
+					continue;
+				}
+				cn = createControl(name,hook,cv);
+				if (cn){
+					hook.control = afrag.appendChild(cn);
+					hook.control.title = hook.path;
+					gotoDef.appendChild(document.createElement('option')).textContent = name;
+				}
+			} catch(err) {
+				//alert(`Exception creating control. See name = ${name}; path = ${hook.path}`);
 				cn = document.createElement('span');
 				cn.classList.add('fieldError');
-				cn.textContent = `Unable to create ${name} at ${hook.path}. Please update JSON or DEFS to remove this error.`;
-				hook.type = '-';
+				cn.textContent = `Exception creating ${name}. Check ${hook.path}. ${err.message}`;
 				afrag.appendChild(cn);
-				continue;
-			}
-			cn = createControl(name,hook,cv);
-			if (cn){
-				hook.control = afrag.appendChild(cn);
-				hook.control.title = hook.path;
-				gotoDef.appendChild(document.createElement('option')).textContent = name;
 			}
 		}
 	}
@@ -445,6 +585,15 @@ function tryUpdate(){
 					}
 				}
 				break;
+			case 'm':
+				if (hook.control.querySelector('.valIsNull').checked){
+					v = null;
+				} else {
+					v = Array.from(hook.control.querySelector('.val').selectedOptions).map(o=>o.text);
+				}
+				break;
+			case '~':
+				break;
 			default:
 				console.log(`skipping type ${hook.type}`);
 				break;
@@ -464,31 +613,32 @@ function tryUpdate(){
 }
 
 function toggleNull(rele){
-	const valEle = rele.parentElement?.parentElement?.querySelector('.val');
-	if (valEle){
-		valEle.disabled = rele.checked;
+	const v = rele.parentElement?.parentElement?.querySelector('.val');
+	if (v){
+		v.disabled = rele.checked;
 	}
 }
 function validateFormat(rele){
-	const valEle = rele.parentElement?.querySelector('.val');
+	const v = rele.parentElement?.querySelector('.val');
 	try {
-		let j = JSON.parse(valEle.value);
-		valEle.value = JSON.stringify(j,null,3);
-		valEle.rows = Math.min(40, 2 + Array.from(valEle.value.matchAll('\n')).length);
+		//let j = JSON.parse(v.value);
+		v.value = JSON.stringify(JSON.parse(v.value),null,3);
+		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
+		alert('Valid!');
 	} catch(err){
 		alert(`JSON is not valid: ${err.message}`);
 	}
 }
 function toggleNotesEditable(){
-	const notes = Array.from(controls.querySelectorAll('.notes'));
 	const mode = controls.querySelector('.notesEd') ? 'false' : 'plaintext-only';
-	notes.forEach(n=>{
+	Array.from(controls.querySelectorAll('.notes')).forEach(n=>{
 		n.classList.toggle('notesEd');
 		n.contentEditable = mode;
 	});
 }
 function pullDefs(){
-	const r = [];
+	//const r = [];
+	/*
 	let notes;
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~'){
@@ -497,15 +647,24 @@ function pullDefs(){
 			notes = hook.control.querySelector('.notes').textContent.replace(',',';');
 			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${notes}`);
 		} else {
-			console.error(`Unrecognized type ${hook.type}; skipping`)
+			console.error(`Unrecognized type ${hook.type}; skipping`);
 			// ignored
 		}
-	}
-	return r;
+	}*/
+	/*mydefs.entries().forEach(([name,hook])=>{
+		if (hook.type=='~'){
+			r.push(hook.path);
+		} else if (hook.type in hookMap){
+			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
+		} else {
+			console.error(`Unrecognized type ${hook.type}; skipping`);
+		}
+	});*/
+	return Array.from(mydefs.entries().map(([name,hook])=>hook.type=='~' ? hook.path : hook.type in hookMap ? `${name},${hook.path.join('|')},${hook.type},${hook.opts? hook.opts: ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}` : '-skipped def'));
+	//return r;
 }
 function exportDefsToDialog(){
-	const r = pullDefs();
-	defExported.querySelector('textarea').value = r.join('\n');
+	defExported.querySelector('textarea').value = pullDefs().join('\n');
 	defExported.show();
 }
 function gotoDefChange(key){
@@ -516,9 +675,9 @@ function gotoDefChange(key){
 function save(par,filename){
 	const ta = par.querySelector('textarea')?.value;
 	if (ta?.length>0){
-		const d = new Date();
-		const b = new Blob([ta]);
-		const a = document.createElement('a');
+		const d = new Date(), b = new Blob([ta]), a = document.createElement('a');
+		//const b = new Blob([ta]);
+		//const a = document.createElement('a');
 		a.href = URL.createObjectURL(b);
 		a.download = `${d.getFullYear()}${d.getMonth()+1}${d.getDate()}${d.getHours()+1}${d.getMinutes()}_${filename}`;
 		a.click();
@@ -527,6 +686,23 @@ function save(par,filename){
 		alert('Textarea is empty!');
 	}
 }
+/*function colorChange(e){
+	document.documentElement.style.setProperty('--fscolor',e.value);
+}*/
+
+function loadFileOnTextarea(i){
+	const t = i.parentElement.parentElement.querySelector('textarea');
+	if (i.files.length==1){
+		const reader = new FileReader();
+		reader.onload = ()=>{
+			t.value = reader.result;
+			console.log(i.files[0].name);
+		};
+		reader.onerror = ()=>{alert('Error reading file')};
+		reader.readAsText(i.files[0]);
+	}
+}
+
 </script>
 <body>
 <div id='container'>
@@ -535,58 +711,70 @@ function save(par,filename){
 			<summary>Input Json</summary>
 			<textarea id='inputJson' rows=10 spellcheck='false'>
 {
-	"name": "james",
-	"age": 24,
-	"pets": [],
-	"location": {
-		"x": 24,
-		"y": 59,
-		"z": 4823,
-		"age" : 87
-	},
-	"gender": null,
-	"donated": null,
-	"birthdate":"2019-10-01T01:01",
-	"array": [
-		 { "key1": "my first key", "key2": 2 }
-		,{ "element": null }
-		,10
-		,[1,2,3]
-	]
+"a_string": "stringValue10",
+"a_number": 10.50,
+"a_date": "2019-10-01T01:01",
+"a_list": [
+	"item1", 2, 3
+],
+"an_object": {
+	"enum_string": "apple",
+	"enum_number": 2,
+	"a_bool": true,
+	"a_json": {
+		"inner-key": "inner-value",
+		"branch-node": null
+	}
+},
+"indexable" : [
+	"zero_element",
+	{"obj-in-array": null}
+],
+"repeated-string": "BOAT2045",
+"repeated-string-dup": "BOAT2045 COPY",
+"select": ["apple","banana","cottage"]
 }
 			</textarea>
+			<label class='preBuildButton loadFile'>📂<input type='file' accept='.json' onchange='loadFileOnTextarea(this)' id='jsonfileinput' /></label>
 		</details>
 		<details id='inputDefsDet' open>
 			<summary>Input Defs</summary>
 			<textarea id='inputDefs' rows=10 spellcheck='false'>
-~~personal info
-name,name,s,,name goes here
-age,age|location.age,n,23|24|25,number field
-pets,pets,j,,any json here
-birthday,birthdate,dt,
-~~location info
-x,location.x,n
-y,location.y,n
-z,location.z,n
-~~metadata
-gender,gender,s,male|female|other,choose
-donated,donated,b,,boolean true false or null
-~~array test
-key1,array.0.key1,s,
-array[2],array.2,j,
-list,array.3,l,n
+~~Header 1- Basic types
+String Control,a_string,s,,'s' denotes a string control
+Number Control,a_number,n,,'n' denotes a number control
+Date Control,a_date,dt,,'dt' denotes a date control
+List Control,a_list,l,,'l' denotes a homogeneous list control. a 'n' in opts denotes it as a number list.
+~~Header 2- Even more basic Types
+Enum String Control,an_object.enum_string,s,apple|banana,Having a pipe delimited list in opts creates an enum control.
+Enum Number Control,an_object.enum_number,n,1|2|3|4|5,Similar with numbers, the 'n' causes the result to be cast to number in output
+Bool Control,an_object.a_bool,b,,'b' denotes a bool control
+Json Control,an_object.a_json,j,,'j' denotes a json control
+~~Header 3- Arrays
+Array Indexing Value 0,indexable.0,s,,Using a number in the path can refer to that index in an array
+Array Indexing Value 1 Child Key,indexable.1.obj-in-array,b,,You can even refer to objects inside arrays
+~~Header 4- Multi-path
+Multi-path string,repeated-string|repeated-string-dup,s,,You can include multiple paths with pipes. The same value will be put to every path.
+~~Header 5- Error checking
+Invalid Path,myinvalidpath,s,,This path will result in an error
+Invalid Branching,an_object.a_json.branch-node.invalidleaf,j,,This is an invalid leaf
+Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 			</textarea>
+			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
 		<details id='updateAreaDets'>
-			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,"output.json")' title='Save Json'>💾</button></summary>
+			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>💾</button></summary>
 			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
-			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span>
+			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span><br>
+			<label>Filename: <input id='outputFileName' /></label>
 		</details>
-		<center><button onclick='tryBuild(this)'>🔨 Build</button></center>
+		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
 		<div id='updateAreas' hidden><center>
 		<select id='gotoDef' onchange='gotoDefChange(this.value)'></select>
 		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
 		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
+		<!--<input onchange='colorChange(this)' type='color' value='#92cabd' />-->
+		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</center></div>
 	</div>
 
@@ -598,13 +786,14 @@ list,array.3,l,n
 <h2>Defs Export</h2>
 <textarea spellcheck='false'></textarea>
 <center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
+<!--<center><button command='close' commandfor='defExported'>x</button></center>-->
 </dialog>
 
 <template id='tStringControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='bigSmall'>
-		<label class='valLabel'><i class='labelType'>string</i> <input class='val' placeholder='{empty string}'></label>
+		<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'></label>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 		</div>
 		<span class='notes' spellcheck='false'></span>
@@ -620,7 +809,6 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
-<!--
 <template id='tNumberControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -630,7 +818,6 @@ list,array.3,l,n
 		</div><span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
--->
 <template id='tBoolControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -651,7 +838,6 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
-<!--
 <template id='tDateControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -662,7 +848,6 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
--->
 <template id='tFlatListControl'>
 	<fieldset>
 		<legend class='name'>Name</legend>
@@ -673,44 +858,14 @@ list,array.3,l,n
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
-<script>
-/* ignore this */
-'use strict';
-class FSControls {
-	static types = 
-		{'s':tStringControl
-		,'b':tBoolControl
-		,'n':tStringControl
-		,'j':tJsonControl
-		,'dt':tStringControl
-		,'l':tFlatListControl
-	};
-	static createControl(name,hook,cv){
-		
-	}
-	constructor(type,name,notes){
-		this.type = type;
-		this.ctrl = (FSControls.types)[type].content.cloneNode(true);
-		this.ctrl.querySelector('.name').textContent = name;
-		if (notes?.trim().length){
-			this.ctrl.querySelector('.notes').textContent = notes;
-		}
-	}
-}
-class StringControl extends FSControls {
-	constructor(name,notes,v){
-		super('s',name,notes);
-		if (v==null){
-			this.ctrl.querySelector('.valIsNull').checked = this.ctrl.querySelector('.val').disabled = true;
-		} else {
-			this.ctrl.querySelector('.val').value = v;
-		}
-	}
-}
-class NumberControl extends StringControl {
-	constructor(name,notes,v){
-		super(name,notes,v);
-	}
-}
-</script>
+<template id='tMultiControl'>
+	<fieldset>
+		<legend class='name'>Name</legend>
+		<div class='bigSmall'>
+		<label><i>multi</i> <select class='val' multiple> </select></label>
+		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+		</div>
+		<span class='notes' spellcheck='false'></span>
+	</fieldset>
+</template>
 </html>
