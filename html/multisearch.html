@@ -1,0 +1,185 @@
+<html>
+<script>
+const engines = new Map();
+let disabledEngines = localStorage.getItem('disabledEngines');
+if (disabledEngines){
+	try {
+		disabledEngines = new Set(JSON.parse(disabledEngines));
+	} catch (err){
+	}
+} else {
+	disabledEngines= new Set();
+}
+
+const defaultEngines = {
+ ddg:{p: 'https://duckduckgo.com/lite?q='}
+,ast:{p: 'https://astiango.com/?q=', a:'&type=web'}
+,startpage:{p: 'https://www.startpage.com/sp/search?query='}
+,qwant:{p: 'https://www.qwant.com/?q=', a:'&t=web'}
+,ecosia:{p: 'https://www.ecosia.org/search?method=index&q='}
+,presearch:{p: 'https://presearch.com/search?q='}
+};
+for (const [n,x] of Object.entries(defaultEngines)){
+	if (!(disabledEngines.has(n))){
+		engines.set(n,x);
+	}
+}
+/*
+engines.set('ddg',{p: 'https://duckduckgo.com/lite?q='});
+engines.set('ast',{p: 'https://astiango.com/?q=', a:'&type=web'});
+engines.set('startpage',{p: 'https://www.startpage.com/sp/search?query='});
+engines.set('qwant',{p: 'https://www.qwant.com/?q=', a:'&t=web'});
+engines.set('ecosia',{p: 'https://www.ecosia.org/search?method=index&q='});
+engines.set('presearch',{p: 'https://presearch.com/search?q='});
+*/
+//engines.set('name',{p: 'before', a:'after'});
+
+let custEngines = localStorage.getItem('custEngines');
+if (custEngines){
+	try {
+		custEngines = JSON.parse(custEngines);
+	} catch (err){
+	}
+} else {
+	custEngines = {};
+}
+for (const [n,x] of Object.entries(custEngines)){
+	engines.set(n,x);
+}
+
+
+function rand(min, max){
+	return Math.floor(Math.random()* (max-min)+min);
+}
+
+let options = Array.from(engines.keys());
+let ex = rand(0, engines.size-1);
+
+function trySearch(op,s){
+	if (engines.has(op) && s.length>0){
+		const e = engines.get(op);
+		location = `${e.p}${s}${e.a??''}`;
+	}
+}
+
+{
+	//const q = new URLSearchParams(location.search);
+	const s = (new URLSearchParams(location.search)).get('q');
+	if (s){
+		trySearch(options[ex], s);
+	}
+}
+</script>
+<style>
+body {
+background: #222;
+}
+select {
+	font-size: 1.5em;
+}
+button {
+	background: #9f4504;
+	color: white;
+	border: 1px outset #9f4504;
+	border-radius: 5px;
+}
+textarea {
+	font-size: 2.5em;
+	resize: vertical;
+	min-height: 2em;
+	background: #ccc;
+	border: 1px outset #9f4504;
+	border-radius: 5px;
+}
+select {
+	background: #aaa;
+	border: 1px outset #9f4504;
+	border-radius: 5px;
+}
+#searchBox {
+	display: grid;
+	grid-template-columns: 3fr 1fr;
+	gap: 5px;
+}
+option:checked {
+	background: #5e0505;
+	color: white;
+}
+#typedQuery {
+	grid-column: span 2;
+}
+</style>
+<body>
+<div id='searchBox'>
+<textarea id='typedQuery' spellcheck='false' rows=6 cols=80></textarea>
+<select id='useEngine' size=4 ondblclick='dblClkEngine(this)'></select> <button id='gob' onclick='trySearch(useEngine.value,typedQuery.value)'>Search</button>
+</div>
+<button onclick='useEngine.value=options[rand(0,engines.size-1)]'>Random Engine</button>
+</body>
+<script>
+//let dom;
+//for (const op of options){
+	/*dom = document.createElement('option');
+	dom.textContent = op;
+	useEngine.appendChild(dom);*/
+	//useEngine.appendChild(document.createElement('option')).textContent = op;
+//}
+
+options.forEach(o=>useEngine.appendChild(document.createElement('option')).textContent=o);
+useEngine.selectedIndex = ex;
+/*
+function typeHandle(e){
+	if (e.key=='Enter' && e.shiftKey){
+		e.preventDefault();
+		gob.focus();
+	}
+}
+typedQuery.addEventListener('keydown',typeHandle);*/
+typedQuery.addEventListener('keydown',e=>{if (e.key=='Enter' && e.shiftKey){e.preventDefault();gob.focus();}});
+
+function addAEngine(e,p,a){
+	custEngines[e] = {p:p, a:a};
+	engines.set(e,custEngines[e]);
+	options.push(e);
+	useEngine.appendChild(document.createElement('option')).textContent=e;
+	localStorage.setItem('custEngines',JSON.stringify(custEngines));
+}
+function enginePrompt(){
+	let e=prompt('Name?','name'), p=prompt('Prefix?',''), a=prompt('Affix?','');
+	if (e.length && p.length){
+		addAEngine(e,p,a);
+	}
+}
+function deleteEngineOption(i){
+	// removes an engine
+	let e = options[i];
+	if (e in custEngines){
+		delete custEngines[e];
+		localStorage.setItem('custEngines',JSON.stringify(custEngines));
+	} else {
+		disabledEngines.add(e);
+		localStorage.setItem('disabledEngines',JSON.stringify(Array.from(disabledEngines.values())));
+	}
+	useEngine.removeChild(useEngine.children[i]);
+	options = Array.from(engines.keys());
+}
+function dblClkEngine(s){
+	//console.log(s.selectedIndex);
+	const ans = confirm(`Delete ${options[s.selectedIndex]}?`);
+	if (ans){
+		deleteEngineOption(s.selectedIndex);
+	}
+	
+}
+/*
+function searchHandler(){
+	const e = useEngine.value;
+	const s = typedQuery.value;
+	trySearch(e,s);
+}
+function randomizeUseEngine(){
+	useEngine.value = options[rand(0, engines.size-1)];
+}
+*/
+</script>
+</html>

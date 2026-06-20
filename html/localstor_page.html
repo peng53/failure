@@ -1,0 +1,118 @@
+<html>
+<style>
+body {
+}
+textarea {
+	width: 100%;
+	background: yellow;
+	border: 0;
+	padding: 5px;
+}
+fieldset {
+	margin-bottom: 5px;
+	padding: 0px;
+	border: 1px solid #ccc;
+}
+#griddiv {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+}
+</style>
+<script>
+'use strict';
+function createTextwithButtons(par,textid){
+	let mytext = textareaAndButtons.content.cloneNode(true).firstElementChild;
+	mytext.querySelector('textarea').dataset.textid = textid;
+	par.appendChild(mytext);
+}
+
+function saveToLocal(ta){
+	const id = ta.dataset.textid;
+	localStorage.setItem(id, ta.value);
+}
+function loadFromLocal(ta){
+	const id = ta.dataset.textid;
+	ta.value = localStorage.getItem(id);
+}
+function switchSet(s){
+	let fs = s.parentElement.parentElement;
+	let ta = fs.querySelector('textarea');
+	ta.dataset.textid = `text_${s.value}`;
+	loadFromLocal(ta);
+}
+function toggleAutosave(cb){
+	//console.log(cb.checked);
+	let ta = cb.parentElement.parentElement.querySelector('textarea');
+	ta.dataset.autosave = cb.checked;
+}
+function unfocusTAbind(ta){
+	if (ta.dataset.autosave=='true'){
+		saveToLocal(ta);
+	}
+}
+function initilizeTexts(){
+	let text_names = localStorage.getItem('text_names');
+	if (!text_names){
+		localStorage.setItem('text_names',JSON.stringify(['text1','text2','text3']));
+	}
+}
+function createSwitcher(){
+	let text_names = JSON.parse(localStorage.getItem('text_names'));
+	let fs = switchTemp.content.cloneNode(true).firstElementChild;
+	let sl = fs.querySelector('select');
+	let op;
+	for (const name of text_names){
+		op = document.createElement('option');
+		op.textContent = name;
+		sl.appendChild(op)
+	}
+	createTextwithButtons(fs,`text_${text_names[0]}`);
+	loadFromLocal(fs.querySelector('textarea'));
+	return fs;
+}
+</script>
+<body>
+<!--
+<fieldset id='switcherFS'>
+<legend>
+<select id='switchSelect' onchange='switchSet(this)'>
+</select>
+</legend>
+</fieldset>-->
+<!--
+<h2>My Textarea</h2>
+<textarea id='usertext1' data-textid='mytext'></textarea><br>
+<button onclick='loadFromLocal(usertext1)'>Load</button>
+<button onclick='saveToLocal(usertext1)'>Save</button>
+-->
+<div id='griddiv'></div>
+</body>
+<template id='textareaAndButtons'>
+<div>
+<textarea rows=15 cols=80 onblur='unfocusTAbind(this)' data-autosave='false'></textarea><br>
+<button onclick='loadFromLocal(this.parentElement.querySelector("textarea"))'>Load</button>
+<button onclick='saveToLocal(this.parentElement.querySelector("textarea"))'>Save</button>
+<label>Save on unfocus<input type='checkbox' onchange='toggleAutosave(this)' /></label>
+</div>
+</template>
+<template id='switchTemp'>
+<fieldset class='switcherFS'>
+<legend>
+<select onchange='switchSet(this)'>
+</select>
+</legend>
+</fieldset>
+</template>
+<script>
+initilizeTexts();
+
+let swit = createSwitcher();
+swit.style.gridColumn = 'span 2';
+griddiv.appendChild(swit);
+
+let swit2 = createSwitcher();
+griddiv.appendChild(swit2);
+let swit3 = createSwitcher();
+griddiv.appendChild(swit3);
+</script>
+</html>
