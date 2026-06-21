@@ -380,33 +380,37 @@ function createDateControl(opts,v){
 	return fs;
 }
 */
+/*
 function objectsControlAdd(par){
-	const cont = par.querySelector('.vals');
-	const subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
-	cont.appendChild(subCtrl);
+	if (!(par.querySelector('.valIsNull').checked)){
+		const cont = par.querySelector('.vals');
+		const subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
+		cont.appendChild(subCtrl);
+	}
 }
 function objectsControlSplDiv(par){
+	if ((par.querySelector('.valIsNull').checked)){ return; }
 	const cont = par.querySelector('.vals');
-	const isCombined = par.querySelector('.val');
+	const isCombined = par.querySelector('.innerVal');
 	if (isCombined){
 		try {
-			let j = JSON.parse(isCombined.value);
+			let j = JSON.parse(isCombined.querySelector('.val').value);
 			let cj;
 			let t;
 			for (const e of j){
 				cj = tInnerObject.content.cloneNode(true).firstElementChild;
 				t = JSON.stringify(e,null,3);
-				cj.querySelector('.cval').value = t;
-				cj.querySelector('.cval').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
+				cj.querySelector('.val').value = t;
+				cj.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
 				cont.appendChild(cj);
 			}
-			cont.removeChild(cont.querySelector('.innerVal'));
+			cont.removeChild(isCombined);
 		} catch(err){
 			alert(`Failed to split, JSON invalid. ${err.message}`);
 		}
 	} else {
 		let vs = [];
-		for (const cj of cont.querySelectorAll('.cval')){
+		for (const cj of cont.querySelectorAll('.val')){
 			if (cj.value.length){
 				vs.push(cj.value);
 			}
@@ -441,6 +445,7 @@ function createObjectsControl(opts,v){
 	}
 	return fs;
 }
+*/
 function createSep(name,hook){
 	const ele = document.createElement('h2');
 	ele.textContent = hook.path.replaceAll('~','');
@@ -543,11 +548,14 @@ function createControl(name,hook,cv){
 }
 */
 class FieldSetControl {
-	constructor(name,opts,type){
+	//constructor(name,opts,type){
+	constructor(){
+		/*
 		this.name = name;
 		this.opts = opts;
+		*/
 		this.control = undefined;
-		this.type = type;
+		//this.type = type;
 	}
 	get val(){
 		return this.control.querySelector('.val').value;
@@ -575,7 +583,8 @@ function enumSubType(opts){
 
 class NumberFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,opts,'n');
+		//super(name,opts,'n');
+		super();
 		this.control = (this.opts) ? enumSubType(opts) : tNumberControl.content.cloneNode(true).firstElementChild;
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
@@ -589,7 +598,8 @@ class NumberFieldSet extends FieldSetControl {
 }
 class StringFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,opts,'s');
+		//super(name,opts,'s');
+		super();
 		this.control = (this.opts) ? enumSubType(opts) : tStringControl.content.cloneNode(true).firstElementChild;
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
@@ -600,7 +610,8 @@ class StringFieldSet extends FieldSetControl {
 }
 class BoolFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,opts,'b');
+		//super(name,opts,'b');
+		super();
 		this.control = tBoolControl.content.cloneNode(true).firstElementChild;
 		for (const i of this.control.querySelectorAll('input')){
 			i.name = name;
@@ -626,17 +637,19 @@ class BoolFieldSet extends FieldSetControl {
 }
 class JsonFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,opts,'j');
+		//super(name,opts,'j');
+		super();
+		this.name = name;
 		this.control = tJsonControl.content.cloneNode(true).firstElementChild;
-		const val = this.control.querySelector('.val');
-		val.value = JSON.stringify(v,null,3);
-		val.rows = Math.min(40, 2 + Array.from(val.value.matchAll('\n')).length);
+		const ta = this.control.querySelector('.val');
+		ta.value = JSON.stringify(v,null,3);
+		ta.rows = Math.min(40, 2 + Array.from(ta.value.matchAll('\n')).length);
 	}
 	get val(){
 		try {
 			return JSON.parse(this.control.querySelector('.val').value);
 		} catch (parseErr){
-			alert(`Validate '${name}' : '${parseErr.message}'`);
+			alert(`Validate '${this.name}' : '${parseErr.message}'`);
 			this.control.scrollIntoView();
 			return undefined;
 		}
@@ -648,7 +661,8 @@ class JsonFieldSet extends FieldSetControl {
 }
 class DateFieldSet extends FieldSetControl {
 	constructor(name,opts,notes,v){
-		super(name,opts,'dt');
+		//super(name,opts,'dt');
+		super();
 		this.control = tDateControl.content.cloneNode(true).firstElementChild;
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
@@ -659,7 +673,9 @@ class DateFieldSet extends FieldSetControl {
 }
 class ListFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,opts,'l');
+		//super(name,opts,'l');
+		super();
+		this.opts = opts;
 		this.control = tFlatListControl.content.cloneNode(true).firstElementChild;
 		if (v!=null){
 			this.control.querySelector('.val').value = v.join('\n');
@@ -678,7 +694,8 @@ class ListFieldSet extends FieldSetControl {
 }
 class MultiSelFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,opts,'m');
+		//super(name,opts,'m');
+		super();
 		this.control = tMultiControl.content.cloneNode(true).firstElementChild;
 		const sel = this.control.querySelector('select');
 		const mopts = new Map();
@@ -699,6 +716,100 @@ class MultiSelFieldSet extends FieldSetControl {
 		return Array.from(this.control.querySelector('.val').selectedOptions).map(o=>o.text);
 	}
 }
+class ObjectsFieldSet extends FieldSetControl {
+	constructor(name,opts,v){
+		super();
+		this.control = tObjectsControl.content.cloneNode(true).firstElementChild;
+		this.name = name;
+		let cj;
+		let cont = this.control.querySelector('.vals');
+		if (v==null){
+			cj = tInnerObject.content.cloneNode(true).firstElementChild;
+			cj.querySelector('.val').disabled = this.control.querySelector('.valIsNull').checked = true;
+			cont.appendChild(cj);
+		} else {
+			for (const e of v){
+				cj = tInnerObject.content.cloneNode(true).firstElementChild;
+				cj.querySelector('.val').value = JSON.stringify(e,null,3);
+				cont.appendChild(cj);
+			}
+		}
+	}
+	get val(){
+		const v = Array.from(this.control.querySelectorAll('.val'));
+		try {
+			if (v.length==1){
+				return JSON.parse(v[0].value);
+			} else {
+				let av = [];
+				let tx;
+				for (const x of v){
+					tx = x.value.trim(); 
+					if (tx.length>0 && tx!='null'){
+						av.push(tx);
+					}
+				}
+				return JSON.parse(`[${av.join(',')}]`);
+			}
+		} catch(parseErr){
+			alert(`Validate '${this.name}' : '${parseErr.message}'`);
+			this.control.scrollIntoView();
+			return undefined;
+		}
+	}
+	static add(par){
+		if (!(par.querySelector('.valIsNull').checked)){
+			const cont = par.querySelector('.vals');
+			const subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
+			cont.appendChild(subCtrl);
+		}
+	}
+	static div(par){
+		if ((par.querySelector('.valIsNull').checked)){ return; }
+		const cont = par.querySelector('.vals');
+		const isCombined = par.querySelector('.innerVal');
+		if (isCombined){
+			try {
+				let j = JSON.parse(isCombined.querySelector('.val').value);
+				let cj;
+				let t;
+				for (const e of j){
+					cj = tInnerObject.content.cloneNode(true).firstElementChild;
+					t = JSON.stringify(e,null,3);
+					cj.querySelector('.val').value = t;
+					cj.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
+					cont.appendChild(cj);
+				}
+				cont.removeChild(isCombined);
+			} catch(err){
+				alert(`Failed to split, JSON invalid. ${err.message}`);
+			}
+		} else {
+			let vs = [];
+			for (const cj of cont.querySelectorAll('.val')){
+				if (cj.value.length){
+					vs.push(cj.value);
+				}
+			}
+			try {
+				let j = JSON.parse('['+vs.join(',')+']');
+				let cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild;
+				let t = JSON.stringify(j,null,3);
+				cmb.querySelector('.val').value = t;
+				cmb.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
+				cont.appendChild(cmb);
+				
+			} catch(err){
+				alert(`Failed to combine, JSON invalid. ${err.message}`);
+			}
+			for (const cj of cont.querySelectorAll('.innerCval')){
+				cont.removeChild(cj);
+			}
+		}
+		const but = par.querySelector('.splDivButton');
+		but.textContent = (but.textContent=='Split') ? 'Combine' : 'Split';
+	}
+}
 
 const classHookMap = 
 	{'s':{'f':StringFieldSet, 't': String}
@@ -708,6 +819,7 @@ const classHookMap =
 	,'dt':{'f':DateFieldSet, 't': String}
 	,'l':{'f':ListFieldSet, 't':Array}
 	,'m':{'f':MultiSelFieldSet, 't':Array}
+	,'o':{'f':ObjectsFieldSet, 't':Array}
 };
 
 function createControlClass(name,hook,cv){
@@ -781,7 +893,7 @@ function tryBuild(){
 				if (cn){
 					hook.var = cn;
 					hook.control = afrag.appendChild(cn.control);
-					hook.control.title = hook.path;
+					hook.control.title = hook.path.join('\n');
 					gotoDef.appendChild(document.createElement('option')).textContent = name;
 				}
 			} catch(err) {
@@ -800,6 +912,9 @@ function tryBuild(){
 }
 
 function tryUpdate(){
+	if (!myjson || !mydefs){
+		return;
+	}
 	let v;
 	for (const [name,hook] of mydefs.entries()){
 		v = undefined;
@@ -830,9 +945,9 @@ function tryUpdate(){
 }
 
 function toggleNull(rele){
-	const v = rele.parentElement?.parentElement?.querySelector('.val');
-	if (v){
-		v.disabled = rele.checked;
+	const v = Array.from(rele.parentElement?.parentElement?.querySelectorAll('.val'));
+	for (const ta of v){
+		ta.disabled = rele.checked;
 	}
 }/*
 function validateCFormat(rele){
@@ -847,7 +962,9 @@ function validateCFormat(rele){
 }
 */
 function validateFormat(rele,cls){
-	const v = rele.parentElement?.querySelector(cls);
+	//const v = rele.parentElement?.querySelector(cls);
+	const v = rele.parentElement?.querySelector('.val');
+
 	try {
 		v.value = JSON.stringify(JSON.parse(v.value),null,3);
 		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
@@ -940,7 +1057,12 @@ function loadFileOnTextarea(i){
 ],
 "repeated-string": "BOAT2045",
 "repeated-string-dup": "BOAT2045 COPY",
-"select": ["apple","banana","cottage"]
+"select": ["apple","banana","cottage"],
+"objarr": [
+	{"name":"greg", "age": 24},
+	{"name":"sarah", "age": 300},
+	[1,2,3,4]
+]
 }
 			</textarea>
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.json' onchange='loadFileOnTextarea(this)' id='jsonfileinput' /></label>
@@ -966,24 +1088,28 @@ Multi-path string,repeated-string|repeated-string-dup,s,,You can include multipl
 ~~Header 5- Error checking
 Invalid Path,myinvalidpath,s,,This path will result in an error
 Invalid Branching,an_object.a_json.branch-node.invalidleaf,j,,This is an invalid leaf
+~~Header 6- Special Types
 Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
-			</textarea>
+Objects,objarr,o,'o' denotes the objects type, an array of objects.
+</textarea>
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
+		<div id='updateAreas' hidden>
 		<details id='updateAreaDets'>
 			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>💾</button></summary>
 			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
 			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span><br>
 			<label>Filename: <input id='outputFileName' /></label>
 		</details>
-		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
-		<div id='updateAreas' hidden><center>
+
 		<select id='gotoDef' onchange='gotoDefChange(this.value)'></select>
+		<center>
 		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
 		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
 		<!--<input onchange='colorChange(this)' type='color' value='#92cabd' />-->
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</center></div>
+		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
 	</div>
 
 	<div id='controls'></div>
@@ -1079,21 +1205,22 @@ Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='vals'></div>
-		<button onclick='objectsControlSplDiv(this.parentElement)' class='splDivButton'>Combine</button>
-		<button onclick='objectsControlAdd(this.parentElement)'>Add</button>
+		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>Combine</button>
+		<button onclick='ObjectsFieldSet.add(this.parentElement)'>Add</button>
+		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
-		<label><i>object</i> <textarea class='cval' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat(this,".cval")' title='Validate and Format'>🧹</button>
+		<label><i>object</i> <textarea class='val' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
+		<button onclick='validateFormat(this,".val")' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
 		<label><i>objects</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat(this,".cval")' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat(this,".val")' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 </html>
