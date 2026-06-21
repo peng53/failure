@@ -5,28 +5,47 @@ body {
 }
 #main {
 	display: grid;
-	grid-template-columns: min-content 1fr;
+	grid-template-rows: max-content 1fr;
 	width: 100vw;
-	height: calc(100vh - 2em);
+	grid-gap: 1em;
+	height: 95vh;
 }
 #pane {
-	background: red;
-	overflow-y: auto;
-	padding: 5px;
+	margin: 2px;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	width: calc(100% - 4px);
+	overflow-x: auto;
+	height: 100%;
 	font-size: 1.5em;
 }
 #items {
-	resize: horizontal;
-	/*border-right: 1px solid black;*/
-	overflow-y: auto;
-	overflow-x: hidden;
-	min-width: 180px;
-	max-width: calc(100vw - 50px);
-	width: calc(100vw - 120px);
+	height: 100%;
+	overflow: auto;
+}
+#pane span {
+	display: inline-block;
+	background: #ccc;
+	text-wrap: nowrap;
+	margin: 2px 2px 10px 2px;
+	border-radius: 5px;
+}
+.itemTN {
+	border: 3px solid yellow;
+	border-radius: 6px;
+	object-fit: contain;
+	height: 126px;
+}
+.itemTitle:hover {
+	height: unset;
+}
+.itemHighlight {
+	background: #ccc;
 }
 </style>
 
-<style id='itemThumbnails'>
+<style id='itemThumbnails' disabled>
 #items {
 	display: flex;
 	flex-flow: wrap;
@@ -34,17 +53,18 @@ body {
 .item {
 	/*border: 1px inset #000;*/
 	width: 120px;
-	padding: 5px;
-	/*height: 200px;*/
 	margin: 10px;
+	/*height: 200px;*/
 	display: grid;
 	grid-template-rows: min-content 1fr;
 	grid-gap: 4px;
 }
 .itemTN {
 	width: 120px;
+
 }
 .itemTitle {
+	display: block;
 	font-weight: bold;
 	text-align: center;
 	color: black;
@@ -52,7 +72,10 @@ body {
 	font-size: 0.8em;
 	overflow-wrap: break-word;
 	width: 130px;
+	height: 1.2em;
+	overflow: hidden;
 }
+
 .itemTags {
 	display: none;
 }
@@ -65,6 +88,8 @@ body {
 	color: purple;
 }
 </style>
+
+
 <style id='itemList'>
 
 #items {
@@ -72,12 +97,11 @@ body {
 	grid-auto-rows: min-content;
 	grid-gap: 10px;
 	grid-template-columns: 1fr;
-	min-width: 360px;;
 }
 .item {
-	padding: 10px;
-	height: 160px;
-	width: 100%;
+	/*height: 160px;*/
+	width: calc(100% - 20px);
+	margin: 0 10px;
 	display: grid;
 	grid-template-areas: 
 		"a b"
@@ -100,13 +124,22 @@ body {
 	text-decoration: none;
 	grid-area: b;
 	overflow-wrap: break-word;
+	word-wrap: nowrap;
+	overflow: hidden;
+	height: 1em;
+	width: unset;
 }
 .itemTags {
-	display: flex;
+	/*display: flex;
 	flex-flow: wrap;
+	*/
+	display: block;
 	grid-area: c;
 	width: 100%;
 	height: 100%;
+}
+.tag {
+	margin: 2px;
 }
 .tag:nth-child(n+2) {
 	background: red;
@@ -121,10 +154,7 @@ body {
 	background: orange;
 }
 .tag {
-	height: 1em;
-	margin: 1px;
 	background: aqua;
-	padding: 3px;
 	border-radius: 5px;
 }
 .tag:hover {
@@ -142,7 +172,7 @@ body {
 
 <template id='item'>
 <div class='item'>
-<img class='itemTN' />
+<img class='itemTN' onError='this.style.display="hidden"'/>
 <span class='itemTitle'></span>
 <div class='itemTags'></div>
 </div></template>
@@ -151,14 +181,15 @@ body {
 </template>
 <body>
 <div id='main'>
-<div id='items'></div>
-<div id='pane'></div>
+	<div id='pane'></div>
+	<div id='items'></div>
 </div>
 <button onclick='setItemsStyle("thumbnail")'>Thumbnails</button>
 <button onclick='setItemsStyle("list")'>List</button>
 <input type='file' id='jfile'/>
 </body>
 <script>
+let tagDB = new Map();
 function setItemsStyle(sty){
 	switch (sty){
 		case 'thumbnail':
@@ -172,9 +203,31 @@ function setItemsStyle(sty){
 		default: break;
 	}
 }
+
+function itemsMoveToTop(tag){
+	Array.from(items.querySelectorAll('.itemHighlight')).forEach(i=>{
+		i.classList.remove('itemHighlight');
+	});
+	let df = new DocumentFragment();
+	
+	tagDB.get(tag).forEach(e=>{
+		e.classList.add('itemHighlight');
+		df.append(e);
+	});
+	if (df.childElementCount){
+		items.insertBefore(df,items.firstChild);
+		items.scrollTop = 0;
+	}
+	
+}
+
+const quickTag = function(e){
+	itemsMoveToTop(e.target.textContent);
+};
+
 function createItem(tn, desc, tags){
 	const itemTemp = document.querySelector('#item').content;
-	const newItem = itemTemp.cloneNode(true);
+	const newItem = itemTemp.cloneNode(true).firstElementChild;
 	if (tn){
 		newItem.querySelector('.itemTN').src = tn;
 	}
@@ -182,10 +235,29 @@ function createItem(tn, desc, tags){
 	//newItem.querySelector('.itemhref').href='about:blank';
 	const allTags = newItem.querySelector('.itemTags');
 	const tagTemp = document.querySelector('#tag').content;
+	let tagSpan;
+	let paneTag;
+	let str_tag;
+	for (const tag of tags){
+		tagSpan = document.createElement('span');
+		tagSpan.textContent = tag;
+		tagSpan.classList.add('tag');
+		allTags.appendChild(tagSpan);
+		str_tag = tag.toString();
+		if (!tagDB.has(str_tag)){
+			tagDB.set(str_tag,[]);
+			paneTag = document.createElement('span');
+			paneTag.textContent = str_tag;
+			paneTag.addEventListener('click',quickTag);
+			pane.appendChild(paneTag);
+		}
+		tagDB.get(str_tag).push(newItem);
+	}
 	/*tags.split(',').forEach(t=>{
 		//allTags.appendChild(document.createTextNode(t));
 		const tagTag = tagTemp.cloneNode(true);
 		tagTag.querySelector('.tag').textContent = t;
+		tagTag.querySelector('.tag').addEventListener('click',quickTag);
 		allTags.appendChild(tagTag);
 	});*/
 	return newItem;
@@ -193,7 +265,7 @@ function createItem(tn, desc, tags){
 function createItemsCustom(js){
 	const p = document.querySelector('#items');
 	for (const f of js){
-		p.appendChild(createItem('/mnt/ramdisk/thumbs/'+f.thumb,f.name,f.tag));
+		p.appendChild(createItem(f.thumb,f.name,f.tag));
 	}
 }
 function loadJson(ev){
@@ -206,12 +278,14 @@ function loadJson(ev){
 		createItemsCustom(js);
 	};
 	const onLoad = (jf) =>{
+		ev.target.hidden = true;
 		return toJson;
 	}
 	reader.onload = onLoad(jf);
 	reader.readAsText(jf);
 }
 document.getElementById('jfile').addEventListener('change',loadJson, false);
+setItemsStyle("thumbnail");
 /*
 for (let i=0; i<10; i++){
 	document.querySelector('#items').appendChild(createItem('wc3_refcard01.jpg',i,'banana,icecream,tacos,cream,cookies'));
@@ -224,6 +298,17 @@ for (let i=0; i<10; i++){
 	pane.appendChild(e);
 	}
 }*/
+const paneClick = function(ev){
+	if (ev.target.tagName=='P'){
+		const t = ev.target.textContent;
+		if (t.length){
+			itemsMoveToTop(t);
+		}
+	}
+	ev.preventDefault();
+};
+pane.addEventListener('click',paneClick);
+
 </script>
 
 </html>
