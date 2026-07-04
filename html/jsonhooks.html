@@ -599,10 +599,13 @@ class ObjectsFieldSet extends FieldSetControl {
 			alert('Cannot table invalid JSON!');
 			return;
 		}
-		inv.querySelector('textarea').readOnly = true;
 		tableEdit.querySelector('h2').textContent = name; 
 		th.replaceChildren();
 		for (const [o,t] of opt){
+			if (o.length==0 || t.length==0){
+				alert('Table not setup in defs');
+				return;
+			}
 			th.appendChild(document.createElement('th')).textContent = o;
 		}
 		tb.replaceChildren();
@@ -613,6 +616,7 @@ class ObjectsFieldSet extends FieldSetControl {
 				row.appendChild(document.createElement('td')).textContent = e[o];
 			}
 		}
+		inv.querySelector('textarea').readOnly = true;
 		tableEdit.show();
 	}
 	static returnTable(){
@@ -819,7 +823,7 @@ function pullDefs(){
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~'){
 			r.push(hook.path);
-		} else if (hook.type in hookMap){
+		} else if (hook.type in classHookMap){
 			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts?? ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
