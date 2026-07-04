@@ -185,6 +185,19 @@ summary button {
 .loadFile input{
 	display: none;
 }*/
+table {
+	border-collapse: collapse;
+}
+td, th {
+	border: 1px solid #000;
+	padding: 0.2em;
+}
+th {
+	background: #ccc;
+}
+td:hover {
+	background: #bad7f0;
+}
 </style>
 <script>
 'use strict';
@@ -217,7 +230,7 @@ function defParse(lines){
 	const defaultType = 'j';
 	let name, path, type, opts, notes;
 	for (const line of lines){
-		if (line.trim().length==0){
+		if (line.trim().length==0 || line.trim().startsWith('#')){
 			continue;
 		}
 		if (line.trim().startsWith('~')){
@@ -807,19 +820,80 @@ class ObjectsFieldSet extends FieldSetControl {
 			}
 		}
 		const but = par.querySelector('.splDivButton');
-		but.textContent = (but.textContent=='Split') ? 'Combine' : 'Split';
+		but.textContent = (but.textContent=='🖇') ? '📎' : '🖇';
+	}
+	static tbl(par){
+		const inv = par.querySelector('.innerVal');
+		if (inv){
+			const name = par.querySelector('.name').textContent;
+			let json;
+			try {
+				json = JSON.parse(inv.querySelector('textarea').value);
+			} catch {
+				alert('Cannot table invalid JSON!');
+				return;
+			}
+			let opt = mydefs.get(name).opts.split('|').map(o=>o.split('='));;
+			//opt = opt
+			tableEdit.querySelector('h2').textContent = name;
+			let th = tableEdit.querySelector('thead');
+			th.replaceChildren();
+			let row = th.insertRow(-1);
+			let cell;
+			for (const [o,t] of opt){
+				cell = row.appendChild(document.createElement('th'));
+				cell.textContent = o;
+			}
+			let tb = tableEdit.querySelector('tbody');
+			tb.replaceChildren();
+			for (const e of json){
+				row = tb.insertRow(-1);
+				row.contentEditable = true;
+				for (const [o,t] of opt){
+					cell = row.appendChild(document.createElement('td'));
+					cell.textContent = e[o];
+				}
+			}
+			inv.querySelector('textarea').readOnly = true;
+			tableEdit.show();
+		}
+	}
+	static returnTable(){
+		const name = tableEdit.querySelector('h2').textContent;
+		let opt = mydefs.get(name).opts.split('|').map(o=>o.split('='));
+		let tb = tableEdit.querySelector('tbody');
+		let rows = Array.from(tb.querySelectorAll('tr'));
+		let json = JSON.parse(mydefs.get(name).control.querySelector('textarea').value);
+		let o,t,v;
+		//console.log(opt,rows.length);
+		for (let i=0;i<rows.length;++i){
+			//for (let j=0;j<opt.length;++j){
+			for (let [j,ot] of opt.entries()){
+				//[o,t] = opt[j];
+				[o,t] = ot;
+				v = rows[i].children[j].textContent;
+				if (t!='s'){
+					v = JSON.parse(v);
+				}
+				json[i][o] = v;
+			}
+		}
+		let r = JSON.stringify(json,null,3);
+		mydefs.get(name).control.querySelector('textarea').value = r;
+		mydefs.get(name).control.querySelector('textarea').readOnly = false;
+		tableEdit.close();
 	}
 }
 
 const classHookMap = 
-	{'s':{'f':StringFieldSet, 't': String}
-	,'b':{'f':BoolFieldSet, 't': Boolean}
-	,'n':{'f':NumberFieldSet, 't': Number}
-	,'j':{'f':JsonFieldSet, 't': Object}
-	,'dt':{'f':DateFieldSet, 't': String}
-	,'l':{'f':ListFieldSet, 't':Array}
-	,'m':{'f':MultiSelFieldSet, 't':Array}
-	,'o':{'f':ObjectsFieldSet, 't':Array}
+	{s:{f:StringFieldSet, t: String}
+	,b:{f:BoolFieldSet, t: Boolean}
+	,n:{f:NumberFieldSet, t: Number}
+	,j:{f:JsonFieldSet, St: Object}
+	,dt:{f:DateFieldSet, t: String}
+	,l:{f:ListFieldSet, t:Array}
+	,m:{f:MultiSelFieldSet, t:Array}
+	,o:{f:ObjectsFieldSet, t:Array}
 };
 
 function createControlClass(name,hook,cv){
@@ -839,10 +913,13 @@ function createControlClass(name,hook,cv){
 	}
 	if (hook.type != htype){
 		ctrl.control.classList.add('typeMismatch');
+		errLog.value += `Type mismatch '${name}': ${hook.type} -> ${htype}\n\n`;
 		hook.type = htype;
 	}
 	return ctrl;
 }
+
+const many2manyTypes = new Set(['s','b','n','dt']);
 
 function tryBuild(){
 	try {
@@ -853,6 +930,7 @@ function tryBuild(){
 	}
 	if (jsonfileinput.files.length==1){
 		outputFileName.value = jsonfileinput.files[0].name;
+		document.title = `jsonhooks: ${outputFileName.value}`;
 	}
 	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
 	inputJson.readOnly = inputDefs.readOnly = true;
@@ -864,7 +942,10 @@ function tryBuild(){
 	console.log('**sound out values in json**');
 	let cn = undefined;
 	let cv = undefined;
+	let cvs;
+	let many2manyDetected;
 	const afrag = new DocumentFragment();
+	errLog.value = '';
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~'){
 			afrag.appendChild(createSep(name,hook));
@@ -876,8 +957,20 @@ function tryBuild(){
 			afrag.appendChild(cn);
 		} else {
 			cv = undefined;
+			many2manyDetected = false;
 			try {
-				cv = traceJson(myjson,hook.path[0]);
+				if (many2manyTypes.has(hook.type)){
+					cvs = [];
+					for (const [i,p] of hook.path.entries()){
+						cvs.push(traceJson(myjson,p));
+						if (!many2manyDetected && i!=0 && cvs[0]!=cvs[i]){
+							many2manyDetected = true;
+						}
+					}
+					cv = cvs[0];
+				} else {
+					cv = traceJson(myjson,hook.path[0]);
+				}
 				console.log(cv);
 				if (cv === undefined){
 					// don't create the control if path is not valid
@@ -885,6 +978,7 @@ function tryBuild(){
 					cn = document.createElement('span');
 					cn.classList.add('fieldError');
 					cn.textContent = `Unable to create ${name} at ${hook.path}. Please update JSON or DEFS to remove this error.`;
+					errLog.value += `Value undefined '${name}' at '${hook.path}'\n\n`;
 					hook.type = '-';
 					afrag.appendChild(cn);
 					continue;
@@ -895,19 +989,26 @@ function tryBuild(){
 					hook.control = afrag.appendChild(cn.control);
 					hook.control.title = hook.path.join('\n');
 					gotoDef.appendChild(document.createElement('option')).textContent = name;
+					if (many2manyDetected){
+						errLog.value += `Multiple values mapped to single control: '${name}'\n pathes: ${hook.path}\n  ${cvs.join('\n  ')}\n\n`;
+					}
 				}
 			} catch(err) {
 				cn = document.createElement('span');
 				cn.classList.add('fieldError');
 				cn.textContent = `Exception creating ${name}. Check ${hook.path}. ${err.message}`;
 				afrag.appendChild(cn);
+				errLog.value += `Invalid path for '${name}' at '${hook.path}'\n\n`;
 			}
 		}
 	}
 	controls.appendChild(afrag);
 	inputJsonDet.open = inputDefsDet.open = updateAreas.hidden = false;
-	if (controls.querySelector('.typeMismatch')){
+	/*if (controls.querySelector('.typeMismatch')){
 		alert('Warning: one or more of the defs do not match input JSON.');
+	}*/
+	if (errLog.value.length){
+		buildLog.show();
 	}
 }
 
@@ -1027,6 +1128,25 @@ function loadFileOnTextarea(i){
 		reader.readAsText(i.files[0]);
 	}
 }
+function textareaFileDrop(event){
+	if (event.dataTransfer.files.length==1){
+		event.preventDefault();
+		const reader = new FileReader();
+		reader.onload = ()=>{
+			event.target.value = reader.result;
+		};
+		reader.onerror = ()=>{alert('Error reading file')};
+		reader.readAsText(event.dataTransfer.files[0]);
+	}
+}
+function toggleWideView(){
+	if (leftPane.style.height==''){
+		container.style.display = 'block';
+		leftPane.style.height = 'unset';
+	} else {
+		container.style.display = leftPane.style.height = '';
+	}
+}
 
 </script>
 <body>
@@ -1034,7 +1154,7 @@ function loadFileOnTextarea(i){
 	<div id='leftPane'>
 		<details id='inputJsonDet' open>
 			<summary>Input Json</summary>
-			<textarea id='inputJson' rows=10 spellcheck='false'>
+			<textarea id='inputJson' onDrop='textareaFileDrop(event)' rows=10 spellcheck='false'>
 {
 "a_string": "stringValue10",
 "a_number": 10.50,
@@ -1062,6 +1182,11 @@ function loadFileOnTextarea(i){
 	{"name":"greg", "age": 24},
 	{"name":"sarah", "age": 300},
 	[1,2,3,4]
+],
+"genobjsArr": [
+	{"numcol":100, "strcol":"One", "boolcol":true},
+	{"numcol":222, "strcol":"Two", "boolcol":false},
+	{"numcol":333, "strcol":"Three", "boolcol":true}
 ]
 }
 			</textarea>
@@ -1069,7 +1194,7 @@ function loadFileOnTextarea(i){
 		</details>
 		<details id='inputDefsDet' open>
 			<summary>Input Defs</summary>
-			<textarea id='inputDefs' rows=10 spellcheck='false'>
+			<textarea id='inputDefs' onDrop='textareaFileDrop(event)' rows=10 spellcheck='false'>
 ~~Header 1- Basic types
 String Control,a_string,s,,'s' denotes a string control
 Number Control,a_number,n,,'n' denotes a number control
@@ -1090,7 +1215,8 @@ Invalid Path,myinvalidpath,s,,This path will result in an error
 Invalid Branching,an_object.a_json.branch-node.invalidleaf,j,,This is an invalid leaf
 ~~Header 6- Special Types
 Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
-Objects,objarr,o,'o' denotes the objects type, an array of objects.
+Objects,objarr,o,,'o' denotes the objects type; an array of objects.
+Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 </textarea>
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
@@ -1107,6 +1233,7 @@ Objects,objarr,o,'o' denotes the objects type, an array of objects.
 		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
 		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
 		<!--<input onchange='colorChange(this)' type='color' value='#92cabd' />-->
+		<button onclick='toggleWideView()'>↔</button>
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</center></div>
 		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
@@ -1120,6 +1247,21 @@ Objects,objarr,o,'o' denotes the objects type, an array of objects.
 <h2>Defs Export</h2>
 <textarea spellcheck='false'></textarea>
 <center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
+</dialog>
+
+<dialog id='buildLog'>
+<h2>Build Log</h2>
+<textarea id='errLog' spellcheck='false'></textarea>
+<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>🔙</button></center>
+</dialog>
+
+<dialog id='tableEdit'>
+<h2></h2>
+<table>
+<thead></thead>
+<tbody></tbody>
+</table>
+<center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
 </dialog>
 
 <template id='tStringControl'>
@@ -1205,8 +1347,9 @@ Objects,objarr,o,'o' denotes the objects type, an array of objects.
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='vals'></div>
-		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>Combine</button>
-		<button onclick='ObjectsFieldSet.add(this.parentElement)'>Add</button>
+		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>📎</button>
+		<button onclick='ObjectsFieldSet.add(this.parentElement)'>➕</button>
+		<button onclick='ObjectsFieldSet.tbl(this.parentElement)'>🗃</button>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
