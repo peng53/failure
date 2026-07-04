@@ -53,7 +53,6 @@ details {
 details:open {
 	display: block;
 }
-
 summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio] {
 	cursor: pointer;
 }
@@ -92,7 +91,6 @@ h2 {
 	display: inline-block;
 	background: white;
 	outline: 1px solid black;
-	/*padding: 3px;*/
 	padding: 0 3px;
 }
 dialog {
@@ -174,17 +172,6 @@ summary button {
 	display: inline-block;
 	color: red;
 }
-/*
-.loadFile {
-	display: inline-block;
-	margin: 0 auto;
-	border: 1px solid #ccc;
-	border-radius: 2px;
-	padding: 2px;
-}
-.loadFile input{
-	display: none;
-}*/
 table {
 	border-collapse: collapse;
 }
@@ -201,8 +188,7 @@ td:hover {
 </style>
 <script>
 'use strict';
-var myjson = undefined;
-var mydefs = undefined;
+var myjson, mydefs;
 
 class HeatNode {
 	constructor(partialPath){
@@ -225,263 +211,13 @@ class HeatNode {
 	}
 };
 
-function defParse(lines){
-	const r = new Map();
-	const defaultType = 'j';
-	let name, path, type, opts, notes;
-	for (const line of lines){
-		if (line.trim().length==0 || line.trim().startsWith('#')){
-			continue;
-		}
-		if (line.trim().startsWith('~')){
-			// separator
-			r.set(line.trim(),{path: line.trim(), type: '~'});
-			continue;
-		}
-		[name,path,type,opts,notes] = line.split(',');
-		if (!name || !path || name.trim().length==0 || path.trim().length==0){
-			console.error(`invalid name "${name}" or invalid path "${path}"`);
-			r.set(line,{type: 'err'});
-			continue;
-		}
-		if (r.has(name)){
-			console.error(`${name} already defined, ignoring`);
-			continue;
-		} else {
-			r.set(name,{path: path.split('|'), type: type ?? defaultType, opts: opts, notes: notes});
-		}
-	}
-	return r;
-}
-function traceJson(j,path){
-	const dpath = path.split('.');
-	let vnode = j;
-	for (const crumb of dpath){
-		if (vnode && (typeof vnode == 'object') && crumb in vnode){
-			// vnode of the previous loop should always be an object
-			// because 'leaves' cannot be midpoints
-			vnode = vnode[crumb];
-		} else {
-			console.error(`lost.. json does not have ${path}`);
-			return undefined;
-		}
-	}
-	return vnode;
-}
-function setJson(j,path,newValue){
-	const dpath = path.split('.');
-	let pvnode = undefined;
-	let vnode = j;
-	for (const crumb of dpath){
-		if (crumb in vnode){
-			pvnode = vnode;
-			vnode = vnode[crumb];
-		} else {
-			console.error(`lost.. json does not have ${path}`);
-			alert(`lost.. json does not have ${path}`);
-			return;
-		}
-	}
-	pvnode[dpath[dpath.length-1]] = newValue;
-}
-/*
-function createEnumControl(opts,v){
-	const clone = tEnumControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	const sel = fs.querySelector('select');
-	for (const e of opts.trim().split('|')){
-		sel.appendChild(document.createElement('option')).textContent = e;
-	}
-	if (v!=null){
-		fs.querySelector('.val').value = v;
-	}
-	return fs;
-}
-function createMultiControl(opts,v){
-	const clone = tMultiControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	const sel = fs.querySelector('select');
-	const mopts = new Map();
-	let optN = 0;
-	for (const e of opts.trim().split('&')){
-		sel.appendChild(document.createElement('option')).textContent = e;
-		// tbd check if already in map
-		mopts.set(e,optN++);
-	}
-	if (v!=null){
-		for (const ar of v){
-			sel.options[mopts.get(ar)].selected = true;
-		}
-		//fs.querySelector('.val').value = v;
-	}
-	return fs;
-}
-function createStringControl(opts,v){
-	if (opts?.trim().length > 0){
-		// string is enumerated
-		return createEnumControl(opts,v);
-	}
-	const clone = tStringControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	if (v!=null){
-		fs.querySelector('.val').value = v;
-	}
-	return fs;
-}
-function createBoolControl(opts,v){
-	const clone = tBoolControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	Array.from(fs.querySelectorAll('input')).forEach(i=>i.name=name);
-	let rinput;
-	switch (v){
-		case true:
-			rinput = '.radioTrue';
-			break;
-		case false:
-			rinput = '.radioFalse';
-			break;
-		case null:
-			rinput = '.radioNull';
-			break;
-		default:
-			rinput = '.radioNull';
-			break;
-	};
-	fs.querySelector(rinput).checked = true;
-	return fs;
-}
-function createNumberControl(opts,v){
-	// opts has value means enum
-	// plan is to allow range via other symbols
-//~ 	const controlType = (hook.opts?.trim().length>0) ? 'enum' : 'num';
-//~ 	if (controlType=='enum'){
-	if (opts?.trim().length>0){
-		return createEnumControl(opts,v);
-	}
-	const clone = tNumberControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	if (v!=null){
-		fs.querySelector('.val').value = v;
-	}
-	return fs;
-}
-function createJsonControl(opts,v){
-	const clone = tJsonControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	fs.querySelector('.val').value = JSON.stringify(v,null,3);
-	fs.querySelector('.val').rows = Math.min(40, 2 + Array.from(fs.querySelector('.val').value.matchAll('\n')).length);
-	return fs;
-}
-function createListControl(opts,v){
-	const clone = tFlatListControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	if (v!=null){
-		fs.querySelector('.val').value = v.join('\n');
-		fs.querySelector('.val').rows = Math.min(40, 1 + v.length);
-	}
-	if (opts=='n'){
-		fs.querySelector('.labelType').textContent = 'numeric list';
-	}
-	return fs;
-}
-function createDateControl(opts,v){
-	const clone = tDateControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	if (v!=null){
-		fs.querySelector('.val').value = v;
-	}
-	return fs;
-}
-*/
-/*
-function objectsControlAdd(par){
-	if (!(par.querySelector('.valIsNull').checked)){
-		const cont = par.querySelector('.vals');
-		const subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
-		cont.appendChild(subCtrl);
-	}
-}
-function objectsControlSplDiv(par){
-	if ((par.querySelector('.valIsNull').checked)){ return; }
-	const cont = par.querySelector('.vals');
-	const isCombined = par.querySelector('.innerVal');
-	if (isCombined){
-		try {
-			let j = JSON.parse(isCombined.querySelector('.val').value);
-			let cj;
-			let t;
-			for (const e of j){
-				cj = tInnerObject.content.cloneNode(true).firstElementChild;
-				t = JSON.stringify(e,null,3);
-				cj.querySelector('.val').value = t;
-				cj.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
-				cont.appendChild(cj);
-			}
-			cont.removeChild(isCombined);
-		} catch(err){
-			alert(`Failed to split, JSON invalid. ${err.message}`);
-		}
-	} else {
-		let vs = [];
-		for (const cj of cont.querySelectorAll('.val')){
-			if (cj.value.length){
-				vs.push(cj.value);
-			}
-		}
-		try {
-			let j = JSON.parse('['+vs.join(',')+']');
-			let cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild;
-			let t = JSON.stringify(j,null,3);
-			cmb.querySelector('.val').value = t;
-			cmb.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
-			cont.appendChild(cmb);
-			
-		} catch(err){
-			alert(`Failed to combine, JSON invalid. ${err.message}`);
-		}
-		for (const cj of cont.querySelectorAll('.innerCval')){
-			cont.removeChild(cj);
-		}
-	}
-	const but = par.querySelector('.splDivButton');
-	but.textContent = (but.textContent=='Split') ? 'Combine' : 'Split';
-}
-function createObjectsControl(opts,v){
-	const clone = tObjectsControl.content.cloneNode(true);
-	const fs = clone.firstElementChild;
-	let cj;
-	let cont = fs.querySelector('.vals');
-	for (const e of v){
-		cj = tInnerObject.content.cloneNode(true).firstElementChild;
-		cj.querySelector('.cval').value = JSON.stringify(e,null,3);
-		cont.appendChild(cj);
-	}
-	return fs;
-}
-*/
-function createSep(name,hook){
-	const ele = document.createElement('h2');
-	ele.textContent = hook.path.replaceAll('~','');
-	return ele;
-}
-/*
-const hookMap = 
-	{'s':{'f':createStringControl, 't': String}
-	,'b':{'f':createBoolControl, 't': Boolean}
-	,'n':{'f':createNumberControl, 't': Number}
-	,'j':{'f':createJsonControl, 't': Object}
-	,'dt':{'f':createDateControl, 't': String}
-	,'l':{'f':createListControl, 't':Array}
-	,'m':{'f':createMultiControl, 't':Array}
-};
-*/
 function check_paths(paths){
 	// check whether all paths are unique and not subsets of each other
 	// example call
 	// check_paths(['hello','helloworld','hello.world','hello.fresh.ton'])
 	//  'hello' won't appear in list
-	const badPaths = [];
-	const hm = new HeatNode('');
+	const badPaths = [],
+		hm = new HeatNode('');
 	let pathParts, current, badPath;
 	for (const path of paths){
 		pathParts = path.split('.');
@@ -534,41 +270,75 @@ function helper_check_mydefs(){
 	}
 	return check_paths(paths);
 }
-/*
-function createControl(name,hook,cv){
-	let htype = 'j';
-	if (hook.type!=htype && hook.type in hookMap){
-		// j is compatible with all values
-		if (cv===null || cv.constructor == hookMap[hook.type].t){
-			// null is always compatible
-			// validate hook.type is compatible with cv's type
-			htype = hook.type;
+
+function defParse(lines,defaultType='j'){
+	const r = new Map();
+	let name, path, type, opts, notes, line;
+	for (const lineWS of lines){
+		line = lineWS.trim();
+		if (line.length==0 || line.startsWith('#')){
+			continue;
+		} else if (line.startsWith('~')){
+			// separator
+			r.set(line,{path: line, type: '~'});
+			continue;
+		}
+		[name,path,type,opts,notes] = line.split(',');
+		if (!name || !path || name.trim().length==0 || path.trim().length==0){
+			console.error(`invalid name "${name}" or invalid path "${path}"`);
+			r.set(line,{type: 'err'});
+			continue;
+		} else if (r.has(name)){
+			console.error(`${name} already defined, ignoring`);
+			continue;
+		} else {
+			r.set(name,{path: path.split('|'), type: type ?? defaultType, opts: opts.trim(), notes: notes.trim()});
 		}
 	}
-	const ctrl = hookMap[htype].f(hook.opts,cv);
-	ctrl.querySelector('.name').textContent = name;
-	if (hook.notes?.trim().length){
-		ctrl.querySelector('.notes').textContent = hook.notes;
-	}
-	if (cv==null && htype!='b' && htype!='j'){
-		ctrl.querySelector('.valIsNull').checked = ctrl.querySelector('.val').disabled = true;
-	}
-	if (hook.type != htype){
-		ctrl.classList.add('typeMismatch');
-		//hook.type = htype;
-	}
-	return ctrl;
+	return r;
 }
-*/
+function traceJson(j,path){
+	const dpath = path.split('.');
+	let vnode = j;
+	for (const crumb of dpath){
+		if (vnode && (typeof vnode == 'object') && crumb in vnode){
+			// vnode of the previous loop should always be an object
+			// because 'leaves' cannot be midpoints
+			vnode = vnode[crumb];
+		} else {
+			console.error(`lost.. json does not have ${path}`);
+			return undefined;
+		}
+	}
+	return vnode;
+}
+function setJson(j,path,newValue){
+	const dpath = path.split('.');
+	let pvnode = undefined;
+	let vnode = j;
+	for (const crumb of dpath){
+		if (crumb in vnode){
+			pvnode = vnode;
+			vnode = vnode[crumb];
+		} else {
+			console.error(`lost.. json does not have ${path}`);
+			alert(`lost.. json does not have ${path}`);
+			return;
+		}
+	}
+	pvnode[dpath[dpath.length-1]] = newValue;
+}
+
+function createSep(name,hook){
+	const ele = document.createElement('h2');
+	ele.textContent = hook.path.replaceAll('~','');
+	return ele;
+}
+
 class FieldSetControl {
-	//constructor(name,opts,type){
-	constructor(){
-		/*
-		this.name = name;
-		this.opts = opts;
-		*/
-		this.control = undefined;
-		//this.type = type;
+	constructor(name,ctrl){
+		this.control = ctrl;
+		this.control.querySelector('.name').textContent = name
 	}
 	get val(){
 		return this.control.querySelector('.val').value;
@@ -579,11 +349,18 @@ class FieldSetControl {
 	get nullOrVal(){
 		return (this.isNull) ? null : this.val;
 	}
-	/*get def(){
-		return `${this.name},${this.paths.join('|')},${this.type?? ''},${this.opts?? ''},${this.notes?? ''}`;
-	}*/
+	
+	static enumSubTypes(opts){
+		// helper function to create enumcontrols
+		const fs = tEnumControl.content.cloneNode(true).firstElementChild,
+			sel = fs.querySelector('select');
+		for (const e of opts.split('|')){
+			sel.appendChild(document.createElement('option')).textContent = e;
+		}
+		return fs;
+	}
 }
-
+/*
 function enumSubType(opts){
 	// helper function to create enumcontrols
 	const fs = tEnumControl.content.cloneNode(true).firstElementChild;
@@ -591,14 +368,11 @@ function enumSubType(opts){
 	for (const e of opts.trim().split('|')){
 		sel.appendChild(document.createElement('option')).textContent = e;
 	}
-	return fs
-}
-
+	return fs;
+}*/
 class NumberFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		//super(name,opts,'n');
-		super();
-		this.control = (this.opts) ? enumSubType(opts) : tNumberControl.content.cloneNode(true).firstElementChild;
+		super(name,(opts) ? FieldSetControl.enumSubTypes(opts) : tNumberControl.content.cloneNode(true).firstElementChild);
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
 		} else {
@@ -611,9 +385,7 @@ class NumberFieldSet extends FieldSetControl {
 }
 class StringFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		//super(name,opts,'s');
-		super();
-		this.control = (this.opts) ? enumSubType(opts) : tStringControl.content.cloneNode(true).firstElementChild;
+		super(name,opts ? FieldSetControl.enumSubTypes(opts) : tStringControl.content.cloneNode(true).firstElementChild);
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
 		} else {
@@ -623,23 +395,21 @@ class StringFieldSet extends FieldSetControl {
 }
 class BoolFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		//super(name,opts,'b');
-		super();
-		this.control = tBoolControl.content.cloneNode(true).firstElementChild;
+		super(name,tBoolControl.content.cloneNode(true).firstElementChild);
 		for (const i of this.control.querySelectorAll('input')){
 			i.name = name;
 		}
-		let rinput;
+		let rad;
 		switch (v){
 			case true:
-				rinput = '.radioTrue'; break;
+				rad = '.radioTrue'; break;
 			case false:
-				rinput = '.radioFalse'; break;
+				rad = '.radioFalse'; break;
 			case null:
-			default:			
-				rinput = '.radioNull'; break;
+			default:
+				rad = '.radioNull'; break;
 		};
-		this.control.querySelector(rinput).checked = true;
+		this.control.querySelector(rad).checked = true;
 	}
 	get val(){
 		return JSON.parse(this.control.querySelector('input:checked').value);
@@ -650,10 +420,8 @@ class BoolFieldSet extends FieldSetControl {
 }
 class JsonFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		//super(name,opts,'j');
-		super();
+		super(name,tJsonControl.content.cloneNode(true).firstElementChild);
 		this.name = name;
-		this.control = tJsonControl.content.cloneNode(true).firstElementChild;
 		const ta = this.control.querySelector('.val');
 		ta.value = JSON.stringify(v,null,3);
 		ta.rows = Math.min(40, 2 + Array.from(ta.value.matchAll('\n')).length);
@@ -674,9 +442,7 @@ class JsonFieldSet extends FieldSetControl {
 }
 class DateFieldSet extends FieldSetControl {
 	constructor(name,opts,notes,v){
-		//super(name,opts,'dt');
-		super();
-		this.control = tDateControl.content.cloneNode(true).firstElementChild;
+		super(name,tDateControl.content.cloneNode(true).firstElementChild);
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
 		} else {
@@ -686,10 +452,8 @@ class DateFieldSet extends FieldSetControl {
 }
 class ListFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		//super(name,opts,'l');
-		super();
+		super(name,tFlatListControl.content.cloneNode(true).firstElementChild);
 		this.opts = opts;
-		this.control = tFlatListControl.content.cloneNode(true).firstElementChild;
 		if (v!=null){
 			this.control.querySelector('.val').value = v.join('\n');
 			this.control.querySelector('.val').rows = Math.min(40, 1 + v.length);
@@ -707,12 +471,10 @@ class ListFieldSet extends FieldSetControl {
 }
 class MultiSelFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		//super(name,opts,'m');
-		super();
-		this.control = tMultiControl.content.cloneNode(true).firstElementChild;
+		super(name,tMultiControl.content.cloneNode(true).firstElementChild);
 		const sel = this.control.querySelector('select');
 		const mopts = new Map();
-		for (const [i,e] of opts.trim().split('&').entries()){
+		for (const [i,e] of opts.split('&').entries()){
 			sel.appendChild(document.createElement('option')).textContent = e;
 			// tbd check if already in map
 			mopts.set(e,i);
@@ -731,11 +493,10 @@ class MultiSelFieldSet extends FieldSetControl {
 }
 class ObjectsFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super();
-		this.control = tObjectsControl.content.cloneNode(true).firstElementChild;
+		super(name,tObjectsControl.content.cloneNode(true).firstElementChild);
 		this.name = name;
-		let cj;
-		let cont = this.control.querySelector('.vals');
+		let cj,
+			cont = this.control.querySelector('.vals');
 		if (v==null){
 			cj = tInnerObject.content.cloneNode(true).firstElementChild;
 			cj.querySelector('.val').disabled = this.control.querySelector('.valIsNull').checked = true;
@@ -754,8 +515,8 @@ class ObjectsFieldSet extends FieldSetControl {
 			if (v.length==1){
 				return JSON.parse(v[0].value);
 			} else {
-				let av = [];
-				let tx;
+				let av = [],
+					tx;
 				for (const x of v){
 					tx = x.value.trim(); 
 					if (tx.length>0 && tx!='null'){
@@ -772,20 +533,19 @@ class ObjectsFieldSet extends FieldSetControl {
 	}
 	static add(par){
 		if (!(par.querySelector('.valIsNull').checked)){
-			const cont = par.querySelector('.vals');
-			const subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
+			const cont = par.querySelector('.vals'),
+				subCtrl = tInnerObject.content.cloneNode(true).firstElementChild;
 			cont.appendChild(subCtrl);
 		}
 	}
 	static div(par){
 		if ((par.querySelector('.valIsNull').checked)){ return; }
-		const cont = par.querySelector('.vals');
-		const isCombined = par.querySelector('.innerVal');
+		const cont = par.querySelector('.vals'),
+			isCombined = par.querySelector('.innerVal');
 		if (isCombined){
 			try {
-				let j = JSON.parse(isCombined.querySelector('.val').value);
-				let cj;
-				let t;
+				let j = JSON.parse(isCombined.querySelector('.val').value),
+					cj, t;
 				for (const e of j){
 					cj = tInnerObject.content.cloneNode(true).firstElementChild;
 					t = JSON.stringify(e,null,3);
@@ -805,9 +565,9 @@ class ObjectsFieldSet extends FieldSetControl {
 				}
 			}
 			try {
-				let j = JSON.parse('['+vs.join(',')+']');
-				let cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild;
-				let t = JSON.stringify(j,null,3);
+				let j = JSON.parse('['+vs.join(',')+']'),
+					cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild,
+					t = JSON.stringify(j,null,3);
 				cmb.querySelector('.val').value = t;
 				cmb.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
 				cont.appendChild(cmb);
@@ -824,52 +584,46 @@ class ObjectsFieldSet extends FieldSetControl {
 	}
 	static tbl(par){
 		const inv = par.querySelector('.innerVal');
-		if (inv){
-			const name = par.querySelector('.name').textContent;
-			let json;
-			try {
-				json = JSON.parse(inv.querySelector('textarea').value);
-			} catch {
-				alert('Cannot table invalid JSON!');
-				return;
-			}
-			let opt = mydefs.get(name).opts.split('|').map(o=>o.split('='));;
-			//opt = opt
-			tableEdit.querySelector('h2').textContent = name;
-			let th = tableEdit.querySelector('thead');
-			th.replaceChildren();
-			let row = th.insertRow(-1);
-			let cell;
-			for (const [o,t] of opt){
-				cell = row.appendChild(document.createElement('th'));
-				cell.textContent = o;
-			}
-			let tb = tableEdit.querySelector('tbody');
-			tb.replaceChildren();
-			for (const e of json){
-				row = tb.insertRow(-1);
-				row.contentEditable = true;
-				for (const [o,t] of opt){
-					cell = row.appendChild(document.createElement('td'));
-					cell.textContent = e[o];
-				}
-			}
-			inv.querySelector('textarea').readOnly = true;
-			tableEdit.show();
+		if (!inv){
+			alert('Combine values first!');
+			return;
 		}
+		let name = par.querySelector('.name').textContent,
+			opt = mydefs.get(name).opts.split('|').map(o=>o.split('=')),
+			th = tableEdit.querySelector('thead tr'),
+			tb = tableEdit.querySelector('tbody'),
+			row, json;
+		try {
+			json = JSON.parse(inv.querySelector('textarea').value);
+		} catch {
+			alert('Cannot table invalid JSON!');
+			return;
+		}
+		inv.querySelector('textarea').readOnly = true;
+		tableEdit.querySelector('h2').textContent = name; 
+		th.replaceChildren();
+		for (const [o,t] of opt){
+			th.appendChild(document.createElement('th')).textContent = o;
+		}
+		tb.replaceChildren();
+		for (const e of json){
+			row = tb.insertRow(-1);
+			row.contentEditable = true;
+			for (const [o,t] of opt){
+				row.appendChild(document.createElement('td')).textContent = e[o];
+			}
+		}
+		tableEdit.show();
 	}
 	static returnTable(){
-		const name = tableEdit.querySelector('h2').textContent;
-		let opt = mydefs.get(name).opts.split('|').map(o=>o.split('='));
-		let tb = tableEdit.querySelector('tbody');
-		let rows = Array.from(tb.querySelectorAll('tr'));
-		let json = JSON.parse(mydefs.get(name).control.querySelector('textarea').value);
-		let o,t,v;
-		//console.log(opt,rows.length);
+		let name = tableEdit.querySelector('h2').textContent,
+			opt = mydefs.get(name).opts.split('|').map(o=>o.split('=')),
+			rows = Array.from(tableEdit.querySelectorAll('tbody tr')),
+			json = JSON.parse(mydefs.get(name).control.querySelector('textarea').value),
+			ctrl = mydefs.get(name).control.querySelector('textarea'),
+			o,t,v;
 		for (let i=0;i<rows.length;++i){
-			//for (let j=0;j<opt.length;++j){
 			for (let [j,ot] of opt.entries()){
-				//[o,t] = opt[j];
 				[o,t] = ot;
 				v = rows[i].children[j].textContent;
 				if (t!='s'){
@@ -878,9 +632,8 @@ class ObjectsFieldSet extends FieldSetControl {
 				json[i][o] = v;
 			}
 		}
-		let r = JSON.stringify(json,null,3);
-		mydefs.get(name).control.querySelector('textarea').value = r;
-		mydefs.get(name).control.querySelector('textarea').readOnly = false;
+		ctrl.value = JSON.stringify(json,null,3);
+		ctrl.readOnly = false;
 		tableEdit.close();
 	}
 }
@@ -907,8 +660,7 @@ function createControlClass(name,hook,cv){
 		}
 	}
 	const ctrl = new classHookMap[htype].f(name,hook.opts,cv);
-	ctrl.control.querySelector('.name').textContent = name;
-	if (hook.notes?.trim().length){
+	if (hook.notes?.length){
 		ctrl.control.querySelector('.notes').textContent = hook.notes;
 	}
 	if (hook.type != htype){
@@ -940,10 +692,7 @@ function tryBuild(){
 	console.log('**input defs**');
 	console.log(mydefs);
 	console.log('**sound out values in json**');
-	let cn = undefined;
-	let cv = undefined;
-	let cvs;
-	let many2manyDetected;
+	let cn, cv, cvs, many2manyDetected;
 	const afrag = new DocumentFragment();
 	errLog.value = '';
 	for (const [name,hook] of mydefs.entries()){
@@ -971,7 +720,6 @@ function tryBuild(){
 				} else {
 					cv = traceJson(myjson,hook.path[0]);
 				}
-				console.log(cv);
 				if (cv === undefined){
 					// don't create the control if path is not valid
 					// prevent trying to update this path
@@ -1004,9 +752,7 @@ function tryBuild(){
 	}
 	controls.appendChild(afrag);
 	inputJsonDet.open = inputDefsDet.open = updateAreas.hidden = false;
-	/*if (controls.querySelector('.typeMismatch')){
-		alert('Warning: one or more of the defs do not match input JSON.');
-	}*/
+	inputJson.ondrop = inputDefs.ondrop = undefined;
 	if (errLog.value.length){
 		buildLog.show();
 	}
@@ -1050,22 +796,9 @@ function toggleNull(rele){
 	for (const ta of v){
 		ta.disabled = rele.checked;
 	}
-}/*
-function validateCFormat(rele){
-	const v = rele.parentElement?.querySelector('.cval');
-	try {
-		v.value = JSON.stringify(JSON.parse(v.value),null,3);
-		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
-		alert('Valid!');
-	} catch(err){
-		alert(`JSON is not valid: ${err.message}`);
-	}
 }
-*/
-function validateFormat(rele,cls){
-	//const v = rele.parentElement?.querySelector(cls);
-	const v = rele.parentElement?.querySelector('.val');
-
+function validateFormat(){
+	const v = event.target.parentElement.querySelector('.val');
 	try {
 		v.value = JSON.stringify(JSON.parse(v.value),null,3);
 		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
@@ -1120,11 +853,8 @@ function loadFileOnTextarea(i){
 	const t = i.parentElement.parentElement.querySelector('textarea');
 	if (i.files.length==1){
 		const reader = new FileReader();
-		reader.onload = ()=>{
-			t.value = reader.result;
-			console.log(i.files[0].name);
-		};
-		reader.onerror = ()=>{alert('Error reading file')};
+		reader.onload = ()=> t.value = reader.result;
+		reader.onerror = ()=> alert('Error reading file');
 		reader.readAsText(i.files[0]);
 	}
 }
@@ -1132,10 +862,8 @@ function textareaFileDrop(event){
 	if (event.dataTransfer.files.length==1){
 		event.preventDefault();
 		const reader = new FileReader();
-		reader.onload = ()=>{
-			event.target.value = reader.result;
-		};
-		reader.onerror = ()=>{alert('Error reading file')};
+		reader.onload = ()=> event.target.value = reader.result;
+		reader.onerror = ()=> alert('Error reading file');
 		reader.readAsText(event.dataTransfer.files[0]);
 	}
 }
@@ -1147,14 +875,17 @@ function toggleWideView(){
 		container.style.display = leftPane.style.height = '';
 	}
 }
-
+function cancelTableEdit(){
+	tableEdit.close();
+	mydefs.get(tableEdit.querySelector('h2').textContent).control.querySelector('textarea').readOnly = false;
+}
 </script>
 <body>
 <div id='container'>
 	<div id='leftPane'>
 		<details id='inputJsonDet' open>
 			<summary>Input Json</summary>
-			<textarea id='inputJson' onDrop='textareaFileDrop(event)' rows=10 spellcheck='false'>
+			<textarea id='inputJson' ondrop='textareaFileDrop(event)' ondragover='event.preventDefault()' rows=10 spellcheck='false'>
 {
 "a_string": "stringValue10",
 "a_number": 10.50,
@@ -1194,7 +925,7 @@ function toggleWideView(){
 		</details>
 		<details id='inputDefsDet' open>
 			<summary>Input Defs</summary>
-			<textarea id='inputDefs' onDrop='textareaFileDrop(event)' rows=10 spellcheck='false'>
+			<textarea id='inputDefs' ondrop='textareaFileDrop(event)' ondragover='event.preventDefault()' rows=10 spellcheck='false'>
 ~~Header 1- Basic types
 String Control,a_string,s,,'s' denotes a string control
 Number Control,a_number,n,,'n' denotes a number control
@@ -1232,7 +963,6 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 		<center>
 		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
 		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
-		<!--<input onchange='colorChange(this)' type='color' value='#92cabd' />-->
 		<button onclick='toggleWideView()'>↔</button>
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</center></div>
@@ -1257,11 +987,8 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 
 <dialog id='tableEdit'>
 <h2></h2>
-<table>
-<thead></thead>
-<tbody></tbody>
-</table>
-<center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
+<table><thead><tr></tr></thead><tbody></tbody></table>
+<center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='cancelTableEdit()' title='Cancel'>🔙</button></center>
 </dialog>
 
 <template id='tStringControl'>
@@ -1308,7 +1035,7 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 		<legend class='name'>Name</legend>
 		<div class='bigSmall bigSmallJson'>
 		<label><i>json</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat(this,".val")' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
 		</div>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
@@ -1357,13 +1084,13 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
 		<label><i>object</i> <textarea class='val' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat(this,".val")' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
 		<label><i>objects</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat(this,".val")' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 </html>
