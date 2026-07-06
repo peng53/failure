@@ -77,7 +77,7 @@ option:checked {
 	background: #ffff5b;	
 }
 option:checked::after {
-	content: "  â";
+	content: "  ✔";
 	
 }
 #inputDefs, #defExported textarea {
@@ -600,7 +600,7 @@ class ObjectsFieldSet extends FieldSetControl {
 			}
 		}
 		const but = par.querySelector('.splDivButton');
-		but.textContent = (but.textContent=='ð') ? 'ð' : 'ð';
+		but.textContent = (but.textContent=='🖇') ? '📎' : '🖇';
 		par.querySelector('.stateDiv').hidden = !isCombined;
 		par.querySelector('.stateCmb').hidden = isCombined;
 	}
@@ -961,7 +961,7 @@ function cancelTableEdit(){
 ]
 }
 			</textarea>
-			<label class='preBuildButton loadFile'>ð<input type='file' accept='.json' onchange='loadFileOnTextarea(this)' id='jsonfileinput' /></label>
+			<label class='preBuildButton loadFile'>📂<input type='file' accept='.json' onchange='loadFileOnTextarea(this)' id='jsonfileinput' /></label>
 		</details>
 		<details id='inputDefsDet' open>
 			<summary>Input Defs</summary>
@@ -989,11 +989,11 @@ Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 Objects,objarr,o,,'o' denotes the objects type; an array of objects.
 Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns in opts; allows for tabling
 </textarea>
-			<label class='preBuildButton loadFile'>ð<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
+			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
 		<div id='updateAreas' hidden>
 		<details id='updateAreaDets'>
-			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>ð</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>ð¾</button></summary>
+			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>💾</button></summary>
 			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
 			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span><br>
 			<label>Filename: <input id='outputFileName' /></label>
@@ -1001,12 +1001,12 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 
 		<select id='gotoDef' onchange='gotoDefChange(this.value)'></select>
 		<center>
-		<button onclick='toggleNotesEditable()'>ð Notes</button>
-		<button onclick='exportDefsToDialog()' title='Export defs'>ð Pull Defs</button>
-		<button onclick='toggleWideView()'>â</button>
+		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
+		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
+		<button onclick='toggleWideView()'>↔</button>
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</center></div>
-		<center><button class='preBuildButton' onclick='tryBuild()'>ð¨ Build</button></center>
+		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
 	</div>
 
 	<div id='controls'></div>
@@ -1016,19 +1016,19 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 <dialog id='defExported'>
 <h2>Defs Export</h2>
 <textarea spellcheck='false'></textarea>
-<center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>ð¾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>ð</button></center>
+<center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
 </dialog>
 
 <dialog id='buildLog'>
 <h2>Build Log</h2>
 <textarea id='errLog' spellcheck='false'></textarea>
-<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>ð</button></center>
+<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>👌</button></center>
 </dialog>
 
 <dialog id='tableEdit'>
 <h2></h2>
 <table><thead><tr></tr></thead><tbody></tbody></table>
-<center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>ð¾</button> <button onclick='cancelTableEdit()' title='Cancel'>ð</button></center>
+<center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='cancelTableEdit()' title='Cancel'>🗑</button></center>
 </dialog>
 
 <template id='tStringControl'>
@@ -1075,7 +1075,7 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 		<legend class='name'>Name</legend>
 		<div class='bigSmall bigSmallJson'>
 		<label><i>json</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>ð§¹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
 		</div>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
@@ -1114,9 +1114,9 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='vals'></div>
-		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>ð</button>
-		<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)'>â</button>
-		<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)'>ð</button>
+		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>📎</button>
+		<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)'>➕</button>
+		<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)'>🗃</button>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
@@ -1124,13 +1124,13 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
 		<label><i>object</i> <textarea class='val jsonValid' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>ð§¹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
 		<label><i>objects</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>ð§¹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
 	</div>
 </template>
 </html>
