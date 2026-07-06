@@ -25,6 +25,14 @@ textarea.val {
 	background: white;
 	border: var(--def-border-width) var(--def-border-sty) #eee;
 }
+.jsonValid {
+	background-color: #7ee87b;
+	transition: background-color 2s;
+}
+.jsonInvalid {
+	background-color: #ffb3b3;
+	transition: background-color 2s;
+}
 body {
 	background: #e3e3e3;
 	font-family: arial;
@@ -69,7 +77,7 @@ option:checked {
 	background: #ffff5b;	
 }
 option:checked::after {
-	content: "  ✔";
+	content: "  â";
 	
 }
 #inputDefs, #defExported textarea {
@@ -134,6 +142,9 @@ dialog textarea {
 }
 .areaTimestamp {
 	font-size: 0.8em;
+}
+button {
+	font-size: 1em;
 }
 summary button {
 	font-size: 0.75em;
@@ -431,6 +442,7 @@ class JsonFieldSet extends FieldSetControl {
 			return JSON.parse(this.control.querySelector('.val').value);
 		} catch (parseErr){
 			alert(`Validate '${this.name}' : '${parseErr.message}'`);
+			this.control.querySelector('.val').classList.replace('jsonValid','jsonInvalid');
 			this.control.scrollIntoView();
 			return undefined;
 		}
@@ -441,7 +453,7 @@ class JsonFieldSet extends FieldSetControl {
 	}
 }
 class DateFieldSet extends FieldSetControl {
-	constructor(name,opts,notes,v){
+	constructor(name,opts,v){
 		super(name,tDateControl.content.cloneNode(true).firstElementChild);
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
@@ -465,8 +477,13 @@ class ListFieldSet extends FieldSetControl {
 		}
 	}
 	get val(){
-		const v = this.control.querySelector('.val').value.split('\n');
-		return this.opts=='n' ? v.map(x=>Number(x)) : v;
+		let v = this.control.querySelector('.val').value;
+		if (v.length==0){
+			return [];
+		} else {
+			v = v.split('\n');
+			return this.opts=='n' ? v.map(x=>Number(x)) : v;
+		}
 	}
 }
 class MultiSelFieldSet extends FieldSetControl {
@@ -541,10 +558,11 @@ class ObjectsFieldSet extends FieldSetControl {
 	static div(par){
 		if ((par.querySelector('.valIsNull').checked)){ return; }
 		const cont = par.querySelector('.vals'),
-			isCombined = par.querySelector('.innerVal');
+			iv = par.querySelector('.innerVal'),
+			isCombined = iv!=null;
 		if (isCombined){
 			try {
-				let j = JSON.parse(isCombined.querySelector('.val').value),
+				let j = JSON.parse(iv.querySelector('.val').value),
 					cj, t;
 				for (const e of j){
 					cj = tInnerObject.content.cloneNode(true).firstElementChild;
@@ -553,9 +571,10 @@ class ObjectsFieldSet extends FieldSetControl {
 					cj.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
 					cont.appendChild(cj);
 				}
-				cont.removeChild(isCombined);
+				cont.removeChild(iv);
 			} catch(err){
 				alert(`Failed to split, JSON invalid. ${err.message}`);
+				return;
 			}
 		} else {
 			let vs = [];
@@ -574,16 +593,19 @@ class ObjectsFieldSet extends FieldSetControl {
 				
 			} catch(err){
 				alert(`Failed to combine, JSON invalid. ${err.message}`);
+				return;
 			}
 			for (const cj of cont.querySelectorAll('.innerCval')){
 				cont.removeChild(cj);
 			}
 		}
 		const but = par.querySelector('.splDivButton');
-		but.textContent = (but.textContent=='🖇') ? '📎' : '🖇';
+		but.textContent = (but.textContent=='ð') ? 'ð' : 'ð';
+		par.querySelector('.stateDiv').hidden = !isCombined;
+		par.querySelector('.stateCmb').hidden = isCombined;
 	}
 	static tbl(par){
-		const inv = par.querySelector('.innerVal');
+		let inv = par.querySelector('.innerVal');
 		if (!inv){
 			alert('Combine values first!');
 			return;
@@ -593,10 +615,13 @@ class ObjectsFieldSet extends FieldSetControl {
 			th = tableEdit.querySelector('thead tr'),
 			tb = tableEdit.querySelector('tbody'),
 			row, json;
+		inv = inv.querySelector('textarea');
 		try {
-			json = JSON.parse(inv.querySelector('textarea').value);
+			json = JSON.parse(inv.value);
+			inv.classList.replace('jsonInvalid','jsonValid');
 		} catch {
 			alert('Cannot table invalid JSON!');
+			inv.classList.replace('jsonValid','jsonInvalid');
 			return;
 		}
 		tableEdit.querySelector('h2').textContent = name; 
@@ -616,7 +641,7 @@ class ObjectsFieldSet extends FieldSetControl {
 				row.appendChild(document.createElement('td')).textContent = e[o];
 			}
 		}
-		inv.querySelector('textarea').readOnly = true;
+		inv.readOnly = true;
 		tableEdit.show();
 	}
 	static returnTable(){
@@ -631,7 +656,13 @@ class ObjectsFieldSet extends FieldSetControl {
 				[o,t] = ot;
 				v = rows[i].children[j].textContent;
 				if (t!='s'){
-					v = JSON.parse(v);
+					try {
+						v = JSON.parse(v);
+					} catch {
+						alert('Table invalid');
+						rows[i].children[j].classList.add('jsonInvalid');
+						return;
+					}
 				}
 				json[i][o] = v;
 			}
@@ -663,6 +694,7 @@ function createControlClass(name,hook,cv){
 			htype = hook.type;
 		}
 	}
+	console.log(cv);
 	const ctrl = new classHookMap[htype].f(name,hook.opts,cv);
 	if (hook.notes?.length){
 		ctrl.control.querySelector('.notes').textContent = hook.notes;
@@ -680,8 +712,10 @@ const many2manyTypes = new Set(['s','b','n','dt']);
 function tryBuild(){
 	try {
 		myjson = JSON.parse(inputJson.value);
+		inputJson.classList.remove('jsonInvalid');
 	} catch (parseErr){
 		alert(`Invalid input: ${parseErr.message}`);
+		inputJson.classList.toggle('jsonInvalid',true);
 		return;
 	}
 	if (jsonfileinput.files.length==1){
@@ -806,9 +840,11 @@ function validateFormat(){
 	try {
 		v.value = JSON.stringify(JSON.parse(v.value),null,3);
 		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
-		alert('Valid!');
+		//alert('Valid!');
+		v.classList.replace('jsonInvalid','jsonValid');
 	} catch(err){
 		alert(`JSON is not valid: ${err.message}`);
+		v.classList.replace('jsonValid','jsonInvalid');
 	}
 }
 function toggleNotesEditable(){
@@ -874,9 +910,9 @@ function textareaFileDrop(event){
 function toggleWideView(){
 	if (leftPane.style.height==''){
 		container.style.display = 'block';
-		leftPane.style.height = 'unset';
+		leftPane.style.height = document.body.style.overflow = controls.style.height = 'unset';
 	} else {
-		container.style.display = leftPane.style.height = '';
+		container.style.display = leftPane.style.height = document.body.style.overflow = controls.style.height = '';
 	}
 }
 function cancelTableEdit(){
@@ -925,7 +961,7 @@ function cancelTableEdit(){
 ]
 }
 			</textarea>
-			<label class='preBuildButton loadFile'>📂<input type='file' accept='.json' onchange='loadFileOnTextarea(this)' id='jsonfileinput' /></label>
+			<label class='preBuildButton loadFile'>ð<input type='file' accept='.json' onchange='loadFileOnTextarea(this)' id='jsonfileinput' /></label>
 		</details>
 		<details id='inputDefsDet' open>
 			<summary>Input Defs</summary>
@@ -951,13 +987,13 @@ Invalid Branching,an_object.a_json.branch-node.invalidleaf,j,,This is an invalid
 ~~Header 6- Special Types
 Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
 Objects,objarr,o,,'o' denotes the objects type; an array of objects.
-Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
+Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns in opts; allows for tabling
 </textarea>
-			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
+			<label class='preBuildButton loadFile'>ð<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
 		<div id='updateAreas' hidden>
 		<details id='updateAreaDets'>
-			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>💾</button></summary>
+			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>ð</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>ð¾</button></summary>
 			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
 			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span><br>
 			<label>Filename: <input id='outputFileName' /></label>
@@ -965,12 +1001,12 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 
 		<select id='gotoDef' onchange='gotoDefChange(this.value)'></select>
 		<center>
-		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
-		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
-		<button onclick='toggleWideView()'>↔</button>
+		<button onclick='toggleNotesEditable()'>ð Notes</button>
+		<button onclick='exportDefsToDialog()' title='Export defs'>ð Pull Defs</button>
+		<button onclick='toggleWideView()'>â</button>
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</center></div>
-		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
+		<center><button class='preBuildButton' onclick='tryBuild()'>ð¨ Build</button></center>
 	</div>
 
 	<div id='controls'></div>
@@ -980,19 +1016,19 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 <dialog id='defExported'>
 <h2>Defs Export</h2>
 <textarea spellcheck='false'></textarea>
-<center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>💾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>🔙</button></center>
+<center><button onclick='save(defExported,"defs.csv")' title='Save defs.csv'>ð¾</button> <button onclick='this.parentElement?.parentElement?.close()' title='Close defs'>ð</button></center>
 </dialog>
 
 <dialog id='buildLog'>
 <h2>Build Log</h2>
 <textarea id='errLog' spellcheck='false'></textarea>
-<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>🔙</button></center>
+<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>ð</button></center>
 </dialog>
 
 <dialog id='tableEdit'>
 <h2></h2>
 <table><thead><tr></tr></thead><tbody></tbody></table>
-<center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='cancelTableEdit()' title='Cancel'>🔙</button></center>
+<center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>ð¾</button> <button onclick='cancelTableEdit()' title='Cancel'>ð</button></center>
 </dialog>
 
 <template id='tStringControl'>
@@ -1038,8 +1074,8 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='bigSmall bigSmallJson'>
-		<label><i>json</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
+		<label><i>json</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
+		<button onclick='validateFormat()' title='Validate and Format'>ð§¹</button>
 		</div>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
@@ -1078,23 +1114,23 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,'t' type; to be implemented
 	<fieldset>
 		<legend class='name'>Name</legend>
 		<div class='vals'></div>
-		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>📎</button>
-		<button onclick='ObjectsFieldSet.add(this.parentElement)'>➕</button>
-		<button onclick='ObjectsFieldSet.tbl(this.parentElement)'>🗃</button>
+		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>ð</button>
+		<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)'>â</button>
+		<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)'>ð</button>
 		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 		<span class='notes' spellcheck='false'></span>
 	</fieldset>
 </template>
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
-		<label><i>object</i> <textarea class='val' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
+		<label><i>object</i> <textarea class='val jsonValid' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
+		<button onclick='validateFormat()' title='Validate and Format'>ð§¹</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
-		<label><i>objects</i> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
+		<label><i>objects</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
+		<button onclick='validateFormat()' title='Validate and Format'>ð§¹</button>
 	</div>
 </template>
 </html>
