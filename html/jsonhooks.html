@@ -201,12 +201,17 @@ class HeatNode {
 			// leaves can't have children
 			return null;
 		} else {
+			if (!(name in this.children)){
+				this.children[name] = new HeatNode(this.fullPath+'.'+name);
+			}
+			return this.children[name];
+			/*
 			if (name in this.children){
 				return this.children[name];
 			} else {
 				this.children[name] = new HeatNode(this.fullPath+'.'+name);
 				return this.children[name];
-			}
+			}*/
 		}
 	}
 };
@@ -574,6 +579,7 @@ class ObjectsFieldSet extends FieldSetControl {
 				
 			} catch(err){
 				alert(`Failed to combine, JSON invalid. ${err.message}`);
+				return;
 			}
 			for (const cj of cont.querySelectorAll('.innerCval')){
 				cont.removeChild(cj);
