@@ -1,0 +1,69 @@
+<html>
+<style>
+</style>
+<template id='SectionTemplate'>
+<div class='linkSection'>
+	<strong></strong>
+	<ul></ul>
+</div>
+</template>
+<script>
+let json = {
+	sections: [
+		{
+		name: 'section 1',
+		links: [
+			{name: 'ddg', url:'http://duckduckgo.com'}
+			,{name: 'protonmail', url:'http://protonmail.com'}
+			],
+			position: {top: 5, left: 5}
+		}
+		,{
+		name: 'section 2',
+		links: [
+			{name: 'blank', url:'about:blank'}
+			],
+		position: {top: -5, left: -5}
+		}
+	]
+};
+function createSection(cfg){
+	let sect = SectionTemplate.content.cloneNode(true);
+	let div = sect.querySelector('div');
+	if (cfg.position){
+		div.style.position = 'fixed';
+		if (cfg.position.top){
+			if (cfg.position.top>0){
+				div.style.top = `${cfg.position.top}%`;
+			} else {
+				div.style.bottom = `${-cfg.position.top}%`;
+			}
+		}
+		if (cfg.position.left){
+			div.style.position = 'fixed';
+			if (cfg.position.left>0){
+				div.style.left = `${cfg.position.left}%`;
+			} else {
+				div.style.right = `${-cfg.position.left}%`;
+			}
+		}
+	}
+	sect.querySelector('strong').textContent = cfg.name;
+	let ul = sect.querySelector('ul');
+	let a;
+	for (let link of cfg.links){
+		a = ul.appendChild(document.createElement('li')).appendChild(document.createElement('a'));
+		a.textContent = link.name;
+		a.href = link.url;
+	}
+	return sect;
+}
+
+</script>
+<body>
+</body>
+<script>
+	json.sections.forEach(sect=>document.body.appendChild(createSection(sect)));
+</script>
+
+</html>
