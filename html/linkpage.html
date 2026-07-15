@@ -1,5 +1,17 @@
 <html>
 <style>
+#page {
+	display: grid;
+	height: calc(100vh - 1em);
+	width: calc(100vw - 1em);
+	margin: 0.5em;
+	gap: 3px;
+}
+.linkSection {
+	height: 100%;
+	width: 100%;
+	overflow: auto;
+}
 </style>
 <template id='SectionTemplate'>
 <div class='linkSection'>
@@ -9,48 +21,105 @@
 </template>
 <script>
 let json = {
-	sections: [
+	linkSections: [
 		{
 		name: 'section 1',
 		links: [
 			{name: 'ddg', url:'http://duckduckgo.com'}
 			,{name: 'protonmail', url:'http://protonmail.com'}
 			],
-			position: {top: 5, left: 5}
+		position: {row: 1, column: 1, rowSpan: 2},
+		bg: '#f9f95b'
 		}
 		,{
 		name: 'section 2',
 		links: [
 			{name: 'blank', url:'about:blank'}
 			],
-		position: {top: -5, left: -5}
+		position: {row: 1, column: 3, rowSpan: 2},
+		bg: '#fdd7d7'
+		}
+		,{
+		name: 'section 3',
+		links: [
+			{name: 'blank_link', url:'about:blank'}
+			,{name: 'blank_link2', url:'about:blank'}
+			,{name: 'blank_link3', url:'about:blank'}
+			,{name: 'blank_link4', url:'about:blank'}
+			,{name: 'blank_link5', url:'about:blank'}
+			,{name: 'blank_link6', url:'about:blank'}
+			,{name: 'blank_link7', url:'about:blank'}
+			,{name: 'blank_link8', url:'about:blank'}
+			,{name: 'blank_link9', url:'about:blank'}
+			,{name: 'blank_link10', url:'about:blank'}
+			],
+		position: {row: 2, column: 2, rowSpan: 2, columnSpan: 1},
+		bg: '#d7d7d7'
+		}
+		,{
+		name: 'section 4',
+		links: [
+			{name: 'blank_link', url:'about:blank'}
+			,{name: 'blank_link2', url:'about:blank'}
+			,{name: 'blank_link3', url:'about:blank'}
+			,{name: 'blank_link4', url:'about:blank'}
+			,{name: 'blank_link5', url:'about:blank'}
+			,{name: 'blank_link6', url:'about:blank'}
+			,{name: 'blank_link7', url:'about:blank'}
+			,{name: 'blank_link8', url:'about:blank'}
+			,{name: 'blank_link9', url:'about:blank'}
+			,{name: 'blank_link10', url:'about:blank'}
+			],
+		position: {row: 1, column: 2},
+		bg: '#caf9eb'
 		}
 	]
 };
+function page2sections(sections,div){
+	let rows = sections[0].position.row,
+		cols = sections[0].position.column,
+		tro, tco;
+	for (let sec of sections){
+		tro = sec.position.row;
+		tco = sec.position.column;
+		if (sec.position.rowSpan && sec.position.rowSpan>1){
+			tro += sec.position.rowSpan-1;
+		}
+		if (sec.position.columnSpan && sec.position.columnSpan>1){
+			tco += sec.position.columnSpan-1;
+		}
+		if (tro>rows){
+			rows = tro;
+		}
+		if (tco>cols){
+			cols = tco;
+		}
+	}
+	div.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+	div.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+}
+
 function createSection(cfg){
 	let sect = SectionTemplate.content.cloneNode(true);
 	let div = sect.querySelector('div');
-	if (cfg.position){
-		div.style.position = 'fixed';
-		if (cfg.position.top){
-			if (cfg.position.top>0){
-				div.style.top = `${cfg.position.top}%`;
-			} else {
-				div.style.bottom = `${-cfg.position.top}%`;
-			}
-		}
-		if (cfg.position.left){
-			div.style.position = 'fixed';
-			if (cfg.position.left>0){
-				div.style.left = `${cfg.position.left}%`;
-			} else {
-				div.style.right = `${-cfg.position.left}%`;
-			}
-		}
-	}
 	sect.querySelector('strong').textContent = cfg.name;
 	let ul = sect.querySelector('ul');
 	let a;
+	if (cfg.position){
+		//div.style.gridRow = cfg.position.row;
+		div.style.gridRow = `${cfg.position.row}`;
+		if (cfg.position.rowSpan){
+			div.style.gridRow += `/ span ${cfg.position.rowSpan}`;
+		}
+		//div.style.gridColumn = cfg.position.column;
+		div.style.gridColumn = cfg.position.column;
+		if (cfg.position.columnSpan){
+			div.style.gridColumn += `/ span ${cfg.position.columnSpan}`;
+		}
+	}
+	if (cfg.bg){
+		div.style.background = cfg.bg;
+	}
 	for (let link of cfg.links){
 		a = ul.appendChild(document.createElement('li')).appendChild(document.createElement('a'));
 		a.textContent = link.name;
@@ -61,9 +130,11 @@ function createSection(cfg){
 
 </script>
 <body>
+<div id='page'></div>
 </body>
 <script>
-	json.sections.forEach(sect=>document.body.appendChild(createSection(sect)));
+	page2sections(json.linkSections,page);
+	json.linkSections.forEach(sect=>page.appendChild(createSection(sect)));
 </script>
 
 </html>
