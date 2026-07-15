@@ -26,8 +26,8 @@ textarea.val {
 	border: var(--def-border-width) var(--def-border-sty) #eee;
 }
 .jsonValid {
-	background-color: #7ee87b;
-	transition: background-color 2s;
+	//background-color: #7ee87b;
+	//transition: background-color 2s;
 }
 .jsonInvalid {
 	background-color: #ffb3b3;
@@ -102,7 +102,8 @@ h2 {
 	padding: 0 3px;
 }
 dialog {
-	bottom: 5px;
+	bottom: 5vh;
+	max-width: 95vw;
 	position: fixed;
 }
 dialog textarea {
@@ -118,8 +119,12 @@ dialog textarea {
 	width: calc(100vw - 6px);
 	height: calc(100vh - 6px);
 }
-#controls, #leftPane {
+#controls, #leftPane, #tableEdit div {
 	overflow: auto;
+}
+#tableEdit div {
+	max-width: 90vw;
+	max-height: 75vh;
 }
 #controls {
 	height: calc(100vh - 1em);
@@ -185,13 +190,39 @@ summary button {
 }
 table {
 	border-collapse: collapse;
+	margin: auto;
 }
 td, th {
-	border: 1px solid #000;
-	padding: 0.2em;
+	border: 1px outset #000;
+	padding: 5px 2px;
 }
-th {
-	background: #ccc;
+.thType_s::after, .thType_b::after, .thType_n::after {
+	font-size: 0.75em;
+	font-style: italic;
+}
+.thType_s {
+	background: #e9ee5d;
+}
+.thType_b {
+	background: #b3b0b0;
+}
+.thType_n {
+	background: #3ae33a;
+}
+.thType_s::after {
+	content: "s";
+}
+.thType_b::after {
+	content: "b";
+}
+.thType_n::after {
+	content: "n";
+}
+tr {
+	border-bottom: 2px solid #000;
+}
+tr:focus {
+	background: #fca9ff;
 }
 td:hover {
 	background: #bad7f0;
@@ -212,17 +243,12 @@ class HeatNode {
 			// leaves can't have children
 			return null;
 		} else {
-			if (!(name in this.children)){
-				this.children[name] = new HeatNode(this.fullPath+'.'+name);
-			}
-			return this.children[name];
-			/*
 			if (name in this.children){
 				return this.children[name];
 			} else {
 				this.children[name] = new HeatNode(this.fullPath+'.'+name);
 				return this.children[name];
-			}*/
+			}
 		}
 	}
 };
@@ -353,8 +379,12 @@ function createSep(name,hook){
 
 class FieldSetControl {
 	constructor(name,ctrl){
-		this.control = ctrl;
-		this.control.querySelector('.name').textContent = name
+		let fs = document.createElement('fieldset');
+		fs.appendChild(fsName.content.cloneNode(true));
+		fs.appendChild(ctrl);
+		fs.appendChild(fsNotes.content.cloneNode(true))
+		fs.querySelector('.name').textContent = name;
+		this.control = fs;
 	}
 	get val(){
 		return this.control.querySelector('.val').value;
@@ -368,7 +398,7 @@ class FieldSetControl {
 	
 	static enumSubTypes(opts){
 		// helper function to create enumcontrols
-		const fs = tEnumControl.content.cloneNode(true).firstElementChild,
+		const fs = tEnumControl.content.cloneNode(true),
 			sel = fs.querySelector('select');
 		for (const e of opts.split('|')){
 			sel.appendChild(document.createElement('option')).textContent = e;
@@ -376,19 +406,9 @@ class FieldSetControl {
 		return fs;
 	}
 }
-/*
-function enumSubType(opts){
-	// helper function to create enumcontrols
-	const fs = tEnumControl.content.cloneNode(true).firstElementChild;
-	const sel = fs.querySelector('select');
-	for (const e of opts.trim().split('|')){
-		sel.appendChild(document.createElement('option')).textContent = e;
-	}
-	return fs;
-}*/
 class NumberFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,(opts) ? FieldSetControl.enumSubTypes(opts) : tNumberControl.content.cloneNode(true).firstElementChild);
+		super(name,(opts) ? FieldSetControl.enumSubTypes(opts) : tNumberControl.content.cloneNode(true));
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
 		} else {
@@ -401,7 +421,7 @@ class NumberFieldSet extends FieldSetControl {
 }
 class StringFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,opts ? FieldSetControl.enumSubTypes(opts) : tStringControl.content.cloneNode(true).firstElementChild);
+		super(name,opts ? FieldSetControl.enumSubTypes(opts) : tStringControl.content.cloneNode(true));
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
 		} else {
@@ -411,7 +431,7 @@ class StringFieldSet extends FieldSetControl {
 }
 class BoolFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,tBoolControl.content.cloneNode(true).firstElementChild);
+		super(name,tBoolControl.content.cloneNode(true));
 		for (const i of this.control.querySelectorAll('input')){
 			i.name = name;
 		}
@@ -436,7 +456,7 @@ class BoolFieldSet extends FieldSetControl {
 }
 class JsonFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,tJsonControl.content.cloneNode(true).firstElementChild);
+		super(name,tJsonControl.content.cloneNode(true));
 		this.name = name;
 		const ta = this.control.querySelector('.val');
 		ta.value = JSON.stringify(v,null,3);
@@ -459,7 +479,7 @@ class JsonFieldSet extends FieldSetControl {
 }
 class DateFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,tDateControl.content.cloneNode(true).firstElementChild);
+		super(name,tDateControl.content.cloneNode(true));
 		if (v!=null){
 			this.control.querySelector('.val').value = v;
 		} else {
@@ -469,7 +489,7 @@ class DateFieldSet extends FieldSetControl {
 }
 class ListFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,tFlatListControl.content.cloneNode(true).firstElementChild);
+		super(name,tFlatListControl.content.cloneNode(true));
 		this.opts = opts;
 		if (v!=null){
 			this.control.querySelector('.val').value = v.join('\n');
@@ -493,13 +513,16 @@ class ListFieldSet extends FieldSetControl {
 }
 class MultiSelFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,tMultiControl.content.cloneNode(true).firstElementChild);
+		super(name,tMultiControl.content.cloneNode(true));
 		const sel = this.control.querySelector('select');
 		const mopts = new Map();
 		for (const [i,e] of opts.split('&').entries()){
-			sel.appendChild(document.createElement('option')).textContent = e;
-			// tbd check if already in map
-			mopts.set(e,i);
+			if (mopts.has(e)){
+				errLog.value += `Warning: '${name}' has non-distinct multi-select options (${i})\n\n`;
+			} else {
+				sel.appendChild(document.createElement('option')).textContent = e;
+				mopts.set(e,i);
+			}
 		}
 		if (v!=null){
 			for (const ar of v){
@@ -515,7 +538,7 @@ class MultiSelFieldSet extends FieldSetControl {
 }
 class ObjectsFieldSet extends FieldSetControl {
 	constructor(name,opts,v){
-		super(name,tObjectsControl.content.cloneNode(true).firstElementChild);
+		super(name,tObjectsControl.content.cloneNode(true));
 		this.name = name;
 		let cj,
 			cont = this.control.querySelector('.vals');
@@ -608,6 +631,7 @@ class ObjectsFieldSet extends FieldSetControl {
 		but.textContent = (but.textContent=='🖇') ? '📎' : '🖇';
 		par.querySelector('.stateDiv').hidden = !isCombined;
 		par.querySelector('.stateCmb').hidden = isCombined;
+		par.scrollIntoView();
 	}
 	static tbl(par){
 		let inv = par.querySelector('.innerVal');
@@ -619,7 +643,7 @@ class ObjectsFieldSet extends FieldSetControl {
 			opt = mydefs.get(name).opts.split('|').map(o=>o.split('=')),
 			th = tableEdit.querySelector('thead tr'),
 			tb = tableEdit.querySelector('tbody'),
-			row, json;
+			row, json, cell;
 		inv = inv.querySelector('textarea');
 		try {
 			json = JSON.parse(inv.value);
@@ -636,17 +660,20 @@ class ObjectsFieldSet extends FieldSetControl {
 				alert('Table not setup in defs');
 				return;
 			}
-			th.appendChild(document.createElement('th')).textContent = o;
+			cell = th.appendChild(document.createElement('th'));
+			cell.textContent = o;
+			cell.classList.add(`thType_${t}`);
 		}
 		tb.replaceChildren();
 		for (const e of json){
 			row = tb.insertRow(-1);
 			row.contentEditable = true;
 			for (const [o,t] of opt){
-				row.appendChild(document.createElement('td')).textContent = e[o];
+				row.appendChild(document.createElement('td')).textContent = `${(e[o]===null) ? "'null'" : e[o]}`;
 			}
 		}
-		inv.readOnly = true;
+		inv.disabled = true;
+		tableEdit.querySelector('.tblNotes').textContent = par.querySelector('.notes').textContent;
 		tableEdit.show();
 	}
 	static returnTable(){
@@ -660,7 +687,9 @@ class ObjectsFieldSet extends FieldSetControl {
 			for (let [j,ot] of opt.entries()){
 				[o,t] = ot;
 				v = rows[i].children[j].textContent;
-				if (t!='s'){
+				if (v==="'null'" || (t!='s' && v.length==0)){
+					v = null;
+				} else if (t!='s'){
 					try {
 						v = JSON.parse(v);
 					} catch {
@@ -673,7 +702,7 @@ class ObjectsFieldSet extends FieldSetControl {
 			}
 		}
 		ctrl.value = JSON.stringify(json,null,3);
-		ctrl.readOnly = false;
+		ctrl.disabled = false;
 		tableEdit.close();
 	}
 }
@@ -699,7 +728,6 @@ function createControlClass(name,hook,cv){
 			htype = hook.type;
 		}
 	}
-	console.log(cv);
 	const ctrl = new classHookMap[htype].f(name,hook.opts,cv);
 	if (hook.notes?.length){
 		ctrl.control.querySelector('.notes').textContent = hook.notes;
@@ -714,7 +742,8 @@ function createControlClass(name,hook,cv){
 
 const many2manyTypes = new Set(['s','b','n','dt']);
 
-function tryBuild(){
+function tryBuild(verbose=false){
+	const con = verbose? a=>console.log(a) : a=>{};
 	try {
 		myjson = JSON.parse(inputJson.value);
 		inputJson.classList.remove('jsonInvalid');
@@ -729,12 +758,12 @@ function tryBuild(){
 	}
 	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
 	inputJson.readOnly = inputDefs.readOnly = true;
-	console.log('**input json**');
-	console.log(myjson);
+	con('**input json**');
+	con(myjson);
 	mydefs = defParse(inputDefs.value.trim().split('\n'));
-	console.log('**input defs**');
-	console.log(mydefs);
-	console.log('**sound out values in json**');
+	con('**input defs**');
+	con(mydefs);
+	con('**sound out values in json**');
 	let cn, cv, cvs, many2manyDetected;
 	const afrag = new DocumentFragment();
 	errLog.value = '';
@@ -796,6 +825,7 @@ function tryBuild(){
 	controls.appendChild(afrag);
 	inputJsonDet.open = inputDefsDet.open = updateAreas.hidden = false;
 	inputJson.ondrop = inputDefs.ondrop = undefined;
+	leftPane.style.width = '';
 	if (errLog.value.length){
 		buildLog.show();
 	}
@@ -910,19 +940,28 @@ function textareaFileDrop(event){
 		reader.onload = ()=> event.target.value = reader.result;
 		reader.onerror = ()=> alert('Error reading file');
 		reader.readAsText(event.dataTransfer.files[0]);
+		outputFileName.value = event.dataTransfer.files[0].name;
 	}
 }
 function toggleWideView(){
+	/*
 	if (leftPane.style.height==''){
 		container.style.display = 'block';
 		leftPane.style.height = document.body.style.overflow = controls.style.height = 'unset';
 	} else {
 		container.style.display = leftPane.style.height = document.body.style.overflow = controls.style.height = '';
+	}*/
+	//**
+	if (leftPane.style.height==''){
+		container.style.gridTemplateRows = 'min-content 1fr';
+		container.style.gridTemplateColumns = leftPane.style.height = controls.style.height = 'unset';
+	} else {
+		container.style.gridTemplateRows = container.style.gridTemplateColumns = leftPane.style.height = controls.style.height = '';
 	}
 }
 function cancelTableEdit(){
 	tableEdit.close();
-	mydefs.get(tableEdit.querySelector('h2').textContent).control.querySelector('textarea').readOnly = false;
+	mydefs.get(tableEdit.querySelector('h2').textContent).control.querySelector('textarea').disabled = false;
 }
 </script>
 <body>
@@ -962,7 +1001,7 @@ function cancelTableEdit(){
 "genobjsArr": [
 	{"numcol":100, "strcol":"One", "boolcol":true},
 	{"numcol":222, "strcol":"Two", "boolcol":false},
-	{"numcol":333, "strcol":"Three", "boolcol":true}
+	{"numcol":null, "strcol":null, "boolcol":null}
 ]
 }
 			</textarea>
@@ -1032,99 +1071,72 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 
 <dialog id='tableEdit'>
 <h2></h2>
-<table><thead><tr></tr></thead><tbody></tbody></table>
+<span class='tblNotes'></span>
+<div><table style=''><thead><tr></tr></thead><tbody></tbody></table></div>
 <center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='cancelTableEdit()' title='Cancel'>🗑</button></center>
 </dialog>
 
+<template id='fsName'>
+	<legend class='name'></legend>
+</template>
+<template id='fsNotes'>
+	<span class='notes' spellcheck='false'></span>
+</template>
+
 <template id='tStringControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='bigSmall'>
-		<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
-		</div>
-		<span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='bigSmall'>
+	<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'></label>
+	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	</div>
 </template>
 <template id='tEnumControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='bigSmall'>
-		<label><i>enum</i> <select class='val'> </select></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
-		</div>
-		<span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='bigSmall'>
+	<label><i>enum</i> <select class='val'> </select></label>
+	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	</div>
 </template>
 <template id='tNumberControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='bigSmall'>
-		<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
-		</div><span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='bigSmall'>
+	<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required></label>
+	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 </template>
 <template id='tBoolControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<i>bool</i>
-		<label><input class='radioTrue' type='radio' value='true'> true</label>
-		<label><input class='radioFalse' type='radio' value='false'> false</label>
-		<label><input class='radioNull valIsNull' type='radio' value='null'> null</label>
-		<br><span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<i>bool</i>
+	<label><input class='radioTrue' type='radio' value='true'> true</label>
+	<label><input class='radioFalse' type='radio' value='false'> false</label>
+	<label><input class='radioNull valIsNull' type='radio' value='null'> null</label>
+	<br>
 </template>
 <template id='tJsonControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='bigSmall bigSmallJson'>
-		<label><i>json</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
-		</div>
-		<span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='bigSmall bigSmallJson'>
+	<label><i>json</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
+	<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
+	</div>
 </template>
 <template id='tDateControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='bigSmall'>
-		<label><i>date</i> <input class='val' type='datetime-local'></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
-		</div>
-		<span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='bigSmall'>
+	<label><i>date</i> <input class='val' type='datetime-local'></label>
+	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	</div>
 </template>
 <template id='tFlatListControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='bigSmall'>
-		<label><i class='labelType'>list</i> <textarea class='val' placeholder='{empty}' spellcheck='false'></textarea></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
-		</div>
-		<span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='bigSmall'>
+	<label><i class='labelType'>list</i> <textarea class='val' placeholder='{empty}' spellcheck='false'></textarea></label>
+	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	</div>
 </template>
 <template id='tMultiControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='bigSmall'>
-		<label><i>multi</i> <select class='val' multiple> </select></label>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
-		</div>
-		<span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='bigSmall'>
+	<label><i>multi</i> <select class='val' multiple> </select></label>
+	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	</div>
 </template>
 <template id='tObjectsControl'>
-	<fieldset>
-		<legend class='name'>Name</legend>
-		<div class='vals'></div>
-		<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>📎</button>
-		<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)'>➕</button>
-		<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)'>🗃</button>
-		<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
-		<span class='notes' spellcheck='false'></span>
-	</fieldset>
+	<div class='vals'></div>
+	<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>📎</button>
+	<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)'>➕</button>
+	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)'>🗃</button>
+	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 </template>
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
@@ -1138,4 +1150,8 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
 	</div>
 </template>
+
+<script>
+leftPane.style.width = 'calc(100vw - 2em)';
+</script>
 </html>
