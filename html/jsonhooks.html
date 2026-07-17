@@ -13,7 +13,7 @@ body, details, fieldset, div, dialog {
 #container {
 	display: grid;
 	grid-template-columns: min-content 1fr;
-	grid-gap: 1em;
+	grid-gap: 5px;
 	margin: 3px;
 	width: calc(100vw - 6px);
 	height: calc(100vh - 6px);
@@ -31,7 +31,7 @@ fieldset, legend, textarea {
 	border: var(--def-border-width) var(--def-border-sty) var(--border-col);
 }
 
-.val, fieldset, legend, textarea {
+.val, fieldset, legend, textarea, button {
 	border-radius: var(--roundness);
 }
 /*input[type=number], textarea {
@@ -73,14 +73,14 @@ textarea {
 				*/
 
 #controls {
-	height: calc(100vh - 1em);
+	/*height: calc(100vh - 1em);*/
 	padding: 5px;
 }
 #leftPane {
 	resize: horizontal;
 							/*height: calc(100vh - 1em);*/
 	padding-right: 1em;
-	min-width: 250px;
+	min-width: 200px;
 	max-width: calc(100vw - 2em);
 }
 
@@ -113,7 +113,7 @@ details:open {
 	display: block;
 	padding-bottom: 5px;
 }
-summary {
+summary, h2 {
 	font-variant: small-caps;
 }
 summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio], select:hover {
@@ -132,11 +132,8 @@ button:hover {
 option:checked::after {
 	content: "  ✔";
 }
-
 h2 {
-	font-variant: small-caps;
 	text-align: center;
-	padding: 0;
 	margin: 3px;
 }
 .notesEd {
@@ -144,7 +141,7 @@ h2 {
 	min-height: 1em;
 	display: inline-block;
 	background: white;
-	outline: 1px solid black;
+	outline: 1px dashed black;
 	padding: 0 3px;
 }
 dialog {
@@ -156,12 +153,10 @@ dialog textarea {
 	width: 70vw;
 	height: 50vh;
 }
-
 #tableEdit div {
-	max-width: 90vw;
-	max-height: 75vh;
+	max-width: 100%;
+	max-height: 100%;
 }
-
 .bigSmall {
 	display: grid;
 	grid-template-columns: 1fr min-content;
@@ -176,7 +171,6 @@ dialog textarea {
 button {
 	font-size: 1em;
 	background: linear-gradient(to bottom right, #f2ffef, #d2d7c0);
-	border-radius: 4px;
 	border-color: #d2d7c0;
 	border-style: outset;
 	color: #222;
@@ -229,6 +223,10 @@ summary button {
 	margin-bottom: 3px;
 	display: inline-block;
 	color: red;
+}
+.labelType {
+	font-size: 0.75em;
+	font-style: italic;
 }
 table {
 	border-collapse: collapse;
@@ -874,6 +872,9 @@ function tryBuild(verbose=false){
 	if (errLog.value.length){
 		buildLog.show();
 	}
+	if (localStorage.getItem('wideView')=='true'){
+		toggleWideView();
+	}
 }
 
 function tryUpdate(){
@@ -943,7 +944,7 @@ function pullDefs(priDel){
 		if (hook.type=='~'){
 			r.push(hook.path);
 		} else if (hook.type in classHookMap){
-			r.push(`${name}${priDel}${hook.path.join('|')}${priDel}${hook.type}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
+			r.push(`${name}${priDel}${hook.path.join('|')}${priDel}${hook.type}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(priDel,';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 		}
@@ -1003,14 +1004,18 @@ function toggleWideView(){
 	if (leftPane.style.height==''){
 		container.style.gridTemplateRows = 'min-content 1fr';
 		container.style.gridTemplateColumns = leftPane.style.height = controls.style.height = 'unset';
+		localStorage.setItem('wideView', 'true');
 	} else {
 		container.style.gridTemplateRows = container.style.gridTemplateColumns = leftPane.style.height = controls.style.height = '';
+		localStorage.setItem('wideView', 'false');
 	}
 }
 function cancelTableEdit(){
 	tableEdit.close();
 	mydefs.get(tableEdit.querySelector('h2').textContent).control.querySelector('textarea').disabled = false;
 }
+
+
 </script>
 <body>
 <div id='container'>
@@ -1084,23 +1089,35 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 <label>Primary Delimiter <input id='inputDefsDel' value="[)" placeholder='comma if blank'/></label><br>
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
-		<div id='updateAreas' hidden>
+		<span id='updateAreas' hidden>
 		<details id='updateAreaDets'>
 			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>💾</button></summary>
 			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
 			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span><br>
 			<label>Filename: <input id='outputFileName' /></label>
 		</details>
-		<br>
-		<select id='gotoDef' onchange='gotoDefChange(this.value)'></select>
-		<!--<center>-->
+		<select style='width:100px' id='gotoDef' onchange='gotoDefChange(this.value)'></select>
+
+		<select style='width:11ch' onchange='this.selectedIndex=0'>
+			<option>🔴 Menu</option>
+			<option onclick='toggleNotesEditable()' title='Un/lock Notes'>🔏 Notes</option>
+			<option onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</option>
+			<option onclick='toggleWideView()' title='Toggle Wideview'>↔ Toggle Wideview</option>
+		</select>
+		<!--<center>
 		<button onclick='toggleNotesEditable()' title='Un/lock Notes'>🔏 Notes</button>
 		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
 		<button onclick='toggleWideView()'>↔</button>
+		-->
+
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
-		</div>
 		<!--</center>-->
-		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
+		</span>
+
+
+		<center>
+		<button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button>
+		</center>
 	</div>
 
 	<div id='controls'></div>
@@ -1135,23 +1152,23 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 
 <template id='tStringControl'>
 	<div class='bigSmall'>
-	<label class='valLabel'><i>string</i> <input class='val' placeholder='{empty string}'></label>
-	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	<label><span class='labelType'>string</span> <input class='val' placeholder='{empty string}'></label>
+	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 	</div>
 </template>
 <template id='tEnumControl'>
 	<div class='bigSmall'>
-	<label><i>enum</i> <select class='val'> </select></label>
-	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	<label><span class='labelType'>enum</span> <select class='val'> </select></label>
+	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 	</div>
 </template>
 <template id='tNumberControl'>
 	<div class='bigSmall'>
-	<label><i>number</i> <input class='val' type='number' step='0.01' placeholder='0' required></label>
-	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	<label><span class='labelType'>number</span> <input class='val' type='number' step='0.01' placeholder='0' required></label>
+	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 </template>
 <template id='tBoolControl'>
-	<i>bool</i>
+	<span class='labelType'>bool</span>
 	<label><input class='radioTrue' type='radio' value='true'> true</label>
 	<label><input class='radioFalse' type='radio' value='false'> false</label>
 	<label><input class='radioNull valIsNull' type='radio' value='null'> null</label>
@@ -1159,26 +1176,26 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 </template>
 <template id='tJsonControl'>
 	<div class='bigSmall bigSmallJson'>
-	<label><i>json</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
+	<label><span class='labelType'>json</span> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
 	<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
 <template id='tDateControl'>
 	<div class='bigSmall'>
-	<label><i>date</i> <input class='val' type='datetime-local'></label>
-	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	<label><span class='labelType'>date</span> <input class='val' type='datetime-local'></label>
+	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 	</div>
 </template>
 <template id='tFlatListControl'>
 	<div class='bigSmall'>
-	<label><i class='labelType'>list</i> <textarea class='val' placeholder='{empty}' spellcheck='false'></textarea></label>
-	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	<label><span class='labelType'>list</span> <textarea class='val' placeholder='{empty}' spellcheck='false'></textarea></label>
+	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 	</div>
 </template>
 <template id='tMultiControl'>
 	<div class='bigSmall'>
-	<label><i>multi</i> <select class='val' multiple> </select></label>
-	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
+	<label><span class='labelType'>multi</span> <select class='val' multiple> </select></label>
+	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label>
 	</div>
 </template>
 <template id='tObjectsControl'>
@@ -1186,17 +1203,17 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 	<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>📎</button>
 	<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)'>➕</button>
 	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)'>🗃</button>
-	<label>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
+	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 </template>
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
-		<label><i>object</i> <textarea class='val jsonValid' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
+		<label><span class='labelType'>object</span> <textarea class='val jsonValid' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
 		<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
-		<label><i>objects</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
+		<label><span class='labelType'>objects</span> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
 		<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
