@@ -1,49 +1,100 @@
 <html>
 <style>
+					/* critical css (positioning and sizing)*/
+body {
+	background: #e3e3e3;
+	margin: 0;
+									/*overflow: hidden;*/
+}
+body, details, fieldset, div, dialog {
+	font-family: system-ui;
+	font-size: 1em;
+}
+#container {
+	display: grid;
+	grid-template-columns: min-content 1fr;
+	grid-gap: 1em;
+	margin: 3px;
+	width: calc(100vw - 6px);
+	height: calc(100vh - 6px);
+}
+.val, textarea {
+	font-family: monospace;
+	width: 100%;
+	font-size: 1.2em;
+}
+.val{
+									/*background: white;*/
+	border: var(--def-border-width) var(--def-border-sty) #eee;
+}
+fieldset, legend, textarea {
+	border: var(--def-border-width) var(--def-border-sty) var(--border-col);
+}
+
+.val, fieldset, legend, textarea {
+	border-radius: var(--roundness);
+}
+/*input[type=number], textarea {
+	font-family: monospace;
+}
+*/
+input:invalid, .jsonInvalid {
+	outline: 2px red outset;
+	transition: outline 1s;
+}
+.typeMismatch {
+	border-color: red;
+}
+textarea {
+	resize: vertical;
+	white-space: pre;
+	tab-size: 3;
+	margin-bottom: 3px;
+}
+
+				/* not needed
+				#inputDefs, #defExported textarea {
+					line-height: 1.5em;
+					font-family: arial;
+				}
+				textarea.val {
+					min-height: 1.5em;
+				}
+				*/
+				/* not needed
+				.jsonValid {
+					//background-color: #7ee87b;
+					//transition: background-color 2s;
+				}
+				.jsonInvalid {
+					background-color: #ffb3b3;
+					transition: background-color 2s;
+				}
+				*/
+
+#controls {
+	height: calc(100vh - 1em);
+	padding: 5px;
+}
+#leftPane {
+	resize: horizontal;
+							/*height: calc(100vh - 1em);*/
+	padding-right: 1em;
+	min-width: 250px;
+	max-width: calc(100vw - 2em);
+}
+
+#controls, #leftPane, #tableEdit div {
+	overflow: auto;
+}
+							/* visual css */
+
 :root {
 	--border-col: #5e5252;
 	--roundness: 4px;
 	--def-border-width: 2px;
 	--def-border-sty: ridge;
 	--fscolor: #92cabd;
-}
-input:required:invalid {
-	outline: 1px red solid;
-}
-input.val, select.val, textarea {
-	width: 100%;
-}
-textarea {
-	resize: vertical;
-	white-space: pre;
-	tab-size: 3;
-}
-textarea.val {
-	min-height: 1.5em;
-}
-.val{
-	background: white;
-	border: var(--def-border-width) var(--def-border-sty) #eee;
-}
-.jsonValid {
-	//background-color: #7ee87b;
-	//transition: background-color 2s;
-}
-.jsonInvalid {
-	background-color: #ffb3b3;
-	transition: background-color 2s;
-}
-body {
-	background: #e3e3e3;
-	font-family: arial;
-	margin: 0;
-	overflow: hidden;
-}
-fieldset, legend, #inputJson, #inputDefs, #updateArea {
-	border: var(--def-border-width) var(--def-border-sty) var(--border-col);
-}
-.val, fieldset, legend, #inputJson, #inputDefs, #updateArea {
-	border-radius: var(--roundness);
 }
 fieldset {
 	background: var(--fscolor);
@@ -60,11 +111,12 @@ details {
 }
 details:open {
 	display: block;
+	padding-bottom: 5px;
 }
-summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio] {
-	cursor: pointer;
+summary {
+	font-variant: small-caps;
 }
-select:hover {
+summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio], select:hover {
 	cursor: pointer;
 }
 select[multiple]:hover {
@@ -73,20 +125,14 @@ select[multiple]:hover {
 input:disabled, select:disabled, select[multiple]:disabled:hover {
 	cursor: not-allowed;
 }
-option:checked {
-	background: #ffff5b;	
+button:hover {
+	background: white;
 }
+
 option:checked::after {
 	content: "  ✔";
-	
 }
-#inputDefs, #defExported textarea {
-	line-height: 1.5em;
-	font-family: arial;
-}
-input[type=number], textarea {
-	font-family: monospace;
-}
+
 h2 {
 	font-variant: small-caps;
 	text-align: center;
@@ -110,33 +156,12 @@ dialog textarea {
 	width: 70vw;
 	height: 50vh;
 }
-#container {
-	display: grid;
-	grid-template-columns: min-content 1fr;
-	grid-gap: 1em;
-	margin: 3px;
-	padding: 0;
-	width: calc(100vw - 6px);
-	height: calc(100vh - 6px);
-}
-#controls, #leftPane, #tableEdit div {
-	overflow: auto;
-}
+
 #tableEdit div {
 	max-width: 90vw;
 	max-height: 75vh;
 }
-#controls {
-	height: calc(100vh - 1em);
-	padding: 5px;
-}
-#leftPane {
-	resize: horizontal;
-	height: calc(100vh - 1em);
-	padding-right: 15px;
-	min-width: 250px;
-	max-width: calc(100vw - 2em);
-}
+
 .bigSmall {
 	display: grid;
 	grid-template-columns: 1fr min-content;
@@ -150,37 +175,54 @@ dialog textarea {
 }
 button {
 	font-size: 1em;
+	background: linear-gradient(to bottom right, #f2ffef, #d2d7c0);
+	border-radius: 4px;
+	border-color: #d2d7c0;
+	border-style: outset;
+	color: #222;
+	margin-top: 5px;
 }
 summary button {
 	font-size: 0.75em;
 }
-.typeMismatch {
-	border-color: red;
-}
+
 @media (max-width: 600px){
-	body {
-		overflow: auto;
-	}
+	/*
+				body {
+					overflow: auto;
+				}
+				#container {
+					display: block;
+					margin: 0;
+				}
+				#leftPane {
+					height: unset;
+					min-width: unset;
+					position: fixed;
+					width: calc(100vw - 1em);
+					margin-right: 1em;
+					background: #ccc;
+					resize: horizontal;
+					max-width: unset;
+					max-height: 100vh;
+					overflow: auto;
+				}
+				#controls {
+					height: unset;
+					padding-top: 3em;
+				}
+	*/
 	#container {
-		display: block;
-		margin: 0;
-	}
-	#leftPane {
-		height: unset;
-		min-width: unset;
-		position: fixed;
-		width: calc(100vw - 1em);
-		margin-right: 1em;
-		background: #ccc;
-		resize: horizontal;
-		max-width: unset;
-		max-height: 100vh;
-		overflow: auto;
+		grid-template-rows: min-content 1fr;
+		grid-template-columns: unset;
 	}
 	#controls {
 		height: unset;
-		padding-top: 3em;
 	}
+	#leftPane {
+		resize: none;
+	}
+
 }
 .fieldError {
 	font-style: italic;
@@ -313,9 +355,12 @@ function helper_check_mydefs(){
 	return check_paths(paths);
 }
 
-function defParse(lines,defaultType='j'){
+function defParse(lines,priDel,defaultType='j'){
 	const r = new Map();
 	let name, path, type, opts, notes, line;
+	if (priDel.length==0){
+		priDel = ',';
+	}
 	for (const lineWS of lines){
 		line = lineWS.trim();
 		if (line.length==0 || line.startsWith('#')){
@@ -325,7 +370,7 @@ function defParse(lines,defaultType='j'){
 			r.set(line,{path: line, type: '~'});
 			continue;
 		}
-		[name,path,type,opts,notes] = line.split(',');
+		[name,path,type,opts,notes] = line.split(priDel);
 		if (!name || !path || name.trim().length==0 || path.trim().length==0){
 			console.error(`invalid name "${name}" or invalid path "${path}"`);
 			r.set(line,{type: 'err'});
@@ -460,7 +505,7 @@ class JsonFieldSet extends FieldSetControl {
 		this.name = name;
 		const ta = this.control.querySelector('.val');
 		ta.value = JSON.stringify(v,null,3);
-		ta.rows = Math.min(40, 2 + Array.from(ta.value.matchAll('\n')).length);
+		ta.rows = Math.min(40, 1 + Array.from(ta.value.matchAll('\n')).length);
 	}
 	get val(){
 		try {
@@ -596,7 +641,7 @@ class ObjectsFieldSet extends FieldSetControl {
 					cj = tInnerObject.content.cloneNode(true).firstElementChild;
 					t = JSON.stringify(e,null,3);
 					cj.querySelector('.val').value = t;
-					cj.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
+					cj.querySelector('.val').rows = Math.min(40, 1 + Array.from(t.matchAll('\n')).length);
 					cont.appendChild(cj);
 				}
 				cont.removeChild(iv);
@@ -616,7 +661,7 @@ class ObjectsFieldSet extends FieldSetControl {
 					cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild,
 					t = JSON.stringify(j,null,3);
 				cmb.querySelector('.val').value = t;
-				cmb.querySelector('.val').rows = Math.min(40, 2 + Array.from(t.matchAll('\n')).length);
+				cmb.querySelector('.val').rows = Math.min(40, 1 + Array.from(t.matchAll('\n')).length);
 				cont.appendChild(cmb);
 				
 			} catch(err){
@@ -757,10 +802,10 @@ function tryBuild(verbose=false){
 		document.title = `jsonhooks: ${outputFileName.value}`;
 	}
 	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
-	inputJson.readOnly = inputDefs.readOnly = true;
+	inputJson.readOnly = inputDefs.readOnly = inputDefsDel.readOnly = true;
 	con('**input json**');
 	con(myjson);
-	mydefs = defParse(inputDefs.value.trim().split('\n'));
+	mydefs = defParse(inputDefs.value.trim().split('\n'), inputDefsDel.value);
 	con('**input defs**');
 	con(mydefs);
 	con('**sound out values in json**');
@@ -874,7 +919,7 @@ function validateFormat(){
 	const v = event.target.parentElement.querySelector('.val');
 	try {
 		v.value = JSON.stringify(JSON.parse(v.value),null,3);
-		v.rows = Math.min(40, 2 + Array.from(v.value.matchAll('\n')).length);
+		v.rows = Math.min(40, 1 + Array.from(v.value.matchAll('\n')).length);
 		//alert('Valid!');
 		v.classList.replace('jsonInvalid','jsonValid');
 	} catch(err){
@@ -889,13 +934,16 @@ function toggleNotesEditable(){
 		n.contentEditable = mode;
 	}
 }
-function pullDefs(){
+function pullDefs(priDel){
 	const r = [];
+	if (priDel.length==0){
+		priDel = ',';
+	}
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~'){
 			r.push(hook.path);
 		} else if (hook.type in classHookMap){
-			r.push(`${name},${hook.path.join('|')},${hook.type},${hook.opts?? ''},${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
+			r.push(`${name}${priDel}${hook.path.join('|')}${priDel}${hook.type}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 		}
@@ -903,7 +951,7 @@ function pullDefs(){
 	return r;
 }
 function exportDefsToDialog(){
-	defExported.querySelector('textarea').value = pullDefs().join('\n');
+	defExported.querySelector('textarea').value = pullDefs(inputDefsDel.value).join('\n');
 	defExported.show();
 }
 function gotoDefChange(key){
@@ -1011,28 +1059,29 @@ function cancelTableEdit(){
 			<summary>Input Defs</summary>
 			<textarea id='inputDefs' ondrop='textareaFileDrop(event)' ondragover='event.preventDefault()' rows=10 spellcheck='false'>
 ~~Header 1- Basic types
-String Control,a_string,s,,'s' denotes a string control
-Number Control,a_number,n,,'n' denotes a number control
-Date Control,a_date,dt,,'dt' denotes a date control
-List Control,a_list,l,,'l' denotes a homogeneous list control. a 'n' in opts denotes it as a number list.
+String Control[)a_string[)s[)[)'s' denotes a string control
+Number Control[)a_number[)n[)[)'n' denotes a number control
+Date Control[)a_date[)dt[)[)'dt' denotes a date control
+List Control[)a_list[)l[)[)'l' denotes a homogeneous list control. a 'n' in opts denotes it as a number list.
 ~~Header 2- Even more basic Types
-Enum String Control,an_object.enum_string,s,apple|banana,Having a pipe delimited list in opts creates an enum control.
-Enum Number Control,an_object.enum_number,n,1|2|3|4|5,Similar with numbers, the 'n' causes the result to be cast to number in output
-Bool Control,an_object.a_bool,b,,'b' denotes a bool control
-Json Control,an_object.a_json,j,,'j' denotes a json control
+Enum String Control[)an_object.enum_string[)s[)apple|banana[)Having a pipe delimited list in opts creates an enum control.
+Enum Number Control[)an_object.enum_number[)n[)1|2|3|4|5[)Similar with numbers[) the 'n' causes the result to be cast to number in output
+Bool Control[)an_object.a_bool[)b[)[)'b' denotes a bool control
+Json Control[)an_object.a_json[)j[)[)'j' denotes a json control
 ~~Header 3- Arrays
-Array Indexing Value 0,indexable.0,s,,Using a number in the path can refer to that index in an array
-Array Indexing Value 1 Child Key,indexable.1.obj-in-array,b,,You can even refer to objects inside arrays
+Array Indexing Value 0[)indexable.0[)s[)[)Using a number in the path can refer to that index in an array
+Array Indexing Value 1 Child Key[)indexable.1.obj-in-array[)b[)[)You can even refer to objects inside arrays
 ~~Header 4- Multi-path
-Multi-path string,repeated-string|repeated-string-dup,s,,You can include multiple paths with pipes. The same value will be put to every path.
+Multi-path string[)repeated-string|repeated-string-dup[)s[)[)You can include multiple paths with pipes. The same value will be put to every path.
 ~~Header 5- Error checking
-Invalid Path,myinvalidpath,s,,This path will result in an error
-Invalid Branching,an_object.a_json.branch-node.invalidleaf,j,,This is an invalid leaf
+Invalid Path[)myinvalidpath[)s[)[)This path will result in an error
+Invalid Branching[)an_object.a_json.branch-node.invalidleaf[)j[)[)This is an invalid leaf
 ~~Header 6- Special Types
-Multi,select,m,apple&banana&cottage&doom,'m' denotes a multi select
-Objects,objarr,o,,'o' denotes the objects type; an array of objects.
-Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns in opts; allows for tabling
+Multi[)select[)m[)apple&banana&cottage&doom[)'m' denotes a multi select
+Objects[)objarr[)o[)[)'o' denotes the objects type; an array of objects.
+Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional columns in opts; allows for tabling
 </textarea>
+<label>Primary Delimiter <input id='inputDefsDel' value="[)" placeholder='comma if blank'/></label><br>
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
 		<div id='updateAreas' hidden>
@@ -1042,14 +1091,15 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span><br>
 			<label>Filename: <input id='outputFileName' /></label>
 		</details>
-
+		<br>
 		<select id='gotoDef' onchange='gotoDefChange(this.value)'></select>
-		<center>
-		<button onclick='toggleNotesEditable()'>🔏 Notes</button>
+		<!--<center>-->
+		<button onclick='toggleNotesEditable()' title='Un/lock Notes'>🔏 Notes</button>
 		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
 		<button onclick='toggleWideView()'>↔</button>
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
-		</center></div>
+		</div>
+		<!--</center>-->
 		<center><button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button></center>
 	</div>
 
@@ -1066,7 +1116,7 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 <dialog id='buildLog'>
 <h2>Build Log</h2>
 <textarea id='errLog' spellcheck='false'></textarea>
-<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>👌</button></center>
+<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>👌 Dismiss</button></center>
 </dialog>
 
 <dialog id='tableEdit'>
@@ -1110,7 +1160,7 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 <template id='tJsonControl'>
 	<div class='bigSmall bigSmallJson'>
 	<label><i>json</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
-	<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
+	<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
 <template id='tDateControl'>
@@ -1141,17 +1191,17 @@ Tables,genobjsArr,o,numcol=n|strcol=s|boolcol=b,object with additional columns i
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
 		<label><i>object</i> <textarea class='val jsonValid' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
 		<label><i>objects</i> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
-		<button onclick='validateFormat()' title='Validate and Format'>🧹</button>
+		<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
 
 <script>
-leftPane.style.width = 'calc(100vw - 2em)';
+leftPane.style.width = 'calc(100vw - 3em)';
 </script>
 </html>
