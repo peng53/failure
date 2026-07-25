@@ -1,10 +1,8 @@
 <html>
 <style>
-					/* critical css (positioning and sizing)*/
 body {
 	background: #e3e3e3;
 	margin: 0;
-									/*overflow: hidden;*/
 }
 body, details, fieldset, div, dialog {
 	font-family: system-ui;
@@ -24,7 +22,6 @@ body, details, fieldset, div, dialog {
 	font-size: 1.2em;
 }
 .val{
-									/*background: white;*/
 	border: var(--def-border-width) var(--def-border-sty) #eee;
 }
 fieldset, legend, textarea {
@@ -34,10 +31,6 @@ fieldset, legend, textarea {
 .val, fieldset, legend, textarea, button {
 	border-radius: var(--roundness);
 }
-/*input[type=number], textarea {
-	font-family: monospace;
-}
-*/
 input:invalid, .jsonInvalid {
 	outline: 2px red outset;
 	transition: outline 1s;
@@ -51,44 +44,19 @@ textarea {
 	tab-size: 3;
 	margin-bottom: 3px;
 }
-
-				/* not needed
-				#inputDefs, #defExported textarea {
-					line-height: 1.5em;
-					font-family: arial;
-				}
-				textarea.val {
-					min-height: 1.5em;
-				}
-				*/
-				/* not needed
-				.jsonValid {
-					//background-color: #7ee87b;
-					//transition: background-color 2s;
-				}
-				.jsonInvalid {
-					background-color: #ffb3b3;
-					transition: background-color 2s;
-				}
-				*/
-
 #controls {
-	/*height: calc(100vh - 1em);*/
 	padding: 5px;
 }
 #leftPane {
 	resize: horizontal;
-							/*height: calc(100vh - 1em);*/
 	padding-right: 1em;
-	min-width: 200px;
+	min-width: 150px;
 	max-width: calc(100vw - 2em);
 }
 
 #controls, #leftPane, #tableEdit div {
 	overflow: auto;
 }
-							/* visual css */
-
 :root {
 	--border-col: #5e5252;
 	--roundness: 4px;
@@ -107,7 +75,7 @@ legend {
 	color: white;
 }
 details {
-	display: inline;
+	display: inline-block;
 }
 details:open {
 	display: block;
@@ -181,31 +149,6 @@ summary button {
 }
 
 @media (max-width: 600px){
-	/*
-				body {
-					overflow: auto;
-				}
-				#container {
-					display: block;
-					margin: 0;
-				}
-				#leftPane {
-					height: unset;
-					min-width: unset;
-					position: fixed;
-					width: calc(100vw - 1em);
-					margin-right: 1em;
-					background: #ccc;
-					resize: horizontal;
-					max-width: unset;
-					max-height: 100vh;
-					overflow: auto;
-				}
-				#controls {
-					height: unset;
-					padding-top: 3em;
-				}
-	*/
 	#container {
 		grid-template-rows: min-content 1fr;
 		grid-template-columns: unset;
@@ -236,7 +179,7 @@ td, th {
 	border: 1px outset #000;
 	padding: 5px 2px;
 }
-.thType_s::after, .thType_b::after, .thType_n::after {
+.thType_s::after, .thType_b::after, .thType_n::after, .thType_j::after {
 	font-size: 0.75em;
 	font-style: italic;
 }
@@ -249,6 +192,9 @@ td, th {
 .thType_n {
 	background: #3ae33a;
 }
+.thType_j {
+	background: red;
+}
 .thType_s::after {
 	content: "s";
 }
@@ -258,8 +204,14 @@ td, th {
 .thType_n::after {
 	content: "n";
 }
+.thType_j::after {
+	content: "j";
+}
 tr {
 	border-bottom: 2px solid #000;
+}
+tr:nth-child(even){
+	background: #d7d7f0;
 }
 tr:focus {
 	background: #fca9ff;
@@ -270,7 +222,7 @@ td:hover {
 </style>
 <script>
 'use strict';
-var myjson, mydefs;
+var myjson, mydefs, priDel=',';
 
 class HeatNode {
 	constructor(partialPath){
@@ -353,19 +305,32 @@ function helper_check_mydefs(){
 	return check_paths(paths);
 }
 
-function defParse(lines,priDel,defaultType='j'){
+function defParse(lines,defaultType='j'){
 	const r = new Map();
-	let name, path, type, opts, notes, line;
+	let name, path, type, opts, notes, line, val;
+	/*
 	if (priDel.length==0){
 		priDel = ',';
-	}
+	}*/
 	for (const lineWS of lines){
 		line = lineWS.trim();
 		if (line.length==0 || line.startsWith('#')){
 			continue;
+		} else if (line.startsWith('@')){
+			[line,val] = line.split('=');
+			switch (line){
+				case '@del':
+					priDel = val;
+					break;
+				default: break;
+			}
+			continue;
 		} else if (line.startsWith('~')){
 			// separator
 			r.set(line,{path: line, type: '~'});
+			continue;
+		} else if (line.startsWith('=')){
+			r.set(line,{path: line, type: '='});
 			continue;
 		}
 		[name,path,type,opts,notes] = line.split(priDel);
@@ -377,7 +342,7 @@ function defParse(lines,priDel,defaultType='j'){
 			console.error(`${name} already defined, ignoring`);
 			continue;
 		} else {
-			r.set(name,{path: path.split('|'), type: type ?? defaultType, opts: opts.trim(), notes: notes.trim()});
+			r.set(name,{path: path.split('|'), type: type ?? defaultType, opts: opts?.trim(), notes: notes?.trim()});
 		}
 	}
 	return r;
@@ -415,8 +380,20 @@ function setJson(j,path,newValue){
 }
 
 function createSep(name,hook){
-	const ele = document.createElement('h2');
+	const ele = document.createElement(`h${hook.path.match(/~+/)[0].length}`);
 	ele.textContent = hook.path.replaceAll('~','');
+	return ele;
+}
+function createCode(hook){
+	const ele = document.createElement('pre');
+	const pre = ele.appendChild(document.createElement('code'));
+	try {
+		pre.textContent = JSON.stringify(JSON.parse(hook.path.substr(1,hook.path.length)),null,3);
+	}
+	catch(err) {
+		errLog.value += `Invalid code ${hook.path}\n\n`;
+		//console.error(err);
+	}
 	return ele;
 }
 
@@ -510,7 +487,7 @@ class JsonFieldSet extends FieldSetControl {
 			return JSON.parse(this.control.querySelector('.val').value);
 		} catch (parseErr){
 			alert(`Validate '${this.name}' : '${parseErr.message}'`);
-			this.control.querySelector('.val').classList.replace('jsonValid','jsonInvalid');
+			this.control.querySelector('.val').classList.toggle('jsonInvalid',true);
 			this.control.scrollIntoView();
 			return undefined;
 		}
@@ -655,7 +632,7 @@ class ObjectsFieldSet extends FieldSetControl {
 				}
 			}
 			try {
-				let j = JSON.parse('['+vs.join(',')+']'),
+				let j = JSON.parse(`[${vs.join(',')}]`),
 					cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild,
 					t = JSON.stringify(j,null,3);
 				cmb.querySelector('.val').value = t;
@@ -690,10 +667,10 @@ class ObjectsFieldSet extends FieldSetControl {
 		inv = inv.querySelector('textarea');
 		try {
 			json = JSON.parse(inv.value);
-			inv.classList.replace('jsonInvalid','jsonValid');
+			inv.classList.toggle('jsonInvalid',false);
 		} catch {
 			alert('Cannot table invalid JSON!');
-			inv.classList.replace('jsonValid','jsonInvalid');
+			inv.classList.toggle('jsonInvalid',true);
 			return;
 		}
 		tableEdit.querySelector('h2').textContent = name; 
@@ -712,7 +689,11 @@ class ObjectsFieldSet extends FieldSetControl {
 			row = tb.insertRow(-1);
 			row.contentEditable = true;
 			for (const [o,t] of opt){
-				row.appendChild(document.createElement('td')).textContent = `${(e[o]===null) ? "'null'" : e[o]}`;
+				if (t=='j'){
+					row.appendChild(document.createElement('td')).textContent = JSON.stringify(e[o]);
+				} else {
+					row.appendChild(document.createElement('td')).textContent = `${(e[o]===null) ? "'null'" : e[o]}`;
+				}
 			}
 		}
 		inv.disabled = true;
@@ -789,7 +770,7 @@ function tryBuild(verbose=false){
 	const con = verbose? a=>console.log(a) : a=>{};
 	try {
 		myjson = JSON.parse(inputJson.value);
-		inputJson.classList.remove('jsonInvalid');
+		inputJson.classList.toggle('jsonInvalid',false);
 	} catch (parseErr){
 		alert(`Invalid input: ${parseErr.message}`);
 		inputJson.classList.toggle('jsonInvalid',true);
@@ -800,10 +781,10 @@ function tryBuild(verbose=false){
 		document.title = `jsonhooks: ${outputFileName.value}`;
 	}
 	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
-	inputJson.readOnly = inputDefs.readOnly = inputDefsDel.readOnly = true;
+	inputJson.readOnly = inputDefs.readOnly = true;
 	con('**input json**');
 	con(myjson);
-	mydefs = defParse(inputDefs.value.trim().split('\n'), inputDefsDel.value);
+	mydefs = defParse(inputDefs.value.trim().split('\n'));
 	con('**input defs**');
 	con(mydefs);
 	con('**sound out values in json**');
@@ -814,6 +795,8 @@ function tryBuild(verbose=false){
 		if (hook.type=='~'){
 			afrag.appendChild(createSep(name,hook));
 			gotoDef.appendChild(document.createElement('optgroup')).label = name;
+		} else if (hook.type=='='){
+			afrag.appendChild(createCode(hook));
 		} else if (hook.type=='err'){
 			cn = document.createElement('span');
 			cn.classList.add('fieldError');
@@ -897,6 +880,7 @@ function tryUpdate(){
 		} else {
 			switch (hook.type){
 				case '~':
+				case '=':
 					break;
 				default:
 					console.log(`skipping type ${hook.type}`);
@@ -921,11 +905,10 @@ function validateFormat(){
 	try {
 		v.value = JSON.stringify(JSON.parse(v.value),null,3);
 		v.rows = Math.min(40, 1 + Array.from(v.value.matchAll('\n')).length);
-		//alert('Valid!');
-		v.classList.replace('jsonInvalid','jsonValid');
+		v.classList.toggle('jsonInvalid',false);
 	} catch(err){
 		alert(`JSON is not valid: ${err.message}`);
-		v.classList.replace('jsonValid','jsonInvalid');
+		v.classList.toggle('jsonInvalid',true);
 	}
 }
 function toggleNotesEditable(){
@@ -935,16 +918,17 @@ function toggleNotesEditable(){
 		n.contentEditable = mode;
 	}
 }
-function pullDefs(priDel){
+function pullDefs(){
 	const r = [];
 	if (priDel.length==0){
 		priDel = ',';
 	}
+	r.push(`@del=${priDel}`);
 	for (const [name,hook] of mydefs.entries()){
-		if (hook.type=='~'){
+		if (hook.type=='~' || hook.type=='='){
 			r.push(hook.path);
 		} else if (hook.type in classHookMap){
-			r.push(`${name}${priDel}${hook.path.join('|')}${priDel}${hook.type}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(priDel,';')}`);
+			r.push(`${name}${priDel}${hook.path.join('|')}${priDel}${hook.type}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 		}
@@ -952,7 +936,7 @@ function pullDefs(priDel){
 	return r;
 }
 function exportDefsToDialog(){
-	defExported.querySelector('textarea').value = pullDefs(inputDefsDel.value).join('\n');
+	defExported.querySelector('textarea').value = pullDefs().join('\n');
 	defExported.show();
 }
 function gotoDefChange(key){
@@ -972,7 +956,6 @@ function save(par,filename){
 		alert('Textarea is empty!');
 	}
 }
-
 function loadFileOnTextarea(i){
 	const t = i.parentElement.parentElement.querySelector('textarea');
 	if (i.files.length==1){
@@ -993,14 +976,6 @@ function textareaFileDrop(event){
 	}
 }
 function toggleWideView(){
-	/*
-	if (leftPane.style.height==''){
-		container.style.display = 'block';
-		leftPane.style.height = document.body.style.overflow = controls.style.height = 'unset';
-	} else {
-		container.style.display = leftPane.style.height = document.body.style.overflow = controls.style.height = '';
-	}*/
-	//**
 	if (leftPane.style.height==''){
 		container.style.gridTemplateRows = 'min-content 1fr';
 		container.style.gridTemplateColumns = leftPane.style.height = controls.style.height = 'unset';
@@ -1014,8 +989,11 @@ function cancelTableEdit(){
 	tableEdit.close();
 	mydefs.get(tableEdit.querySelector('h2').textContent).control.querySelector('textarea').disabled = false;
 }
-
-
+function selectChromeFix(s){
+	if (s.selectedIndex!=0 && !!window.chrome){
+		s.options[s.selectedIndex].click();
+	}
+}
 </script>
 <body>
 <div id='container'>
@@ -1052,9 +1030,9 @@ function cancelTableEdit(){
 	[1,2,3,4]
 ],
 "genobjsArr": [
-	{"numcol":100, "strcol":"One", "boolcol":true},
-	{"numcol":222, "strcol":"Two", "boolcol":false},
-	{"numcol":null, "strcol":null, "boolcol":null}
+	{"numcol":100, "strcol":"One", "boolcol":true, "jsoncol": [1,2,3]},
+	{"numcol":222, "strcol":"Two", "boolcol":false, "jsoncol": { "x" : "y"}},
+	{"numcol":null, "strcol":null, "boolcol":null, "jsoncol": "string"}
 ]
 }
 			</textarea>
@@ -1063,7 +1041,11 @@ function cancelTableEdit(){
 		<details id='inputDefsDet' open>
 			<summary>Input Defs</summary>
 			<textarea id='inputDefs' ondrop='textareaFileDrop(event)' ondragover='event.preventDefault()' rows=10 spellcheck='false'>
+# lines starting with '@' are special directives like del
+@del=[)
+~Jsonhook Sample
 ~~Header 1- Basic types
+~~~The basic controls
 String Control[)a_string[)s[)[)'s' denotes a string control
 Number Control[)a_number[)n[)[)'n' denotes a number control
 Date Control[)a_date[)dt[)[)'dt' denotes a date control
@@ -1079,14 +1061,16 @@ Array Indexing Value 1 Child Key[)indexable.1.obj-in-array[)b[)[)You can even re
 ~~Header 4- Multi-path
 Multi-path string[)repeated-string|repeated-string-dup[)s[)[)You can include multiple paths with pipes. The same value will be put to every path.
 ~~Header 5- Error checking
+~~~This section will be empty except for errors
 Invalid Path[)myinvalidpath[)s[)[)This path will result in an error
 Invalid Branching[)an_object.a_json.branch-node.invalidleaf[)j[)[)This is an invalid leaf
 ~~Header 6- Special Types
 Multi[)select[)m[)apple&banana&cottage&doom[)'m' denotes a multi select
 Objects[)objarr[)o[)[)'o' denotes the objects type; an array of objects.
-Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional columns in opts; allows for tabling
+={"numcol":123, "strcol":"string", "boolcol":true, "jsoncol": {}}
+Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additional columns in opts; allows for tabling
 </textarea>
-<label>Primary Delimiter <input id='inputDefsDel' value="[)" placeholder='comma if blank'/></label><br>
+<!--<label>Primary Delimiter <input id='inputDefsDel' value="[)" placeholder='comma if blank'/></label><br>-->
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
 		<span id='updateAreas' hidden>
@@ -1098,28 +1082,18 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 		</details>
 		<select style='width:100px' id='gotoDef' onchange='gotoDefChange(this.value)'></select>
 
-		<select style='width:11ch' onchange='this.selectedIndex=0'>
+		<select style='width:5ch' onchange='selectChromeFix(this);this.selectedIndex=0'>
 			<option>🔴 Menu</option>
 			<option onclick='toggleNotesEditable()' title='Un/lock Notes'>🔏 Notes</option>
 			<option onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</option>
 			<option onclick='toggleWideView()' title='Toggle Wideview'>↔ Toggle Wideview</option>
 		</select>
-		<!--<center>
-		<button onclick='toggleNotesEditable()' title='Un/lock Notes'>🔏 Notes</button>
-		<button onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</button>
-		<button onclick='toggleWideView()'>↔</button>
-		-->
-
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
-		<!--</center>-->
 		</span>
-
-
 		<center>
 		<button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button>
 		</center>
 	</div>
-
 	<div id='controls'></div>
 </div>
 </body>
@@ -1138,7 +1112,7 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 
 <dialog id='tableEdit'>
 <h2></h2>
-<span class='tblNotes'></span>
+<details><summary>Notes</summary><span class='tblNotes'></span></details>
 <div><table style=''><thead><tr></tr></thead><tbody></tbody></table></div>
 <center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='cancelTableEdit()' title='Cancel'>🗑</button></center>
 </dialog>
@@ -1176,7 +1150,7 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 </template>
 <template id='tJsonControl'>
 	<div class='bigSmall bigSmallJson'>
-	<label><span class='labelType'>json</span> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
+	<label><span class='labelType'>json</span> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
 	<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
@@ -1207,13 +1181,13 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b[)object with additional colum
 </template>
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
-		<label><span class='labelType'>object</span> <textarea class='val jsonValid' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
+		<label><span class='labelType'>object</span> <textarea class='val' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
 		<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
 	<div class='bigSmall bigSmallJson innerVal'>
-		<label><span class='labelType'>objects</span> <textarea class='val jsonValid' placeholder='null' spellcheck='false'></textarea></label>
+		<label><span class='labelType'>objects</span> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
 		<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	</div>
 </template>
