@@ -4,17 +4,26 @@ body {
 	background: #e3e3e3;
 	margin: 0;
 }
-body, details, fieldset, div, dialog {
+body, details, fieldset, div, dialog, button {
 	font-family: system-ui;
 	font-size: 1em;
 }
-#container {
+#container, .bigSmall {
 	display: grid;
+}
+#container {
 	grid-template-columns: min-content 1fr;
 	grid-gap: 5px;
 	margin: 3px;
 	width: calc(100vw - 6px);
 	height: calc(100vh - 6px);
+}
+.bigSmall {
+	grid-template-columns: 1fr min-content;
+	grid-gap: 3px;
+}
+.bigSmallJson {
+	align-items: center;
 }
 .val, textarea {
 	font-family: monospace;
@@ -27,13 +36,12 @@ body, details, fieldset, div, dialog {
 fieldset, legend, textarea {
 	border: var(--def-border-width) var(--def-border-sty) var(--border-col);
 }
-
 .val, fieldset, legend, textarea, button {
 	border-radius: var(--roundness);
 }
-input:invalid, .jsonInvalid {
+input:invalid, textarea:invalid, .jsonInvalid {
 	outline: 2px red outset;
-	transition: outline 1s;
+	transition: outline 500ms;
 }
 .typeMismatch {
 	border-color: red;
@@ -53,7 +61,6 @@ textarea {
 	min-width: 150px;
 	max-width: calc(100vw - 2em);
 }
-
 #controls, #leftPane, #tableEdit div {
 	overflow: auto;
 }
@@ -74,7 +81,7 @@ legend {
 	font-weight: bold;
 	color: white;
 }
-details {
+details, .fieldError, .notesEd {
 	display: inline-block;
 }
 details:open {
@@ -84,7 +91,7 @@ details:open {
 summary, h2 {
 	font-variant: small-caps;
 }
-summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio], select:hover {
+summary:hover, label:hover, button:hover, input[type=checkbox], input[type=radio], select:hover, code:hover {
 	cursor: pointer;
 }
 select[multiple]:hover {
@@ -93,10 +100,9 @@ select[multiple]:hover {
 input:disabled, select:disabled, select[multiple]:disabled:hover {
 	cursor: not-allowed;
 }
-button:hover {
+button:hover, .notesEd {
 	background: white;
 }
-
 option:checked::after {
 	content: "  ✔";
 }
@@ -107,8 +113,6 @@ h2 {
 .notesEd {
 	min-width: 100px;
 	min-height: 1em;
-	display: inline-block;
-	background: white;
 	outline: 1px dashed black;
 	padding: 0 3px;
 }
@@ -125,51 +129,25 @@ dialog textarea {
 	max-width: 100%;
 	max-height: 100%;
 }
-.bigSmall {
-	display: grid;
-	grid-template-columns: 1fr min-content;
-	grid-gap: 3px;
-}
-.bigSmallJson {
-	align-items: center;
-}
 .areaTimestamp {
 	font-size: 0.8em;
 }
 button {
-	font-size: 1em;
 	background: linear-gradient(to bottom right, #f2ffef, #d2d7c0);
 	border-color: #d2d7c0;
 	border-style: outset;
 	color: #222;
 	margin-top: 5px;
 }
-summary button {
+summary button, .labelType, th::after {
 	font-size: 0.75em;
 }
-
-@media (max-width: 600px){
-	#container {
-		grid-template-rows: min-content 1fr;
-		grid-template-columns: unset;
-	}
-	#controls {
-		height: unset;
-	}
-	#leftPane {
-		resize: none;
-	}
-
+.fieldError, .labelType, th::after {
+	font-style: italic;
 }
 .fieldError {
-	font-style: italic;
 	margin-bottom: 3px;
-	display: inline-block;
 	color: red;
-}
-.labelType {
-	font-size: 0.75em;
-	font-style: italic;
 }
 table {
 	border-collapse: collapse;
@@ -178,10 +156,6 @@ table {
 td, th {
 	border: 1px outset #000;
 	padding: 5px 2px;
-}
-.thType_s::after, .thType_b::after, .thType_n::after, .thType_j::after {
-	font-size: 0.75em;
-	font-style: italic;
 }
 .thType_s {
 	background: #e9ee5d;
@@ -219,10 +193,22 @@ tr:focus {
 td:hover {
 	background: #bad7f0;
 }
+@media (max-width: 600px){
+	#container {
+		grid-template-rows: min-content 1fr;
+		grid-template-columns: unset;
+	}
+	#controls {
+		height: unset;
+	}
+	#leftPane {
+		resize: none;
+	}
+}
 </style>
 <script>
 'use strict';
-var myjson, mydefs, priDel=',';
+var myjson, mydefs, priDel=',', jsonIndent=3;
 
 class HeatNode {
 	constructor(partialPath){
@@ -304,45 +290,55 @@ function helper_check_mydefs(){
 	}
 	return check_paths(paths);
 }
-
+function specialACommands(line){
+	const [cmd,val] = line.split('=');
+	switch (cmd){
+		case '@del':
+			priDel = val;
+			break;
+		case '@indent':
+			jsonIndent = (val=='t') ? '\t' : Number(val);
+			break;
+		default:
+			break;
+	}
+}
 function defParse(lines,defaultType='j'){
 	const r = new Map();
 	let name, path, type, opts, notes, line, val;
-	/*
-	if (priDel.length==0){
-		priDel = ',';
-	}*/
 	for (const lineWS of lines){
 		line = lineWS.trim();
-		if (line.length==0 || line.startsWith('#')){
-			continue;
-		} else if (line.startsWith('@')){
-			[line,val] = line.split('=');
-			switch (line){
-				case '@del':
-					priDel = val;
-					break;
-				default: break;
-			}
-			continue;
-		} else if (line.startsWith('~')){
-			// separator
-			r.set(line,{path: line, type: '~'});
-			continue;
-		} else if (line.startsWith('=')){
-			r.set(line,{path: line, type: '='});
+		if (line.length==0){
 			continue;
 		}
-		[name,path,type,opts,notes] = line.split(priDel);
-		if (!name || !path || name.trim().length==0 || path.trim().length==0){
-			console.error(`invalid name "${name}" or invalid path "${path}"`);
-			r.set(line,{type: 'err'});
-			continue;
-		} else if (r.has(name)){
-			console.error(`${name} already defined, ignoring`);
-			continue;
-		} else {
-			r.set(name,{path: path.split('|'), type: type ?? defaultType, opts: opts?.trim(), notes: notes?.trim()});
+		type = line[0];
+		switch (type){
+			case '#':
+				break;
+			case '@':
+				specialACommands(line);
+				break;
+			case '~':
+			case '=':
+			// separator or code
+				r.set(line,{path: line, type: type});
+				break;
+			case 'd':
+			case (type in classHookMap) ? type : null:
+				[type,name,path,opts,notes] = line.split(priDel);
+				if (!name || !path || name.trim().length==0 || path.trim().length==0){
+					console.error(`invalid name "${name}" or invalid path "${path}"`);
+					r.set(line,{type: 'err'});
+				} else if (r.has(name)){
+					console.error(`${name} already defined, ignoring`);
+				} else {
+					r.set(name,{path: path.split('|'), type: type ?? defaultType, opts: opts?.trim(), notes: notes?.trim()});
+				}
+				break;
+			default:
+				console.error(`Unrecognized type ${type}`);
+				r.set(line,{type: 'err'});
+				break;
 		}
 	}
 	return r;
@@ -379,16 +375,22 @@ function setJson(j,path,newValue){
 	pvnode[dpath[dpath.length-1]] = newValue;
 }
 
-function createSep(name,hook){
-	const ele = document.createElement(`h${hook.path.match(/~+/)[0].length}`);
-	ele.textContent = hook.path.replaceAll('~','');
+function createSep(name,l){
+	/*
+	const ele = document.createElement(`h${name.match(/~+/)[0].length}`);
+	ele.textContent = name.replaceAll('~','');
+	*/
+	const ele = document.createElement(`h${l}`);
+	ele.textContent = name;
 	return ele;
 }
 function createCode(hook){
 	const ele = document.createElement('pre');
+	ele.addEventListener('click',selectCode);
+	ele.title = 'Click to highlight all';
 	const pre = ele.appendChild(document.createElement('code'));
 	try {
-		pre.textContent = JSON.stringify(JSON.parse(hook.path.substr(1,hook.path.length)),null,3);
+		pre.textContent = JSON.stringify(JSON.parse(hook.path.substr(1,hook.path.length)),null,jsonIndent);
 	}
 	catch(err) {
 		errLog.value += `Invalid code ${hook.path}\n\n`;
@@ -400,10 +402,11 @@ function createCode(hook){
 class FieldSetControl {
 	constructor(name,ctrl){
 		let fs = document.createElement('fieldset');
-		fs.appendChild(fsName.content.cloneNode(true));
+		fs.appendChild(document.createElement('legend')).textContent = name;
+		//fs.appendChild(fsName.content.cloneNode(true));
 		fs.appendChild(ctrl);
 		fs.appendChild(fsNotes.content.cloneNode(true))
-		fs.querySelector('.name').textContent = name;
+		//fs.querySelector('.name').textContent = name;
 		this.control = fs;
 	}
 	get val(){
@@ -455,6 +458,7 @@ class BoolFieldSet extends FieldSetControl {
 		for (const i of this.control.querySelectorAll('input')){
 			i.name = name;
 		}
+		/*
 		let rad;
 		switch (v){
 			case true:
@@ -466,6 +470,8 @@ class BoolFieldSet extends FieldSetControl {
 				rad = '.radioNull'; break;
 		};
 		this.control.querySelector(rad).checked = true;
+		*/
+		this.control.querySelector(`input[value=${v?? 'null'}`).checked = true;
 	}
 	get val(){
 		return JSON.parse(this.control.querySelector('input:checked').value);
@@ -479,7 +485,7 @@ class JsonFieldSet extends FieldSetControl {
 		super(name,tJsonControl.content.cloneNode(true));
 		this.name = name;
 		const ta = this.control.querySelector('.val');
-		ta.value = JSON.stringify(v,null,3);
+		ta.value = JSON.stringify(v,null,jsonIndent);
 		ta.rows = Math.min(40, 1 + Array.from(ta.value.matchAll('\n')).length);
 	}
 	get val(){
@@ -487,7 +493,8 @@ class JsonFieldSet extends FieldSetControl {
 			return JSON.parse(this.control.querySelector('.val').value);
 		} catch (parseErr){
 			alert(`Validate '${this.name}' : '${parseErr.message}'`);
-			this.control.querySelector('.val').classList.toggle('jsonInvalid',true);
+			//this.control.querySelector('.val').classList.toggle('jsonInvalid',true);
+			this.control.querySelector('.val').setCustomValidity(parseErr.message);
 			this.control.scrollIntoView();
 			return undefined;
 		}
@@ -517,9 +524,10 @@ class ListFieldSet extends FieldSetControl {
 		} else {
 			this.control.querySelector('.valIsNull').checked = this.control.querySelector('.val').disabled = true;
 		}
+		/*
 		if (opts=='n'){
 			this.control.querySelector('.labelType').textContent = 'numeric list';
-		}
+		}*/
 	}
 	get val(){
 		let v = this.control.querySelector('.val').value;
@@ -569,32 +577,54 @@ class ObjectsFieldSet extends FieldSetControl {
 		} else {
 			for (const e of v){
 				cj = tInnerObject.content.cloneNode(true).firstElementChild;
-				cj.querySelector('.val').value = JSON.stringify(e,null,3);
+				cj.querySelector('.val').value = JSON.stringify(e,null,jsonIndent);
 				cont.appendChild(cj);
 			}
 		}
 	}
 	get val(){
-		const v = Array.from(this.control.querySelectorAll('.val'));
-		try {
-			if (v.length==1){
-				return JSON.parse(v[0].value);
-			} else {
-				let av = [],
-					tx;
-				for (const x of v){
-					tx = x.value.trim(); 
-					if (tx.length>0 && tx!='null'){
-						av.push(tx);
-					}
+		/*
+		let j;
+		if (this.control.querySelector('.innerVal')){
+			j = this.control.querySelector('textarea').value;
+		} else {
+			let av = [], tx;
+			for (const x of Array.from(this.control.querySelectorAll('textarea'))){
+				tx = x.value.trim();
+				if (tx.length>0 && tx!='null'){
+					av.push(tx);
 				}
-				return JSON.parse(`[${av.join(',')}]`);
 			}
-		} catch(parseErr){
+			j = `[${av.join(',')}]`;
+		}
+		try {
+			return JSON.parse(j);
+		} catch (parseErr){
 			alert(`Validate '${this.name}' : '${parseErr.message}'`);
 			this.control.scrollIntoView();
 			return undefined;
 		}
+
+		*/
+		let j = [];
+		try {
+			if (this.control.querySelector('.innerVal')){
+				j = JSON.parse(this.control.querySelector('textarea').value);
+			} else {
+				let tx;
+				for (const x of Array.from(this.control.querySelectorAll('textarea'))){
+					tx = x.value.trim();
+					if (tx.length>0 && tx!='null'){
+						j.push(JSON.parse(tx));
+					}
+				}
+			}
+		} catch (parseErr){
+			alert(`Validate '${this.name}' : '${parseErr.message}'`);
+			this.control.scrollIntoView();
+			return undefined;
+		}
+		return j;
 	}
 	static add(par){
 		if (!(par.querySelector('.valIsNull').checked)){
@@ -614,14 +644,15 @@ class ObjectsFieldSet extends FieldSetControl {
 					cj, t;
 				for (const e of j){
 					cj = tInnerObject.content.cloneNode(true).firstElementChild;
-					t = JSON.stringify(e,null,3);
+					t = JSON.stringify(e,null,jsonIndent);
 					cj.querySelector('.val').value = t;
 					cj.querySelector('.val').rows = Math.min(40, 1 + Array.from(t.matchAll('\n')).length);
 					cont.appendChild(cj);
 				}
 				cont.removeChild(iv);
 			} catch(err){
-				alert(`Failed to split, JSON invalid. ${err.message}`);
+				//alert(`Failed to split, JSON invalid. ${err.message}`);
+				iv.querySelector('.val').setCustomValidity(`Failed to split, JSON invalid. ${err.message}`);
 				return;
 			}
 		} else {
@@ -634,7 +665,7 @@ class ObjectsFieldSet extends FieldSetControl {
 			try {
 				let j = JSON.parse(`[${vs.join(',')}]`),
 					cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild,
-					t = JSON.stringify(j,null,3);
+					t = JSON.stringify(j,null,jsonIndent);
 				cmb.querySelector('.val').value = t;
 				cmb.querySelector('.val').rows = Math.min(40, 1 + Array.from(t.matchAll('\n')).length);
 				cont.appendChild(cmb);
@@ -659,7 +690,8 @@ class ObjectsFieldSet extends FieldSetControl {
 			alert('Combine values first!');
 			return;
 		}
-		let name = par.querySelector('.name').textContent,
+		let name = par.querySelector('legend').textContent,
+		//let name = par.querySelector('.name').textContent,
 			opt = mydefs.get(name).opts.split('|').map(o=>o.split('=')),
 			th = tableEdit.querySelector('thead tr'),
 			tb = tableEdit.querySelector('tbody'),
@@ -667,10 +699,12 @@ class ObjectsFieldSet extends FieldSetControl {
 		inv = inv.querySelector('textarea');
 		try {
 			json = JSON.parse(inv.value);
-			inv.classList.toggle('jsonInvalid',false);
-		} catch {
-			alert('Cannot table invalid JSON!');
-			inv.classList.toggle('jsonInvalid',true);
+			inv.setCustomValidity('');
+			//inv.classList.toggle('jsonInvalid',false);
+		} catch (err){
+			//alert('Cannot table invalid JSON!');
+			//inv.classList.toggle('jsonInvalid',true);
+			inv.setCustomValidity(err.message);
 			return;
 		}
 		tableEdit.querySelector('h2').textContent = name; 
@@ -698,6 +732,8 @@ class ObjectsFieldSet extends FieldSetControl {
 		}
 		inv.disabled = true;
 		tableEdit.querySelector('.tblNotes').textContent = par.querySelector('.notes').textContent;
+		inv = tableEdit.querySelector('div');
+		inv.scrollTop = inv.scrollLeft = 0;
 		tableEdit.show();
 	}
 	static returnTable(){
@@ -725,7 +761,7 @@ class ObjectsFieldSet extends FieldSetControl {
 				json[i][o] = v;
 			}
 		}
-		ctrl.value = JSON.stringify(json,null,3);
+		ctrl.value = JSON.stringify(json,null,jsonIndent);
 		ctrl.disabled = false;
 		tableEdit.close();
 	}
@@ -766,35 +802,17 @@ function createControlClass(name,hook,cv){
 
 const many2manyTypes = new Set(['s','b','n','dt']);
 
-function tryBuild(verbose=false){
-	const con = verbose? a=>console.log(a) : a=>{};
-	try {
-		myjson = JSON.parse(inputJson.value);
-		inputJson.classList.toggle('jsonInvalid',false);
-	} catch (parseErr){
-		alert(`Invalid input: ${parseErr.message}`);
-		inputJson.classList.toggle('jsonInvalid',true);
-		return;
-	}
-	if (jsonfileinput.files.length==1){
-		outputFileName.value = jsonfileinput.files[0].name;
-		document.title = `jsonhooks: ${outputFileName.value}`;
-	}
-	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
-	inputJson.readOnly = inputDefs.readOnly = true;
-	con('**input json**');
-	con(myjson);
-	mydefs = defParse(inputDefs.value.trim().split('\n'));
-	con('**input defs**');
-	con(mydefs);
-	con('**sound out values in json**');
-	let cn, cv, cvs, many2manyDetected;
+function buildRoutine(defs){
 	const afrag = new DocumentFragment();
-	errLog.value = '';
-	for (const [name,hook] of mydefs.entries()){
+	let cn, cv, cvs, many2manyDetected;
+	for (const [name,hook] of defs.entries()){
 		if (hook.type=='~'){
-			afrag.appendChild(createSep(name,hook));
-			gotoDef.appendChild(document.createElement('optgroup')).label = name;
+			cv = name.match(/~+/)[0].length;
+			cn = name.substr(cv,name.length);
+			afrag.appendChild(createSep(cn,cv));
+			if (cv==2){
+				gotoDef.appendChild(document.createElement('optgroup')).label = cn;
+			}
 		} else if (hook.type=='='){
 			afrag.appendChild(createCode(hook));
 		} else if (hook.type=='err'){
@@ -802,6 +820,7 @@ function tryBuild(verbose=false){
 			cn.classList.add('fieldError');
 			cn.textContent = `Unable to create ${name}. Invalid DEF`;
 			afrag.appendChild(cn);
+			errLog.value += `Unable to create ${name}. Invalid DEF\n\n`;
 		} else {
 			cv = undefined;
 			many2manyDetected = false;
@@ -825,7 +844,7 @@ function tryBuild(verbose=false){
 					cn.classList.add('fieldError');
 					cn.textContent = `Unable to create ${name} at ${hook.path}. Please update JSON or DEFS to remove this error.`;
 					errLog.value += `Value undefined '${name}' at '${hook.path}'\n\n`;
-					hook.type = '-';
+					hook.type = 'err';
 					afrag.appendChild(cn);
 					continue;
 				}
@@ -848,7 +867,35 @@ function tryBuild(verbose=false){
 			}
 		}
 	}
-	controls.appendChild(afrag);
+	return afrag;
+}
+
+function tryBuild(verbose=false){
+	const con = verbose? a=>console.log(a) : a=>{};
+	try {
+		myjson = JSON.parse(inputJson.value);
+		//inputJson.classList.toggle('jsonInvalid',false);
+		inputJson.setCustomValidity('');
+	} catch (parseErr){
+		//alert(`Invalid input: ${parseErr.message}`);
+		//inputJson.classList.toggle('jsonInvalid',true);
+		inputJson.setCustomValidity(parseErr.message);
+		return;
+	}
+	if (jsonfileinput.files.length==1){
+		outputFileName.value = jsonfileinput.files[0].name;
+		document.title = `jsonhooks: ${outputFileName.value}`;
+	}
+	Array.from(document.querySelectorAll('.preBuildButton')).forEach(b=>b.hidden = true);
+	inputJson.readOnly = inputDefs.readOnly = true;
+	con('**input json**');
+	con(myjson);
+	mydefs = defParse(inputDefs.value.trim().split('\n'));
+	con('**input defs**');
+	con(mydefs);
+	con('**sound out values in json**');
+	errLog.value = '';
+	controls.appendChild(buildRoutine(mydefs));
 	inputJsonDet.open = inputDefsDet.open = updateAreas.hidden = false;
 	inputJson.ondrop = inputDefs.ondrop = undefined;
 	leftPane.style.width = '';
@@ -858,6 +905,7 @@ function tryBuild(verbose=false){
 	if (localStorage.getItem('wideView')=='true'){
 		toggleWideView();
 	}
+	controls.scrollTop = 0;
 }
 
 function tryUpdate(){
@@ -888,7 +936,7 @@ function tryUpdate(){
 			}
 		}
 	}
-	updateArea.value = JSON.stringify(myjson,null,3);
+	updateArea.value = JSON.stringify(myjson,null,jsonIndent);
 	updateAreaDets.querySelector('.areaTimestamp').textContent = new Date();
 	updateAreaDets.open = true;
 	updateAreaDets.scrollIntoView();
@@ -903,12 +951,14 @@ function toggleNull(rele){
 function validateFormat(){
 	const v = event.target.parentElement.querySelector('.val');
 	try {
-		v.value = JSON.stringify(JSON.parse(v.value),null,3);
+		v.value = JSON.stringify(JSON.parse(v.value),null,jsonIndent);
 		v.rows = Math.min(40, 1 + Array.from(v.value.matchAll('\n')).length);
-		v.classList.toggle('jsonInvalid',false);
+		//v.classList.toggle('jsonInvalid',false);
+		v.setCustomValidity('');
 	} catch(err){
-		alert(`JSON is not valid: ${err.message}`);
-		v.classList.toggle('jsonInvalid',true);
+		//alert(`JSON is not valid: ${err.message}`);
+		//v.classList.toggle('jsonInvalid',true);
+		v.setCustomValidity(err.message);
 	}
 }
 function toggleNotesEditable(){
@@ -920,15 +970,13 @@ function toggleNotesEditable(){
 }
 function pullDefs(){
 	const r = [];
-	if (priDel.length==0){
-		priDel = ',';
-	}
 	r.push(`@del=${priDel}`);
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~' || hook.type=='='){
 			r.push(hook.path);
 		} else if (hook.type in classHookMap){
-			r.push(`${name}${priDel}${hook.path.join('|')}${priDel}${hook.type}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
+			//r.push(`${name}${priDel}${hook.path.join('|')}${priDel}${hook.type}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
+			r.push(`${hook.type}${priDel}${name}${priDel}${hook.path.join('|')}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 		}
@@ -994,6 +1042,12 @@ function selectChromeFix(s){
 		s.options[s.selectedIndex].click();
 	}
 }
+function selectCode(ele){
+	let r = document.createRange();
+	r.selectNodeContents(ele.target);
+	window.getSelection().removeAllRanges();
+	window.getSelection().addRange(r);
+}
 </script>
 <body>
 <div id='container'>
@@ -1046,29 +1100,30 @@ function selectChromeFix(s){
 ~Jsonhook Sample
 ~~Header 1- Basic types
 ~~~The basic controls
-String Control[)a_string[)s[)[)'s' denotes a string control
-Number Control[)a_number[)n[)[)'n' denotes a number control
-Date Control[)a_date[)dt[)[)'dt' denotes a date control
-List Control[)a_list[)l[)[)'l' denotes a homogeneous list control. a 'n' in opts denotes it as a number list.
+s[)String Control[)a_string[)[)'s' denotes a string control
+n[)Number Control[)a_number[)[)'n' denotes a number control
+dt[)Date Control[)a_date[)[)'dt' denotes a date control
+l[)List Control[)a_list[)[)'l' denotes a homogeneous list control. a 'n' in opts denotes it as a number list.
 ~~Header 2- Even more basic Types
-Enum String Control[)an_object.enum_string[)s[)apple|banana[)Having a pipe delimited list in opts creates an enum control.
-Enum Number Control[)an_object.enum_number[)n[)1|2|3|4|5[)Similar with numbers[) the 'n' causes the result to be cast to number in output
-Bool Control[)an_object.a_bool[)b[)[)'b' denotes a bool control
-Json Control[)an_object.a_json[)j[)[)'j' denotes a json control
+s[)Enum String Control[)an_object.enum_string[)apple|banana[)Having a pipe delimited list in opts creates an enum control.
+n[)Enum Number Control[)an_object.enum_number[)1|2|3|4|5[)Similar with numbers[) the 'n' causes the result to be cast to number in output
+b[)Bool Control[)an_object.a_bool[)[)'b' denotes a bool control
+j[)Json Control[)an_object.a_json[)[)'j' denotes a json control
 ~~Header 3- Arrays
-Array Indexing Value 0[)indexable.0[)s[)[)Using a number in the path can refer to that index in an array
-Array Indexing Value 1 Child Key[)indexable.1.obj-in-array[)b[)[)You can even refer to objects inside arrays
+s[)Array Indexing Value 0[)indexable.0[)[)Using a number in the path can refer to that index in an array
+b[)Array Indexing Value 1 Child Key[)indexable.1.obj-in-array[)[)You can even refer to objects inside arrays
 ~~Header 4- Multi-path
-Multi-path string[)repeated-string|repeated-string-dup[)s[)[)You can include multiple paths with pipes. The same value will be put to every path.
+s[)Multi-path string[)repeated-string|repeated-string-dup[)[)You can include multiple paths with pipes. The same value will be put to every path.
 ~~Header 5- Error checking
 ~~~This section will be empty except for errors
-Invalid Path[)myinvalidpath[)s[)[)This path will result in an error
-Invalid Branching[)an_object.a_json.branch-node.invalidleaf[)j[)[)This is an invalid leaf
+s[)Invalid Path[)myinvalidpath[)[)This path will result in an error
+j[)Invalid Branching[)an_object.a_json.branch-node.invalidleaf[)[)This is an invalid leaf
 ~~Header 6- Special Types
-Multi[)select[)m[)apple&banana&cottage&doom[)'m' denotes a multi select
-Objects[)objarr[)o[)[)'o' denotes the objects type; an array of objects.
+m[)Multi[)select[)apple&banana&cottage&doom[)'m' denotes a multi select
+o[)Objects[)objarr[)[)'o' denotes the objects type; an array of objects.
 ={"numcol":123, "strcol":"string", "boolcol":true, "jsoncol": {}}
-Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additional columns in opts; allows for tabling
+o[)Tables[)genobjsArr[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additional columns in opts; allows for tabling
+
 </textarea>
 <!--<label>Primary Delimiter <input id='inputDefsDel' value="[)" placeholder='comma if blank'/></label><br>-->
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
@@ -1091,7 +1146,7 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</span>
 		<center>
-		<button class='preBuildButton' onclick='tryBuild()'>🔨 Build</button>
+		<button class='preBuildButton' onclick='tryBuild()' title='Build hooks'>🔨 Build</button>
 		</center>
 	</div>
 	<div id='controls'></div>
@@ -1113,13 +1168,13 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 <dialog id='tableEdit'>
 <h2></h2>
 <details><summary>Notes</summary><span class='tblNotes'></span></details>
-<div><table style=''><thead><tr></tr></thead><tbody></tbody></table></div>
+<div><table><thead><tr></tr></thead><tbody></tbody></table></div>
 <center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='cancelTableEdit()' title='Cancel'>🗑</button></center>
 </dialog>
 
-<template id='fsName'>
+<!--<template id='fsName'>
 	<legend class='name'></legend>
-</template>
+</template>-->
 <template id='fsNotes'>
 	<span class='notes' spellcheck='false'></span>
 </template>
@@ -1143,9 +1198,9 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 </template>
 <template id='tBoolControl'>
 	<span class='labelType'>bool</span>
-	<label><input class='radioTrue' type='radio' value='true'> true</label>
-	<label><input class='radioFalse' type='radio' value='false'> false</label>
-	<label><input class='radioNull valIsNull' type='radio' value='null'> null</label>
+	<label><input type='radio' value='true'> true</label>
+	<label><input type='radio' value='false'> false</label>
+	<label><input type='radio' value='null' class='valIsNull'> null</label>
 	<br>
 </template>
 <template id='tJsonControl'>
@@ -1174,9 +1229,9 @@ Tables[)genobjsArr[)o[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 </template>
 <template id='tObjectsControl'>
 	<div class='vals'></div>
-	<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton'>📎</button>
-	<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)'>➕</button>
-	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)'>🗃</button>
+	<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton' title='Split/combine'>📎</button>
+	<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)' title='Add item'>➕</button>
+	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)' title='Edit as table'>🗃</button>
 	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 </template>
 <template id='tInnerObject'>
