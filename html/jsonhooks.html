@@ -158,16 +158,16 @@ td, th {
 	padding: 5px 2px;
 }
 .thType_s {
-	background: #e9ee5d;
+	background: #c4f9c4;
 }
 .thType_b {
-	background: #b3b0b0;
+	background: #f7f9c7;
 }
 .thType_n {
-	background: #3ae33a;
+	background: #bce4e8;
 }
 .thType_j {
-	background: red;
+	background: #f9d2d2;
 }
 .thType_s::after {
 	content: "s";
@@ -193,6 +193,9 @@ tr:focus {
 td:hover {
 	background: #bad7f0;
 }
+pre {
+	margin-left: 2em;
+}
 @media (max-width: 600px){
 	#container {
 		grid-template-rows: min-content 1fr;
@@ -208,7 +211,7 @@ td:hover {
 </style>
 <script>
 'use strict';
-var myjson, mydefs, priDel=',', jsonIndent=3;
+var myjson, mydefs, lastDef, priDel=',', jsonIndent=3, customStyles=[];
 
 class HeatNode {
 	constructor(partialPath){
@@ -299,6 +302,11 @@ function specialACommands(line){
 		case '@indent':
 			jsonIndent = (val=='t') ? '\t' : Number(val);
 			break;
+		case '@style':
+			customStyles.push(val);
+			let sy = document.head.appendChild(document.createElement('style'));
+			sy.textContent = val;
+			break;
 		default:
 			break;
 	}
@@ -326,6 +334,7 @@ function defParse(lines,defaultType='j'){
 			case 'd':
 			case (type in classHookMap) ? type : null:
 				[type,name,path,opts,notes] = line.split(priDel);
+				lastDef = name;
 				if (!name || !path || name.trim().length==0 || path.trim().length==0){
 					console.error(`invalid name "${name}" or invalid path "${path}"`);
 					r.set(line,{type: 'err'});
@@ -386,8 +395,8 @@ function createSep(name,l){
 }
 function createCode(hook){
 	const ele = document.createElement('pre');
-	ele.addEventListener('click',selectCode);
-	ele.title = 'Click to highlight all';
+	ele.addEventListener('contextmenu',selectCode);
+	ele.title = 'Right Click to highlight all';
 	const pre = ele.appendChild(document.createElement('code'));
 	try {
 		pre.textContent = JSON.stringify(JSON.parse(hook.path.substr(1,hook.path.length)),null,jsonIndent);
@@ -971,6 +980,9 @@ function toggleNotesEditable(){
 function pullDefs(){
 	const r = [];
 	r.push(`@del=${priDel}`);
+	for (const sty of customStyles){
+		r.push(`@style=${sty}`);
+	}
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~' || hook.type=='='){
 			r.push(hook.path);
@@ -1048,6 +1060,34 @@ function selectCode(ele){
 	window.getSelection().removeAllRanges();
 	window.getSelection().addRange(r);
 }
+function addAcontrol_add(){
+	let name = document.getElementById('addAcontrol_name').value.trim();
+	if (mydefs.has(name)){
+		return;
+	}
+	let path = document.getElementById('addAcontrol_path').value.trim();
+	let cv = traceJson(myjson,path);
+	if (cv===undefined){
+		return;
+	}
+	let type = document.getElementById('addAcontrol_type').value.trim();
+	let opts = document.getElementById('addAcontrol_opts').value.trim();
+	let notes = document.getElementById('addAcontrol_notes').value.trim();
+	console.log(name,path,type,opts,notes);
+	let newdef = {path: path.split('|'), type: type, opts: opts, notes: notes};
+	let cn = createControlClass(name,newdef,cv);
+
+
+	if (cn){
+		newdef.var = cn;
+		newdef.control = controls.appendChild(cn.control);
+		newdef.control.title = newdef.path;
+		gotoDef.appendChild(document.createElement('option')).textContent = name;
+		mydefs.set(name,newdef);
+	}
+	addAcontrol.close();
+}
+
 </script>
 <body>
 <div id='container'>
@@ -1059,17 +1099,12 @@ function selectCode(ele){
 "a_string": "stringValue10",
 "a_number": 10.50,
 "a_date": "2019-10-01T01:01",
-"a_list": [
-	"item1", 2, 3
-],
+"a_list": ["item1", 2, 3],
 "an_object": {
 	"enum_string": "apple",
 	"enum_number": 2,
 	"a_bool": true,
-	"a_json": {
-		"inner-key": "inner-value",
-		"branch-node": null
-	}
+	"a_json": {"inner-key": "inner-value","branch-node": null}
 },
 "indexable" : [
 	"zero_element",
@@ -1097,6 +1132,8 @@ function selectCode(ele){
 			<textarea id='inputDefs' ondrop='textareaFileDrop(event)' ondragover='event.preventDefault()' rows=10 spellcheck='false'>
 # lines starting with '@' are special directives like del
 @del=[)
+@indent=t
+@style=body{background:#323c36;color:#e3b656;}fieldset{background:#1c1919;}textarea,.val,select{color:#ddcfcf;background:#463434;}dialog{color:#bcc68a;background:#1c0303}tr:nth-child(2n){background:#eee;}table{color:#000;background:#fff;}
 ~Jsonhook Sample
 ~~Header 1- Basic types
 ~~~The basic controls
@@ -1142,6 +1179,7 @@ o[)Tables[)genobjsArr[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 			<option onclick='toggleNotesEditable()' title='Un/lock Notes'>🔏 Notes</option>
 			<option onclick='exportDefsToDialog()' title='Export defs'>📒 Pull Defs</option>
 			<option onclick='toggleWideView()' title='Toggle Wideview'>↔ Toggle Wideview</option>
+			<option onclick='addAcontrol.show()' title='Add Control'>Add Control</option>
 		</select>
 		<input onchange='document.documentElement.style.setProperty("--fscolor",this.value)' type='color' value='#92cabd' />
 		</span>
@@ -1162,7 +1200,7 @@ o[)Tables[)genobjsArr[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 <dialog id='buildLog'>
 <h2>Build Log</h2>
 <textarea id='errLog' spellcheck='false'></textarea>
-<center><button onclick='this.parentElement?.parentElement?.close()' title='Dismiss'>👌 Dismiss</button></center>
+<center><button onclick='this.parentElement?.parentElement?.close()' title='Acknowledge'>👌 Acknowledge</button></center>
 </dialog>
 
 <dialog id='tableEdit'>
@@ -1170,6 +1208,29 @@ o[)Tables[)genobjsArr[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 <details><summary>Notes</summary><span class='tblNotes'></span></details>
 <div><table><thead><tr></tr></thead><tbody></tbody></table></div>
 <center><button onclick='ObjectsFieldSet.returnTable()' title='Update control'>💾</button> <button onclick='cancelTableEdit()' title='Cancel'>🗑</button></center>
+</dialog>
+
+<dialog id='addAcontrol'>
+<h2>Add Control</h2>
+<div style='display:grid; grid-template-columns:min-content 1fr;'>
+<!--type,name,path,opts,notes-->
+Name<input id='addAcontrol_name'/>
+Path<input id='addAcontrol_path'/>
+Type<select id='addAcontrol_type'>
+	<option value='s'>String</option>
+	<option value='n'>Number</option>
+	<option value='b'>Boolean</option>
+	<option value='j'>Json</option>
+	<option value='dt'>Date</option>
+	<option value='l'>List</option>
+	<option value='m'>Multi Select</option>
+	<option value='o'>Objects</option>
+</select>
+Options<input id='addAcontrol_opts'/>
+Notes<textarea id='addAcontrol_notes'></textarea>
+</div>
+<center><button onclick='addAcontrol_add()'>Add</button></button>
+<button onclick='addAcontrol.close()'>Cancel</button></center>
 </dialog>
 
 <!--<template id='fsName'>
