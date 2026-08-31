@@ -1,4 +1,7 @@
-s,guid,guid
-s,title,title
-n,index,index
-o,children,children,index=n|title=s|children=j|uri=s
+@del=/
+s/guid/guid
+s/title/title
+n/index/index
+#o/children/children/index=n|title=s|children=j|uri=s
+o/children/children
+{/children/`/s,guid,guid`s,title,title`n,index,index`o,children,children,index=n|title=s|children=j|uri=s

@@ -26,6 +26,12 @@ body, details, fieldset, div, dialog, button {
 .bigSmallJson {
 	align-items: center;
 }
+.bigSmallJson label {
+	grid-row: span 2;
+}
+.minihookEnabled {
+	grid-row: span 2;
+}
 .val, textarea {
 	font-family: monospace;
 	width: 100%;
@@ -128,7 +134,7 @@ dialog textarea {
 }
 #tableEdit div {
 	max-width: 100%;
-	max-height: 100%;
+	max-height: 70vh;
 }
 .areaTimestamp {
 	font-size: 0.8em;
@@ -213,6 +219,7 @@ pre {
 <script>
 'use strict';
 var myjson, mydefs, lastDef, priDel=',', jsonIndent=3, customStyles=[];
+var subDefs = new Map();
 
 class HeatNode {
 	constructor(partialPath){
@@ -315,6 +322,10 @@ function specialACommands(line){
 			break;
 	}
 }
+function subdefHandle(line){
+	const [t,name,sDel,defs] = line.split(priDel);
+	subDefs.set(name,defs.split(sDel));
+}
 function defParse(lines,defaultType='j'){
 	const r = new Map();
 	let name, path, type, opts, notes, line, val;
@@ -334,6 +345,9 @@ function defParse(lines,defaultType='j'){
 			case '=':
 			// separator or code
 				r.set(line,{path: line, type: type});
+				break;
+			case '{':
+				subdefHandle(line);
 				break;
 			case 'd':
 			case (type in classHookMap) ? type : null:
@@ -523,14 +537,10 @@ class JsonFieldSet extends FieldSetControl {
 			}
 			row = tb.insertRow(-1);
 			// key cell
-			//cell = row.insertCell(-1);
 			row.appendChild(document.createElement('th')).textContent=o;
-			//cell.classList.add('tableKey');
-			//cell.textContent = o;
 			// change cell depending t - todo
 			// value cell
 			cell = row.insertCell(-1);
-			//cell.classList.add('tableVal');
 			cell.contentEditable=true;
 			if (t=='j'){
 				cell.textContent = JSON.stringify(json[o]);
@@ -550,16 +560,7 @@ class JsonFieldSet extends FieldSetControl {
 			json = JSON.parse(mydefs.get(name).control.querySelector('textarea').value),
 			ctrl = mydefs.get(name).control.querySelector('textarea'),
 			t;
-		//rows = Array.from(tableKVEdit.querySelectorAll('tbody tr')),
-		//let ks = Array.from(tableKVEdit.querySelectorAll('tbody th'));
-		//let vs = Array.from(tableKVEdit.querySelectorAll('tbody td'));
 		let vals = Array.from(tableKVEdit.querySelectorAll('tbody tr')).map(r=>[r.children[0].textContent,r.children[1].textContent]);
-		//for (let i=0;i<rows.length;++i){
-			//o = rows[i].querySelector('.tableKey').textContent;
-			//v = rows[i].querySelector('.tableVal').textContent;
-		//for (let i=0;i<ks.length;++i){
-			//o = ks[i].textContent;
-			//v = vs[i].textContent;
 		for (let [o,v] of vals){
 			t = optTypes.get(o);
 			if (v==="'null'" || (t!='s' && v.length==0)){
@@ -578,6 +579,29 @@ class JsonFieldSet extends FieldSetControl {
 		ctrl.value = JSON.stringify(json,null,jsonIndent);
 		ctrl.disabled = false;
 		tableKVEdit.close();
+	}
+	static subhook(par){
+		//let par = event.target.parentElement;
+		let name = par.parentElement.querySelector('legend').textContent;
+		//let jv = par.querySelector('textarea');
+		if (subDefs.has(name)){
+			let jv = event.target.parentElement.querySelector('textarea');
+			console.log(name,jv);
+			let swin = window.open(window.location,'_blank','popup=true');
+			swin.onload = ()=>{
+				swin.inputJson.value = jv.value;
+				swin.document.title = `minihook : ${name}`;
+				swin.inputDefs.value = subDefs.get(name).join('\n');
+				swin.subDefs.set(name,subDefs.get(name));
+				let pb = swin.document.querySelector('#updateAreaDets summary').appendChild(swin.document.createElement('button'));
+				pb.textContent = 'Post Back';
+				pb.addEventListener('click',()=>{
+						if (swin.updateArea.value.length && confirm(`Update received for ${name}, continue?`)){
+							jv.value = swin.updateArea.value;
+						}
+					});
+			};
+	}
 	}
 }
 class DateFieldSet extends FieldSetControl {
@@ -695,7 +719,7 @@ class ObjectsFieldSet extends FieldSetControl {
 					cj = tInnerObject.content.cloneNode(true).firstElementChild;
 					t = JSON.stringify(e,null,jsonIndent);
 					cj.querySelector('.val').value = t;
-					cj.querySelector('.val').rows = Math.min(40, 1 + Array.from(t.matchAll('\n')).length);
+					cj.querySelector('.val').rows = Math.min(15, 1 + Array.from(t.matchAll('\n')).length);
 					cont.appendChild(cj);
 				}
 				cont.removeChild(iv);
@@ -715,7 +739,7 @@ class ObjectsFieldSet extends FieldSetControl {
 					cmb = tInnerCmbObject.content.cloneNode(true).firstElementChild,
 					t = JSON.stringify(j,null,jsonIndent);
 				cmb.querySelector('.val').value = t;
-				cmb.querySelector('.val').rows = Math.min(40, 1 + Array.from(t.matchAll('\n')).length);
+				cmb.querySelector('.val').rows = Math.min(20, 1 + Array.from(t.matchAll('\n')).length);
 				cont.appendChild(cmb);
 				
 			} catch(err){
@@ -728,8 +752,6 @@ class ObjectsFieldSet extends FieldSetControl {
 		}
 		const but = par.querySelector('.splDivButton');
 		but.textContent = (but.textContent=='🖇') ? '📎' : '🖇';
-		//par.querySelector('.stateDiv').hidden = !isCombined;
-		//par.querySelector('.stateCmb').hidden = isCombined;
 		par.querySelector('.stateDiv').hidden = !(par.querySelector('.stateCmb').hidden = isCombined);
 		par.scrollIntoView();
 	}
@@ -1104,11 +1126,6 @@ function addAcontrol_add(){
 	if (cv===undefined){
 		return;
 	}
-	/*
-	let type = document.getElementById('addAcontrol_type').value,
-		opts = document.getElementById('addAcontrol_opts').value.trim(),
-		notes = document.getElementById('addAcontrol_notes').value.trim();
-	let newdef = {path: path.split('|'), type: type, opts: opts, notes: notes};*/
 	let newdef = {path: path, 
 		type: document.getElementById('addAcontrol_type').value,
 		opts: document.getElementById('addAcontrol_opts').value.trim(),
@@ -1186,6 +1203,7 @@ s[)Enum String Control[)an_object.enum_string[)apple|banana[)Having a pipe delim
 n[)Enum Number Control[)an_object.enum_number[)1|2|3|4|5[)Similar with numbers[) the 'n' causes the result to be cast to number in output
 b[)Bool Control[)an_object.a_bool[)[)'b' denotes a bool control
 j[)Json Control[)an_object.a_json[)inner-key=s|branch-node=b[)'j' denotes a json control
+{[)Json Control[)`[)s,inner-key,inner-key`o,branch-node,branch-node
 ~~Header 3- Arrays
 s[)Array Indexing Value 0[)indexable.0[)[)Using a number in the path can refer to that index in an array
 b[)Array Indexing Value 1 Child Key[)indexable.1.obj-in-array[)[)You can even refer to objects inside arrays
@@ -1200,6 +1218,7 @@ m[)Multi[)select[)apple&banana&cottage&doom[)'m' denotes a multi select
 o[)Objects[)objarr[)[)'o' denotes the objects type; an array of objects.
 ={"numcol":123, "strcol":"string", "boolcol":true, "jsoncol": {}}
 o[)Tables[)genobjsArr[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additional columns in opts; allows for tabling
+{[)Tables[)`[)n,num,numcol`s,str,strcol`b,bool,boolcol`j,json,jsoncol
 </textarea>
 			<label class='preBuildButton loadFile'>📂<input type='file' accept='.csv,.txt' onchange='loadFileOnTextarea(this)' /></label>
 		</details>
@@ -1310,6 +1329,7 @@ Notes<textarea id='addAcontrol_notes'></textarea>
 	<div class='bigSmall bigSmallJson'>
 	<label><span class='labelType'>json</span> <textarea class='val' placeholder='null' spellcheck='false'></textarea></label>
 	<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
+	<button onclick='JsonFieldSet.subhook(this.parentElement)' title='Sub Hook'>🪟</button>
 	</div>
 	<div hidden class='allowKVedit'><button onclick='JsonFieldSet.tbl(this.parentElement.parentElement)'>KV Edit</button></div>
 </template>
@@ -1335,13 +1355,14 @@ Notes<textarea id='addAcontrol_notes'></textarea>
 	<div class='vals'></div>
 	<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton' title='Split/combine'>📎</button>
 	<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)' title='Add item'>➕</button>
-	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)' title='Edit as table'>🗃</button>
+	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)' title='Edit as table'>📝🗃</button>
 	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 </template>
 <template id='tInnerObject'>
 	<div class='bigSmall bigSmallJson innerCval'>
 		<label><span class='labelType'>object</span> <textarea class='val' placeholder='{will be deleted}' spellcheck='false'></textarea></label>
 		<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
+		<button onclick='JsonFieldSet.subhook(this.parentElement.parentElement)' title='Sub Hook'>🪟</button>
 	</div>
 </template>
 <template id='tInnerCmbObject'>
