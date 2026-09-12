@@ -1044,6 +1044,10 @@ function pullDefs(){
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 		}
 	}
+	for (const [sd,d] of subDefs.entries()){
+		r.push(`{${priDel}${sd}${priDel}/${priDel}${d.join('/')}`);
+			// tbd have to store the secordary del somewhere if want to recreate it
+	}
 	return r;
 }
 function exportDefsToDialog(){
