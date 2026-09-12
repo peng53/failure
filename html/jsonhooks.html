@@ -220,6 +220,7 @@ pre {
 'use strict';
 var myjson, mydefs, lastDef, priDel=',', jsonIndent=3, customStyles=[];
 var subDefs = new Map();
+var errorFlag = false;
 
 class HeatNode {
 	constructor(partialPath){
@@ -348,6 +349,14 @@ function defParse(lines,defaultType='j'){
 				break;
 			case '{':
 				subdefHandle(line);
+				break;
+			case '!':
+				[type,name,notes] = line.split(priDel);
+				if (!r.has(name)){
+					r.set(name,{type: '!', notes: [notes.trim()]});
+				} else {
+					r.get(name).notes.push(notes.trim());
+				}
 				break;
 			case 'd':
 			case (type in classHookMap) ? type : null:
@@ -594,14 +603,16 @@ class JsonFieldSet extends FieldSetControl {
 				swin.inputDefs.value = subDefs.get(name).join('\n');
 				swin.subDefs.set(name,subDefs.get(name));
 				let pb = swin.document.querySelector('#updateAreaDets summary').appendChild(swin.document.createElement('button'));
-				pb.textContent = 'Post Back';
+				pb.textContent = '↩ Post Back';
 				pb.addEventListener('click',()=>{
-						if (swin.updateArea.value.length && confirm(`Update received for ${name}, continue?`)){
-							jv.value = swin.updateArea.value;
-						}
-					});
+					if (swin.updateArea.value.length && confirm(`Update received for ${name}, continue?`)){
+						jv.value = swin.updateArea.value;
+					}
+				});
 			};
-	}
+		} else {
+			alert(`Subhook not defined for ${name}`);
+		}
 	}
 }
 class DateFieldSet extends FieldSetControl {
@@ -888,6 +899,10 @@ function buildRoutine(defs){
 			cn.textContent = `Unable to create ${name}. Invalid DEF`;
 			afrag.appendChild(cn);
 			errLog.value += `Unable to create ${name}. Invalid DEF\n\n`;
+		} else if (hook.type=='!'){
+			if (errorFlag){
+				errLog.value += hook.notes.join('\n')+'\n\n';
+			}
 		} else {
 			cv = undefined;
 			many2manyDetected = false;
@@ -912,6 +927,7 @@ function buildRoutine(defs){
 					cn.textContent = `Unable to create ${name} at ${hook.path}. Please update JSON or DEFS to remove this error.`;
 					errLog.value += `Value undefined '${name}' at '${hook.path}'\n\n`;
 					hook.type = 'err';
+					errorFlag = true;
 					afrag.appendChild(cn);
 					continue;
 				}
@@ -921,6 +937,7 @@ function buildRoutine(defs){
 					hook.control = afrag.appendChild(cn.control);
 					hook.control.title = hook.path.join('\n');
 					gotoDef.appendChild(document.createElement('option')).textContent = name;
+					errorFlag = false;
 					if (many2manyDetected){
 						errLog.value += `Multiple values mapped to single control: '${name}'\n pathes: ${hook.path}\n  ${cvs.join('\n  ')}\n\n`;
 					}
@@ -931,6 +948,7 @@ function buildRoutine(defs){
 				cn.textContent = `Exception creating ${name}. Check ${hook.path}. ${err.message}`;
 				afrag.appendChild(cn);
 				errLog.value += `Invalid path for '${name}' at '${hook.path}'\n\n`;
+				errorFlag = true;
 			}
 		}
 	}
@@ -1038,15 +1056,15 @@ function pullDefs(){
 	for (const [name,hook] of mydefs.entries()){
 		if (hook.type=='~' || hook.type=='='){
 			r.push(hook.path);
+		} else if (hook.type=='!'){
+			for (const n of hook.notes){
+				r.push(`!${priDel}${name}${priDel}${n}`);
+			}
 		} else if (hook.type in classHookMap){
 			r.push(`${hook.type}${priDel}${name}${priDel}${hook.path.join('|')}${priDel}${hook.opts?? ''}${priDel}${hook.control.querySelector('.notes').textContent.replace(',',';')}`);
 		} else {
 			console.error(`Unrecognized type ${hook.type}; skipping`);
 		}
-	}
-	for (const [sd,d] of subDefs.entries()){
-		r.push(`{${priDel}${sd}${priDel}/${priDel}${d.join('/')}`);
-			// tbd have to store the secordary del somewhere if want to recreate it
 	}
 	return r;
 }
@@ -1199,6 +1217,7 @@ function addAcontrol_add(){
 ~~Header 1- Basic types
 ~~~The basic controls
 s[)String Control[)a_string[)[)'s' denotes a string control
+![)errstrctrl[)This error will never show
 n[)Number Control[)a_number[)[)'n' denotes a number control
 dt[)Date Control[)a_date[)[)'dt' denotes a date control
 l[)List Control[)a_list[)[)'l' denotes a homogeneous list control. a 'n' in opts denotes it as a number list.
@@ -1216,7 +1235,10 @@ s[)Multi-path string[)repeated-string|repeated-string-dup[)[)You can include mul
 ~~Header 5- Error checking
 ~~~This section will be empty except for errors
 s[)Invalid Path[)myinvalidpath[)[)This path will result in an error
+![)errpath[)Custom error from invalid path
 j[)Invalid Branching[)an_object.a_json.branch-node.invalidleaf[)[)This is an invalid leaf
+![)errbranch[)Invalid branching has a branch that does not exist
+![)errbranch[)Best to remove the def
 ~~Header 6- Special Types
 m[)Multi[)select[)apple&banana&cottage&doom[)'m' denotes a multi select
 o[)Objects[)objarr[)[)'o' denotes the objects type; an array of objects.
@@ -1228,7 +1250,7 @@ o[)Tables[)genobjsArr[)numcol=n|strcol=s|boolcol=b|jsoncol=j[)object with additi
 		</details>
 		<span id='updateAreas' hidden>
 		<details id='updateAreaDets'>
-			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>💾</button></summary>
+			<summary>Output Json <button onclick='tryUpdate()' title='Update output Json'>🔄</button> <button onclick='save(updateAreaDets,outputFileName.value.length ? outputFileName.value : "output.json")' title='Save Json'>💾</button> </summary>
 			<textarea id='updateArea' rows=10 spellcheck='false'></textarea>
 			<strong>Last Updated</strong>: <span class='areaTimestamp'>Never</span><br>
 			<label>Filename: <input id='outputFileName' /></label>
@@ -1335,7 +1357,7 @@ Notes<textarea id='addAcontrol_notes'></textarea>
 	<button onclick='validateFormat()' title='Validate and Format'>🔧</button>
 	<button onclick='JsonFieldSet.subhook(this.parentElement)' title='Sub Hook'>🪟</button>
 	</div>
-	<div hidden class='allowKVedit'><button onclick='JsonFieldSet.tbl(this.parentElement.parentElement)'>KV Edit</button></div>
+	<div hidden class='allowKVedit'><button onclick='JsonFieldSet.tbl(this.parentElement.parentElement)'>🟰</button></div>
 </template>
 <template id='tDateControl'>
 	<div class='bigSmall'>
@@ -1359,7 +1381,7 @@ Notes<textarea id='addAcontrol_notes'></textarea>
 	<div class='vals'></div>
 	<button onclick='ObjectsFieldSet.div(this.parentElement)' class='splDivButton' title='Split/combine'>📎</button>
 	<button class='stateDiv' onclick='ObjectsFieldSet.add(this.parentElement)' title='Add item'>➕</button>
-	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)' title='Edit as table'>📝🗃</button>
+	<button class='stateCmb' hidden onclick='ObjectsFieldSet.tbl(this.parentElement)' title='Edit as table'>🟰📝🗃</button>
 	<label class='labelType'>null <input class='valIsNull' type='checkbox' onclick='toggleNull(this)'></label><br>
 </template>
 <template id='tInnerObject'>
