@@ -1,0 +1,218 @@
+<html>
+<title>Price review</title>
+<style>
+dialog {
+	position: fixed;
+	bottom: 10px;
+}
+.lowerPrice {
+	background: #075700;
+}
+.higherPrice {
+	background: #9f0606;
+}
+.research {
+	outline: 1px orange solid;
+}
+#container {
+	display: grid;
+	grid-template-rows: min-content min-content 1fr;
+	height: 100vh;
+	width: 100vw;
+}
+#containerTop, #containerMid, #containerBottom {
+	overflow: auto;
+}
+body {
+	margin: 0;
+	background: #000;
+	color: #fff;
+}
+textarea, button {
+	background: #000;
+	color: #fff;
+}
+details {
+	display: inline-block;
+}
+details:open {
+	display: block;
+}
+th {
+	border-bottom: 1px solid yellow;
+}
+table {
+	border: 3px double yellow;
+}
+tr:nth-child(2n){
+	background: #2f2727;
+}
+/*
+tr:hover {
+	background: blue;
+}*/
+</style>
+<div id='container'>
+<div id='containerTop'>
+<details open>
+<summary>Data<span id='dataLoaded'></span>
+</summary>
+<textarea id='market_prices' cols=80 rows=4></textarea><br>
+<label><input type='file' onchange='loadToTA(market_prices)'/></label>
+</details>
+<details open>
+<summary>Review Items</summary>
+<textarea id='store_stock' cols=80 rows=20></textarea><br><br>
+</div>
+<div id='containerMid'>
+<button onclick='load_market_prices_h()'>Load Market Price</button>
+<button style='background: red; color: white' onclick='review_store_stock_h()'>Review</button>
+<button onclick='pull_research()'>Pull Research</button>
+<button onclick='store_stock.inert=false;store_stock.value="";item_table_items.replaceChildren();store_stock.parentElement.open=1;'>Restart</button>
+</div>
+<div id='containerBottom'>
+<table id='item_table'>
+<tr><th>Name</th><th>Store Price</th><th>Market Price</th><th>Difference</th></tr>
+<tbody id='item_table_items' onclick='getName()' oncontextmenu='getName()'></tbody>
+</table>
+</div>
+</div>
+
+<dialog id='errors_log'>
+<textarea cols=80 rows=20></textarea>
+<br><button onclick='this.parentElement.close()'>Hide</button>
+</dialog>
+<dialog id='research_log'>
+<textarea cols=80 rows=20></textarea>
+<br><button onclick='this.parentElement.close()'>Hide</button>
+</dialog>
+
+<script>
+if (localStorage.getItem('recentData')){
+	document.getElementById('market_prices').value = localStorage.getItem('recentData');
+}
+
+function loadToTA(ta){
+	let f = event.target.files[0];
+	let fr = new FileReader();
+	fr.onload = ()=>{
+		ta.inert = false;
+		ta.value = fr.result;
+	};
+	fr.readAsText(f);
+}
+function getName(){
+	let x = event.target;
+	console.log(x);
+	if (x.tagName=='TD'){
+		let r = document.createRange();
+		r.selectNodeContents(x);
+		window.getSelection().removeAllRanges();
+		window.getSelection().addRange(r);
+	} else {
+
+	}
+}
+
+let pridel = '\t';
+let market_data = new Map();
+function load_market_prices(data){
+	let errlog = [];
+	let name, price;
+	for (const line of data){
+		if (line.includes(pridel)){
+			[name,price] = line.split(pridel,2);
+			if (market_data.has(name)){
+				errlog.push(`duplicate data ${name}`);
+			} else {
+				market_data.set(name,price);
+			}
+		} else {
+			errlog.push(`No delimitter, "${line}"`);
+		}
+	}
+	if (errlog.length){
+		document.querySelector('#errors_log textarea').value += errlog.join('\n');
+		document.querySelector('#errors_log').show();
+	}
+}
+function load_market_prices_h(){
+	let v = document.getElementById('market_prices').value.trim();
+	load_market_prices(v.split('\n'));
+	//load_market_prices(document.getElementById('market_prices').value.trim().split('\n'));
+	document.getElementById('dataLoaded').textContent = `- ${market_data.size}`;
+	localStorage.setItem('recentData',v);
+	document.getElementById('market_prices').parentElement.open=false;
+	document.getElementById('market_prices').inert = true;
+}
+function diff_compare(a,b){
+	return b.diff < a.diff;
+}
+
+function review_store_stock(data){
+	let name, price;
+	const itable = document.querySelector('#item_table_items');
+	let row, cell;
+	let m_price,n_price,diff_p;
+	let rows_to_sort = [];
+for (const line of data){
+		if (line.includes(pridel)){
+			[name,price] = line.split(pridel,2);
+			//row = itable.insertRow(-1);
+			row = document.createElement('tr');
+			cell = row.insertCell(-1);
+			cell.textContent = name;
+			cell = row.insertCell(-1);
+			cell.textContent = price;
+			if (market_data.has(name)){
+				// compare time
+				m_price = market_data.get(name);
+				cell = row.insertCell(-1);
+				cell.textContent = m_price;
+				n_price = Number(price);
+				cell = row.insertCell(-1);
+				diff_p = n_price - m_price; // negative is better!
+				cell.textContent = diff_p;
+				if (diff_p >= 0){
+					cell.classList.add('higherPrice');
+				} else {
+					cell.classList.add('lowerPrice');
+				}
+			} else {
+				// missing price!
+				diff_p = Infinity;
+				cell = row.insertCell(-1);
+				cell.textContent = '?';
+				cell.contentEditable = 'true';
+				cell.name = name;
+				cell.classList.add('research');
+				cell = row.insertCell(-1);
+				cell.textContent = 'Missing price!';
+			}
+			rows_to_sort.push({diff: diff_p, row: row});
+		}
+	}
+	const sortedrows = rows_to_sort.sort(diff_compare);
+	for (const r of sortedrows){
+		itable.appendChild(r.row);
+	}
+}
+function review_store_stock_h(){
+	if (market_data.size<1){
+		load_market_prices_h()
+	}
+	review_store_stock(document.getElementById('store_stock').value.trim().split('\n'));
+	document.getElementById('store_stock').inert=true;
+	document.getElementById('store_stock').parentElement.open=false;
+}
+function pull_research(){
+	let items = Array.from(document.querySelectorAll('.research')).map(i=>`${i.name}\t${i.textContent}`);
+	console.log(items);
+	if (items.length){
+		document.querySelector('#research_log textarea').value += items.join('\n');
+		document.querySelector('#research_log').show();
+	}
+}
+</script>
+
+</html>
