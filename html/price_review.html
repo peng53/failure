@@ -51,6 +51,22 @@ tr:nth-child(2n){
 tr:hover {
 	background: blue;
 }*/
+dialog {
+	background: #373737;
+	border: 2px solid #ccc;
+	color: #fff;
+}
+input:invalid {
+	outline: 1px solid red;
+}
+.labelInputs {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+}
+#row_desc {
+	color: gold;
+	text-align: right;
+}
 </style>
 <div id='container'>
 <div id='containerTop'>
@@ -69,6 +85,7 @@ tr:hover {
 <button style='background: red; color: white' onclick='review_store_stock_h()'>Review</button>
 <button onclick='pull_research()'>Pull Research</button>
 <button onclick='store_stock.inert=false;store_stock.value="";item_table_items.replaceChildren();store_stock.parentElement.open=1;'>Restart</button>
+<button onclick='options.show()'>Options</button>
 </div>
 <div id='containerBottom'>
 <table id='item_table'>
@@ -78,7 +95,7 @@ tr:hover {
 </div>
 </div>
 
-<dialog id='errors_log'>
+<dialog id='errors_log' closedby='any'>
 <textarea cols=80 rows=20></textarea>
 <br><button onclick='this.parentElement.close()'>Hide</button>
 </dialog>
@@ -86,8 +103,19 @@ tr:hover {
 <textarea cols=80 rows=20></textarea>
 <br><button onclick='this.parentElement.close()'>Hide</button>
 </dialog>
+<dialog id='options' closedby='any'>
+<div id='options_fields'>
+<fieldset class='labelInputs'>
+<legend>Quick Percents</legend>
+<label>Percents</label><input id='opt_prcts'pattern='[0-9]+(,[0-9]+)*' value='25,50,65' />
+</fieldset>
+</div>
+</dialog>
 
 <script>
+'use strict';
+var percentBreak = [];
+var rowDesc;
 if (localStorage.getItem('recentData')){
 	document.getElementById('market_prices').value = localStorage.getItem('recentData');
 }
@@ -109,6 +137,23 @@ function getName(){
 		r.selectNodeContents(x);
 		window.getSelection().removeAllRanges();
 		window.getSelection().addRange(r);
+		if (!rowDesc){
+			rowDesc = document.createElement('tr');
+			rowDesc.id = 'row_desc';
+			rowDesc.insertCell(-1).colSpan = 4;
+			/*rowDesc.insertCell(-1);
+			rowDesc.insertCell(-1);
+			rowDesc.insertCell(-1);
+			*/
+		}
+		x.parentElement.insertAdjacentElement('afterend', rowDesc);
+		let sp = Number(x.parentElement.children[1].textContent);
+		rowDesc.children[0].textContent = `[${percentBreak.map(v=>Math.floor(sp*(v/100))).join(']; [')}]`;
+		/*
+		rowDesc.children[1].textContent = '2';
+		rowDesc.children[2].textContent = '3';
+		rowDesc.children[3].textContent = '4';
+		*/
 	} else {
 
 	}
@@ -196,6 +241,7 @@ for (const line of data){
 	for (const r of sortedrows){
 		itable.appendChild(r.row);
 	}
+	percentBreak = opt_prcts.value.split(',').map(Number);
 }
 function review_store_stock_h(){
 	if (market_data.size<1){
