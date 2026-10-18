@@ -107,7 +107,11 @@ input:invalid {
 <div id='options_fields'>
 <fieldset class='labelInputs'>
 <legend>Quick Percents</legend>
-<label>Percents</label><input id='opt_prcts'pattern='[0-9]+(,[0-9]+)*' value='25,50,65' />
+<label for='opt_prcts'>Percents</label><input id='opt_prcts' pattern='[0-9]+(,[0-9]+)*' value='25,50,65' />
+</fieldset>
+<fieldset class='labelInputs'>
+<legend>Review on Paste</legend>
+<label for='opt_pastereview'>Enable</label><input type='checkbox' id='opt_pastereview' checked />
 </fieldset>
 </div>
 </dialog>
@@ -147,7 +151,7 @@ function getName(){
 			*/
 		}
 		x.parentElement.insertAdjacentElement('afterend', rowDesc);
-		let sp = Number(x.parentElement.children[1].textContent);
+		let sp = Number(x.parentElement.children[1].textContent.replace(',',''));
 		rowDesc.children[0].textContent = `[${percentBreak.map(v=>Math.floor(sp*(v/100))).join(']; [')}]`;
 		/*
 		rowDesc.children[1].textContent = '2';
@@ -200,24 +204,34 @@ function review_store_stock(data){
 	let row, cell;
 	let m_price,n_price,diff_p;
 	let rows_to_sort = [];
-for (const line of data){
-		if (line.includes(pridel)){
-			[name,price] = line.split(pridel,2);
+	
+	for (const line of data){
+		if (line.trim().length>0){
+			if (line.includes(pridel)){
+				[name,price] = line.split(pridel,2);
+			} else {
+				if (line.includes('×')){
+					name = line.split('×')[0];
+				} else {
+					name = line;
+				}
+				price = 0;
+			}
 			//row = itable.insertRow(-1);
 			row = document.createElement('tr');
 			cell = row.insertCell(-1);
 			cell.textContent = name;
 			cell = row.insertCell(-1);
-			cell.textContent = price;
+			cell.textContent = Number(price).toLocaleString();
 			if (market_data.has(name)){
 				// compare time
 				m_price = market_data.get(name);
 				cell = row.insertCell(-1);
-				cell.textContent = m_price;
+				cell.textContent = m_price.toLocaleString();
 				n_price = Number(price);
 				cell = row.insertCell(-1);
 				diff_p = n_price - m_price; // negative is better!
-				cell.textContent = diff_p;
+				cell.textContent = diff_p.toLocaleString();
 				if (diff_p >= 0){
 					cell.classList.add('higherPrice');
 				} else {
@@ -247,9 +261,17 @@ function review_store_stock_h(){
 	if (market_data.size<1){
 		load_market_prices_h()
 	}
-	review_store_stock(document.getElementById('store_stock').value.trim().split('\n'));
-	document.getElementById('store_stock').inert=true;
-	document.getElementById('store_stock').parentElement.open=false;
+	console.log(store_stock.value);
+	if (document.getElementById('store_stock').inert==true){
+		store_stock.inert=false;
+		store_stock.value="";
+		item_table_items.replaceChildren();
+		store_stock.parentElement.open=1;
+	} else {
+		review_store_stock(document.getElementById('store_stock').value.trim().split('\n'));
+		document.getElementById('store_stock').inert=true;
+		document.getElementById('store_stock').parentElement.open=false;
+	}
 }
 function pull_research(){
 	let items = Array.from(document.querySelectorAll('.research')).map(i=>`${i.name}\t${i.textContent}`);
@@ -258,6 +280,27 @@ function pull_research(){
 		document.querySelector('#research_log textarea').value += items.join('\n');
 		document.querySelector('#research_log').show();
 	}
+}
+/*function review_store_on_paste(e){
+	review_store_stock_h();
+}*/
+function review_store_on_paste_toggle(){
+	if (opt_pastereview.checked){
+		store_stock.addEventListener('paste',review_store_on_h);
+	} else {
+		store_stock.removeEventListener('paste',review_store_on_h);
+	}
+}
+function store_stock_paste(e){
+	e.preventDefault();
+	store_stock.value = event.clipboardData.getData("text");
+	review_store_stock_h();
+}
+
+opt_pastereview.addEventListener('change', review_store_on_paste_toggle);
+
+if (opt_pastereview.checked){
+	store_stock.addEventListener('paste',store_stock_paste);
 }
 </script>
 
