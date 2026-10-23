@@ -799,12 +799,16 @@ class ObjectsFieldSet extends FieldSetControl {
 		tb.replaceChildren();
 		for (const e of json){
 			row = tb.insertRow(-1);
-			row.contentEditable = true;
+			//row.contentEditable = true;
 			for (const [o,t] of opt){
+				cell = row.insertCell(-1);
+				cell.contentEditable = true;
 				if (t=='j'){
-					row.appendChild(document.createElement('td')).textContent = JSON.stringify(e[o]);
+					cell.textContent = JSON.stringify(e[o]);
+					//row.appendChild(document.createElement('td')).textContent = JSON.stringify(e[o]);
 				} else {
-					row.appendChild(document.createElement('td')).textContent = `${(e[o]===null) ? "'null'" : e[o]}`;
+					cell.textContent = `${(e[o]===null) ? "'null'" : e[o]}`;
+					//row.appendChild(document.createElement('td')).textContent = `${(e[o]===null) ? "'null'" : e[o]}`;
 				}
 			}
 		}
@@ -1399,6 +1403,30 @@ Notes<textarea id='addAcontrol_notes'></textarea>
 </template>
 
 <script>
+'use strict';
+function tableEditKeys(e){
+	let ae = document.activeElement;
+	let aep = ae.parentElement;
+	let inx = Array.prototype.indexOf.call(aep.children,ae);
+	if (e.ctrlKey){
+		if (e.key=='ArrowUp' && aep.previousElementSibling){
+			aep.previousElementSibling.children[inx].focus();
+			e.preventDefault();
+		} else if (e.key=='ArrowDown' && aep.nextElementSibling){
+			aep.nextElementSibling.children[inx].focus();
+			e.preventDefault();
+		} else if (e.key=='ArrowLeft' && ae.previousElementSibling){
+			ae.previousElementSibling.focus();
+			e.preventDefault();
+		} else if (e.key=='ArrowRight' && ae.nextElementSibling){
+			ae.nextElementSibling.focus();
+			e.preventDefault();
+		}
+	}
+}
+tableEdit.addEventListener('keydown',tableEditKeys);
 leftPane.style.width = 'calc(100vw - 3em)';
+
+
 </script>
 </html>
