@@ -1405,26 +1405,44 @@ Notes<textarea id='addAcontrol_notes'></textarea>
 <script>
 'use strict';
 function tableEditKeys(e){
-	let ae = document.activeElement;
-	let aep = ae.parentElement;
-	let inx = Array.prototype.indexOf.call(aep.children,ae);
 	if (e.ctrlKey){
+		let ae = document.activeElement,
+			aep = ae.parentElement,
+			inx = Array.prototype.indexOf.call(aep.children,ae),
+			nae;
+		/*
 		if (e.key=='ArrowUp' && aep.previousElementSibling){
-			aep.previousElementSibling.children[inx].focus();
-			e.preventDefault();
+			nae = aep.previousElementSibling.children[inx];
 		} else if (e.key=='ArrowDown' && aep.nextElementSibling){
-			aep.nextElementSibling.children[inx].focus();
-			e.preventDefault();
+			nae = aep.nextElementSibling.children[inx];
 		} else if (e.key=='ArrowLeft' && ae.previousElementSibling){
-			ae.previousElementSibling.focus();
-			e.preventDefault();
+			nae = ae.previousElementSibling;
 		} else if (e.key=='ArrowRight' && ae.nextElementSibling){
-			ae.nextElementSibling.focus();
+			nae = ae.nextElementSibling;
+		}
+		*/
+		switch (e.key){
+			case 'ArrowUp':
+				nae = aep.previousElementSibling?.children[inx];
+				break;
+			case 'ArrowDown':
+				nae = aep.nextElementSibling?.children[inx];
+				break;
+			case 'ArrowLeft':
+				nae = ae.previousElementSibling;
+				break;
+			case 'ArrowRight':
+				nae = ae.nextElementSibling;
+				break;
+		}
+		if (nae){
+			nae.focus();
 			e.preventDefault();
 		}
 	}
 }
 tableEdit.addEventListener('keydown',tableEditKeys);
+tableKVEdit.addEventListener('keydown',tableEditKeys);
 leftPane.style.width = 'calc(100vw - 3em)';
 
 
