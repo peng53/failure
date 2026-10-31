@@ -3,26 +3,66 @@
 td,th {
 	border: 1px solid #ccc;
 }
+table {
+	border-collapse: collapse;
+}
+#container {
+	display:grid;
+	grid-template-rows: min-content 1fr;
+	align-items: top;
+}
+fieldset {
+	display:grid;
+
+	grid-gap: 2px;
+	align-items: center;
+}
+#infields {
+	grid-template-columns: 1fr 4fr;
+}
+#outfields {
+	grid-template-columns: 1fr 1fr min-content;
+	max-height: 60vh;
+	overflow: auto;
+}
+#outfields textarea {
+	height: 100%;
+}
+textarea {
+	resize: vertical;
+	width: 100%;
+	min-height: 2em;
+}
 </style>
 <script>
-function mainFunc(endChar,majorCols){
-	let rb = inputRows.value.trim().split(endChar);
-	let rh = rb.shift().split('\t');
-	let hcnt = rh.length-1;
-	let tbl = document.createElement('table');
+function saveTextarea(data){
+	let blob = new Blob([data]);
+	let a = document.createElement('a');
+	a.href = URL.createObjectURL(blob);
+	a.download = 'exportdata.csv';
+	a.click();
+	URL.revokeObjectURL(a.href);
+}
+function removeFromOutput(caller){
+	if (caller.nextElementSibling){
+		caller.parentElement.removeChild(caller.nextElementSibling);
+		caller.parentElement.removeChild(caller.nextElementSibling);
+		caller.parentElement.removeChild(caller.nextElementSibling);
+	}
+}
+function mainFunc(endChar,majorCols,appendFirst=true){
+	const rb = inputRows.value.trim().split(endChar);
+	const rh = rb.shift().split('\t');
+	const hcnt = rh.length-1;
+	majorCols = Math.min(parseInt(majorCols), hcnt);
+	const bkre = new RegExp(/\n/g);
+	const alldata = [rh.slice(0,hcnt)];
+	const tbl = document.createElement('table');
+	let dat, qrows, scell, newrowcnt;
 	let row = tbl.insertRow(-1);
-	let cell;
-	let dat;
-	let qrows = [];
-	let mCols = parseInt(majorCols);
-	let scell;
-	let newrowcnt;
-	let bkre = new RegExp(/\n/g);
-	console.log(rb);
 	for (let i=0;i<rh.length-1;++i){
 		row.appendChild(document.createElement('th')).textContent = rh[i];
 	}
-	document.body.appendChild(tbl);
 	for (let i=0;i<rb.length;++i){
 		if (rb[i].trim().length==0){
 			continue;
@@ -30,51 +70,72 @@ function mainFunc(endChar,majorCols){
 		dat = rb[i].trim().split('\t');
 		// find out how many rows this row contains
 		newrowcnt = 1;
-		for (let j=0;j<mCols;++j){
-			console.log(dat[j], (dat[j].trim().match(bkre)||[]).length);
+		for (let j=0;j<majorCols;++j){
 			newrowcnt = Math.max(newrowcnt, (dat[j].trim().match(bkre)||[]).length+1);
 		}
-		console.log(`this row has ${newrowcnt} rows in it`);
 		qrow = [];
 		for (let j=0;j<newrowcnt;++j){
-			qrow.push(document.createElement('tr'));
-			for (let k=0;k<hcnt;++k){
-				qrow[j].insertCell(-1);
-			}
+			qrow.push(new Array(hcnt));
 		}
 		
 		for (let j=0;j<dat.length;j++){
 			scell = dat[j].split('\n');
-			if (j<mCols){
-				
+			if (scell.length>1){
+				//remove double quote from first and last element
+				if (scell[0][0]=='"'){
+					scell[0] = scell[0].substr(1);
+				}
+				if (scell[scell.length-1][scell[scell.length-1].length-1]=='"'){
+					scell[scell.length-1] = scell[scell.length-1].substr(0,scell[scell.length-1].length-1);
+				}
+			}
+			if (j<majorCols){
 				for (let k=0;k<scell.length;k++){
-					qrow[k].children[j].textContent = scell[k];
+					//qrow[k].children[j].textContent = scell[k];
+					qrow[k][j] = scell[k];
 				}
 			} else {
-				qrow[0].children[j].textContent = scell.join('|');
+				//qrow[0].children[j].textContent = scell.join('|');
+				qrow[appendFirst ? 0 : qrow.length-1][j] = scell.join('|');
 			}
 		}
+		alldata.push(...qrow);
 		for (let j=0;j<qrow.length;j++){
-			tbl.appendChild(qrow[j]);
+			//tbl.appendChild(qrow[j]);
+			row = tbl.insertRow(-1);
+			for (let k=0;k<hcnt;++k){
+				row.insertCell(-1).textContent = qrow[j][k];
+			}
 		}
-		//document.body.appendChild(document.createTextNode(rb[i]));
-		//document.body.appendChild(document.createElement('br'));
 	}
-	
-	
+	let ta = outfields.appendChild(document.createElement('textarea'))
+	ta.value = alldata.join('\n');
+	outfields.appendChild(tbl);
+	let sb = outfields.appendChild(document.createElement('button'));
+	sb.textContent = '💾 Save';
+	sb.addEventListener('click',()=>saveTextarea(ta.value));
 }
 </script>
 <body>
-<textarea id='inputRows'>
+<div id='container'>
+<fieldset id='infields'>
+	<legend>Parameters</legend>
+<label for='inputRows'>Rows</label><textarea id='inputRows' resize>
 label	label2	label3	`
 "hello
 world"	"blah
 blah2"	123	`
 maybe	just1	456	`
-</textarea><br>
-<label>End Char<input id='inputEnd' value='`'/></label>
-<label>Major Data<input id='inputMajor' value='1' /></label>
-
-<button onclick='mainFunc(inputEnd.value,inputMajor.value)'>Execute</button>
+</textarea>
+<label for='inputEnd'>End Char</label><input id='inputEnd' value='`' maxLength='1' />
+<label for='inputMajor'>Major Cols</label><input id='inputMajor' type='number' step='1' value='1' />
+<label for='opnAppendDir'>Append First</label><input type='checkbox' id='opnAppendDir' />
+<button style='grid-column: 1 / span 2;' onclick='mainFunc(inputEnd.value,inputMajor.value,opnAppendDir.checked)'>Execute</button>
+</fieldset><br>
+<fieldset id='outfields'>
+	<legend>Output</legend>
+<button style='grid-column: 1 / span 3;' onclick='removeFromOutput(this)'>Remove</button>
+</fieldset>
+</div>
 </body>
 </html>
