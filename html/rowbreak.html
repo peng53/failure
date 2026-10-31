@@ -1,0 +1,80 @@
+<html>
+<style>
+td,th {
+	border: 1px solid #ccc;
+}
+</style>
+<script>
+function mainFunc(endChar,majorCols){
+	let rb = inputRows.value.trim().split(endChar);
+	let rh = rb.shift().split('\t');
+	let hcnt = rh.length-1;
+	let tbl = document.createElement('table');
+	let row = tbl.insertRow(-1);
+	let cell;
+	let dat;
+	let qrows = [];
+	let mCols = parseInt(majorCols);
+	let scell;
+	let newrowcnt;
+	let bkre = new RegExp(/\n/g);
+	console.log(rb);
+	for (let i=0;i<rh.length-1;++i){
+		row.appendChild(document.createElement('th')).textContent = rh[i];
+	}
+	document.body.appendChild(tbl);
+	for (let i=0;i<rb.length;++i){
+		if (rb[i].trim().length==0){
+			continue;
+		}
+		dat = rb[i].trim().split('\t');
+		// find out how many rows this row contains
+		newrowcnt = 1;
+		for (let j=0;j<mCols;++j){
+			console.log(dat[j], (dat[j].trim().match(bkre)||[]).length);
+			newrowcnt = Math.max(newrowcnt, (dat[j].trim().match(bkre)||[]).length+1);
+		}
+		console.log(`this row has ${newrowcnt} rows in it`);
+		qrow = [];
+		for (let j=0;j<newrowcnt;++j){
+			qrow.push(document.createElement('tr'));
+			for (let k=0;k<hcnt;++k){
+				qrow[j].insertCell(-1);
+			}
+		}
+		
+		for (let j=0;j<dat.length;j++){
+			scell = dat[j].split('\n');
+			if (j<mCols){
+				
+				for (let k=0;k<scell.length;k++){
+					qrow[k].children[j].textContent = scell[k];
+				}
+			} else {
+				qrow[0].children[j].textContent = scell.join('|');
+			}
+		}
+		for (let j=0;j<qrow.length;j++){
+			tbl.appendChild(qrow[j]);
+		}
+		//document.body.appendChild(document.createTextNode(rb[i]));
+		//document.body.appendChild(document.createElement('br'));
+	}
+	
+	
+}
+</script>
+<body>
+<textarea id='inputRows'>
+label	label2	label3	`
+"hello
+world"	"blah
+blah2"	123	`
+maybe	just1	456	`
+</textarea><br>
+<label>End Char<input id='inputEnd' value='`'/></label>
+<label>Major Data<input id='inputMajor' value='1' /></label>
+
+<button onclick='mainFunc(inputEnd.value,inputMajor.value)'>Execute</button>
+</body>
+</html>
