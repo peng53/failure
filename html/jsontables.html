@@ -1,0 +1,344 @@
+<html>
+	<title>Json Tables</title>
+<style>
+#mytable thead th {
+	position: sticky;
+	top: 0;
+	z-index: 100;
+	background: white;
+}
+#mytable {
+	overflow: auto;
+	/*height: 70vh;*/
+	border-collapse: collapse;
+}
+td,th {
+	border: 1px solid #000;
+	padding: 4px 2px;
+}
+.var {
+	width: 100%;
+}
+#topfieldsets {
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	width: calc(100vw - 2em);
+	resize: vertical;
+	min-height: 125px;
+	max-height: 90vh;
+	overflow: auto;
+}
+#topfieldsets textarea {
+	width: 100%;
+	height: 100%;
+	resize: none;
+	min-height: 100%;
+	white-space: pre;
+	padding: 2px;
+	border: 0;
+}
+.taUpdated {
+	outline: 1px solid green;
+	transition: outline 500ms;
+}
+</style>
+<script>
+'use strict';
+var mydata = [];
+var mydefs;
+function moveRow(dir){
+	let thisrow = event.target.parentElement.parentElement;
+	let allrows = thisrow.parentElement;
+	let currindex = Array.prototype.indexOf.call(allrows.children, thisrow);
+	let newpos = currindex+dir;
+	//console.log(currindex,allrows.children.length);
+	if (newpos<0 || newpos>=allrows.children.length){
+		// this node cannot move
+		console.log('this is last or first node');
+		return;
+	}
+	// we want to move the element in the table
+	if (dir===1){
+		allrows.insertBefore(allrows.children[newpos], thisrow);
+	} else {
+		allrows.insertBefore(thisrow, allrows.children[newpos]);
+	}
+	// and the element in the array
+	[mydata[currindex],mydata[newpos]] = [mydata[newpos],mydata[currindex]];
+}
+function cloneRow(dir){
+	let thisrow = event.target.parentElement.parentElement;
+	let allrows = thisrow.parentElement;
+	let currindex = Array.prototype.indexOf.call(allrows.children, thisrow);
+	let newpos = currindex+dir;
+	let clnrow = thisrow.cloneNode(true);
+	for (let i=0; i<clnrow.children.length;++i){
+		clnrow.children[i].firstElementChild.value = thisrow.children[i].firstElementChild.value;
+	}
+	if (dir===1){
+		//allrows.insertBefore(thisrow, clnrow);
+		thisrow.insertAdjacentElement('afterend',clnrow);
+	} else {
+		allrows.insertBefore(clnrow, thisrow);
+	}
+	// clone in mydata
+	const jcopy = structuredClone(mydata[currindex]);
+	mydata.splice(newpos, 0, jcopy);
+}
+function deleteRow(){
+	let thisrow = event.target.parentElement.parentElement;
+	let allrows = thisrow.parentElement;
+	if (allrows.children.length<=1){
+		alert("Can't remove only row!");
+		return;
+	}
+	let currindex = Array.prototype.indexOf.call(allrows.children, thisrow);
+	let removed = mydata.splice(currindex, 1);
+	console.log(removed);
+	allrows.removeChild(thisrow);
+}
+
+function parseDefs(deflines){
+	/*
+	@priDel=[)
+	s[)string header[)string_key[)a|b|c|d[)hover text
+	^^
+	values are quoted, 'null' means null
+	enum means dropdown
+	j[)json header[)json_key[)1|2|3|4[)hover text
+	^^
+	if have enum, will evaluate as dropdown
+	otherwise free input
+	b[)bool header[)bool_key[)[)hover text
+	^^
+	shortcut for j with options true|false|null
+	m[)mult header[)mult_key[)option1&option2[)hover text
+	
+	*/
+	let lt,type,opts,help,name,path;
+	let pridel = ',';
+	let defs = new Map();
+	for (const l of deflines){
+		lt = l.trim();
+		if (lt.length===0){
+			continue;
+		}
+		switch(lt[0]){
+			case '@':
+				help = lt.indexOf('=');
+				if (help===-1){
+					continue;
+				}
+				type = lt.substring(0,help);
+				opts = lt.substr(help+1);
+				switch(type){
+					case '@priDel':
+						pridel = opts;
+					break;
+				}
+			break;
+			case 's':
+				[type,name,path,opts,help] = lt.split(pridel);
+				defs.set(name,{type:type, path:path, opts:(opts.length>1) ? opts?.split('|') : null, help:help});
+			break;
+			case 'n':
+			case 'j':
+				[type,name,path,opts,help] = lt.split(pridel);
+				defs.set(name,{type:'j', path:path, opts:(opts.length>1) ? opts?.split('|') : null, help:help});
+			break;
+			case 'b':
+				[type,name,path,opts,help] = lt.split(pridel);
+				defs.set(name,{type:'j', path:path, opts:['true','false'], help:help});
+			break;
+		}
+	}
+	return defs;
+}
+function makeControl(v, def){
+	let c;
+	if (def.opts){
+		c = tmpl_enum.content.cloneNode(true).firstElementChild;
+		for (const op of def.opts){
+			c.appendChild(document.createElement('option')).textContent = op;
+		}
+	} else {
+		switch (def.type){
+			case 's':
+				c = tmpl_str.content.cloneNode(true).firstElementChild;
+			break;
+			case 'j':
+				c = tmpl_json.content.cloneNode(true).firstElementChild;
+			break;
+		}
+	}
+	if (v===null){
+		c.value = "'null'";
+	} else {
+		if (def.type=='j'){
+			c.value = JSON.stringify(v);
+		} else {
+			c.value = v;
+		}
+	}
+	return c;
+}
+
+function build(){
+	event.target.hidden = true;
+	if (mydata.length){
+		alert('Already built');
+		return;
+	}
+	let defs = parseDefs(inputDefs.value.split('\n'));
+	mydefs = defs;
+	let tbl = mytable;
+	let tblb = tbl.querySelector('tbody');
+	let r = tbl.querySelector('thead').insertRow(-1);
+	let c,v;
+	mydata = JSON.parse(inputJson.value);
+	for (const [name,def] of defs){
+		//console.log(name,def);
+		c = r.appendChild(document.createElement('th'));
+		c.textContent = name;
+	}
+	r.appendChild(document.createElement('th')).textContent = 'CONTROLS';
+	
+	for (const dr of mydata){
+		r = tblb.insertRow(-1);
+		for (const [name,def] of defs){
+			c = r.insertCell(-1);
+			c.appendChild(makeControl(dr[def.path],def));
+		}
+		c = r.appendChild(tmpl_ctrls.cloneNode(true).content);
+	}
+}
+
+function generate(){
+	// first update mydata
+	if (outputJson.value.length>0){
+		let x = confirm('Output not empty, are you sure?');
+		if (!x) return;
+	}
+	let tbl = mytable;
+	let tblb = tbl.querySelector('tbody');
+	let dataRows = Array.from(tblb.querySelectorAll('tr'));
+	if (dataRows.length<1){
+		alert('No rows to generate!');
+		return;
+	}
+	let v, vs, vi;
+	for (const [i,dr] of dataRows.entries()){
+		//console.log(i,dr);
+		vs = Array.from(dr.querySelectorAll('.var')).map(e=>e.value);
+		vi = 0;
+		for (const [name,def] of mydefs){
+			v = vs[vi];
+			if (v==="'null'"){
+				v = null;
+			} else if (def.type==='j'){
+				if (v.length===0){
+					v = null;
+				} else {
+					v = JSON.parse(v);
+				}
+			}
+			mydata[i][def.path] = v;
+			vi++;
+		}
+	}
+	outputJson.value = JSON.stringify(mydata,null,2);
+	outputJson.classList.add('taUpdated');
+}
+
+function saveoutput(){
+	let ta = outputJson.value;
+	if (ta.length<1){
+		return;
+	}
+	let b = new Blob([ta]);
+	let a = document.createElement('a');
+	a.href = URL.createObjectURL(b);
+	a.download = 'json_array.json';
+	a.click();
+	URL.revokeObjectURL(a.href);
+}
+</script>
+<body>
+<details open>
+<summary>Controls</summary>
+<div id='topfieldsets'>
+
+<fieldset class='rfieldset'>
+	<legend>Input Json Array</legend>
+<textarea id='inputJson'>
+[{"string_key":"string1", "enum_string_key": "a", "json_key":1, "enum_number_key": 1, "bool_key": true}
+,{"string_key":"string2", "enum_string_key": "b", "json_key":4, "enum_number_key": 2, "bool_key": false}
+,{"string_key":"string3", "enum_string_key": null, "json_key":[1,2,3], "enum_number_key": null, "bool_key": null}
+]
+</textarea>
+</fieldset>
+<fieldset class='rfieldset'>
+	<legend>Input Defs</legend>
+<textarea id='inputDefs'>
+@priDel=[)
+s[)string header[)string_key[)[)hover text
+s[)enum string[)enum_string_key[)a|b|c|d[)hover text
+j[)json header[)json_key[)[)hover text
+j[)enum number[)enum_number_key[)1|2|3|4[)hover text
+b[)bool header[)bool_key[)[)hover text
+</textarea>
+</fieldset>
+<fieldset>
+<legend>Output Json Array</legend>
+<textarea id='outputJson'></textarea>
+</fieldset>
+</div>
+</details>
+<button onclick='build()'>Build</button>
+<button onclick='generate()'>Generate</button>
+<button onclick='saveoutput()'>Save</button>
+<table id='mytable'>
+	<thead>
+	<!--
+	<tr><th>Cool Stuff</th><th>Index</th></tr>-->
+	</thead>
+	<tbody>
+		<!--
+		<tr><td>Rad</td><td>1</td></tr>
+		<tr><td>Rad</td><td>1</td></tr>
+		<tr><td>Rad</td><td>1</td></tr>
+		<tr><td>Rad</td><td>1</td></tr>-->
+	</tbody>
+</table>
+<template id='tmpl_enum'>
+<select class='var'>
+	<option>'null'</option>
+</select>
+</template>
+<template id='tmpl_str'>
+<input class='var' placeholder='{empty string}' />
+</template>
+<template id='tmpl_json'>
+<input class='var' placeholder='null' />
+</template>
+<template id='tmpl_ctrls'>
+	<td style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr'>
+		<button onclick='moveRow(-1)'>=Up</button>
+		<button onclick='cloneRow(-1)'>+Up</button>
+		<button onclick='deleteRow()'>---</button>
+		<button onclick='cloneRow(1)'>+Dn</button>
+		<button onclick='moveRow(1)'>=Dn</button>
+	</td>
+</template>
+</body>
+<script>
+	/*
+{
+	let x = tmpl_enum.content.cloneNode(true);
+	document.body.appendChild(x.firstElementChild);
+	x = tmpl_str.content.cloneNode(true);
+	document.body.appendChild(x.firstElementChild);
+}
+*/
+</script>
+</html>
