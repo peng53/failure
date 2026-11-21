@@ -73,7 +73,6 @@ function moveRow(dir){
 	let allrows = thisrow.parentElement;
 	let currindex = Array.prototype.indexOf.call(allrows.children, thisrow);
 	let newpos = currindex+dir;
-	//console.log(currindex,allrows.children.length);
 	if (newpos<0 || newpos>=allrows.children.length){
 		// this node cannot move
 		console.log('this is last or first node');
@@ -88,24 +87,19 @@ function moveRow(dir){
 	// and the element in the array
 	[mydata[currindex],mydata[newpos]] = [mydata[newpos],mydata[currindex]];
 }
-function cloneRow(dir){
+function cloneRow(){
 	let thisrow = event.target.parentElement.parentElement;
 	let allrows = thisrow.parentElement;
 	let currindex = Array.prototype.indexOf.call(allrows.children, thisrow);
-	let newpos = currindex+dir;
 	let clnrow = thisrow.cloneNode(true);
+	clnrow.addEventListener('keydown',rowBinds);
 	for (let i=0; i<clnrow.children.length;++i){
 		clnrow.children[i].firstElementChild.value = thisrow.children[i].firstElementChild.value;
 	}
-	if (dir===1){
-		//allrows.insertBefore(thisrow, clnrow);
-		thisrow.insertAdjacentElement('afterend',clnrow);
-	} else {
-		allrows.insertBefore(clnrow, thisrow);
-	}
+	thisrow.insertAdjacentElement('afterend',clnrow);
 	// clone in mydata
 	const jcopy = structuredClone(mydata[currindex]);
-	mydata.splice(newpos, 0, jcopy);
+	mydata.splice(currindex+1, 0, jcopy);
 }
 function deleteRow(){
 	let thisrow = event.target.parentElement.parentElement;
@@ -274,12 +268,17 @@ function makeControl(v, def){
 }
 
 function build(){
-	event.target.hidden = true;
 	if (mydata.length){
 		alert('Already built');
 		return;
 	}
 	let defs = parseDefs(inputDefs.value.split('\n'));
+	if (defs.size<1){
+		alert('No valid defs!');
+		return;
+	}
+	event.target.hidden = true;
+	inputJson.readOnly = inputDefs.readOnly = true;
 	mydefs = defs;
 	let tbl = mytable;
 	let tblb = tbl.querySelector('tbody');
@@ -306,6 +305,7 @@ function build(){
 		}
 		c = r.appendChild(tmpl_ctrls.cloneNode(true).content);
 	}
+	fsdetails.open = false;
 }
 
 function generate(){
@@ -343,6 +343,7 @@ function generate(){
 	}
 	outputJson.value = JSON.stringify(mydata,null,2);
 	outputJson.classList.add('taUpdated');
+	fsdetails.open = true;
 }
 
 function saveoutput(){
@@ -357,54 +358,73 @@ function saveoutput(){
 	a.click();
 	URL.revokeObjectURL(a.href);
 }
+function clearoutput(){
+	if (outputJson.value.length<1 || !confirm('Are you sure?')){
+		return;
+	}
+	outputJson.value = '';
+}
 
 </script>
 <body>
-<details open>
-<summary>Controls</summary>
-<div id='topfieldsets'>
-<fieldset class='rfieldset'>
-	<legend>Input Json Array</legend>
-<textarea id='inputJson'>
+<details id='fsdetails' open>
+	<summary>Controls
+	<button onclick='build()'>Build</button>
+	<button onclick='generate()'>Generate</button>
+	<button onclick='saveoutput()'>Save Output</button>
+	<button onclick='clearoutput()'>Clear Output</button>
+	<button onclick='dia_help.show()'>Help</button>
+	</summary>
+	<div id='topfieldsets'>
+		<fieldset class='rfieldset'>
+			<legend>Input Json Array</legend>
+			<textarea id='inputJson'>
 [{"string_key":"string1", "enum_string_key": "a", "json_key":1, "enum_number_key": 1, "bool_key": true}
 ,{"string_key":"string2", "enum_string_key": "b", "json_key":4, "enum_number_key": 2, "bool_key": false}
 ,{"string_key":"string3", "enum_string_key": null, "json_key":[1,2,3], "enum_number_key": null, "bool_key": null}
 ]
-</textarea>
-</fieldset>
-<fieldset class='rfieldset'>
-	<legend>Input Defs</legend>
-<textarea id='inputDefs'>
+			</textarea>
+		</fieldset>
+
+		<fieldset class='rfieldset'>
+			<legend>Input Defs</legend>
+			<textarea id='inputDefs'>
 @priDel=[)
 s[)string header[)string_key[)[)hover text
 s[)enum string[)enum_string_key[)a|b|c|d[)hover text
 j[)json header[)json_key[)[)hover text
 j[)enum number[)enum_number_key[)1|2|3|4[)hover text
 b[)bool header[)bool_key[)[)hover text
-</textarea>
-</fieldset>
-<fieldset>
-<legend>Output Json Array</legend>
-<textarea id='outputJson'></textarea>
-</fieldset>
-</div>
+			</textarea>
+		</fieldset>
+
+		<fieldset>
+			<legend>Output Json Array</legend>
+			<textarea id='outputJson'></textarea>
+		</fieldset>
+
+	</div>
 </details>
-<button onclick='build()'>Build</button>
-<button onclick='generate()'>Generate</button>
-<button onclick='saveoutput()'>Save</button>
+
 <table id='mytable'>
-	<thead>
-	<!--
-	<tr><th>Cool Stuff</th><th>Index</th></tr>-->
-	</thead>
-	<tbody>
-		<!--
-		<tr><td>Rad</td><td>1</td></tr>
-		<tr><td>Rad</td><td>1</td></tr>
-		<tr><td>Rad</td><td>1</td></tr>
-		<tr><td>Rad</td><td>1</td></tr>-->
-	</tbody>
+	<thead></thead>
+	<tbody></tbody>
 </table>
+
+
+<dialog id='dia_help'>
+<h1>Help</h1>
+<ol>
+<li>Paste your json array in the input json array section</li>
+<li>Paste your json def in the input defs section</li>
+<li>Click Build</li>
+<li>Modify your rows in the generated table</li>
+</ol>
+<button onclick='this.parentElement.close()'>Hide</button>
+</dialog>
+
+
+
 <template id='tmpl_enum'>
 <select class='var' style='text-align:center'>
 	<option>'null'</option>
@@ -417,14 +437,14 @@ b[)bool header[)bool_key[)[)hover text
 <input class='var' style='text-align: right' placeholder='null' onclick='var_clicked(this)' />
 </template>
 <template id='tmpl_ctrls'>
-	<td style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr'>
-		<button onclick='moveRow(-1)'>↑</button>
-		<button onclick='cloneRow(-1)'>↕</button>
-		<button onclick='deleteRow()'>–</button>
-		<button onclick='cloneRow(1)'>↨</button>
-		<button onclick='moveRow(1)'>↓</button>
+	<td style='display:grid;grid-template-columns:repeat(4, 1fr)'>
+		<button onclick='moveRow(-1)' title='Move up'>⬆</button>
+		<button onclick='deleteRow()' title='Delete'>🗑</button>
+		<button onclick='cloneRow()' title='Clone'>👯</button>
+		<button onclick='moveRow(1)' title='Move down'>⬇</button>
 	</td>
 </template>
+
 </body>
 <script>
 	/*
