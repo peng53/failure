@@ -22,6 +22,9 @@ td,th {
 	border: 1px solid #fff;
 	
 }
+th:hover {
+	cursor: s-resize;
+}
 td:hover {
 	background: yellow;
 	transition: background 500ms;
@@ -119,7 +122,10 @@ function deleteRow(){
 function th_clicked(){
 	let ind = Array.prototype.indexOf.call(event.target.parentElement.children,event.target);
 	const newVal = prompt(`Enter new value for column #${ind}:`);
-	const sure = confirm(`Update all column #${ind} to ${newVal} ?`);
+	if (newVal===null){
+		return;
+	}
+	const sure = confirm(`Update all column #${ind} to >${newVal}<?`);
 	if (sure){
 		for (const c of Array.from(mytable.querySelectorAll(`.col-${ind}`))){
 			c.value = newVal;
@@ -163,6 +169,9 @@ function rowBinds(ev){
 			let nxtcell = cur.parentElement.nextElementSibling?.querySelector('.var');
 			if (nxtcell){
 				nxtcell.focus();
+				if (nxtcell.tagName=='SELECT'){
+					nxtcell.showPicker();
+				}
 				ev.preventDefault();
 			} else {
 				p.nextElementSibling?.querySelector('.var')?.focus();
@@ -170,6 +179,12 @@ function rowBinds(ev){
 			}
 			
 		}
+	}
+}
+function var_clicked(t){
+	if (event.ctrlKey){
+		t.select();
+		event.preventDefault();
 	}
 }
 
@@ -391,15 +406,15 @@ b[)bool header[)bool_key[)[)hover text
 	</tbody>
 </table>
 <template id='tmpl_enum'>
-<select class='var'>
+<select class='var' style='text-align:center'>
 	<option>'null'</option>
 </select>
 </template>
 <template id='tmpl_str'>
-<input class='var' placeholder='{empty string}' />
+<input class='var' placeholder='{empty string}' onclick='var_clicked(this)'/>
 </template>
 <template id='tmpl_json'>
-<input class='var' placeholder='null' />
+<input class='var' style='text-align: right' placeholder='null' onclick='var_clicked(this)' />
 </template>
 <template id='tmpl_ctrls'>
 	<td style='display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr'>
