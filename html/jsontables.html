@@ -48,7 +48,9 @@ td:hover {
 }
 .var:focus {
 	background: #77ff6b;
-
+}
+.var:invalid {
+	background: #ff9c9c;
 }
 #topfieldsets {
 	display: grid;
@@ -207,6 +209,19 @@ function var_clicked(t){
 		event.preventDefault();
 	}
 }
+function jsonInputCheck(ele){
+	if (ele.value.length<1){
+		ele.setCustomValidity('');
+	} else {
+		try {
+			JSON.parse(ele.value);
+			ele.setCustomValidity('');
+		} catch (error){
+			ele.setCustomValidity(error.message);
+		}
+	}
+}
+
 
 function parseDefs(deflines){
 	/*
@@ -345,6 +360,10 @@ function generate(){
 	// first update mydata
 	if (outputJson.value.length>0 && !confirm('Output not empty, are you sure?')) return;
 	let tbl = mytable;
+	if (tbl.querySelector('input:invalid')){
+		alert('Error(s) present in table\nPlease fix before generating');
+		return;
+	}
 	let tblb = tbl.querySelector('tbody');
 	let dataRows = Array.from(tblb.querySelectorAll('tr'));
 	if (dataRows.length<1){
@@ -468,7 +487,7 @@ b[)bool header[)bool_key[)[)hover text
 <input class='var' placeholder='{empty string}' onclick='var_clicked(this)'/>
 </template>
 <template id='tmpl_json'>
-<input class='var' style='text-align: right' placeholder='null' onclick='var_clicked(this)' />
+<input class='var' style='text-align: right' placeholder='null' onclick='var_clicked(this)' onblur='jsonInputCheck(this)'/>
 </template>
 <template id='tmpl_ctrls'>
 	<td class='ctrlCol'>
