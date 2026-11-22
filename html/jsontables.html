@@ -5,15 +5,17 @@
 	position: sticky;
 	top: 0;
 	z-index: 100;
-	background: #ffd8d8;
+	background: #9fb8cc;
 }
 #mytable {
 	overflow: auto;
 	/*height: 70vh;*/
 	border-collapse: collapse;
+	min-width: 100%;
+	font-size: 3vw;
 }
 thead tr {
-	background: #333;
+	/*background: #333;*/
 }
 tr:nth-child(even){
 	background: #eee;
@@ -25,6 +27,14 @@ td,th {
 th:hover {
 	cursor: s-resize;
 }
+tr:hover {
+	background: #e2e8f0;
+	transition: background 500ms;
+}
+tr:focus-within {
+	background: #c9ffc9;
+	transition: background 500ms;
+}
 td:hover {
 	background: yellow;
 	transition: background 500ms;
@@ -34,9 +44,10 @@ td:hover {
 	background: none;
 	border: none;
 	padding: 4px 2px;
+	font-size: 3vw;
 }
 .var:focus {
-	background: #c1c1ff;
+	background: #77ff6b;
 
 }
 #topfieldsets {
@@ -63,6 +74,22 @@ td:hover {
 	outline: 1px solid green;
 	transition: outline 500ms;
 }
+.ctrlCol {
+	display:grid;
+	grid-template-columns:repeat(4, 1fr);
+}
+.ctrlCol button {
+	font-size: 3vw;
+	border-width: 1px 0 1px 0;
+	border-radius: 6px;
+}
+.ctrlCol button:first-child {
+	border-left-width: 1px;
+}
+.ctrlCol button:last-child {
+	border-right-width: 1px;
+}
+
 </style>
 <script>
 'use strict';
@@ -119,8 +146,7 @@ function th_clicked(){
 	if (newVal===null){
 		return;
 	}
-	const sure = confirm(`Update all column #${ind} to >${newVal}<?`);
-	if (sure){
+	if (confirm(`Update all column #${ind} to >${newVal}<?`)){
 		for (const c of Array.from(mytable.querySelectorAll(`.col-${ind}`))){
 			c.value = newVal;
 		}
@@ -223,12 +249,12 @@ function parseDefs(deflines){
 			break;
 			case 's':
 				[type,name,path,opts,help] = lt.split(pridel);
-				defs.set(name,{type:type, path:path, opts:(opts.length>1) ? opts?.split('|') : null, help:help});
+				defs.set(name,{type:type, path:path, opts:(opts?.length>1) ? opts?.split('|') : null, help:help});
 			break;
 			case 'n':
 			case 'j':
 				[type,name,path,opts,help] = lt.split(pridel);
-				defs.set(name,{type:'j', path:path, opts:(opts.length>1) ? opts?.split('|') : null, help:help});
+				defs.set(name,{type:'j', path:path, opts:(opts?.length>1) ? opts?.split('|') : null, help:help});
 			break;
 			case 'b':
 				[type,name,path,opts,help] = lt.split(pridel);
@@ -277,21 +303,28 @@ function build(){
 		alert('No valid defs!');
 		return;
 	}
-	event.target.hidden = true;
-	inputJson.readOnly = inputDefs.readOnly = true;
 	mydefs = defs;
 	let tbl = mytable;
 	let tblb = tbl.querySelector('tbody');
-	let r = tbl.querySelector('thead').insertRow(-1);
+	let r = tbl.querySelector('tr'); //.insertRow(-1);
 	let c,v,ctrl,i;
-	mydata = JSON.parse(inputJson.value);
+	try {
+		mydata = JSON.parse(inputJson.value);
+	} catch (error){
+		alert(`Invalid json in input ${error}`);
+		return;
+	}
+	event.target.hidden = true;
+	inputJson.readOnly = inputDefs.readOnly = true;
 	for (const [name,def] of defs){
-		//console.log(name,def);
 		c = r.appendChild(document.createElement('th'));
 		c.addEventListener('click',th_clicked);
 		c.textContent = name;
+		if (def.help){
+			c.title = def.help;
+		}
 	}
-	r.appendChild(document.createElement('th')).textContent = 'CONTROLS';
+	//r.appendChild(document.createElement('th')); //.textContent = 'CONTROLS';
 	
 	for (const dr of mydata){
 		r = tblb.insertRow(-1);
@@ -310,10 +343,7 @@ function build(){
 
 function generate(){
 	// first update mydata
-	if (outputJson.value.length>0){
-		let x = confirm('Output not empty, are you sure?');
-		if (!x) return;
-	}
+	if (outputJson.value.length>0 && !confirm('Output not empty, are you sure?')) return;
 	let tbl = mytable;
 	let tblb = tbl.querySelector('tbody');
 	let dataRows = Array.from(tblb.querySelectorAll('tr'));
@@ -323,7 +353,6 @@ function generate(){
 	}
 	let v, vs, vi;
 	for (const [i,dr] of dataRows.entries()){
-		//console.log(i,dr);
 		vs = Array.from(dr.querySelectorAll('.var')).map(e=>e.value);
 		vi = 0;
 		for (const [name,def] of mydefs){
@@ -334,7 +363,12 @@ function generate(){
 				if (v.length===0){
 					v = null;
 				} else {
-					v = JSON.parse(v);
+					try {
+						v = JSON.parse(v);
+					} catch (error){
+						alert(`Invalid json value\n${v}\n${error}`);
+						return;
+					}
 				}
 			}
 			mydata[i][def.path] = v;
@@ -407,7 +441,7 @@ b[)bool header[)bool_key[)[)hover text
 </details>
 
 <table id='mytable'>
-	<thead></thead>
+	<thead><tr></tr></thead>
 	<tbody></tbody>
 </table>
 
@@ -437,7 +471,7 @@ b[)bool header[)bool_key[)[)hover text
 <input class='var' style='text-align: right' placeholder='null' onclick='var_clicked(this)' />
 </template>
 <template id='tmpl_ctrls'>
-	<td style='display:grid;grid-template-columns:repeat(4, 1fr)'>
+	<td class='ctrlCol'>
 		<button onclick='moveRow(-1)' title='Move up'>⬆</button>
 		<button onclick='deleteRow()' title='Delete'>🗑</button>
 		<button onclick='cloneRow()' title='Clone'>👯</button>
